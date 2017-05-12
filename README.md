@@ -4,6 +4,7 @@ Library is targeting *NetStandard 1.4* so it can used on project targeting both 
 It is Lightweight and very Efficient, having all mostly used CUD operation.<br>
 Under the hood used *SqlBulkCopy* for Insert, for Update/Delete combines BulkInsert with raw Sql *'MERGE'* (MsSQL 2008+).
 
+nuget: https://www.nuget.org/packages/EFCore.BulkExtensions/<br>
 Usage is simple and pretty straightforward.
 Extensions are made on *DbContext* class and can be used like this:
 ```csharp
