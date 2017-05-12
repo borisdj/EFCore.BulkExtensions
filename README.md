@@ -17,7 +17,7 @@ However this only works with tables that do not have Identity column, because of
 Identity column are usually int type with *AutoIncrement*.<br>
 Usecase when this works is with *PK* that do not have Db Identity but Id value is created in application like *Guid* usually.
 
-Following are performances(in seconds):
+Following are performances (in seconds):
 
 | Operations\Rows | 100,000 EF | 100,000 EFBulk | 1,000,000 EFBulk |
 | --------------- | ---------: | -------------: | ---------------: |
@@ -27,5 +27,5 @@ Following are performances(in seconds):
 |-----------------|------------|----------------|------------------|
 | **Together**    |  70.70 s   | 5.88 s         | 56.84 s          |
 
-TestTable has 6 column(Guid, string, string, int, decimal?, DateTime).
+TestTable has 6 column(Guid, string, string, int, decimal?, DateTime).<br>
 All were inserted and 2 of them (string, DateTime) were updated.
