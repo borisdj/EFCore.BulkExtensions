@@ -1,10 +1,11 @@
 # EFCore.BulkExtensions
-EntityFrameworkCore extensions for Bulk operations (Insert, Update, Delete).<br>
+EntityFrameworkCore extensions for Bulk operations (**Insert, Update, Delete**).<br>
 Library is targeting *NetStandard 1.4* so it can used on project targeting both *NetCore(1.0+)* or *NetFramework(4.6.1+)*.<br>
 It is Lightweight and very Efficient, having all mostly used CUD operation.<br>
+Under the hood used *SqlBulkCopy* for Insert, for Update/Delete combines BulkInsert with raw Sql *'MERGE'* (MsSQL 2008+).
 
 Usage is simple and pretty straightforward.
-Extension are made on *DbContext* class and can be used like this:
+Extensions are made on *DbContext* class and can be used like this:
 ```csharp
 context.BulkInsert(entitiesList);
 context.BulkInsertOrUpdate(entitiesList);
