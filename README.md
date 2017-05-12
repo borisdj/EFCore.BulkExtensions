@@ -1,7 +1,7 @@
 # EFCore.BulkExtensions
-EntityFrameworkCore extensions for Bulk operations (Insert, Update, Delete).
-Library is targeting *NetStandard 1.4* so it can used on project targeting both *NetCore(1.0+)* or N*etFramework(4.6.1+)*.
-It is Lightweight and very Efficient, having all mostly used CUD operation.
+EntityFrameworkCore extensions for Bulk operations (Insert, Update, Delete).<br>
+Library is targeting *NetStandard 1.4* so it can used on project targeting both *NetCore(1.0+)* or *NetFramework(4.6.1+)*.<br>
+It is Lightweight and very Efficient, having all mostly used CUD operation.<br>
 
 Usage is simple and pretty straightforward.
 Extension are made on *DbContext* class and can be used like this:
@@ -12,9 +12,9 @@ context.BulkUpdate(entitiesList);
 context.BulkDelete(entitiesList);
 ```
 
-Additionally it has `InsertOrUpdate` method when there is need for both operation but in one connection to database.
-However this only works with tables that do not have Identity column, because of *IDENTITY_INSERT* settings.
-Identity column are usually int type with *AutoIncrement*.
+Additionally it has `InsertOrUpdate` method when there is need for both operation but in one connection to database.<br>
+However this only works with tables that do not have Identity column, because of *IDENTITY_INSERT* settings.<br>
+Identity column are usually int type with *AutoIncrement*.<br>
 Usecase when this works is with *PK* that do not have Db Identity but Id value is created in application like *Guid* usually.
 
 Following are performances(in seconds):
@@ -27,5 +27,5 @@ Following are performances(in seconds):
 |-----------------|------------|----------------|------------------|
 |**Together**     |  70.70 s   | 5.88 s         | 56.84 s          |
 
-
-TestTable has 6 column(Guid, string, string, int, decimal?, DateTime), all were inserted and 2 of them(string, DateTime) were updated.
+TestTable has 6 column(Guid, string, string, int, decimal?, DateTime).
+All were inserted and 2 of them (string, DateTime) were updated.
