@@ -29,4 +29,5 @@ Following are performances (in seconds):
 | **Together**    |  70.70 s   | 5.88 s         | 56.84 s          |
 
 TestTable has 6 column(Guid, string, string, int, decimal?, DateTime).<br>
-All were inserted and 2 of them (string, DateTime) were updated.
+All were inserted and 2 of them (string, DateTime) were updated.<br>
+Test was done locally on following configuration: INTEL Core i5-3570K, DDRIII 8GB x 2, HDD Seagate 1TB, SSD 128 GB.
