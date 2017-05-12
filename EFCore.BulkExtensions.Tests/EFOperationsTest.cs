@@ -15,7 +15,7 @@ namespace EFCore.BulkExtensions.Tests
             var builder = new DbContextOptionsBuilder<TestContext>();
             var databaseName = nameof(EFOperationsTest);
             var connectionString = $"Server=localhost;Database={databaseName};Trusted_Connection=True;MultipleActiveResultSets=true";
-            builder.UseSqlServer(connectionString); // Can NOT Test BulkOperations with UseInMemoryDb (Exception: Relational-specific methods can only be used when the context is using a relational)
+            builder.UseSqlServer(connectionString); // Can NOT Test with UseInMemoryDb (Exception: Relational-specific methods can only be used when the context is using a relational)
             return builder.Options;
         }
         
@@ -24,14 +24,10 @@ namespace EFCore.BulkExtensions.Tests
         //[InlineData(false)] // for speed comparison with Regular EF CUD operations
         public void OperationsTest(bool isBulkOperation)
         {
-            RunInsert(isBulkOperation);
-            RunUpdate(isBulkOperation);
-            RunDelete(isBulkOperation);
-
             // Test can be run individually by commenting 2 others and running in separately in order one after another
-            // 1.First comment RunUpdate(isBulkOperation); RunDelete(isBulkOperation);, which will insert rows into table
-            // 2.Next comment RunInsert(isBulkOperation); RunDelete(isBulkOperation);, for updating
-            // 3.Finally comment RunInsert(isBulkOperation); RunUpdate(isBulkOperation);, which will delete rows
+            RunInsert(isBulkOperation); // 1.First comment RunUpdate(isBulkOperation); and RunDelete(isBulkOperation); which will insert rows into table
+            RunUpdate(isBulkOperation); // 2.Next comment RunInsert(isBulkOperation); RunDelete(isBulkOperation); for updating
+            RunDelete(isBulkOperation); // 3.Finally comment RunInsert(isBulkOperation); RunUpdate(isBulkOperation); which will delete rows
         }
 
         private void RunInsert(bool isBulkOperation)

@@ -10,9 +10,9 @@ namespace EFCore.BulkExtensions.Tests
             var tableInfo = GetTestTableInfo();
             string result = SqlQueryBuilder.MergeTable(tableInfo, OperationType.Update);
 
-            string expectedResult = "MERGE dbo.Item WITH (HOLDLOCK) USING dbo.ItemTemp1234 " +
-                                    "ON dbo.Item.ItemId = dbo.ItemTemp1234.ItemId " +
-                                    "WHEN MATCHED THEN UPDATE SET dbo.Item.Description = dbo.ItemTemp1234.Description;";
+            string expectedResult = "MERGE dbo.[Item] WITH (HOLDLOCK) USING dbo.[ItemTemp1234] " +
+                                    "ON dbo.[Item].ItemId = dbo.[ItemTemp1234].ItemId " +
+                                    "WHEN MATCHED THEN UPDATE SET dbo.[Item].Description = dbo.[ItemTemp1234].Description;";
 
             Assert.Equal(result, expectedResult);
         }
@@ -23,10 +23,10 @@ namespace EFCore.BulkExtensions.Tests
             var tableInfo = GetTestTableInfo();
             string result = SqlQueryBuilder.MergeTable(tableInfo, OperationType.InsertOrUpdate);
 
-            string expectedResult = "MERGE dbo.Item WITH (HOLDLOCK) USING dbo.ItemTemp1234 " +
-                                    "ON dbo.Item.ItemId = dbo.ItemTemp1234.ItemId " +
-                                    "WHEN MATCHED THEN UPDATE SET dbo.Item.Description = dbo.ItemTemp1234.Description " +
-                                    "WHEN NOT MATCHED THEN INSERT (ItemId,Description) VALUES (dbo.ItemTemp1234.ItemId,dbo.ItemTemp1234.Description);";
+            string expectedResult = "MERGE dbo.[Item] WITH (HOLDLOCK) USING dbo.[ItemTemp1234] " +
+                                    "ON dbo.[Item].ItemId = dbo.[ItemTemp1234].ItemId " +
+                                    "WHEN MATCHED THEN UPDATE SET dbo.[Item].Description = dbo.[ItemTemp1234].Description " +
+                                    "WHEN NOT MATCHED THEN INSERT (ItemId,Description) VALUES (dbo.[ItemTemp1234].ItemId,dbo.[ItemTemp1234].Description);";
             
             Assert.Equal(result, expectedResult);
         }
@@ -37,8 +37,8 @@ namespace EFCore.BulkExtensions.Tests
             var tableInfo = GetTestTableInfo();
             string result = SqlQueryBuilder.MergeTable(tableInfo, OperationType.Delete);
 
-            string expectedResult = "MERGE dbo.Item WITH (HOLDLOCK) USING dbo.ItemTemp1234 " +
-                                    "ON dbo.Item.ItemId = dbo.ItemTemp1234.ItemId " +
+            string expectedResult = "MERGE dbo.[Item] WITH (HOLDLOCK) USING dbo.[ItemTemp1234] " +
+                                    "ON dbo.[Item].ItemId = dbo.[ItemTemp1234].ItemId " +
                                     "WHEN MATCHED THEN DELETE;";
 
             Assert.Equal(result, expectedResult);

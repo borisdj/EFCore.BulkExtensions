@@ -8,12 +8,13 @@ namespace EFCore.BulkExtensions
     public class TableInfo
     {
         public string Schema { get; set; }
+        public string SchemaFormated => Schema != null ? Schema + "." : "";
         public string Name { get; set; }
-        public string FullTableName => (Schema != null ? Schema + "." : "") + Name;
+        public string FullTableName => $"{SchemaFormated}[{Name}]";
         public string PrimaryKey { get; set; }
 
         public string TempTableSufix { get; set; }
-        public string FullTempTableName => FullTableName + TempTableSufix;
+        public string FullTempTableName => $"{SchemaFormated}[{Name}{TempTableSufix}]";
 
         public Dictionary<string, string> PropertyColumnNamesDict = new Dictionary<string, string>();
 

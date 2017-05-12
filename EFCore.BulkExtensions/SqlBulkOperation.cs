@@ -17,9 +17,9 @@ namespace EFCore.BulkExtensions
 
     internal static class SqlBulkOperation
     {
-        public static void Insert<T>(DbContext context, SqlTransaction transaction, IList<T> entities, TableInfo tableInfo, bool useTempTable, Action<double> progress = null, int batchSize = 2000)
+        public static void Insert<T>(DbContext context, IList<T> entities, TableInfo tableInfo, bool useTempTable, Action<double> progress = null, int batchSize = 2000)
         {
-            using (SqlBulkCopy sqlBulkCopy = new SqlBulkCopy((SqlConnection)context.Database.GetDbConnection(), SqlBulkCopyOptions.CheckConstraints, transaction))
+            using (SqlBulkCopy sqlBulkCopy = new SqlBulkCopy(context.Database.GetDbConnection().ConnectionString))
             {
                 sqlBulkCopy.DestinationTableName = useTempTable ? tableInfo.FullTempTableName : tableInfo.FullTableName;
                 sqlBulkCopy.BatchSize = batchSize;
@@ -38,10 +38,10 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        public static void Merge<T>(DbContext context, SqlTransaction transaction, IList<T> entities, TableInfo tableInfo, OperationType operationType)
+        public static void Merge<T>(DbContext context, IList<T> entities, TableInfo tableInfo, OperationType operationType)
         {
             context.Database.ExecuteSqlCommand(SqlQueryBuilder.CreateTable(tableInfo));
-            SqlBulkOperation.Insert<T>(context, transaction, entities, tableInfo, true);
+            SqlBulkOperation.Insert<T>(context, entities, tableInfo, true);
             context.Database.ExecuteSqlCommand(SqlQueryBuilder.MergeTable(tableInfo, operationType));
             context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo));
         }
