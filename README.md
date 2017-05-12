@@ -1,10 +1,14 @@
+
+[![NuGet](https://img.shields.io/nuget/v/EFCore.BulkExtensions.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions)
+
 # EFCore.BulkExtensions
 EntityFrameworkCore extensions for Bulk operations (**Insert, Update, Delete**).<br>
 Library is targeting *NetStandard 1.4* so it can used on project targeting both *NetCore(1.0+)* or *NetFramework(4.6.1+)*.<br>
 It is Lightweight and very Efficient, having all mostly used CUD operation.<br>
 Under the hood used *SqlBulkCopy* for Insert, for Update/Delete combines BulkInsert with raw Sql *'MERGE'* (MsSQL 2008+).
 
-nuget: https://www.nuget.org/packages/EFCore.BulkExtensions/<br>
+Avalaible on [NuGet](https://www.nuget.org/packages/EFCore.BulkExtensions/).
+
 Usage is simple and pretty straightforward.
 Extensions are made on *DbContext* class and can be used like this:
 ```csharp
