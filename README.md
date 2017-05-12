@@ -21,11 +21,11 @@ Following are performances(in seconds):
 
 | Operations\Rows | 100,000 EF | 100,000 EFBulk | 1,000,000 EFBulk |
 | --------------- | ---------: | -------------: | ---------------: |
-|Insert           |  38.98 s   | 2.10 s         | 17.99 s          |
-|Update           | 109.25 s   | 3.96 s         | 31.45 s          |
-|Delete           |  7.26  s   | 2.04 s         | 12.18 s          |
+| Insert          |  38.98 s   | 2.10 s         | 17.99 s          |
+| Update          | 109.25 s   | 3.96 s         | 31.45 s          |
+| Delete          |   7.26 s   | 2.04 s         | 12.18 s          |
 |-----------------|------------|----------------|------------------|
-|**Together**     |  70.70 s   | 5.88 s         | 56.84 s          |
+| **Together**    |  70.70 s   | 5.88 s         | 56.84 s          |
 
 TestTable has 6 column(Guid, string, string, int, decimal?, DateTime).
 All were inserted and 2 of them (string, DateTime) were updated.
