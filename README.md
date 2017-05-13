@@ -1,11 +1,10 @@
-
 [![NuGet](https://img.shields.io/nuget/v/EFCore.BulkExtensions.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions)
 
 # EFCore.BulkExtensions
 EntityFrameworkCore extensions for Bulk operations (**Insert, Update, Delete**).<br>
 Library is targeting *NetStandard 1.4* so it can used on project targeting both *NetCore(1.0+)* or *NetFramework(4.6.1+)*.<br>
 It is Lightweight and very Efficient, having all mostly used CUD operation.<br>
-Under the hood used *SqlBulkCopy* for Insert, for Update/Delete combines BulkInsert with raw Sql *'MERGE'* (MsSQL 2008+).
+Under the hood uses *SqlBulkCopy* for Insert, for Update/Delete combines BulkInsert with raw Sql *'MERGE'* (MsSQL 2008+).
 
 Avalaible on [NuGet](https://www.nuget.org/packages/EFCore.BulkExtensions/).
 
@@ -18,10 +17,10 @@ context.BulkUpdate(entitiesList);
 context.BulkDelete(entitiesList);
 ```
 
-Additionally it has `InsertOrUpdate` method when there is need for both operation but in one connection to database.<br>
+Additionally it has **InsertOrUpdate** method when there is need for both operations but in one connection to database.<br>
 However this only works with tables that do not have Identity column, because of *IDENTITY_INSERT* settings.<br>
 Identity column are usually int type with *AutoIncrement*.<br>
-Usecase when this works is with *PK* that do not have Db Identity but Id value is created in application like *Guid* usually.
+Use case when this works is with *PK* that do not have Db Identity but Id value is created in application like *GUIDs* are usually.
 
 Following are performances (in seconds):
 
@@ -36,3 +35,6 @@ Following are performances (in seconds):
 TestTable has 6 column(Guid, string, string, int, decimal?, DateTime).<br>
 All were inserted and 2 of them (string, DateTime) were updated.<br>
 Test was done locally on following configuration: INTEL Core i5-3570K, DDRIII 8GB x 2, HDD Seagate 1TB, SSD 128 GB.
+
+[![NuGet](https://img.shields.io/npm/l/express.svg)](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE)
+
