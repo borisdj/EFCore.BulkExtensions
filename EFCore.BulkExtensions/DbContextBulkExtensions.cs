@@ -12,7 +12,7 @@ namespace EFCore.BulkExtensions
 
         public static void BulkInsertOrUpdate<T>(this DbContext context, IList<T> entities)
         {
-            DbContextBulkTransaction.Execute<T>(context, entities, OperationType.Insert);
+            DbContextBulkTransaction.Execute<T>(context, entities, OperationType.InsertOrUpdate);
         }
 
         public static void BulkUpdate<T>(this DbContext context, IList<T> entities)

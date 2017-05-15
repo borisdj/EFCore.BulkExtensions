@@ -24,7 +24,7 @@ namespace EFCore.BulkExtensions.Tests
         //[InlineData(false)] // for speed comparison with Regular EF CUD operations
         public void OperationsTest(bool isBulkOperation)
         {
-            // Test can be run individually by commenting 2 others and running in separately in order one after another
+            // Test can be run individually by commenting 2 others and running each separately in order one after another
             RunInsert(isBulkOperation); // 1.First comment RunUpdate(isBulkOperation); and RunDelete(isBulkOperation); which will insert rows into table
             RunUpdate(isBulkOperation); // 2.Next comment RunInsert(isBulkOperation); RunDelete(isBulkOperation); for updating
             RunDelete(isBulkOperation); // 3.Finally comment RunInsert(isBulkOperation); RunUpdate(isBulkOperation); which will delete rows

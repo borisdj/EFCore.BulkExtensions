@@ -19,31 +19,38 @@ namespace EFCore.BulkExtensions
     {
         public static void Insert<T>(DbContext context, IList<T> entities, TableInfo tableInfo, bool useTempTable, Action<double> progress = null, int batchSize = 2000)
         {
-            using (SqlBulkCopy sqlBulkCopy = new SqlBulkCopy(context.Database.GetDbConnection().ConnectionString))
+            var sqlBulkCopy = new SqlBulkCopy(context.Database.GetDbConnection().ConnectionString)
             {
-                sqlBulkCopy.DestinationTableName = useTempTable ? tableInfo.FullTempTableName : tableInfo.FullTableName;
-                sqlBulkCopy.BatchSize = batchSize;
-                sqlBulkCopy.NotifyAfter = batchSize;
-                sqlBulkCopy.SqlRowsCopied += (sender, e) => { progress?.Invoke(e.RowsCopied / entities.Count); };
+                DestinationTableName = useTempTable ? tableInfo.FullTempTableName : tableInfo.FullTableName,
+                BatchSize = batchSize,
+                NotifyAfter = batchSize
+            };
+            sqlBulkCopy.SqlRowsCopied += (sender, e) => { progress?.Invoke(e.RowsCopied / entities.Count); };
 
-                foreach (var element in tableInfo.PropertyColumnNamesDict)
-                {
-                    sqlBulkCopy.ColumnMappings.Add(element.Key, element.Value);
-                }
-
-                using (var reader = ObjectReader.Create(entities, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
-                {
-                    sqlBulkCopy.WriteToServer(reader);
-                }
+            foreach (var element in tableInfo.PropertyColumnNamesDict)
+            {
+                sqlBulkCopy.ColumnMappings.Add(element.Key, element.Value);
+            }
+            using (var reader = ObjectReader.Create(entities, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
+            {
+                sqlBulkCopy.WriteToServer(reader);
             }
         }
 
         public static void Merge<T>(DbContext context, IList<T> entities, TableInfo tableInfo, OperationType operationType)
         {
             context.Database.ExecuteSqlCommand(SqlQueryBuilder.CreateTable(tableInfo));
-            SqlBulkOperation.Insert<T>(context, entities, tableInfo, true);
-            context.Database.ExecuteSqlCommand(SqlQueryBuilder.MergeTable(tableInfo, operationType));
-            context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo));
+            try
+            {
+                SqlBulkOperation.Insert<T>(context, entities, tableInfo, true);
+                context.Database.ExecuteSqlCommand(SqlQueryBuilder.MergeTable(tableInfo, operationType));
+                context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo));
+            }
+            catch (Exception ex)
+            {
+                context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo));
+                throw ex;
+            }
         }
     }
 }
