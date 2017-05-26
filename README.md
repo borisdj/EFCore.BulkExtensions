@@ -11,14 +11,14 @@ Usage is simple and pretty straightforward.
 Extensions are made on *DbContext* class and can be used like this:
 ```csharp
 context.BulkInsert(entitiesList);
-context.BulkInsertOrUpdate(entitiesList);
 context.BulkUpdate(entitiesList);
 context.BulkDelete(entitiesList);
+context.BulkInsertOrUpdate(entitiesList);
 ```
 
 Each of these operations are separate transactions.<br>
 So when using multiple operations in single procedure and if, for example, second would break because of some Db constraint, the first one would stay executed.<br>
-In scenario where All or Nothing is required, there sould be additional logic with try/catch block, catch having methods that would revert previously executed operations.
+In scenario where All or Nothing is required, there should be additional logic with try/catch block, catch having methods that would revert previously executed operations.
 
 Additionally library has **InsertOrUpdate** method when there is need for both operations but in one connection to database.<br>
 However this only works with tables that do not have Identity column, because of *IDENTITY_INSERT* settings.<br>
