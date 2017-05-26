@@ -26,8 +26,8 @@ namespace EFCore.BulkExtensions.Tests
         {
             // Test can be run individually by commenting 2 others and running each separately in order one after another
             RunInsert(isBulkOperation); // 1.First comment RunUpdate(isBulkOperation); and RunDelete(isBulkOperation); which will insert rows into table
-            RunUpdate(isBulkOperation); // 2.Next comment RunInsert(isBulkOperation); RunDelete(isBulkOperation); for updating
-            RunDelete(isBulkOperation); // 3.Finally comment RunInsert(isBulkOperation); RunUpdate(isBulkOperation); which will delete rows
+            //RunUpdate(isBulkOperation); // 2.Next comment RunInsert(isBulkOperation); RunDelete(isBulkOperation); for updating
+            //RunDelete(isBulkOperation); // 3.Finally comment RunInsert(isBulkOperation); RunUpdate(isBulkOperation); which will delete rows
         }
 
         private void RunInsert(bool isBulkOperation)
@@ -47,10 +47,14 @@ namespace EFCore.BulkExtensions.Tests
                     });
                 }
                 if (isBulkOperation)
+                {
                     context.BulkInsert(entities);
+                }
                 else
+                {
                     context.Item.AddRange(entities);
-                context.SaveChanges();
+                    context.SaveChanges();
+                }
             }
             using (var context = new TestContext(GetContextOptions()))
             {
@@ -75,10 +79,14 @@ namespace EFCore.BulkExtensions.Tests
                     entity.TimeUpdated = DateTime.Now;
                 }
                 if (isBulkOperation)
+                {
                     context.BulkUpdate(entities);
+                }
                 else
+                {
                     context.Item.UpdateRange(entities);
-                context.SaveChanges();
+                    context.SaveChanges();
+                }
             }
             using (var context = new TestContext(GetContextOptions()))
             {
@@ -97,10 +105,14 @@ namespace EFCore.BulkExtensions.Tests
             {
                 var entities = context.Item.AsNoTracking().ToList();
                 if (isBulkOperation)
+                {
                     context.BulkDelete(entities);
+                }
                 else
+                {
                     context.Item.RemoveRange(entities);
-                context.SaveChanges();
+                    context.SaveChanges();
+                }
             }
             using (var context = new TestContext(GetContextOptions()))
             {
