@@ -8,7 +8,7 @@ namespace EFCore.BulkExtensions.Tests
 {
     public class EFOperationsTest
     {
-        private int entitiesNumber = 100000;
+        private int entitiesNumber = 1000;
 
         private DbContextOptions GetContextOptions()
         {
@@ -25,9 +25,11 @@ namespace EFCore.BulkExtensions.Tests
         public void OperationsTest(bool isBulkOperation)
         {
             // Test can be run individually by commenting 2 others and running each separately in order one after another
-            RunInsert(isBulkOperation); // 1.First comment RunUpdate(isBulkOperation); and RunDelete(isBulkOperation); which will insert rows into table
+            //RunInsert(isBulkOperation); // 1.First comment RunUpdate(isBulkOperation); and RunDelete(isBulkOperation); which will insert rows into table
             //RunUpdate(isBulkOperation); // 2.Next comment RunInsert(isBulkOperation); RunDelete(isBulkOperation); for updating
             //RunDelete(isBulkOperation); // 3.Finally comment RunInsert(isBulkOperation); RunUpdate(isBulkOperation); which will delete rows
+
+            RunInsertOrUpdate(isBulkOperation);
         }
 
         private void RunInsert(bool isBulkOperation)
@@ -39,6 +41,7 @@ namespace EFCore.BulkExtensions.Tests
                 {
                     entities.Add(new Item
                     {
+                        //ItemId = Guid.NewGuid(),
                         Name = "name " + i,
                         Description = "Some info",
                         Quantity = i,
@@ -49,6 +52,46 @@ namespace EFCore.BulkExtensions.Tests
                 if (isBulkOperation)
                 {
                     context.BulkInsert(entities);
+                }
+                else
+                {
+                    context.Item.AddRange(entities);
+                    context.SaveChanges();
+                }
+            }
+            using (var context = new TestContext(GetContextOptions()))
+            {
+                int entitiesCount = context.Item.Count();
+                Item lastEntity = context.Item.LastOrDefault();
+
+                Assert.Equal(entitiesNumber, entitiesCount);
+                Assert.NotNull(lastEntity);
+                Assert.Equal("name " + entitiesNumber, lastEntity.Name);
+            }
+        }
+
+        private void RunInsertOrUpdate(bool isBulkOperation)
+        {
+            using (var context = new TestContext(GetContextOptions()))
+            {
+                var entities = new List<Item>();
+                var dateTimeNow = DateTime.Now;
+                for (int i = 1; i <= entitiesNumber; i++)
+                {
+                    entities.Add(new Item
+                    {
+                        ItemId = i - entitiesNumber,
+                        //ItemId = Guid.NewGuid(),
+                        Name = "name " + i,
+                        Description = "Some info",
+                        Quantity = i,
+                        Price = i / (i % 5 + 1),
+                        TimeUpdated = dateTimeNow
+                    });
+                }
+                if (isBulkOperation)
+                {
+                    context.BulkInsertOrUpdate(entities, true);
                 }
                 else
                 {

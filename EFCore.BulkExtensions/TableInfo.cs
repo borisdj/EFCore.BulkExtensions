@@ -12,10 +12,14 @@ namespace EFCore.BulkExtensions
         public string Name { get; set; }
         public string FullTableName => $"{SchemaFormated}[{Name}]";
         public string PrimaryKey { get; set; }
-
+        
         public string TempTableSufix { get; set; }
         public string FullTempTableName => $"{SchemaFormated}[{Name}{TempTableSufix}]";
+        public string FullTempOutputTableName => $"{SchemaFormated}[{Name}{TempTableSufix}Output]";
 
+        public bool InsertToTempTable { get; set; }
+        public bool HasIdentity { get; set; }
+        public bool SetOutputIdentity { get; set; }
         public Dictionary<string, string> PropertyColumnNamesDict = new Dictionary<string, string>();
 
         public void LoadData<T>(DbContext context, bool loadOnlyPKColumn)

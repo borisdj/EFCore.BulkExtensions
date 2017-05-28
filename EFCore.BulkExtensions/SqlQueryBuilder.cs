@@ -6,19 +6,26 @@ namespace EFCore.BulkExtensions
 {
     public static class SqlQueryBuilder
     {
-        public static string CreateTable(TableInfo tableInfo)
+        public static string CreateTableCopy(string existingTableName, string newTableName)
         {
-            string existingTableName = tableInfo.FullTableName;
-            string newTableName = tableInfo.FullTempTableName;
-
             var q = $"SELECT TOP 0 Source.* INTO {newTableName} FROM {existingTableName} ";
             q += $"LEFT JOIN {existingTableName} AS Source ON 1 = 0;"; // removes Identity constrain and makes all columns nullable
             return q;
         }
 
-        public static string DropTable(TableInfo tableInfo)
+        public static string SelectFromTable(string tableName, string orderByColumnName)
         {
-            return $"DROP TABLE {tableInfo.FullTempTableName};";
+            return $"Select * FROM {tableName} ORDER BY {orderByColumnName};";
+        }
+
+        public static string DropTable(string tableName)
+        {
+            return $"DROP TABLE {tableName};";
+        }
+
+        public static string SelectIsIdentity(string tableName, string idColumnName)
+        {
+            return $"select columnproperty(object_id('{tableName}'),'{idColumnName}','IsIdentity');";
         }
 
         public static string MergeTable(TableInfo tableInfo, OperationType operationType)
@@ -37,9 +44,15 @@ namespace EFCore.BulkExtensions
                 var nonIdentityColumnsNames = columnsNames.Where(a => a != primaryKey).ToList();
                 q += $"UPDATE SET {GetCommaSeparatedColumns(nonIdentityColumnsNames, destinationTable, sourceTable)}";
 
-                if (operationType == OperationType.InsertOrUpdate) // InsertOrUpdate does not work if Table has Identity Column 
+                if (operationType == OperationType.InsertOrUpdate)
                 {
-                    q += $" WHEN NOT MATCHED THEN INSERT ({GetCommaSeparatedColumns(columnsNames)}) VALUES ({GetCommaSeparatedColumns(columnsNames, sourceTable)})";
+                    var insertColumnsNames = tableInfo.HasIdentity ? nonIdentityColumnsNames : columnsNames;
+                    q += $" WHEN NOT MATCHED THEN INSERT ({GetCommaSeparatedColumns(insertColumnsNames)})";
+                    q += $" VALUES ({GetCommaSeparatedColumns(insertColumnsNames)})";
+                }
+                if (tableInfo.SetOutputIdentity)
+                {
+                    q += $" OUTPUT INSERTED.* INTO dbo.{tableInfo.FullTempOutputTableName}";
                 }
             }
             else if (operationType == OperationType.Delete)
