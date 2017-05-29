@@ -8,7 +8,7 @@ namespace EFCore.BulkExtensions.Tests
 {
     public class EFOperationsTest
     {
-        private int entitiesNumber = 1000;
+        private int entitiesNumber = 100000;
 
         private DbContextOptions GetContextOptions()
         {
@@ -20,30 +20,31 @@ namespace EFCore.BulkExtensions.Tests
         }
         
         [Theory]
-        [InlineData(true)]
+        //[InlineData(true)]
+        [InlineData(true, true)]
         //[InlineData(false)] // for speed comparison with Regular EF CUD operations
-        public void OperationsTest(bool isBulkOperation)
+        public void OperationsTest(bool isBulkOperation, bool insertTo2Tables = false)
         {
-            // Test can be run individually by commenting 2 others and running each separately in order one after another
-            //RunInsert(isBulkOperation); // 1.First comment RunUpdate(isBulkOperation); and RunDelete(isBulkOperation); which will insert rows into table
-            //RunUpdate(isBulkOperation); // 2.Next comment RunInsert(isBulkOperation); RunDelete(isBulkOperation); for updating
-            //RunDelete(isBulkOperation); // 3.Finally comment RunInsert(isBulkOperation); RunUpdate(isBulkOperation); which will delete rows
-
-            RunInsertOrUpdate(isBulkOperation);
+            // Test can be run individually by commenting others and running each separately in order one after another
+            RunInsert(isBulkOperation, insertTo2Tables);
+            //RunInsertOrUpdate(isBulkOperation);
+            //RunUpdate(isBulkOperation);
+            //RunDelete(isBulkOperation);
         }
 
-        private void RunInsert(bool isBulkOperation)
+        private void RunInsert(bool isBulkOperation, bool insertTo2Tables = false)
         {
             using (var context = new TestContext(GetContextOptions()))
             {
                 var entities = new List<Item>();
-                for (int i = 1; i <= entitiesNumber; i++)
+                var subEntities = new List<ItemHistory>();
+                for (int i = 1; i < entitiesNumber; i++)
                 {
                     entities.Add(new Item
                     {
-                        //ItemId = Guid.NewGuid(),
+                        ItemId = i,
                         Name = "name " + i,
-                        Description = "Some info",
+                        Description = "info",
                         Quantity = i,
                         Price = i / (i % 5 + 1),
                         TimeUpdated = DateTime.Now
@@ -51,22 +52,40 @@ namespace EFCore.BulkExtensions.Tests
                 }
                 if (isBulkOperation)
                 {
-                    context.BulkInsert(entities);
+                    if (insertTo2Tables)
+                    {
+                        context.BulkInsert(entities, setOutputIdentity: true);
+
+                        foreach (var entity in entities)
+                        {
+                            subEntities.Add(new ItemHistory
+                            {
+                                ItemHistoryId = SeqGuid.Create(),
+                                ItemId = entity.ItemId,
+                                Remark = "some more info"
+                            });
+                        }
+                        context.BulkInsert(subEntities);
+                    }
+                    else
+                    {
+                        context.BulkInsert(entities);
+                    }
                 }
                 else
                 {
-                    context.Item.AddRange(entities);
+                    context.Items.AddRange(entities);
                     context.SaveChanges();
                 }
             }
             using (var context = new TestContext(GetContextOptions()))
             {
-                int entitiesCount = context.Item.Count();
-                Item lastEntity = context.Item.LastOrDefault();
+                int entitiesCount = context.Items.Count();
+                Item lastEntity = context.Items.LastOrDefault();
 
-                Assert.Equal(entitiesNumber, entitiesCount);
+                Assert.Equal(entitiesNumber - 1, entitiesCount);
                 Assert.NotNull(lastEntity);
-                Assert.Equal("name " + entitiesNumber, lastEntity.Name);
+                Assert.Equal("name " + (entitiesNumber - 1), lastEntity.Name);
             }
         }
 
@@ -76,14 +95,13 @@ namespace EFCore.BulkExtensions.Tests
             {
                 var entities = new List<Item>();
                 var dateTimeNow = DateTime.Now;
-                for (int i = 1; i <= entitiesNumber; i++)
+                for (int i = 2; i <= entitiesNumber; i += 2)
                 {
                     entities.Add(new Item
                     {
-                        ItemId = i - entitiesNumber,
-                        //ItemId = Guid.NewGuid(),
-                        Name = "name " + i,
-                        Description = "Some info",
+                        ItemId = i,
+                        Name = "name InsertOrUpdate " + i,
+                        Description = "info",
                         Quantity = i,
                         Price = i / (i % 5 + 1),
                         TimeUpdated = dateTimeNow
@@ -91,22 +109,22 @@ namespace EFCore.BulkExtensions.Tests
                 }
                 if (isBulkOperation)
                 {
-                    context.BulkInsertOrUpdate(entities, true);
+                    context.BulkInsertOrUpdate(entities);
                 }
                 else
                 {
-                    context.Item.AddRange(entities);
+                    context.Items.AddRange(entities);
                     context.SaveChanges();
                 }
             }
             using (var context = new TestContext(GetContextOptions()))
             {
-                int entitiesCount = context.Item.Count();
-                Item lastEntity = context.Item.LastOrDefault();
+                int entitiesCount = context.Items.Count();
+                Item lastEntity = context.Items.LastOrDefault();
 
                 Assert.Equal(entitiesNumber, entitiesCount);
                 Assert.NotNull(lastEntity);
-                Assert.Equal("name " + entitiesNumber, lastEntity.Name);
+                Assert.Equal("name InsertOrUpdate " + entitiesNumber, lastEntity.Name);
             }
         }
 
@@ -115,10 +133,10 @@ namespace EFCore.BulkExtensions.Tests
             using (var context = new TestContext(GetContextOptions()))
             {
                 int counter = 1;
-                var entities = context.Item.AsNoTracking().ToList();
+                var entities = context.Items.AsNoTracking().ToList();
                 foreach (var entity in entities)
                 {
-                    entity.Name = "name Updated " + counter++;
+                    entity.Name = "name Update " + counter++;
                     entity.TimeUpdated = DateTime.Now;
                 }
                 if (isBulkOperation)
@@ -127,18 +145,18 @@ namespace EFCore.BulkExtensions.Tests
                 }
                 else
                 {
-                    context.Item.UpdateRange(entities);
+                    context.Items.UpdateRange(entities);
                     context.SaveChanges();
                 }
             }
             using (var context = new TestContext(GetContextOptions()))
             {
-                int entitiesCount = context.Item.Count();
-                Item lastEntity = context.Item.LastOrDefault();
+                int entitiesCount = context.Items.Count();
+                Item lastEntity = context.Items.LastOrDefault();
 
                 Assert.Equal(entitiesNumber, entitiesCount);
                 Assert.NotNull(lastEntity);
-                Assert.Equal("name Updated " + entitiesNumber, lastEntity.Name);
+                Assert.Equal("name Update " + entitiesNumber, lastEntity.Name);
             }
         }
 
@@ -146,21 +164,24 @@ namespace EFCore.BulkExtensions.Tests
         {
             using (var context = new TestContext(GetContextOptions()))
             {
-                var entities = context.Item.AsNoTracking().ToList();
+                var subEntities = context.ItemHistories.AsNoTracking().ToList();
+                var entities = context.Items.AsNoTracking().ToList();
                 if (isBulkOperation)
                 {
+                    context.BulkDelete(subEntities);
                     context.BulkDelete(entities);
                 }
                 else
                 {
-                    context.Item.RemoveRange(entities);
+                    context.ItemHistories.RemoveRange(subEntities);
+                    context.Items.RemoveRange(entities);
                     context.SaveChanges();
                 }
             }
             using (var context = new TestContext(GetContextOptions()))
             {
-                int entitiesCount = context.Item.Count();
-                Item lastEntity = context.Item.LastOrDefault();
+                int entitiesCount = context.Items.Count();
+                Item lastEntity = context.Items.LastOrDefault();
 
                 Assert.Equal(0, entitiesCount);
                 Assert.Null(lastEntity);
@@ -168,7 +189,9 @@ namespace EFCore.BulkExtensions.Tests
             
             using (var context = new TestContext(GetContextOptions()))
             {
-                context.Database.ExecuteSqlCommand($"TRUNCATE TABLE {nameof(Item)};"); // Resets AutoIncrement
+                // Resets AutoIncrement
+                context.Database.ExecuteSqlCommand($"DBCC CHECKIDENT ('{nameof(Item)}', RESEED, 0);");
+                //context.Database.ExecuteSqlCommand($"TRUNCATE TABLE {nameof(Item)};"); // can NOT work when there is ForeignKey - ItemHistoryId
             }
         }
     }

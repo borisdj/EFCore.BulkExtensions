@@ -12,7 +12,7 @@ namespace EFCore.BulkExtensions
             tableInfo.LoadData<T>(context, isDeleteOperation);
             tableInfo.SetOutputIdentity = setOutputIdentity;
 
-            if (operationType == OperationType.Insert)
+            if (operationType == OperationType.Insert && !setOutputIdentity)
             {
                 SqlBulkOperation.Insert<T>(context, entities, tableInfo);
             }

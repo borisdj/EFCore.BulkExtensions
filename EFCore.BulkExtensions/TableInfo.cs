@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,7 +13,7 @@ namespace EFCore.BulkExtensions
         public string Name { get; set; }
         public string FullTableName => $"{SchemaFormated}[{Name}]";
         public string PrimaryKey { get; set; }
-        
+
         public string TempTableSufix { get; set; }
         public string FullTempTableName => $"{SchemaFormated}[{Name}{TempTableSufix}]";
         public string FullTempOutputTableName => $"{SchemaFormated}[{Name}{TempTableSufix}Output]";
@@ -43,6 +44,37 @@ namespace EFCore.BulkExtensions
             {
                 PropertyColumnNamesDict = entityType.GetProperties().ToDictionary(a => a.Name, b => b.Relational().ColumnName);
             }
+        }
+
+        public void CheckHasIdentity(DbContext context)
+        {
+            int hasIdentity = 0;
+            var conn = context.Database.GetDbConnection();
+            try
+            {
+                conn.OpenAsync();
+                using (var command = conn.CreateCommand())
+                {
+                    string query = SqlQueryBuilder.SelectIsIdentity(FullTableName, PrimaryKey);
+                    command.CommandText = query;
+                    DbDataReader reader = command.ExecuteReader();
+
+                    if (reader.HasRows)
+                    {
+                        while (reader.Read())
+                        {
+                            hasIdentity = (int)reader[0];
+                        }
+                    }
+                    reader.Dispose();
+                }
+            }
+            finally
+            {
+                conn.Close();
+            }
+
+            HasIdentity = hasIdentity == 1;
         }
     }
 }

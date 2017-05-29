@@ -34,35 +34,31 @@ namespace EFCore.BulkExtensions
             string sourceTable = tableInfo.FullTempTableName;
             string primaryKey = tableInfo.PrimaryKey;
             List<string> columnsNames = tableInfo.PropertyColumnNamesDict.Values.ToList();
+            List<string> nonIdentityColumnsNames = columnsNames.Where(a => a != primaryKey).ToList();
+            List<string> insertColumnsNames = tableInfo.HasIdentity ? nonIdentityColumnsNames : columnsNames;
 
             var q = $"MERGE {destinationTable} WITH (HOLDLOCK) USING {sourceTable} " +
-                    $"ON {destinationTable}.{primaryKey} = {sourceTable}.{primaryKey} " +
-                    $"WHEN MATCHED THEN ";
+                    $"ON {destinationTable}.{primaryKey} = {sourceTable}.{primaryKey}";
 
+            if (operationType == OperationType.Insert || operationType == OperationType.InsertOrUpdate)
+            {
+                q += $" WHEN NOT MATCHED THEN INSERT ({GetCommaSeparatedColumns(insertColumnsNames)})";
+                q += $" VALUES ({GetCommaSeparatedColumns(insertColumnsNames)})";
+            }
             if (operationType == OperationType.Update || operationType == OperationType.InsertOrUpdate)
             {
-                var nonIdentityColumnsNames = columnsNames.Where(a => a != primaryKey).ToList();
-                q += $"UPDATE SET {GetCommaSeparatedColumns(nonIdentityColumnsNames, destinationTable, sourceTable)}";
+                q += $" WHEN MATCHED THEN UPDATE SET {GetCommaSeparatedColumns(nonIdentityColumnsNames, destinationTable, sourceTable)}";
+            }
+            if (operationType == OperationType.Delete)
+            {
+                q += " WHEN MATCHED THEN DELETE";
+            }
 
-                if (operationType == OperationType.InsertOrUpdate)
-                {
-                    var insertColumnsNames = tableInfo.HasIdentity ? nonIdentityColumnsNames : columnsNames;
-                    q += $" WHEN NOT MATCHED THEN INSERT ({GetCommaSeparatedColumns(insertColumnsNames)})";
-                    q += $" VALUES ({GetCommaSeparatedColumns(insertColumnsNames)})";
-                }
-                if (tableInfo.SetOutputIdentity)
-                {
-                    q += $" OUTPUT INSERTED.* INTO dbo.{tableInfo.FullTempOutputTableName}";
-                }
-            }
-            else if (operationType == OperationType.Delete)
+            if (tableInfo.SetOutputIdentity)
             {
-                q += "DELETE";
+                q += $" OUTPUT INSERTED.* INTO dbo.{tableInfo.FullTempOutputTableName}";
             }
-            else
-            {
-                throw new InvalidOperationException($"Merge does not support {operationType.ToString()} operation.");
-            }
+
             return q + ";";
         }
 

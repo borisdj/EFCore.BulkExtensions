@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.Common;
 using System.Data.SqlClient;
 using System.Linq;
 using FastMember;
@@ -40,6 +39,9 @@ namespace EFCore.BulkExtensions
 
         public static void Merge<T>(DbContext context, IList<T> entities, TableInfo tableInfo, OperationType operationType) where T : class
         {
+            tableInfo.InsertToTempTable = true;
+            tableInfo.CheckHasIdentity(context);
+
             context.Database.ExecuteSqlCommand(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName));
             if (tableInfo.SetOutputIdentity)
             {
@@ -47,40 +49,10 @@ namespace EFCore.BulkExtensions
             }
             try
             {
-                tableInfo.InsertToTempTable = true;
-
-                int hasIdentity = 0;
-                var conn = context.Database.GetDbConnection();
-                try
-                {
-                    conn.OpenAsync();
-                    using (var command = conn.CreateCommand())
-                    {
-                        string query = SqlQueryBuilder.SelectIsIdentity(tableInfo.FullTableName, tableInfo.PrimaryKey);
-                        command.CommandText = query;
-                        DbDataReader reader = command.ExecuteReader();
-
-                        if (reader.HasRows)
-                        {
-                            while (reader.Read())
-                            {
-                                hasIdentity = (int)reader[0];
-                            }
-                        }
-                        reader.Dispose();
-                    }
-                }
-                finally
-                {
-                    conn.Close();
-                }
-
-
-                tableInfo.HasIdentity = hasIdentity == 1;
                 SqlBulkOperation.Insert<T>(context, entities, tableInfo);
                 context.Database.ExecuteSqlCommand(SqlQueryBuilder.MergeTable(tableInfo, operationType));
-
                 context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName));
+
                 if (tableInfo.SetOutputIdentity)
                 {
                     entities.Clear();

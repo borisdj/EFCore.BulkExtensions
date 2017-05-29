@@ -5,30 +5,46 @@ namespace EFCore.BulkExtensions.Tests
     public class SqlQueryBuilderUnitTests
     {
         [Fact]
-        public void MergeTableUpdateTest()
+        public void MergeTableInsertTest()
         {
-            var tableInfo = GetTestTableInfo();
-            string result = SqlQueryBuilder.MergeTable(tableInfo, OperationType.Update);
+            TableInfo tableInfo = GetTestTableInfo();
+            tableInfo.HasIdentity = true;
+            string result = SqlQueryBuilder.MergeTable(tableInfo, OperationType.Insert);
 
-            string expectedResult = "MERGE dbo.[Item] WITH (HOLDLOCK) USING dbo.[ItemTemp1234] " +
-                                    "ON dbo.[Item].ItemId = dbo.[ItemTemp1234].ItemId " +
-                                    "WHEN MATCHED THEN UPDATE SET dbo.[Item].Description = dbo.[ItemTemp1234].Description;";
+            string expected = "MERGE dbo.[Item] WITH (HOLDLOCK) USING dbo.[ItemTemp1234] " +
+                              "ON dbo.[Item].ItemId = dbo.[ItemTemp1234].ItemId " +
+                              "WHEN NOT MATCHED THEN INSERT (Name) VALUES (Name);";
 
-            Assert.Equal(result, expectedResult);
+            Assert.Equal(result, expected);
         }
 
         [Fact]
         public void MergeTableInsertOrUpdateTest()
         {
-            var tableInfo = GetTestTableInfo();
+            TableInfo tableInfo = GetTestTableInfo();
+            tableInfo.HasIdentity = true;
             string result = SqlQueryBuilder.MergeTable(tableInfo, OperationType.InsertOrUpdate);
 
-            string expectedResult = "MERGE dbo.[Item] WITH (HOLDLOCK) USING dbo.[ItemTemp1234] " +
-                                    "ON dbo.[Item].ItemId = dbo.[ItemTemp1234].ItemId " +
-                                    "WHEN MATCHED THEN UPDATE SET dbo.[Item].Description = dbo.[ItemTemp1234].Description " +
-                                    "WHEN NOT MATCHED THEN INSERT (ItemId,Description) VALUES (dbo.[ItemTemp1234].ItemId,dbo.[ItemTemp1234].Description);";
-            
-            Assert.Equal(result, expectedResult);
+            string expected = "MERGE dbo.[Item] WITH (HOLDLOCK) USING dbo.[ItemTemp1234] " +
+                              "ON dbo.[Item].ItemId = dbo.[ItemTemp1234].ItemId " +
+                              "WHEN NOT MATCHED THEN INSERT (Name) VALUES (Name) " +
+                              "WHEN MATCHED THEN UPDATE SET dbo.[Item].Name = dbo.[ItemTemp1234].Name;";
+
+            Assert.Equal(result, expected);
+        }
+
+        [Fact]
+        public void MergeTableUpdateTest()
+        {
+            TableInfo tableInfo = GetTestTableInfo();
+            tableInfo.HasIdentity = true;
+            string result = SqlQueryBuilder.MergeTable(tableInfo, OperationType.Update);
+
+            string expected = "MERGE dbo.[Item] WITH (HOLDLOCK) USING dbo.[ItemTemp1234] " +
+                              "ON dbo.[Item].ItemId = dbo.[ItemTemp1234].ItemId " +
+                              "WHEN MATCHED THEN UPDATE SET dbo.[Item].Name = dbo.[ItemTemp1234].Name;";
+
+            Assert.Equal(result, expected);
         }
 
         [Fact]
@@ -37,11 +53,11 @@ namespace EFCore.BulkExtensions.Tests
             var tableInfo = GetTestTableInfo();
             string result = SqlQueryBuilder.MergeTable(tableInfo, OperationType.Delete);
 
-            string expectedResult = "MERGE dbo.[Item] WITH (HOLDLOCK) USING dbo.[ItemTemp1234] " +
-                                    "ON dbo.[Item].ItemId = dbo.[ItemTemp1234].ItemId " +
-                                    "WHEN MATCHED THEN DELETE;";
+            string expected = "MERGE dbo.[Item] WITH (HOLDLOCK) USING dbo.[ItemTemp1234] " +
+                              "ON dbo.[Item].ItemId = dbo.[ItemTemp1234].ItemId " +
+                              "WHEN MATCHED THEN DELETE;";
 
-            Assert.Equal(result, expectedResult);
+            Assert.Equal(result, expected);
         }
 
         private TableInfo GetTestTableInfo()
@@ -53,10 +69,10 @@ namespace EFCore.BulkExtensions.Tests
                 PrimaryKey = "ItemId",
                 TempTableSufix = "Temp1234"
             };
-            var descriptionText = "Description";
+            var nameText = "Name";
 
             tableInfo.PropertyColumnNamesDict.Add(tableInfo.PrimaryKey, tableInfo.PrimaryKey);
-            tableInfo.PropertyColumnNamesDict.Add(descriptionText, descriptionText);
+            tableInfo.PropertyColumnNamesDict.Add(nameText, nameText);
 
             return tableInfo;
         }
