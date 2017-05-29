@@ -21,18 +21,18 @@ Values
 --('81cc52f0-610f-4a29-b9de-795d66833fb7', 'Desc3', 'SomeName3', 14.35, 46, '2017-01-01');
 
 -- Update with MERGE from TempTable
-MERGE dbo.[Item] WITH (HOLDLOCK) USING dbo.[ItemTemp1234]
-ON dbo.[Item].ItemId = dbo.[ItemTemp1234].ItemId
+MERGE dbo.[Item] WITH (HOLDLOCK) AS T USING (SELECT TOP 2147483647 * FROM dbo.[ItemTemp1234] ORDER BY ItemId) AS S
+ON T.ItemId = S.ItemId
 WHEN NOT MATCHED THEN INSERT
 (Description, Name, Price, Quantity, TimeUpdated)
 VALUES
-(Description, Name, Price, Quantity, TimeUpdated)
+(S.Description, S.Name, S.Price, S.Quantity, S.TimeUpdated)
 WHEN MATCHED THEN UPDATE SET
-dbo.[Item].Description = dbo.[ItemTemp1234].Description,
-dbo.[Item].Name = dbo.[ItemTemp1234].Name,
-dbo.[Item].Price = dbo.[ItemTemp1234].Price,
-dbo.[Item].Quantity = dbo.[ItemTemp1234].Quantity,
-dbo.[Item].TimeUpdated = dbo.[ItemTemp1234].TimeUpdated
+T.Description = S.Description,
+T.Name = S.Name,
+T.Price = S.Price,
+T.Quantity = S.Quantity,
+T.TimeUpdated = S.TimeUpdated
 OUTPUT inserted.* INTO dbo.[ItemTemp1234Output];
 
 -- Delete TempTable

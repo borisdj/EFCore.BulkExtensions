@@ -11,9 +11,9 @@ namespace EFCore.BulkExtensions.Tests
             tableInfo.HasIdentity = true;
             string result = SqlQueryBuilder.MergeTable(tableInfo, OperationType.Insert);
 
-            string expected = "MERGE dbo.[Item] WITH (HOLDLOCK) USING dbo.[ItemTemp1234] " +
-                              "ON dbo.[Item].ItemId = dbo.[ItemTemp1234].ItemId " +
-                              "WHEN NOT MATCHED THEN INSERT (Name) VALUES (Name);";
+            string expected = "MERGE dbo.[Item] WITH (HOLDLOCK) AS T USING dbo.[ItemTemp1234] AS S " +
+                              "ON T.ItemId = S.ItemId " +
+                              "WHEN NOT MATCHED THEN INSERT (Name) VALUES (S.Name);";
 
             Assert.Equal(result, expected);
         }
@@ -25,10 +25,10 @@ namespace EFCore.BulkExtensions.Tests
             tableInfo.HasIdentity = true;
             string result = SqlQueryBuilder.MergeTable(tableInfo, OperationType.InsertOrUpdate);
 
-            string expected = "MERGE dbo.[Item] WITH (HOLDLOCK) USING dbo.[ItemTemp1234] " +
-                              "ON dbo.[Item].ItemId = dbo.[ItemTemp1234].ItemId " +
-                              "WHEN NOT MATCHED THEN INSERT (Name) VALUES (Name) " +
-                              "WHEN MATCHED THEN UPDATE SET dbo.[Item].Name = dbo.[ItemTemp1234].Name;";
+            string expected = "MERGE dbo.[Item] WITH (HOLDLOCK) AS T USING dbo.[ItemTemp1234] AS S " +
+                              "ON T.ItemId = S.ItemId " +
+                              "WHEN NOT MATCHED THEN INSERT (Name) VALUES (S.Name) " +
+                              "WHEN MATCHED THEN UPDATE SET T.Name = S.Name;";
 
             Assert.Equal(result, expected);
         }
@@ -40,9 +40,9 @@ namespace EFCore.BulkExtensions.Tests
             tableInfo.HasIdentity = true;
             string result = SqlQueryBuilder.MergeTable(tableInfo, OperationType.Update);
 
-            string expected = "MERGE dbo.[Item] WITH (HOLDLOCK) USING dbo.[ItemTemp1234] " +
-                              "ON dbo.[Item].ItemId = dbo.[ItemTemp1234].ItemId " +
-                              "WHEN MATCHED THEN UPDATE SET dbo.[Item].Name = dbo.[ItemTemp1234].Name;";
+            string expected = "MERGE dbo.[Item] WITH (HOLDLOCK) AS T USING dbo.[ItemTemp1234] AS S " +
+                              "ON T.ItemId = S.ItemId " +
+                              "WHEN MATCHED THEN UPDATE SET T.Name = S.Name;";
 
             Assert.Equal(result, expected);
         }
@@ -53,8 +53,8 @@ namespace EFCore.BulkExtensions.Tests
             var tableInfo = GetTestTableInfo();
             string result = SqlQueryBuilder.MergeTable(tableInfo, OperationType.Delete);
 
-            string expected = "MERGE dbo.[Item] WITH (HOLDLOCK) USING dbo.[ItemTemp1234] " +
-                              "ON dbo.[Item].ItemId = dbo.[ItemTemp1234].ItemId " +
+            string expected = "MERGE dbo.[Item] WITH (HOLDLOCK) AS T USING dbo.[ItemTemp1234] AS S " +
+                              "ON T.ItemId = S.ItemId " +
                               "WHEN MATCHED THEN DELETE;";
 
             Assert.Equal(result, expected);
@@ -67,7 +67,8 @@ namespace EFCore.BulkExtensions.Tests
                 Schema = "dbo",
                 Name = "Item",
                 PrimaryKey = "ItemId",
-                TempTableSufix = "Temp1234"
+                TempTableSufix = "Temp1234",
+                BulkConfig = new BulkConfig()
             };
             var nameText = "Name";
 

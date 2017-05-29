@@ -26,10 +26,10 @@ namespace EFCore.BulkExtensions.Tests
         public void OperationsTest(bool isBulkOperation, bool insertTo2Tables = false)
         {
             // Test can be run individually by commenting others and running each separately in order one after another
-            RunInsert(isBulkOperation, insertTo2Tables);
-            //RunInsertOrUpdate(isBulkOperation);
-            //RunUpdate(isBulkOperation);
-            //RunDelete(isBulkOperation);
+            //RunInsert(isBulkOperation, insertTo2Tables);
+            RunInsertOrUpdate(isBulkOperation);
+            RunUpdate(isBulkOperation);
+            RunDelete(isBulkOperation);
         }
 
         private void RunInsert(bool isBulkOperation, bool insertTo2Tables = false)
@@ -54,7 +54,7 @@ namespace EFCore.BulkExtensions.Tests
                 {
                     if (insertTo2Tables)
                     {
-                        context.BulkInsert(entities, setOutputIdentity: true);
+                        context.BulkInsert(entities, new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true });
 
                         foreach (var entity in entities)
                         {

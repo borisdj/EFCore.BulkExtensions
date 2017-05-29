@@ -43,7 +43,7 @@ namespace EFCore.BulkExtensions
             tableInfo.CheckHasIdentity(context);
 
             context.Database.ExecuteSqlCommand(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName));
-            if (tableInfo.SetOutputIdentity)
+            if (tableInfo.BulkConfig.SetOutputIdentity)
             {
                 context.Database.ExecuteSqlCommand(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempOutputTableName));
             }
@@ -53,7 +53,7 @@ namespace EFCore.BulkExtensions
                 context.Database.ExecuteSqlCommand(SqlQueryBuilder.MergeTable(tableInfo, operationType));
                 context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName));
 
-                if (tableInfo.SetOutputIdentity)
+                if (tableInfo.BulkConfig.SetOutputIdentity)
                 {
                     entities.Clear();
                     var entitiesWithOutputIdentity = context.Set<T>().FromSql(SqlQueryBuilder.SelectFromTable(tableInfo.FullTempOutputTableName, tableInfo.PrimaryKey)).ToList();
@@ -63,7 +63,7 @@ namespace EFCore.BulkExtensions
             }
             catch (Exception ex)
             {
-                if (tableInfo.SetOutputIdentity)
+                if (tableInfo.BulkConfig.SetOutputIdentity)
                 {
                     context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName));
                 }

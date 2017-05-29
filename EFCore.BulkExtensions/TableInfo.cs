@@ -20,7 +20,8 @@ namespace EFCore.BulkExtensions
 
         public bool InsertToTempTable { get; set; }
         public bool HasIdentity { get; set; }
-        public bool SetOutputIdentity { get; set; }
+        public int NumberOfEntities { get; set; }
+        public BulkConfig BulkConfig { get; set; }
         public Dictionary<string, string> PropertyColumnNamesDict = new Dictionary<string, string>();
 
         public void LoadData<T>(DbContext context, bool loadOnlyPKColumn)
