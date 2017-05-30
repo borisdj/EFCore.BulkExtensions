@@ -43,7 +43,9 @@ One is set Id to really high value, order of magnitude 10^10, and another even b
 So if we have list of 8000, say 3000 for update (they keep the real Id) and 5000 for insert then Id-s could be (-5000:-1).
 
 **SetOutputIdentity** is useful when BulkInsert is done to multiple related tables, that have Identity column.<br>
-So after Insert is done to first table, we need Id-s that were generated in Db becasue they are FK in second table.
+So after Insert is done to first table, we need Id-s that were generated in Db becasue they are FK in second table.<br>
+It is implemented with [OUTPUT](https://docs.microsoft.com/en-us/sql/t-sql/queries/output-clause-transact-sql) as part of MERGE Query.
+When used if *PreserveInsertOrder* is also set to *true* Id-s will be updated in entityList, and if *PreserveInsertOrder* is *false* then entityList will be cleared and reloaded.
 
 Following are performances (in seconds):
 
