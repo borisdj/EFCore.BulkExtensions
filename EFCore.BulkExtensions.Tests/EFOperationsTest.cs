@@ -26,7 +26,7 @@ namespace EFCore.BulkExtensions.Tests
         public void OperationsTest(bool isBulkOperation, bool insertTo2Tables = false)
         {
             // Test can be run individually by commenting others and running each separately in order one after another
-            //RunInsert(isBulkOperation, insertTo2Tables);
+            RunInsert(isBulkOperation, insertTo2Tables);
             RunInsertOrUpdate(isBulkOperation);
             RunUpdate(isBulkOperation);
             RunDelete(isBulkOperation);
@@ -44,8 +44,8 @@ namespace EFCore.BulkExtensions.Tests
                     {
                         ItemId = i,
                         Name = "name " + i,
-                        Description = "info",
-                        Quantity = i,
+                        Description = "info " + Guid.NewGuid().ToString().Substring(0, 3),
+                        Quantity = i % 10,
                         Price = i / (i % 5 + 1),
                         TimeUpdated = DateTime.Now
                     });

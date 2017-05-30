@@ -1,4 +1,5 @@
-﻿DELETE FROM his.[ItemHistory];
+﻿-- Clear Tables and Resets AutoIncrement
+DELETE FROM his.[ItemHistory];
 DELETE FROM dbo.[Item];
 DBCC CHECKIDENT ('dbo.[Item]', RESEED, 0);
 
@@ -13,14 +14,11 @@ LEFT JOIN dbo.[Item] AS Source ON 1 = 0;
 INSERT INTO [ItemTemp1234]
 (ItemId, Description, Name, Price, Quantity, TimeUpdated)
 Values
-(-3, 'Desc1', 'SomeName1', 22.11, 34, '2017-01-01'),
-(-2, 'Desc2', 'SomeName2', 12.66, 45, '2017-01-01'),
-(-1, 'Desc3', 'SomeName3', 14.35, 46, '2017-01-01');
---('81cc52f0-610f-4a29-b9de-795d66833fb5', 'Desc1', 'SomeName1', 22.11, 34, '2017-01-01'),
---('81cc52f0-610f-4a29-b9de-795d66833fb6', 'Desc2', 'SomeName2', 12.66, 45, '2017-01-01'),
---('81cc52f0-610f-4a29-b9de-795d66833fb7', 'Desc3', 'SomeName3', 14.35, 46, '2017-01-01');
+(1, 'Desc1', 'SomeName1', 22.11, 34, '2017-01-01'),
+(2, 'Desc2', 'SomeName2', 12.66, 45, '2017-01-01'),
+(3, 'Desc3', 'SomeName3', 14.35, 46, '2017-01-01');
 
--- Update with MERGE from TempTable
+-- Insert/Update with MERGE from TempTable
 MERGE dbo.[Item] WITH (HOLDLOCK) AS T USING (SELECT TOP 2147483647 * FROM dbo.[ItemTemp1234] ORDER BY ItemId) AS S
 ON T.ItemId = S.ItemId
 WHEN NOT MATCHED THEN INSERT
@@ -37,3 +35,4 @@ OUTPUT inserted.* INTO dbo.[ItemTemp1234Output];
 
 -- Delete TempTable
 DROP TABLE dbo.[ItemTemp1234];
+DROP TABLE dbo.[ItemTemp1234Output];

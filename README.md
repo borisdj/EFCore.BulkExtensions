@@ -4,7 +4,7 @@ Library is targeting *NetStandard 1.4* so it can used on project targeting both 
 It is Lightweight and very Efficient, having all mostly used CUD operation.<br>
 Under the hood uses [SqlBulkCopy](https://msdn.microsoft.com/en-us/library/system.data.sqlclient.sqlbulkcopy.aspx) for Insert, for Update/Delete combines BulkInsert with raw Sql ['MERGE'](https://docs.microsoft.com/en-us/sql/t-sql/statements/merge-transact-sql) (MsSQL 2008+).
 
-Available on [NuGet](https://www.nuget.org/packages/EFCore.BulkExtensions/). Latest Version: 1.0.2<br>
+Available on [NuGet](https://www.nuget.org/packages/EFCore.BulkExtensions/). Latest Version: 1.0.3<br>
 Package manager console command for installation: *Install-Package EFCore.BulkExtensions*
 
 Usage is simple and pretty straightforward.
@@ -20,10 +20,30 @@ Each of these operations are separate transactions.<br>
 So when using multiple operations in single procedure and if, for example, second would break because of some Db constraint, the first one would stay executed.<br>
 In scenario where All or Nothing is required, there should be additional logic with try/catch block, catch having methods that would revert previously executed operations.
 
-Additionally library has **InsertOrUpdate** method when there is need for both operations but in one connection to database.<br>
-However this only works with tables that do not have Identity column, because of *IDENTITY_INSERT* settings.<br>
-Identity column are usually int type with *AutoIncrement*.<br>
-Use case when this works is with *PK* that do not have Db Identity but Id value is created in application like *GUIDs* are usually.
+**BulkInsertOrUpdate** method can be used there is need for both operations but in one connection to database.<br>
+It makes Update when PK is matched, otherwise does Insert.
+
+Additionally **BulkInsert** and **BulkInsertOrUpdate** methods can have optional argument **BulkConfig** with bool properties:<br>
+`{ PreserveInsertOrder, SetOutputIdentity }`.<br>
+Default behaviour is { false, false } and if we want to change it, BulkConfig should be added explicitly with one or both properties set to true.
+```csharp
+context.BulkInsert(entitiesList, new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true});
+ontext.BulkInsertOrUpdate(entitiesList, new BulkConfig { PreserveInsertOrder = true });
+```
+**PreserveInsertOrder** makes sure that entites are inserted to Db as they are ordered in entityList, when PK has Identity (usually int type with *AutoIncrement*).<br>
+However for this to work Id column needs to be set for the proper order.<br>
+For example if table already has rows, lets say ti has 1000 rows with Id-s (1:1000), and we now want to add 300 more.<br>
+Since Id-s are generated in Db we could not set them, they would all be 0(int default) in list.<br>
+But if want to to keep the order as they are ordered in list then those Id-s sould be set say 1 to 300.<br>
+Here the one Id value itself doesn't matter, db will change it to (1001: 1300), what matters is their mutual relationship for sorting.
+
+When using this with BulkInsertOrUpdate method since here for those to be updated Id value does matter.<br>
+If we need to sort those for insert and not have conflict with existing Id, there are 2 ways.<br>
+One is to set ID to really high value, order of magnitude 10^10, but maybe even better it to set them to negative value.<br>
+So if we have list of 8000, 3000 for update (they keep the real Id) and 5000 for insert then Id-s could be (-5000:-1).
+
+**SetOutputIdentity** is useful when BulkInsert is done to more related tables, that have Identity column.<br>
+So after Insert is done to first table, we need Id-s that were geretaed in Db becasue they are FK in second table.
 
 Following are performances (in seconds):
 

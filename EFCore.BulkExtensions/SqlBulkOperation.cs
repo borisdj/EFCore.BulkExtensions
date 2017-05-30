@@ -55,9 +55,19 @@ namespace EFCore.BulkExtensions
 
                 if (tableInfo.BulkConfig.SetOutputIdentity)
                 {
-                    entities.Clear();
                     var entitiesWithOutputIdentity = context.Set<T>().FromSql(SqlQueryBuilder.SelectFromTable(tableInfo.FullTempOutputTableName, tableInfo.PrimaryKey)).ToList();
-                    ((List<T>)entities).AddRange(entitiesWithOutputIdentity);
+                    if (tableInfo.BulkConfig.PreserveInsertOrder) // Updates PK in entityList
+                    {
+                        Type type = typeof(T);
+                        var accessor = TypeAccessor.Create(type);
+                        for (int i = 0; i < tableInfo.NumberOfEntities; i++)
+                            accessor[entities[i], tableInfo.PrimaryKey] = accessor[entitiesWithOutputIdentity[i], tableInfo.PrimaryKey];
+                    }
+                    else // Clears entityList and then refill it with loaded entites from Db
+                    {
+                        entities.Clear();
+                        ((List<T>)entities).AddRange(entitiesWithOutputIdentity);
+                    }
                     context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName));
                 }
             }
