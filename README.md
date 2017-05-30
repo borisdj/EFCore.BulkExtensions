@@ -28,7 +28,7 @@ Additionally **BulkInsert** and **BulkInsertOrUpdate** methods can have optional
 Default behaviour is { false, false } and if we want to change it, BulkConfig should be added explicitly with one or both properties set to true.
 ```csharp
 context.BulkInsert(entitiesList, new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true});
-ontext.BulkInsertOrUpdate(entitiesList, new BulkConfig { PreserveInsertOrder = true });
+context.BulkInsertOrUpdate(entitiesList, new BulkConfig { PreserveInsertOrder = true });
 ```
 **PreserveInsertOrder** makes sure that entites are inserted to Db as they are ordered in entityList, when PK has Identity (usually *int* type with AutoIncrement).<br>
 However for this to work Id column needs to be set for the proper order.<br>
