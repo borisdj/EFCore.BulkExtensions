@@ -25,7 +25,8 @@ It makes Update when PK is matched, otherwise does Insert.
 
 Additionally **BulkInsert** and **BulkInsertOrUpdate** methods can have optional argument **BulkConfig** with bool properties:<br>
 `{ PreserveInsertOrder, SetOutputIdentity }`.<br>
-Default behaviour is { false, false } and if we want to change it, BulkConfig should be added explicitly with one or both properties set to true. This argument can be used when PK has Identity (usually *int* type with AutoIncrement), while if PK is Guid(sequential) created in Application there is no need for it.
+Default behaviour is { false, false } and if we want to change it, BulkConfig should be added explicitly with one or both properties set to true.<br>
+This argument has purpose only when PK has Identity (usually *int* type with AutoIncrement), while if PK is Guid(sequential) created in Application there is no need for it.
 ```csharp
 context.BulkInsert(entitiesList, new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true});
 context.BulkInsertOrUpdate(entitiesList, new BulkConfig { PreserveInsertOrder = true });
