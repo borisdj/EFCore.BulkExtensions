@@ -25,12 +25,12 @@ It makes Update when PK is matched, otherwise does Insert.
 
 Additionally **BulkInsert** and **BulkInsertOrUpdate** methods can have optional argument **BulkConfig** with bool properties:<br>
 `{ PreserveInsertOrder, SetOutputIdentity }`.<br>
-Default behaviour is { false, false } and if we want to change it, BulkConfig should be added explicitly with one or both properties set to true.
+Default behaviour is { false, false } and if we want to change it, BulkConfig should be added explicitly with one or both properties set to true. This argument can be used when PK has Identity (usually *int* type with AutoIncrement), while if PK is Guid(sequential) created in Application there is no need for it.
 ```csharp
 context.BulkInsert(entitiesList, new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true});
 context.BulkInsertOrUpdate(entitiesList, new BulkConfig { PreserveInsertOrder = true });
 ```
-**PreserveInsertOrder** makes sure that entites are inserted to Db as they are ordered in entitiesList, when PK has Identity (usually *int* type with AutoIncrement).<br>
+**PreserveInsertOrder** makes sure that entites are inserted to Db as they are ordered in entitiesList.<br>
 However for this to work Id column needs to be set for the proper order.<br>
 For example if table already has rows, let's say it has 1000 rows with Id-s (1:1000), and we now want to add 300 more.<br>
 Since Id-s are generated in Db we could not set them, they would all be 0 (int default) in list.<br>
@@ -47,6 +47,8 @@ So if we have list of 8000, say 3000 for update (they keep the real Id) and 5000
 So after Insert is done to first table, we need Id-s that were generated in Db becasue they are FK in second table.<br>
 It is implemented with [OUTPUT](https://docs.microsoft.com/en-us/sql/t-sql/queries/output-clause-transact-sql) as part of MERGE Query, so in this case the Insert is not done directly to TargetTable but to TempTable and then Merge with TargetTable .<br>
 When used if *PreserveInsertOrder* is also set to *true* Id-s will be updated in entitiesList, and if *PreserveInsertOrder* is *false* then entitiesList will be cleared and reloaded.
+
+
 
 Following are performances (in seconds):
 
