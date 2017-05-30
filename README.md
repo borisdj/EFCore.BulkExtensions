@@ -32,7 +32,7 @@ context.BulkInsertOrUpdate(entitiesList, new BulkConfig { PreserveInsertOrder = 
 ```
 **PreserveInsertOrder** makes sure that entites are inserted to Db as they are ordered in entitiesList, when PK has Identity (usually *int* type with AutoIncrement).<br>
 However for this to work Id column needs to be set for the proper order.<br>
-For example if table already has rows, lets say ti has 1000 rows with Id-s (1:1000), and we now want to add 300 more.<br>
+For example if table already has rows, let's say it has 1000 rows with Id-s (1:1000), and we now want to add 300 more.<br>
 Since Id-s are generated in Db we could not set them, they would all be 0 (int default) in list.<br>
 But if want to to keep the order as they are ordered in list then those Id-s should be set say 1 to 300.<br>
 Here single Id value itself doesn't matter, db will change it to (1001:1300), what matters is their mutual relationship for sorting.<br>
