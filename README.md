@@ -30,20 +30,20 @@ Default behaviour is { false, false } and if we want to change it, BulkConfig sh
 context.BulkInsert(entitiesList, new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true});
 ontext.BulkInsertOrUpdate(entitiesList, new BulkConfig { PreserveInsertOrder = true });
 ```
-**PreserveInsertOrder** makes sure that entites are inserted to Db as they are ordered in entityList, when PK has Identity (usually int type with *AutoIncrement*).<br>
+**PreserveInsertOrder** makes sure that entites are inserted to Db as they are ordered in entityList, when PK has Identity (usually *int* type with AutoIncrement).<br>
 However for this to work Id column needs to be set for the proper order.<br>
 For example if table already has rows, lets say ti has 1000 rows with Id-s (1:1000), and we now want to add 300 more.<br>
-Since Id-s are generated in Db we could not set them, they would all be 0(int default) in list.<br>
-But if want to to keep the order as they are ordered in list then those Id-s sould be set say 1 to 300.<br>
-Here the one Id value itself doesn't matter, db will change it to (1001: 1300), what matters is their mutual relationship for sorting.
+Since Id-s are generated in Db we could not set them, they would all be 0 (int default) in list.<br>
+But if want to to keep the order as they are ordered in list then those Id-s should be set say 1 to 300.<br>
+Here sigle Id value itself doesn't matter, db will change it to (1001:1300), what matters is their mutual relationship for sorting.
 
-When using this with BulkInsertOrUpdate method since here for those to be updated Id value does matter.<br>
-If we need to sort those for insert and not have conflict with existing Id, there are 2 ways.<br>
-One is to set ID to really high value, order of magnitude 10^10, but maybe even better it to set them to negative value.<br>
+When using **PreserveInsertOrder** with **BulkInsertOrUpdate** method Id value does matter, for those that will be updated.<br>
+If we need to sort those for insert and not have conflict with existing Id-s, there are 2 ways:<br>
+One is to set Id to really high value, order of magnitude 10^10, but maybe even better it to set them DESCending from negative value.<br>
 So if we have list of 8000, 3000 for update (they keep the real Id) and 5000 for insert then Id-s could be (-5000:-1).
 
-**SetOutputIdentity** is useful when BulkInsert is done to more related tables, that have Identity column.<br>
-So after Insert is done to first table, we need Id-s that were geretaed in Db becasue they are FK in second table.
+**SetOutputIdentity** is useful when BulkInsert is done to multiple related tables, that have Identity column.<br>
+So after Insert is done to first table, we need Id-s that were generated in Db becasue they are FK in second table.
 
 Following are performances (in seconds):
 
