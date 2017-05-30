@@ -39,8 +39,8 @@ Here sigle Id value itself doesn't matter, db will change it to (1001:1300), wha
 
 When using **PreserveInsertOrder** with **BulkInsertOrUpdate** method Id value does matter, for those that will be updated.<br>
 If we need to sort those for insert and not have conflict with existing Id-s, there are 2 ways:<br>
-One is to set Id to really high value, order of magnitude 10^10, but maybe even better it to set them DESCending from negative value.<br>
-So if we have list of 8000, 3000 for update (they keep the real Id) and 5000 for insert then Id-s could be (-5000:-1).
+One is set Id to really high value, order of magnitude 10^10, and another even better setting them DESCending from negative value.<br>
+So if we have list of 8000, say 3000 for update (they keep the real Id) and 5000 for insert then Id-s could be (-5000:-1).
 
 **SetOutputIdentity** is useful when BulkInsert is done to multiple related tables, that have Identity column.<br>
 So after Insert is done to first table, we need Id-s that were generated in Db becasue they are FK in second table.
