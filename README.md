@@ -35,7 +35,7 @@ context.BulkInsertOrUpdate(entitiesList, new BulkConfig { PreserveInsertOrder = 
 However for this to work Id column needs to be set for the proper order.<br>
 For example if table already has rows, let's say it has 1000 rows with Id-s (1:1000), and we now want to add 300 more.<br>
 Since Id-s are generated in Db we could not set them, they would all be 0 (int default) in list.<br>
-But if want to to keep the order as they are ordered in list then those Id-s should be set say 1 to 300.<br>
+But if we want to keep the order as they are ordered in list then those Id-s should be set say 1 to 300.<br>
 Here single Id value itself doesn't matter, db will change it to (1001:1300), what matters is their mutual relationship for sorting.<br>
 Insertion order is implemented with [TOP](https://docs.microsoft.com/en-us/sql/t-sql/queries/top-transact-sql) in conjuction with ORDER BY. [stackoverflow:merge-into-insertion-order](https://stackoverflow.com/questions/884187/merge-into-insertion-order).
 
@@ -46,10 +46,8 @@ So if we have list of 8000, say 3000 for update (they keep the real Id) and 5000
 
 **SetOutputIdentity** is useful when BulkInsert is done to multiple related tables, that have Identity column.<br>
 So after Insert is done to first table, we need Id-s that were generated in Db becasue they are FK in second table.<br>
-It is implemented with [OUTPUT](https://docs.microsoft.com/en-us/sql/t-sql/queries/output-clause-transact-sql) as part of MERGE Query, so in this case the Insert is not done directly to TargetTable but to TempTable and then Merge with TargetTable .<br>
+It is implemented with [OUTPUT](https://docs.microsoft.com/en-us/sql/t-sql/queries/output-clause-transact-sql) as part of MERGE Query, so in this case the even the Insert is not done directly to TargetTable but to TempTable and then Merged with TargetTable.<br>
 When used if *PreserveInsertOrder* is also set to *true* Id-s will be updated in entitiesList, and if *PreserveInsertOrder* is *false* then entitiesList will be cleared and reloaded.
-
-
 
 Following are performances (in seconds):
 
