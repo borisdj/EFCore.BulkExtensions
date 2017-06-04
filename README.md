@@ -17,7 +17,7 @@ context.BulkInsertOrUpdate(entitiesList);
 ```
 
 Each of these operations are separate transactions.<br>
-So when using multiple operations in single procedure and if, for example, second would break because of some Db constraint, the first one would stay executed.<br>
+So when using multiple operations in single procedure and if one would break because of some Db constraint, previous would stay executed.<br>
 In scenario where All or Nothing is required, there should be additional logic with try/catch block, catch having methods that would revert previously executed operations.
 
 **BulkInsertOrUpdate** method can be used when there is need for both operations but in one connection to database.<br>
