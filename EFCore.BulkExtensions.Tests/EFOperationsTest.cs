@@ -164,16 +164,14 @@ namespace EFCore.BulkExtensions.Tests
         {
             using (var context = new TestContext(GetContextOptions()))
             {
-                var subEntities = context.ItemHistories.AsNoTracking().ToList();
                 var entities = context.Items.AsNoTracking().ToList();
+                // ItemHistories will also be deleted because of Relationship - ItemId (Delete Rule: Cascade)
                 if (isBulkOperation)
                 {
-                    context.BulkDelete(subEntities);
                     context.BulkDelete(entities);
                 }
                 else
                 {
-                    context.ItemHistories.RemoveRange(subEntities);
                     context.Items.RemoveRange(entities);
                     context.SaveChanges();
                 }
