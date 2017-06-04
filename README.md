@@ -20,7 +20,7 @@ Each of these operations are separate transactions.<br>
 So when using multiple operations in single procedure and if, for example, second would break because of some Db constraint, the first one would stay executed.<br>
 In scenario where All or Nothing is required, there should be additional logic with try/catch block, catch having methods that would revert previously executed operations.
 
-**BulkInsertOrUpdate** method can be used there is need for both operations but in one connection to database.<br>
+**BulkInsertOrUpdate** method can be used when there is need for both operations but in one connection to database.<br>
 It makes Update when PK is matched, otherwise does Insert.
 
 Additionally **BulkInsert** and **BulkInsertOrUpdate** methods can have optional argument **BulkConfig** with bool properties:<br>
