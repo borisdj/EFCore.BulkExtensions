@@ -13,6 +13,7 @@ namespace EFCore.BulkExtensions
         public string Name { get; set; }
         public string FullTableName => $"{SchemaFormated}[{Name}]";
         public string PrimaryKey { get; set; }
+        public string PrimaryKeyFormated => $"[{PrimaryKey}]";
 
         public string TempTableSufix { get; set; }
         public string FullTempTableName => $"{SchemaFormated}[{Name}{TempTableSufix}]";

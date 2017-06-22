@@ -55,7 +55,7 @@ namespace EFCore.BulkExtensions
 
                 if (tableInfo.BulkConfig.SetOutputIdentity)
                 {
-                    var entitiesWithOutputIdentity = context.Set<T>().FromSql(SqlQueryBuilder.SelectFromTable(tableInfo.FullTempOutputTableName, tableInfo.PrimaryKey)).ToList();
+                    var entitiesWithOutputIdentity = context.Set<T>().FromSql(SqlQueryBuilder.SelectFromTable(tableInfo.FullTempOutputTableName, tableInfo.PrimaryKeyFormated)).ToList();
                     if (tableInfo.BulkConfig.PreserveInsertOrder) // Updates PK in entityList
                     {
                         Type type = typeof(T);

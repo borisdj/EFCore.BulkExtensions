@@ -38,11 +38,11 @@ namespace EFCore.BulkExtensions
             List<string> insertColumnsNames = tableInfo.HasIdentity ? nonIdentityColumnsNames : columnsNames;
 
             if (tableInfo.BulkConfig.PreserveInsertOrder)
-                sourceTable = $"(SELECT TOP {tableInfo.NumberOfEntities} * FROM {sourceTable} ORDER BY {primaryKey})";
+                sourceTable = $"(SELECT TOP {tableInfo.NumberOfEntities} * FROM {sourceTable} ORDER BY {tableInfo.PrimaryKeyFormated})";
 
             var q = $"MERGE {targetTable} WITH (HOLDLOCK) AS T " +
                     $"USING {sourceTable} AS S " +
-                    $"ON T.{primaryKey} = S.{primaryKey}";
+                    $"ON T.{tableInfo.PrimaryKeyFormated} = S.{tableInfo.PrimaryKeyFormated}";
 
             if (operationType == OperationType.Insert || operationType == OperationType.InsertOrUpdate)
             {
@@ -71,8 +71,8 @@ namespace EFCore.BulkExtensions
             string commaSeparatedColumns = "";
             foreach (var columnName in columnsNames)
             {
-                commaSeparatedColumns += prefixTable != null ? $"{prefixTable}.{columnName}" : columnName;
-                commaSeparatedColumns += equalsTable != null ? $" = {equalsTable}.{columnName}" : "";
+                commaSeparatedColumns += prefixTable != null ? $"{prefixTable}.[{columnName}]" : $"[{columnName}]";
+                commaSeparatedColumns += equalsTable != null ? $" = {equalsTable}.[{columnName}]" : "";
                 commaSeparatedColumns += ",";
             }
             commaSeparatedColumns = commaSeparatedColumns.Remove(commaSeparatedColumns.Length - 1, 1); // removes last excess comma: ","

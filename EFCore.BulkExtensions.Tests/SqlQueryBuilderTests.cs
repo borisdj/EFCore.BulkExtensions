@@ -12,8 +12,8 @@ namespace EFCore.BulkExtensions.Tests
             string result = SqlQueryBuilder.MergeTable(tableInfo, OperationType.Insert);
 
             string expected = "MERGE dbo.[Item] WITH (HOLDLOCK) AS T USING dbo.[ItemTemp1234] AS S " +
-                              "ON T.ItemId = S.ItemId " +
-                              "WHEN NOT MATCHED THEN INSERT (Name) VALUES (S.Name);";
+                              "ON T.[ItemId] = S.[ItemId] " +
+                              "WHEN NOT MATCHED THEN INSERT ([Name]) VALUES (S.[Name]);";
 
             Assert.Equal(result, expected);
         }
@@ -26,9 +26,9 @@ namespace EFCore.BulkExtensions.Tests
             string result = SqlQueryBuilder.MergeTable(tableInfo, OperationType.InsertOrUpdate);
 
             string expected = "MERGE dbo.[Item] WITH (HOLDLOCK) AS T USING dbo.[ItemTemp1234] AS S " +
-                              "ON T.ItemId = S.ItemId " +
-                              "WHEN NOT MATCHED THEN INSERT (Name) VALUES (S.Name) " +
-                              "WHEN MATCHED THEN UPDATE SET T.Name = S.Name;";
+                              "ON T.[ItemId] = S.[ItemId] " +
+                              "WHEN NOT MATCHED THEN INSERT ([Name]) VALUES (S.[Name]) " +
+                              "WHEN MATCHED THEN UPDATE SET T.[Name] = S.[Name];";
 
             Assert.Equal(result, expected);
         }
@@ -41,8 +41,8 @@ namespace EFCore.BulkExtensions.Tests
             string result = SqlQueryBuilder.MergeTable(tableInfo, OperationType.Update);
 
             string expected = "MERGE dbo.[Item] WITH (HOLDLOCK) AS T USING dbo.[ItemTemp1234] AS S " +
-                              "ON T.ItemId = S.ItemId " +
-                              "WHEN MATCHED THEN UPDATE SET T.Name = S.Name;";
+                              "ON T.[ItemId] = S.[ItemId] " +
+                              "WHEN MATCHED THEN UPDATE SET T.[Name] = S.[Name];";
 
             Assert.Equal(result, expected);
         }
@@ -54,7 +54,7 @@ namespace EFCore.BulkExtensions.Tests
             string result = SqlQueryBuilder.MergeTable(tableInfo, OperationType.Delete);
 
             string expected = "MERGE dbo.[Item] WITH (HOLDLOCK) AS T USING dbo.[ItemTemp1234] AS S " +
-                              "ON T.ItemId = S.ItemId " +
+                              "ON T.[ItemId] = S.[ItemId] " +
                               "WHEN MATCHED THEN DELETE;";
 
             Assert.Equal(result, expected);
