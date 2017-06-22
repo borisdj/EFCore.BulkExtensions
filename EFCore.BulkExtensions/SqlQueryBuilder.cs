@@ -71,8 +71,8 @@ namespace EFCore.BulkExtensions
             string commaSeparatedColumns = "";
             foreach (var columnName in columnsNames)
             {
-                commaSeparatedColumns += prefixTable != null ? $"{prefixTable}.{columnName}" : columnName;
-                commaSeparatedColumns += equalsTable != null ? $" = {equalsTable}.{columnName}" : "";
+                commaSeparatedColumns += prefixTable != null ? $"{prefixTable}.[{columnName}]" : $"[{columnName}]";
+                commaSeparatedColumns += equalsTable != null ? $" = {equalsTable}.[{columnName}]" : "";
                 commaSeparatedColumns += ",";
             }
             commaSeparatedColumns = commaSeparatedColumns.Remove(commaSeparatedColumns.Length - 1, 1); // removes last excess comma: ","
