@@ -1,8 +1,0 @@
-EFCore.BulkExtensions
-EntityFrameworkCore Bulk Extensions for Insert Update and Delete (CUD) operations
-EntityFrameworkCore Bulk Extensions for Insert Update and Delete (CUD) operations
-http://i.imgur.com/k5tvW1x.png
-https://github.com/borisdj/EFCore.BulkExtensions
-borisdj
-
-EntityFrameworkCore Entity Framework Core EFCore EF Bulk Extensions Insert Update Delete
