@@ -63,5 +63,7 @@ TestTable has 6 column(Guid, string, string, int, decimal?, DateTime).<br>
 All were inserted and 2 of them (string, DateTime) were updated.<br>
 Test was done locally on following configuration: INTEL Core i5-3570K 3.40GHz, DDRIII 8GB x 2, SSD 840 EVO 128 GB.
 
+If you find this project useful you can mark it by leaving a Github Star.
+
 [![NuGet](https://img.shields.io/npm/l/express.svg)](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE)
 
