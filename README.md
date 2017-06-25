@@ -20,6 +20,8 @@ Each of these operations are separate transactions.<br>
 So when using multiple operations in single procedure and if one would break because of some Db constraint, previous would stay executed.<br>
 In scenario where All or Nothing is required, there should be additional logic with try/catch block, catch having methods that would revert previously executed operations.
 
+## BulkConfig arguments
+
 **BulkInsertOrUpdate** method can be used when there is need for both operations but in one connection to database.<br>
 It makes Update when PK is matched, otherwise does Insert.
 
@@ -49,6 +51,8 @@ So after Insert is done to first table, we need Id-s that were generated in Db b
 It is implemented with [OUTPUT](https://docs.microsoft.com/en-us/sql/t-sql/queries/output-clause-transact-sql) as part of MERGE Query, so in this case even the Insert is not done directly to TargetTable but to TempTable and then Merged with TargetTable.<br>
 When used if *PreserveInsertOrder* is also set to *true* Id-s will be updated in entitiesList, and if *PreserveInsertOrder* is *false* then entitiesList will be cleared and reloaded.
 
+## Performances
+
 Following are performances (in seconds):
 
 | Operations\Rows | 100,000 EF | 100,000 EFBulk | 1,000,000 EFBulk |
@@ -64,6 +68,11 @@ All were inserted and 2 of them (string, DateTime) were updated.<br>
 Test was done locally on following configuration: INTEL Core i5-3570K 3.40GHz, DDRIII 8GB x 2, SSD 840 EVO 128 GB.
 
 If you find this project useful you can mark it by leaving a Github Star.
+
+## Contributing
+
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests.
+(CONTRIBUTING.md)
 
 [![NuGet](https://img.shields.io/npm/l/express.svg)](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE)
 
