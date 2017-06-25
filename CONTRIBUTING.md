@@ -5,7 +5,7 @@ Working together we can make a better tool for everyone.
 
 ## Code of Conduct
 
-This project and everyone participating in it is governed by the [Code of Conduct](CODE_OF_CONDUCT.md) [Code of Conduct](#code-of-conduct). By participating, you are expected to uphold this code.
+This project and everyone participating in it is governed by the [Code of Conduct](CODE_OF_CONDUCT.md) . By participating, you are expected to uphold this code.
 
 ### Where do I go from here?
 
@@ -17,6 +17,7 @@ If that would be something you think you can fix, please suggest your solution a
 When making changes on code please go throug all code for understandin whole picture in order to make change afect everything it should but no more, and to do it in the correct way.
 
 After that Tests should up updated if change afects them, or new Tests could be created.
+Lastly README should be updated if additional explanations are required regarding the change.
 
 ### How Do I Submit A (Good) Bug Report?
 - Use a clear and descriptive title for the issue to identify the problem.
