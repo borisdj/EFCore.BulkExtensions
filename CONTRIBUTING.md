@@ -1,6 +1,6 @@
 ## Contributing
 
-👍 First off, thanks for taking the time to contribute! 👍
+👍 First off, thanks for taking the time to contribute! 👍<br>
 Working together we can make a better tool for everyone.
 
 ## Code of Conduct
