@@ -25,15 +25,19 @@ namespace EFCore.BulkExtensions
                 BatchSize = batchSize,
                 NotifyAfter = batchSize
             };
-            sqlBulkCopy.SqlRowsCopied += (sender, e) => { progress?.Invoke(e.RowsCopied / entities.Count); };
 
-            foreach (var element in tableInfo.PropertyColumnNamesDict)
+            using (sqlBulkCopy)
             {
-                sqlBulkCopy.ColumnMappings.Add(element.Key, element.Value);
-            }
-            using (var reader = ObjectReader.Create(entities, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
-            {
-                sqlBulkCopy.WriteToServer(reader);
+                sqlBulkCopy.SqlRowsCopied += (sender, e) => { progress?.Invoke(e.RowsCopied / entities.Count); };
+
+                foreach (var element in tableInfo.PropertyColumnNamesDict)
+                {
+                    sqlBulkCopy.ColumnMappings.Add(element.Key, element.Value);
+                }
+                using (var reader = ObjectReader.Create(entities, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
+                {
+                    sqlBulkCopy.WriteToServer(reader);
+                }
             }
         }
 
