@@ -15,6 +15,7 @@ context.BulkUpdate(entitiesList);
 context.BulkDelete(entitiesList);
 context.BulkInsertOrUpdate(entitiesList);
 ```
+In ConnectionString you should have *Trusted_Connection=True;* because Sql credentials are required to stay in connection. 
 
 Each of these operations are separate transactions.<br>
 So when using multiple operations in single procedure and if one would break because of some Db constraint, previous would stay executed.<br>
