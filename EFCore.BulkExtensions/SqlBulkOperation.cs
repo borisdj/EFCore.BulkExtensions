@@ -19,36 +19,31 @@ namespace EFCore.BulkExtensions
     {
         public static void Insert<T>(DbContext context, IList<T> entities, TableInfo tableInfo, Action<double> progress = null, int batchSize = 2000)
         {
-            var contextConnection = (SqlConnection)context.Database.GetDbConnection();
-            contextConnection.Open();
-
-            SqlBulkCopy sqlBulkCopy = null;
-
+            var sqlConnection = (SqlConnection)context.Database.GetDbConnection();
             try
             {
-                sqlBulkCopy = new SqlBulkCopy(contextConnection)
+                sqlConnection.Open();
+                using (var sqlBulkCopy = new SqlBulkCopy(sqlConnection))
                 {
-                    DestinationTableName = tableInfo.InsertToTempTable ? tableInfo.FullTempTableName : tableInfo.FullTableName,
-                    BatchSize = batchSize,
-                    NotifyAfter = batchSize
-                };
+                    sqlBulkCopy.DestinationTableName = tableInfo.InsertToTempTable ? tableInfo.FullTempTableName : tableInfo.FullTableName;
+                    sqlBulkCopy.BatchSize = batchSize;
+                    sqlBulkCopy.NotifyAfter = batchSize;
+                    sqlBulkCopy.SqlRowsCopied += (sender, e) => { progress?.Invoke(e.RowsCopied / entities.Count); };
 
-                sqlBulkCopy.SqlRowsCopied += (sender, e) => { progress?.Invoke(e.RowsCopied / entities.Count); };
+                    foreach (var element in tableInfo.PropertyColumnNamesDict)
+                    {
+                        sqlBulkCopy.ColumnMappings.Add(element.Key, element.Value);
+                    }
 
-                foreach (var element in tableInfo.PropertyColumnNamesDict)
-                {
-                    sqlBulkCopy.ColumnMappings.Add(element.Key, element.Value);
-                }
-
-                using (var reader = ObjectReader.Create(entities, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
-                {
-                    sqlBulkCopy.WriteToServer(reader);
+                    using (var reader = ObjectReader.Create(entities, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
+                    {
+                        sqlBulkCopy.WriteToServer(reader);
+                    }
                 }
             }
             finally
             {
-                contextConnection.Close();
-                ((IDisposable)sqlBulkCopy)?.Dispose();
+                sqlConnection.Close();
             }
         }
 
@@ -73,8 +68,7 @@ namespace EFCore.BulkExtensions
                     var entitiesWithOutputIdentity = context.Set<T>().FromSql(SqlQueryBuilder.SelectFromTable(tableInfo.FullTempOutputTableName, tableInfo.PrimaryKeyFormated)).ToList();
                     if (tableInfo.BulkConfig.PreserveInsertOrder) // Updates PK in entityList
                     {
-                        Type type = typeof(T);
-                        var accessor = TypeAccessor.Create(type);
+                        var accessor = TypeAccessor.Create(typeof(T));
                         for (int i = 0; i < tableInfo.NumberOfEntities; i++)
                             accessor[entities[i], tableInfo.PrimaryKey] = accessor[entitiesWithOutputIdentity[i], tableInfo.PrimaryKey];
                     }

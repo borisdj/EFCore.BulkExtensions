@@ -51,31 +51,29 @@ namespace EFCore.BulkExtensions
         public void CheckHasIdentity(DbContext context)
         {
             int hasIdentity = 0;
-            var conn = context.Database.GetDbConnection();
+            var connection = context.Database.GetDbConnection();
             try
             {
-                conn.Open();
-                using (var command = conn.CreateCommand())
+                connection.Open();
+                using (var command = connection.CreateCommand())
                 {
-                    string query = SqlQueryBuilder.SelectIsIdentity(FullTableName, PrimaryKey);
-                    command.CommandText = query;
-                    DbDataReader reader = command.ExecuteReader();
-
-                    if (reader.HasRows)
+                    command.CommandText = SqlQueryBuilder.SelectIsIdentity(FullTableName, PrimaryKey);;
+                    using (var reader = command.ExecuteReader())
                     {
-                        while (reader.Read())
+                        if (reader.HasRows)
                         {
-                            hasIdentity = (int)reader[0];
+                            while (reader.Read())
+                            {
+                                hasIdentity = (int)reader[0];
+                            }
                         }
                     }
-                    reader.Dispose();
                 }
             }
             finally
             {
-                conn.Close();
+                connection.Close();
             }
-
             HasIdentity = hasIdentity == 1;
         }
     }
