@@ -19,21 +19,36 @@ namespace EFCore.BulkExtensions
     {
         public static void Insert<T>(DbContext context, IList<T> entities, TableInfo tableInfo, Action<double> progress = null, int batchSize = 2000)
         {
-            var sqlBulkCopy = new SqlBulkCopy(context.Database.GetDbConnection().ConnectionString)
-            {
-                DestinationTableName = tableInfo.InsertToTempTable ? tableInfo.FullTempTableName : tableInfo.FullTableName,
-                BatchSize = batchSize,
-                NotifyAfter = batchSize
-            };
-            sqlBulkCopy.SqlRowsCopied += (sender, e) => { progress?.Invoke(e.RowsCopied / entities.Count); };
+            var contextConnection = (SqlConnection)context.Database.GetDbConnection();
+            contextConnection.Open();
 
-            foreach (var element in tableInfo.PropertyColumnNamesDict)
+            SqlBulkCopy sqlBulkCopy = null;
+
+            try
             {
-                sqlBulkCopy.ColumnMappings.Add(element.Key, element.Value);
+                sqlBulkCopy = new SqlBulkCopy(contextConnection)
+                {
+                    DestinationTableName = tableInfo.InsertToTempTable ? tableInfo.FullTempTableName : tableInfo.FullTableName,
+                    BatchSize = batchSize,
+                    NotifyAfter = batchSize
+                };
+
+                sqlBulkCopy.SqlRowsCopied += (sender, e) => { progress?.Invoke(e.RowsCopied / entities.Count); };
+
+                foreach (var element in tableInfo.PropertyColumnNamesDict)
+                {
+                    sqlBulkCopy.ColumnMappings.Add(element.Key, element.Value);
+                }
+
+                using (var reader = ObjectReader.Create(entities, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
+                {
+                    sqlBulkCopy.WriteToServer(reader);
+                }
             }
-            using (var reader = ObjectReader.Create(entities, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
+            finally
             {
-                sqlBulkCopy.WriteToServer(reader);
+                contextConnection.Close();
+                ((IDisposable)sqlBulkCopy)?.Dispose();
             }
         }
 
