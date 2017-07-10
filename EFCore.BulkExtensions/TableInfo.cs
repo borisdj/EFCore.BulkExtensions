@@ -54,7 +54,7 @@ namespace EFCore.BulkExtensions
             var conn = context.Database.GetDbConnection();
             try
             {
-                conn.OpenAsync();
+                conn.Open();
                 using (var command = conn.CreateCommand())
                 {
                     string query = SqlQueryBuilder.SelectIsIdentity(FullTableName, PrimaryKey);
