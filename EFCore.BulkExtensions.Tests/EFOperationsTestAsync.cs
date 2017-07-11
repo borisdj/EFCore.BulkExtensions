@@ -7,24 +7,23 @@ using Xunit;
 
 namespace EFCore.BulkExtensions.Tests
 {
-    public class EFOperationsTest
+    public class EFOperationsTestAsync
     {
-        private int entitiesNumber = 100000;
-        
+        private int entitiesNumber = 1000;
+
         [Theory]
-        //[InlineData(true)]
-        [InlineData(true, true)]
+        [InlineData(true, false)]
         //[InlineData(false)] // for speed comparison with Regular EF CUD operations
-        public void OperationsTest(bool isBulkOperation, bool insertTo2Tables = false)
+        public async Task OperationsTestAsync(bool isBulkOperation, bool insertTo2Tables = false)
         {
             // Test can be run individually by commenting others and running each separately in order one after another
-            RunInsert(isBulkOperation, insertTo2Tables);
-            RunInsertOrUpdate(isBulkOperation);
-            RunUpdate(isBulkOperation);
-            RunDelete(isBulkOperation);
+            await RunInsertAsync(isBulkOperation, insertTo2Tables);
+            await RunInsertOrUpdateAsync(isBulkOperation);
+            await RunUpdateAsync(isBulkOperation);
+            await RunDeleteAsync(isBulkOperation);
         }
 
-        private void RunInsert(bool isBulkOperation, bool insertTo2Tables = false)
+        private async Task RunInsertAsync(bool isBulkOperation, bool insertTo2Tables = false)
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
@@ -46,7 +45,7 @@ namespace EFCore.BulkExtensions.Tests
                 {
                     if (insertTo2Tables)
                     {
-                        context.BulkInsert(entities, new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true });
+                        await context.BulkInsertAsync(entities, new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true });
 
                         foreach (var entity in entities)
                         {
@@ -57,17 +56,17 @@ namespace EFCore.BulkExtensions.Tests
                                 Remark = "some more info"
                             });
                         }
-                        context.BulkInsert(subEntities);
+                        await context.BulkInsertAsync(subEntities);
                     }
                     else
                     {
-                        context.BulkInsert(entities);
+                        await context.BulkInsertAsync(entities);
                     }
                 }
                 else
                 {
-                    context.Items.AddRange(entities);
-                    context.SaveChanges();
+                    await context.Items.AddRangeAsync(entities);
+                    await context.SaveChangesAsync();
                 }
             }
             using (var context = new TestContext(ContextUtil.GetOptions()))
@@ -81,7 +80,7 @@ namespace EFCore.BulkExtensions.Tests
             }
         }
 
-        private void RunInsertOrUpdate(bool isBulkOperation)
+        private async Task RunInsertOrUpdateAsync(bool isBulkOperation)
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
@@ -101,12 +100,12 @@ namespace EFCore.BulkExtensions.Tests
                 }
                 if (isBulkOperation)
                 {
-                    context.BulkInsertOrUpdate(entities);
+                    await context.BulkInsertOrUpdateAsync(entities);
                 }
                 else
                 {
-                    context.Items.AddRange(entities);
-                    context.SaveChanges();
+                    await context.Items.AddRangeAsync(entities);
+                    await context.SaveChangesAsync();
                 }
             }
             using (var context = new TestContext(ContextUtil.GetOptions()))
@@ -120,7 +119,7 @@ namespace EFCore.BulkExtensions.Tests
             }
         }
 
-        private void RunUpdate(bool isBulkOperation)
+        private async Task RunUpdateAsync(bool isBulkOperation)
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
@@ -133,12 +132,12 @@ namespace EFCore.BulkExtensions.Tests
                 }
                 if (isBulkOperation)
                 {
-                    context.BulkUpdate(entities);
+                    await context.BulkUpdateAsync(entities);
                 }
                 else
                 {
                     context.Items.UpdateRange(entities);
-                    context.SaveChanges();
+                    await context.SaveChangesAsync();
                 }
             }
             using (var context = new TestContext(ContextUtil.GetOptions()))
@@ -152,7 +151,7 @@ namespace EFCore.BulkExtensions.Tests
             }
         }
 
-        private void RunDelete(bool isBulkOperation)
+        private async Task RunDeleteAsync(bool isBulkOperation)
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
@@ -160,12 +159,12 @@ namespace EFCore.BulkExtensions.Tests
                 // ItemHistories will also be deleted because of Relationship - ItemId (Delete Rule: Cascade)
                 if (isBulkOperation)
                 {
-                    context.BulkDelete(entities);
+                    await context.BulkDeleteAsync(entities);
                 }
                 else
                 {
                     context.Items.RemoveRange(entities);
-                    context.SaveChanges();
+                    await context.SaveChangesAsync();
                 }
             }
             using (var context = new TestContext(ContextUtil.GetOptions()))
@@ -180,7 +179,7 @@ namespace EFCore.BulkExtensions.Tests
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 // Resets AutoIncrement
-                context.Database.ExecuteSqlCommand($"DBCC CHECKIDENT ('{nameof(Item)}', RESEED, 0);");
+                await context.Database.ExecuteSqlCommandAsync($"DBCC CHECKIDENT ('{nameof(Item)}', RESEED, 0);");
                 //context.Database.ExecuteSqlCommand($"TRUNCATE TABLE {nameof(Item)};"); // can NOT work when there is ForeignKey - ItemHistoryId
             }
         }

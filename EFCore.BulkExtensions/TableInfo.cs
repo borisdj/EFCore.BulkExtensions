@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.Common;
+using System.Data.SqlClient;
 using System.Linq;
+using System.Threading.Tasks;
+using FastMember;
 using Microsoft.EntityFrameworkCore;
 
 namespace EFCore.BulkExtensions
@@ -24,6 +27,16 @@ namespace EFCore.BulkExtensions
         public int NumberOfEntities { get; set; }
         public BulkConfig BulkConfig { get; set; }
         public Dictionary<string, string> PropertyColumnNamesDict = new Dictionary<string, string>();
+
+        public static TableInfo CreateInstance<T>(DbContext context, IList<T> entities, OperationType operationType, BulkConfig bulkConfig)
+        {
+            var tableInfo = new TableInfo();
+            var isDeleteOperation = operationType == OperationType.Delete;
+            tableInfo.NumberOfEntities = entities.Count;
+            tableInfo.LoadData<T>(context, isDeleteOperation);
+            tableInfo.BulkConfig = bulkConfig ?? new BulkConfig();
+            return tableInfo;
+        }
 
         public void LoadData<T>(DbContext context, bool loadOnlyPKColumn)
         {
@@ -75,6 +88,64 @@ namespace EFCore.BulkExtensions
                 connection.Close();
             }
             HasIdentity = hasIdentity == 1;
+        }
+
+        public async Task CheckHasIdentityAsync(DbContext context)
+        {
+            int hasIdentity = 0;
+            var connection = context.Database.GetDbConnection();
+            try
+            {
+                connection.Open();
+                using (var command = connection.CreateCommand())
+                {
+                    command.CommandText = SqlQueryBuilder.SelectIsIdentity(FullTableName, PrimaryKey); ;
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        if (reader.HasRows)
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                hasIdentity = (int)reader[0];
+                            }
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                connection.Close();
+            }
+            HasIdentity = hasIdentity == 1;
+        }
+
+        public void SetSqlBulkCopyConfig<T>(SqlBulkCopy sqlBulkCopy, IList<T> entities, Action<double> progress, int batchSize)
+        {
+            sqlBulkCopy.DestinationTableName = this.InsertToTempTable ? this.FullTempTableName : this.FullTableName;
+            sqlBulkCopy.BatchSize = batchSize;
+            sqlBulkCopy.NotifyAfter = batchSize;
+            sqlBulkCopy.SqlRowsCopied += (sender, e) => { progress?.Invoke(e.RowsCopied / entities.Count); };
+
+            foreach (var element in this.PropertyColumnNamesDict)
+            {
+                sqlBulkCopy.ColumnMappings.Add(element.Key, element.Value);
+            }
+        }
+
+        public void UpdateOutputIdentity<T>(DbContext context, IList<T> entities) where T : class
+        {
+            var entitiesWithOutputIdentity = context.Set<T>().FromSql(SqlQueryBuilder.SelectFromTable(this.FullTempOutputTableName, this.PrimaryKeyFormated)).ToList();
+            if (this.BulkConfig.PreserveInsertOrder) // Updates PK in entityList
+            {
+                var accessor = TypeAccessor.Create(typeof(T));
+                for (int i = 0; i < this.NumberOfEntities; i++)
+                    accessor[entities[i], this.PrimaryKey] = accessor[entitiesWithOutputIdentity[i], this.PrimaryKey];
+            }
+            else // Clears entityList and then refill it with loaded entites from Db
+            {
+                entities.Clear();
+                ((List<T>)entities).AddRange(entitiesWithOutputIdentity);
+            }
         }
     }
 }
