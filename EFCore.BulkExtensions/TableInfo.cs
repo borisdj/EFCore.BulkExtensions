@@ -99,7 +99,7 @@ namespace EFCore.BulkExtensions
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = SqlQueryBuilder.SelectIsIdentity(FullTableName, PrimaryKey); ;
+                    command.CommandText = SqlQueryBuilder.SelectIsIdentity(FullTableName, PrimaryKey);
                     using (var reader = await command.ExecuteReaderAsync())
                     {
                         if (reader.HasRows)

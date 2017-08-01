@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -58,6 +59,8 @@ namespace EFCore.BulkExtensions.Tests
         public decimal? Price { get; set; }
 
         public DateTime TimeUpdated { get; set; }
+
+        public ICollection<ItemHistory> ItemHistories { get; set; }
     }
 
     // ItemHistory is used to test bulk Ops to mutiple tables(Item and ItemHistory), to test Guid as PK and to test other Schema(his)
