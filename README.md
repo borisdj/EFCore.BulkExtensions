@@ -5,9 +5,9 @@ It is Lightweight and very Efficient, having all mostly used CUD operation.<br>
 Under the hood uses [SqlBulkCopy](https://msdn.microsoft.com/en-us/library/system.data.sqlclient.sqlbulkcopy.aspx) for Insert, for Update/Delete combines BulkInsert with raw Sql ['MERGE'](https://docs.microsoft.com/en-us/sql/t-sql/statements/merge-transact-sql) (MsSQL 2008+).
 
 Available on [NuGet](https://www.nuget.org/packages/EFCore.BulkExtensions/). Latest Version: 1.0.5<br>
-Package manager console command for installation: *Install-Package EFCore.BulkExtensions*<br>
-*Be aware that Composite PKs are not yet supported, so you dont't make incorrect update.*
+Package manager console command for installation: *Install-Package EFCore.BulkExtensions*
 
+*Be aware that Composite PKs are not yet supported, so you dont't make incorrect update.*<br>
 Usage is simple and pretty straightforward.<br>
 Extensions are made on *DbContext* class and can be used like this (both regular and Async methods are supported):
 ```csharp
