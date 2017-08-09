@@ -5,7 +5,8 @@ It is Lightweight and very Efficient, having all mostly used CUD operation.<br>
 Under the hood uses [SqlBulkCopy](https://msdn.microsoft.com/en-us/library/system.data.sqlclient.sqlbulkcopy.aspx) for Insert, for Update/Delete combines BulkInsert with raw Sql ['MERGE'](https://docs.microsoft.com/en-us/sql/t-sql/statements/merge-transact-sql) (MsSQL 2008+).
 
 Available on [NuGet](https://www.nuget.org/packages/EFCore.BulkExtensions/). Latest Version: 1.0.5<br>
-Package manager console command for installation: *Install-Package EFCore.BulkExtensions*
+Package manager console command for installation: *Install-Package EFCore.BulkExtensions*<br>
+*Be aware that Composite PKs are not yet supported, so you dont't make incorrect update.*
 
 Usage is simple and pretty straightforward.<br>
 Extensions are made on *DbContext* class and can be used like this (both regular and Async methods are supported):
@@ -24,14 +25,14 @@ In scenario where All or Nothing is required, there should be additional logic w
 ## BulkConfig arguments
 
 **BulkInsertOrUpdate** method can be used when there is need for both operations but in one connection to database.<br>
-It makes Update when PK is matched, otherwise does Insert.
+It makes Update when PK is matched, otherwise does Insert.<br>
 
 Additionally **BulkInsert** and **BulkInsertOrUpdate** methods can have optional argument **BulkConfig** with bool properties:<br>
-`{ PreserveInsertOrder, SetOutputIdentity }`.<br>
-Default behaviour is { false, false } and if we want to change it, BulkConfig should be added explicitly with one or both properties set to true.<br>
+`{ PreserveInsertOrder, SetOutputIdentity, BatchSize }`.<br>
+Default behaviour is { false, false, 2000 } and if we want to change it, BulkConfig should be added explicitly with one or both bool properties set to true, and/or **BatchSize** to different number.<br>
 This argument has purpose only when PK has Identity (usually *int* type with AutoIncrement), while if PK is Guid(sequential) created in Application there is no need for it.
 ```csharp
-context.BulkInsert(entitiesList, new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true});
+context.BulkInsert(entitiesList, new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true, BatchSize = 5000});
 context.BulkInsertOrUpdate(entitiesList, new BulkConfig { PreserveInsertOrder = true });
 ```
 **PreserveInsertOrder** makes sure that entites are inserted to Db as they are ordered in entitiesList.<br>
