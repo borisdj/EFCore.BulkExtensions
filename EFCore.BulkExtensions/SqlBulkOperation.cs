@@ -18,7 +18,7 @@ namespace EFCore.BulkExtensions
 
     internal static class SqlBulkOperation
     {
-        public static void Insert<T>(DbContext context, IList<T> entities, TableInfo tableInfo, Action<double> progress = null, int batchSize = 2000)
+        public static void Insert<T>(DbContext context, IList<T> entities, TableInfo tableInfo, Action<double> progress = null)
         {
             var sqlConnection = (SqlConnection)context.Database.GetDbConnection();
             try
@@ -26,7 +26,7 @@ namespace EFCore.BulkExtensions
                 sqlConnection.Open();
                 using (var sqlBulkCopy = new SqlBulkCopy(sqlConnection))
                 {
-                    tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, progress, batchSize);
+                    tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, progress);
                     using (var reader = ObjectReader.Create(entities, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
                     {
                         sqlBulkCopy.WriteToServer(reader);
@@ -39,7 +39,7 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        public static async Task InsertAsync<T>(DbContext context, IList<T> entities, TableInfo tableInfo, Action<double> progress = null, int batchSize = 2000)
+        public static async Task InsertAsync<T>(DbContext context, IList<T> entities, TableInfo tableInfo, Action<double> progress = null)
         {
             var sqlConnection = (SqlConnection)context.Database.GetDbConnection();
             try
@@ -47,7 +47,7 @@ namespace EFCore.BulkExtensions
                 await sqlConnection.OpenAsync();
                 using (var sqlBulkCopy = new SqlBulkCopy(sqlConnection))
                 {
-                    tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, progress, batchSize);
+                    tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, progress);
                     using (var reader = ObjectReader.Create(entities, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
                     {
                         await sqlBulkCopy.WriteToServerAsync(reader);

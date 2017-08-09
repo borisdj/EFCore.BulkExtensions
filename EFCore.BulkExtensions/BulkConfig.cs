@@ -11,5 +11,7 @@ namespace EFCore.BulkExtensions
         public bool PreserveInsertOrder { get; set; } = false;
 
         public bool SetOutputIdentity { get; set; } = false;
+
+        public int BatchSize { get; set; } = 2000;
     }
 }

@@ -77,7 +77,7 @@ namespace EFCore.BulkExtensions
                         {
                             while (reader.Read())
                             {
-                                hasIdentity = (int)reader[0];
+                                hasIdentity = reader[0] == DBNull.Value ? 0 : (int)reader[0];
                             }
                         }
                     }
@@ -119,11 +119,11 @@ namespace EFCore.BulkExtensions
             HasIdentity = hasIdentity == 1;
         }
 
-        public void SetSqlBulkCopyConfig<T>(SqlBulkCopy sqlBulkCopy, IList<T> entities, Action<double> progress, int batchSize)
+        public void SetSqlBulkCopyConfig<T>(SqlBulkCopy sqlBulkCopy, IList<T> entities, Action<double> progress)
         {
             sqlBulkCopy.DestinationTableName = this.InsertToTempTable ? this.FullTempTableName : this.FullTableName;
-            sqlBulkCopy.BatchSize = batchSize;
-            sqlBulkCopy.NotifyAfter = batchSize;
+            sqlBulkCopy.BatchSize = BulkConfig.BatchSize;
+            sqlBulkCopy.NotifyAfter = BulkConfig.BatchSize;
             sqlBulkCopy.SqlRowsCopied += (sender, e) => { progress?.Invoke(e.RowsCopied / entities.Count); };
 
             foreach (var element in this.PropertyColumnNamesDict)
