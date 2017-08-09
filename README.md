@@ -7,7 +7,6 @@ Under the hood uses [SqlBulkCopy](https://msdn.microsoft.com/en-us/library/syste
 Available on [NuGet](https://www.nuget.org/packages/EFCore.BulkExtensions/). Latest Version: 1.0.5<br>
 Package manager console command for installation: *Install-Package EFCore.BulkExtensions*
 
-*Be aware that Composite PKs are not yet supported, so you dont't make incorrect update.*<br>
 Usage is simple and pretty straightforward.<br>
 Extensions are made on *DbContext* class and can be used like this (both regular and Async methods are supported):
 ```csharp
@@ -16,7 +15,8 @@ context.BulkUpdate(entitiesList);                context.BulkUpdateAsync(entitie
 context.BulkDelete(entitiesList);                context.BulkDeleteAsync(entitiesList);
 context.BulkInsertOrUpdate(entitiesList);        context.BulkInsertOrUpdateAsync(entitiesList);
 ```
-In ConnectionString you should have *Trusted_Connection=True;* because Sql credentials are required to stay in connection. 
+In ConnectionString you should have *Trusted_Connection=True;* because Sql credentials are required to stay in connection.<br>
+*Be aware that Composite PKs are not yet supported, so you dont't make incorrect update.*
 
 Each of these operations are separate transactions.<br>
 So when using multiple operations in single procedure and if one would break because of some Db constraint, previous would stay executed.<br>
