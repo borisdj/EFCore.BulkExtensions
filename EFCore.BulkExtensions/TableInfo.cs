@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.Common;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
@@ -119,12 +118,14 @@ namespace EFCore.BulkExtensions
             HasIdentity = hasIdentity == 1;
         }
 
-        public void SetSqlBulkCopyConfig<T>(SqlBulkCopy sqlBulkCopy, IList<T> entities, Action<double> progress)
+        public void SetSqlBulkCopyConfig<T>(SqlBulkCopy sqlBulkCopy, IList<T> entities, Action<decimal> progress)
         {
             sqlBulkCopy.DestinationTableName = this.InsertToTempTable ? this.FullTempTableName : this.FullTableName;
             sqlBulkCopy.BatchSize = BulkConfig.BatchSize;
             sqlBulkCopy.NotifyAfter = BulkConfig.BatchSize;
-            sqlBulkCopy.SqlRowsCopied += (sender, e) => { progress?.Invoke(e.RowsCopied / entities.Count); };
+            sqlBulkCopy.SqlRowsCopied += (sender, e) => {
+                progress?.Invoke((decimal)(e.RowsCopied * 10000 / entities.Count) / 10000); // round to 4 decimal places
+            };
 
             foreach (var element in this.PropertyColumnNamesDict)
             {

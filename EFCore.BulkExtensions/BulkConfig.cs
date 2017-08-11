@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data.Common;
-using System.Linq;
-using Microsoft.EntityFrameworkCore;
-
-namespace EFCore.BulkExtensions
+﻿namespace EFCore.BulkExtensions
 {
     public class BulkConfig
     {

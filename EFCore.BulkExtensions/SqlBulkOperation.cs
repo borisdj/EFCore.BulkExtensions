@@ -18,7 +18,7 @@ namespace EFCore.BulkExtensions
 
     internal static class SqlBulkOperation
     {
-        public static void Insert<T>(DbContext context, IList<T> entities, TableInfo tableInfo, Action<double> progress = null)
+        public static void Insert<T>(DbContext context, IList<T> entities, TableInfo tableInfo, Action<decimal> progress)
         {
             var sqlConnection = (SqlConnection)context.Database.GetDbConnection();
             try
@@ -39,7 +39,7 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        public static async Task InsertAsync<T>(DbContext context, IList<T> entities, TableInfo tableInfo, Action<double> progress = null)
+        public static async Task InsertAsync<T>(DbContext context, IList<T> entities, TableInfo tableInfo, Action<decimal> progress)
         {
             var sqlConnection = (SqlConnection)context.Database.GetDbConnection();
             try
@@ -60,7 +60,7 @@ namespace EFCore.BulkExtensions
             }
         }
         
-        public static void Merge<T>(DbContext context, IList<T> entities, TableInfo tableInfo, OperationType operationType) where T : class
+        public static void Merge<T>(DbContext context, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress) where T : class
         {
             tableInfo.InsertToTempTable = true;
             tableInfo.CheckHasIdentity(context);
@@ -72,7 +72,7 @@ namespace EFCore.BulkExtensions
             }
             try
             {
-                SqlBulkOperation.Insert<T>(context, entities, tableInfo);
+                SqlBulkOperation.Insert<T>(context, entities, tableInfo, progress);
                 context.Database.ExecuteSqlCommand(SqlQueryBuilder.MergeTable(tableInfo, operationType));
                 context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName));
 
@@ -93,7 +93,7 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        public static async Task MergeAsync<T>(DbContext context, IList<T> entities, TableInfo tableInfo, OperationType operationType) where T : class
+        public static async Task MergeAsync<T>(DbContext context, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress) where T : class
         {
             tableInfo.InsertToTempTable = true;
             await tableInfo.CheckHasIdentityAsync(context).ConfigureAwait(false);
@@ -105,7 +105,7 @@ namespace EFCore.BulkExtensions
             }
             try
             {
-                await SqlBulkOperation.InsertAsync<T>(context, entities, tableInfo).ConfigureAwait(false);
+                await SqlBulkOperation.InsertAsync<T>(context, entities, tableInfo, progress).ConfigureAwait(false);
                 await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.MergeTable(tableInfo, operationType)).ConfigureAwait(false);
                 await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName)).ConfigureAwait(false);
 

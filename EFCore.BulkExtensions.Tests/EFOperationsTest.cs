@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
@@ -22,6 +22,11 @@ namespace EFCore.BulkExtensions.Tests
             RunInsertOrUpdate(isBulkOperation);
             RunUpdate(isBulkOperation);
             RunDelete(isBulkOperation);
+        }
+
+        private void WriteProgress(decimal percentage)
+        {
+            Debug.WriteLine(percentage);
         }
 
         private void RunInsert(bool isBulkOperation, bool insertTo2Tables = false)
@@ -46,7 +51,7 @@ namespace EFCore.BulkExtensions.Tests
                 {
                     if (insertTo2Tables)
                     {
-                        context.BulkInsert(entities, new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true, BatchSize = 5000 });
+                        context.BulkInsert(entities, new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true, BatchSize = 4000 }, (a) => WriteProgress(a));
 
                         foreach (var entity in entities)
                         {
@@ -101,7 +106,7 @@ namespace EFCore.BulkExtensions.Tests
                 }
                 if (isBulkOperation)
                 {
-                    context.BulkInsertOrUpdate(entities);
+                    context.BulkInsertOrUpdate(entities, null, (a) => WriteProgress(a));
                 }
                 else
                 {
