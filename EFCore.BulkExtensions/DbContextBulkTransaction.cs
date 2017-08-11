@@ -20,17 +20,17 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        public static async Task ExecuteAsync<T>(DbContext context, IList<T> entities, OperationType operationType, BulkConfig bulkConfig) where T : class
+        public static Task ExecuteAsync<T>(DbContext context, IList<T> entities, OperationType operationType, BulkConfig bulkConfig) where T : class
         {
             TableInfo tableInfo = TableInfo.CreateInstance(context, entities, operationType, bulkConfig);
 
             if (operationType == OperationType.Insert && !tableInfo.BulkConfig.SetOutputIdentity)
             {
-                await SqlBulkOperation.InsertAsync<T>(context, entities, tableInfo);
+                return SqlBulkOperation.InsertAsync<T>(context, entities, tableInfo);
             }
             else
             {
-                await SqlBulkOperation.MergeAsync<T>(context, entities, tableInfo, operationType);
+                return SqlBulkOperation.MergeAsync<T>(context, entities, tableInfo, operationType);
             }
         }
     }
