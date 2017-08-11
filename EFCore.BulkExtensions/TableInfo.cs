@@ -100,11 +100,11 @@ namespace EFCore.BulkExtensions
                 using (var command = connection.CreateCommand())
                 {
                     command.CommandText = SqlQueryBuilder.SelectIsIdentity(FullTableName, PrimaryKey);
-                    using (var reader = await command.ExecuteReaderAsync())
+                    using (var reader = await command.ExecuteReaderAsync().ConfigureAwait(false))
                     {
                         if (reader.HasRows)
                         {
-                            while (await reader.ReadAsync())
+                            while (await reader.ReadAsync().ConfigureAwait(false))
                             {
                                 hasIdentity = (int)reader[0];
                             }
