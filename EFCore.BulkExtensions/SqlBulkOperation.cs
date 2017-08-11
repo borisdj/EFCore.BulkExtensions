@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
-using FastMember;
 using Microsoft.EntityFrameworkCore;
 
 namespace EFCore.BulkExtensions
@@ -27,7 +26,7 @@ namespace EFCore.BulkExtensions
                 using (var sqlBulkCopy = new SqlBulkCopy(sqlConnection))
                 {
                     tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, progress);
-                    using (var reader = ObjectReader.Create(entities, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
+                    using (var reader = ObjectReaderEx.Create(entities, tableInfo.ShadowProperties, context, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
                     {
                         sqlBulkCopy.WriteToServer(reader);
                     }
@@ -48,7 +47,7 @@ namespace EFCore.BulkExtensions
                 using (var sqlBulkCopy = new SqlBulkCopy(sqlConnection))
                 {
                     tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, progress);
-                    using (var reader = ObjectReader.Create(entities, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
+                    using (var reader = ObjectReaderEx.Create(entities, tableInfo.ShadowProperties, context, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
                     {
                         await sqlBulkCopy.WriteToServerAsync(reader).ConfigureAwait(false);
                     }
