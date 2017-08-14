@@ -25,7 +25,8 @@ namespace EFCore.BulkExtensions
         public bool HasIdentity { get; set; }
         public int NumberOfEntities { get; set; }
         public BulkConfig BulkConfig { get; set; }
-        public Dictionary<string, string> PropertyColumnNamesDict = new Dictionary<string, string>();
+        public Dictionary<string, string> PropertyColumnNamesDict { get; set; } = new Dictionary<string, string>();
+        public HashSet<string> ShadowProperties { get; set; } = new HashSet<string>();
 
         public static TableInfo CreateInstance<T>(DbContext context, IList<T> entities, OperationType operationType, BulkConfig bulkConfig)
         {
@@ -56,7 +57,9 @@ namespace EFCore.BulkExtensions
             }
             else
             {
-                PropertyColumnNamesDict = entityType.GetProperties().ToDictionary(a => a.Name, b => b.Relational().ColumnName);
+                var properties = entityType.GetProperties().ToList();
+                PropertyColumnNamesDict = properties.ToDictionary(a => a.Name, b => b.Relational().ColumnName);
+                ShadowProperties = new HashSet<string>(properties.Where(p => p.IsShadowProperty).Select(p => p.Relational().ColumnName));
             }
         }
 
@@ -69,7 +72,7 @@ namespace EFCore.BulkExtensions
                 connection.Open();
                 using (var command = connection.CreateCommand())
                 {
-                    command.CommandText = SqlQueryBuilder.SelectIsIdentity(FullTableName, PrimaryKey);;
+                    command.CommandText = SqlQueryBuilder.SelectIsIdentity(FullTableName, PrimaryKey);
                     using (var reader = command.ExecuteReader())
                     {
                         if (reader.HasRows)
