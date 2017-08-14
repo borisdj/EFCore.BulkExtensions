@@ -29,9 +29,10 @@ namespace EFCore.BulkExtensions
             _current = typeof(ObjectReader).GetField("current", BindingFlags.Instance | BindingFlags.NonPublic);
         }
 
-        public static ObjectReaderEx Create<T>(IEnumerable<T> source, HashSet<string> shadowProperties, DbContext context, params string[] members)
+        public static ObjectReader Create<T>(IEnumerable<T> source, HashSet<string> shadowProperties, DbContext context, params string[] members)
         {
-            return new ObjectReaderEx(typeof(T), source, shadowProperties, context, members);
+            bool hasShadowProp = shadowProperties.Count > 0;
+            return hasShadowProp ? (ObjectReader)new ObjectReaderEx(typeof(T), source, shadowProperties, context, members) : ObjectReader.Create(source, members);
         }
 
         public override object this[string name]

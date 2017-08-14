@@ -9,7 +9,11 @@ namespace EFCore.BulkExtensions.Tests
     public class TestContext : DbContext
     {
         public DbSet<Item> Items { get; set; }
-        public DbSet<ItemHistory> ItemHistories { get; set; }
+        public DbSet<ItemHistory> ItemHistories { get; set; } 
+
+        public DbSet<Person> Persons { get; set; }
+        public DbSet<Instructor> Instructors { get; set; }
+        public DbSet<Student> Students { get; set; }
 
         public TestContext(DbContextOptions options) : base(options)
         {
@@ -73,5 +77,21 @@ namespace EFCore.BulkExtensions.Tests
         public virtual Item Item { get; set; }
 
         public string Remark { get; set; }
+    }
+
+    // Person, Instructor nad Student are used to test Bulk with Shadow Property and Discriminator column
+    public abstract class Person
+    {
+        public int PersonId { get; set; }
+	
+        public string Name { get; set; }
+    }
+    public class Instructor : Person
+    {
+        public string Class { get; set; }
+    }
+    public class Student : Person
+    {
+        public string Subject { get; set; }
     }
 }
