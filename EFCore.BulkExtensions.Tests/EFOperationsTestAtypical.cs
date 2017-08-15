@@ -24,7 +24,7 @@ namespace EFCore.BulkExtensions.Tests
                         Subject = "Math"
                     });
                 }
-                context.Students.AddRange(entities); // adding to Context is required so that Shadow property 'Descriminator' gets set
+                context.Students.AddRange(entities); // adding to Context so that Shadow property 'Discriminator' gets set
                 context.BulkInsert(entities);
             }
             using (var context = new TestContext(ContextUtil.GetOptions()))

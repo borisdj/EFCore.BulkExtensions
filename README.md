@@ -4,7 +4,7 @@ Library is targeting *NetStandard 1.4* so it can used on project targeting both 
 It is Lightweight and very Efficient, having all mostly used CUD operation.<br>
 Under the hood uses [SqlBulkCopy](https://msdn.microsoft.com/en-us/library/system.data.sqlclient.sqlbulkcopy.aspx) for Insert, for Update/Delete combines BulkInsert with raw Sql ['MERGE'](https://docs.microsoft.com/en-us/sql/t-sql/statements/merge-transact-sql) (MsSQL 2008+).
 
-Available on [NuGet](https://www.nuget.org/packages/EFCore.BulkExtensions/). Latest Version: 1.0.6<br>
+Available on [NuGet](https://www.nuget.org/packages/EFCore.BulkExtensions/). Latest Version: 1.0.7<br>
 Package manager console command for installation: *Install-Package EFCore.BulkExtensions*
 
 Usage is simple and pretty straightforward.<br>
@@ -16,7 +16,6 @@ context.BulkDelete(entitiesList);                context.BulkDeleteAsync(entitie
 context.BulkInsertOrUpdate(entitiesList);        context.BulkInsertOrUpdateAsync(entitiesList);
 ```
 In ConnectionString you should have *Trusted_Connection=True;* because Sql credentials are required to stay in connection.<br>
-*Be aware that Composite PKs are not yet supported, so you dont't make incorrect update.*
 
 Each of these operations are separate transactions.<br>
 So when using multiple operations in single procedure and if one would break because of some Db constraint, previous would stay executed.<br>
@@ -30,7 +29,7 @@ It makes Update when PK is matched, otherwise does Insert.<br>
 Additionally **BulkInsert** and **BulkInsertOrUpdate** methods can have optional argument **BulkConfig** with bool properties:<br>
 `{ PreserveInsertOrder, SetOutputIdentity, BatchSize }`.<br>
 Default behaviour is { false, false, 2000 } and if we want to change it, BulkConfig should be added explicitly with one or both bool properties set to true, and/or **BatchSize** to different number.<br>
-This argument has purpose only when PK has Identity (usually *int* type with AutoIncrement), while if PK is Guid(sequential) created in Application there is no need for it.
+This argument has purpose only when PK has Identity (usually *int* type with AutoIncrement), while if PK is Guid(sequential) created in Application there is no need for it. Also Tables with Composite Keys hava no Identity column so no function for SetOutputIdentity in that case either.
 ```csharp
 context.BulkInsert(entitiesList, new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true, BatchSize = 5000});
 context.BulkInsertOrUpdate(entitiesList, new BulkConfig { PreserveInsertOrder = true });
@@ -52,6 +51,16 @@ So if we have list of 8000, say 3000 for update (they keep the real Id) and 5000
 So after Insert is done to first table, we need Id-s that were generated in Db becasue they are FK in second table.<br>
 It is implemented with [OUTPUT](https://docs.microsoft.com/en-us/sql/t-sql/queries/output-clause-transact-sql) as part of MERGE Query, so in this case even the Insert is not done directly to TargetTable but to TempTable and then Merged with TargetTable.<br>
 When used if *PreserveInsertOrder* is also set to *true* Id-s will be updated in entitiesList, and if *PreserveInsertOrder* is *false* then entitiesList will be cleared and reloaded.
+
+If having TPH ([Table-Per-Hierarchy](https://docs.microsoft.com/en-us/aspnet/core/data/ef-mvc/inheritance)) inheritance model it can be set in 2 ways.<br>
+First automatically by Convention in which case Discriminator column is not directly in Entity but is [Shadow](http://www.learnentityframeworkcore.com/model/shadow-properties) Property.<br>
+And second is to explicitly define Discriminator property in Entity and configure it with `.HasDiscriminator()`.<br>
+Important remark regarding the first case is that since we can not set directly Discriminator to certain value we need first to add list of entities to DbSet where it will be set and after that we can call Bulk operation. Note that SaveChanges are not called and could optionally turn of TrackingChanges. Example:
+```csharp
+public class Student : Person { ...
+context.Students.AddRange(entities); // adding to Context so that Shadow property 'Discriminator' gets set
+context.BulkInsert(entities);
+```
 
 ## Performances
 
