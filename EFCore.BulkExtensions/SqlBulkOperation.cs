@@ -75,7 +75,7 @@ namespace EFCore.BulkExtensions
                 context.Database.ExecuteSqlCommand(SqlQueryBuilder.MergeTable(tableInfo, operationType));
                 context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName));
 
-                if (tableInfo.BulkConfig.SetOutputIdentity)
+                if (tableInfo.BulkConfig.SetOutputIdentity && tableInfo.HasSinglePrimaryKey)
                 {
                     tableInfo.UpdateOutputIdentity(context, entities);
                     context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName));
@@ -83,7 +83,7 @@ namespace EFCore.BulkExtensions
             }
             catch (Exception ex)
             {
-                if (tableInfo.BulkConfig.SetOutputIdentity)
+                if (tableInfo.BulkConfig.SetOutputIdentity && tableInfo.HasSinglePrimaryKey)
                 {
                     context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName));
                 }
@@ -98,7 +98,7 @@ namespace EFCore.BulkExtensions
             await tableInfo.CheckHasIdentityAsync(context).ConfigureAwait(false);
 
             await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName)).ConfigureAwait(false);
-            if (tableInfo.BulkConfig.SetOutputIdentity)
+            if (tableInfo.BulkConfig.SetOutputIdentity && tableInfo.HasIdentity)
             {
                 await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempOutputTableName)).ConfigureAwait(false);
             }
@@ -108,15 +108,15 @@ namespace EFCore.BulkExtensions
                 await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.MergeTable(tableInfo, operationType)).ConfigureAwait(false);
                 await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName)).ConfigureAwait(false);
 
-                if (tableInfo.BulkConfig.SetOutputIdentity)
+                if (tableInfo.BulkConfig.SetOutputIdentity && tableInfo.HasIdentity)
                 {
-                    tableInfo.UpdateOutputIdentity(context, entities);
+                    await tableInfo.UpdateOutputIdentityAsync(context, entities).ConfigureAwait(false);
                     await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName)).ConfigureAwait(false);
                 }
             }
             catch (Exception ex)
             {
-                if (tableInfo.BulkConfig.SetOutputIdentity)
+                if (tableInfo.BulkConfig.SetOutputIdentity && tableInfo.HasIdentity)
                 {
                     await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName)).ConfigureAwait(false);
                 }

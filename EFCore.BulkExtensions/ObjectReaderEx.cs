@@ -12,14 +12,7 @@ namespace EFCore.BulkExtensions
         private readonly HashSet<string> _shadowProperties;
         private readonly DbContext _context;
         private string[] _members;
-        private static TypeAccessor _accessor = TypeAccessor.Create(typeof(ObjectReader), true);
         private FieldInfo _current;
-
-        internal static object GetInstanceField(Type type, object instance, string fieldName)
-        {
-            FieldInfo field = type.GetField("current", BindingFlags.Instance | BindingFlags.NonPublic);
-            return field.GetValue(instance);
-        }
 
         public ObjectReaderEx(Type type, IEnumerable source, HashSet<string> shadowProperties, DbContext context, params string[] members) : base(type, source, members)
         {
@@ -44,7 +37,6 @@ namespace EFCore.BulkExtensions
                     var current = _current.GetValue(this);
                     return _context.Entry(current).Property(name).CurrentValue;
                 }
-
                 return base[name];
             }
         }
@@ -54,7 +46,6 @@ namespace EFCore.BulkExtensions
             get
             {
                 var name = _members[i];
-
                 return this[name];
             }
         }

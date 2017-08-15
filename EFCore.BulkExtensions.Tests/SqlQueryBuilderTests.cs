@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Xunit;
 
 namespace EFCore.BulkExtensions.Tests
@@ -66,13 +67,13 @@ namespace EFCore.BulkExtensions.Tests
             {
                 Schema = "dbo",
                 Name = "Item",
-                PrimaryKey = "ItemId",
+                PrimaryKeys = new List<string> { "ItemId" },
                 TempTableSufix = "Temp1234",
                 BulkConfig = new BulkConfig()
             };
             var nameText = "Name";
 
-            tableInfo.PropertyColumnNamesDict.Add(tableInfo.PrimaryKey, tableInfo.PrimaryKey);
+            tableInfo.PropertyColumnNamesDict.Add(tableInfo.PrimaryKeys[0], tableInfo.PrimaryKeys[0]);
             tableInfo.PropertyColumnNamesDict.Add(nameText, nameText);
 
             return tableInfo;

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -9,7 +10,9 @@ namespace EFCore.BulkExtensions.Tests
     public class TestContext : DbContext
     {
         public DbSet<Item> Items { get; set; }
-        public DbSet<ItemHistory> ItemHistories { get; set; } 
+        public DbSet<ItemHistory> ItemHistories { get; set; }
+
+        public DbSet<UserRole> UserRoles { get; set; }
 
         public DbSet<Person> Persons { get; set; }
         public DbSet<Instructor> Instructors { get; set; }
@@ -23,6 +26,8 @@ namespace EFCore.BulkExtensions.Tests
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.RemovePluralizingTableNameConvention();
+
+            modelBuilder.Entity<UserRole>().HasKey(a => new { a.UserId, a.RoleId });
         }
     }
 
@@ -77,6 +82,18 @@ namespace EFCore.BulkExtensions.Tests
         public virtual Item Item { get; set; }
 
         public string Remark { get; set; }
+    }
+
+    // UserRole is used to test tables with Composite PrimaryKey
+    public class UserRole
+    {
+        [Key]
+        public int UserId { get; set; }
+
+        [Key]
+        public int RoleId { get; set; }
+
+        public string Description { get; set; }
     }
 
     // Person, Instructor nad Student are used to test Bulk with Shadow Property and Discriminator column

@@ -14,8 +14,8 @@ namespace EFCore.BulkExtensions
         public string SchemaFormated => Schema != null ? Schema + "." : "";
         public string Name { get; set; }
         public string FullTableName => $"{SchemaFormated}[{Name}]";
-        public string PrimaryKey { get; set; }
-        public string PrimaryKeyFormated => $"[{PrimaryKey}]";
+        public List<string> PrimaryKeys { get; set; }
+        public bool HasSinglePrimaryKey { get; set; }
 
         public string TempTableSufix { get; set; }
         public string FullTempTableName => $"{SchemaFormated}[{Name}{TempTableSufix}]";
@@ -24,6 +24,7 @@ namespace EFCore.BulkExtensions
         public bool InsertToTempTable { get; set; }
         public bool HasIdentity { get; set; }
         public int NumberOfEntities { get; set; }
+
         public BulkConfig BulkConfig { get; set; }
         public Dictionary<string, string> PropertyColumnNamesDict { get; set; } = new Dictionary<string, string>();
         public HashSet<string> ShadowProperties { get; set; } = new HashSet<string>();
@@ -49,15 +50,17 @@ namespace EFCore.BulkExtensions
             Name = relationalData.TableName;
             TempTableSufix = Guid.NewGuid().ToString().Substring(0, 8); // 8 chars of Guid as tableNameSufix to avoid same name collision with other tables
 
-            PrimaryKey = entityType.FindPrimaryKey().Properties.First().Name;
+            PrimaryKeys = entityType.FindPrimaryKey().Properties.Select(a => a.Name).ToList();
+            HasSinglePrimaryKey = PrimaryKeys.Count == 1;
+
+            var properties = entityType.GetProperties().ToList();
 
             if (loadOnlyPKColumn)
             {
-                PropertyColumnNamesDict.Add(PrimaryKey, PrimaryKey);
+                PropertyColumnNamesDict = properties.Where(a => PrimaryKeys.Contains(a.Name)).ToDictionary(a => a.Name, b => b.Relational().ColumnName);
             }
             else
             {
-                var properties = entityType.GetProperties().ToList();
                 PropertyColumnNamesDict = properties.ToDictionary(a => a.Name, b => b.Relational().ColumnName);
                 ShadowProperties = new HashSet<string>(properties.Where(p => p.IsShadowProperty).Select(p => p.Relational().ColumnName));
             }
@@ -66,28 +69,31 @@ namespace EFCore.BulkExtensions
         public void CheckHasIdentity(DbContext context)
         {
             int hasIdentity = 0;
-            var connection = context.Database.GetDbConnection();
-            try
+            if (HasSinglePrimaryKey)
             {
-                connection.Open();
-                using (var command = connection.CreateCommand())
+                var connection = context.Database.GetDbConnection();
+                try
                 {
-                    command.CommandText = SqlQueryBuilder.SelectIsIdentity(FullTableName, PrimaryKey);
-                    using (var reader = command.ExecuteReader())
+                    connection.Open();
+                    using (var command = connection.CreateCommand())
                     {
-                        if (reader.HasRows)
+                        command.CommandText = SqlQueryBuilder.SelectIsIdentity(FullTableName, PrimaryKeys[0]);
+                        using (var reader = command.ExecuteReader())
                         {
-                            while (reader.Read())
+                            if (reader.HasRows)
                             {
-                                hasIdentity = reader[0] == DBNull.Value ? 0 : (int)reader[0];
+                                while (reader.Read())
+                                {
+                                    hasIdentity = reader[0] == DBNull.Value ? 0 : (int)reader[0];
+                                }
                             }
                         }
                     }
                 }
-            }
-            finally
-            {
-                connection.Close();
+                finally
+                {
+                    connection.Close();
+                }
             }
             HasIdentity = hasIdentity == 1;
         }
@@ -95,28 +101,31 @@ namespace EFCore.BulkExtensions
         public async Task CheckHasIdentityAsync(DbContext context)
         {
             int hasIdentity = 0;
-            var connection = context.Database.GetDbConnection();
-            try
+            if (HasSinglePrimaryKey)
             {
-                connection.Open();
-                using (var command = connection.CreateCommand())
+                var connection = context.Database.GetDbConnection();
+                try
                 {
-                    command.CommandText = SqlQueryBuilder.SelectIsIdentity(FullTableName, PrimaryKey);
-                    using (var reader = await command.ExecuteReaderAsync().ConfigureAwait(false))
+                    connection.Open();
+                    using (var command = connection.CreateCommand())
                     {
-                        if (reader.HasRows)
+                        command.CommandText = SqlQueryBuilder.SelectIsIdentity(FullTableName, PrimaryKeys[0]);
+                        using (var reader = await command.ExecuteReaderAsync().ConfigureAwait(false))
                         {
-                            while (await reader.ReadAsync().ConfigureAwait(false))
+                            if (reader.HasRows)
                             {
-                                hasIdentity = (int)reader[0];
+                                while (await reader.ReadAsync().ConfigureAwait(false))
+                                {
+                                    hasIdentity = (int)reader[0];
+                                }
                             }
                         }
                     }
                 }
-            }
-            finally
-            {
-                connection.Close();
+                finally
+                {
+                    connection.Close();
+                }
             }
             HasIdentity = hasIdentity == 1;
         }
@@ -138,17 +147,39 @@ namespace EFCore.BulkExtensions
 
         public void UpdateOutputIdentity<T>(DbContext context, IList<T> entities) where T : class
         {
-            var entitiesWithOutputIdentity = context.Set<T>().FromSql(SqlQueryBuilder.SelectFromTable(this.FullTempOutputTableName, this.PrimaryKeyFormated)).ToList();
+            if (this.HasSinglePrimaryKey)
+            {
+                var entitiesWithOutputIdentity = QueryOutputTable<T>(context).ToList();
+                UpdateEntitiesIdentity(entitiesWithOutputIdentity);
+            }
+        }
+
+        public async Task UpdateOutputIdentityAsync<T>(DbContext context, IList<T> entities) where T : class
+        {
+            if (this.HasSinglePrimaryKey)
+            {
+                var entitiesWithOutputIdentity = await QueryOutputTable<T>(context).ToListAsync().ConfigureAwait(false);
+                UpdateEntitiesIdentity(entitiesWithOutputIdentity);
+            }
+        }
+
+        protected IQueryable<T> QueryOutputTable<T>(DbContext context) where T : class
+        {
+            return context.Set<T>().FromSql(SqlQueryBuilder.SelectFromTable(this.FullTempOutputTableName, this.PrimaryKeys[0]));
+        }
+
+        protected void UpdateEntitiesIdentity<T>(IList<T> entities)
+        {
             if (this.BulkConfig.PreserveInsertOrder) // Updates PK in entityList
             {
                 var accessor = TypeAccessor.Create(typeof(T));
                 for (int i = 0; i < this.NumberOfEntities; i++)
-                    accessor[entities[i], this.PrimaryKey] = accessor[entitiesWithOutputIdentity[i], this.PrimaryKey];
+                    accessor[entities[i], this.PrimaryKeys[0]] = accessor[entities[i], this.PrimaryKeys[0]];
             }
             else // Clears entityList and then refill it with loaded entites from Db
             {
                 entities.Clear();
-                ((List<T>)entities).AddRange(entitiesWithOutputIdentity);
+                ((List<T>)entities).AddRange(entities);
             }
         }
     }

@@ -33,6 +33,16 @@ T.[Quantity] = S.[Quantity],
 T.[TimeUpdated] = S.[TimeUpdated]
 OUTPUT inserted.* INTO dbo.[ItemTemp1234Output];
 
+-- Insert/Update when having CompositeKey
+MERGE dbo.[UserRole] WITH (HOLDLOCK) AS T USING (SELECT TOP 2147483647 * FROM dbo.[UserRoleTemp1234] ORDER BY [UserId], [RoleId]) AS S
+ON T.[UserId] = S.[UserId] AND T.[RoleId] = S.[RoleId]
+WHEN NOT MATCHED THEN INSERT
+([Description])
+VALUES
+(S.[Description])
+WHEN MATCHED THEN UPDATE SET
+T.[Description] = S.[Description];
+
 -- Delete TempTable
 DROP TABLE dbo.[ItemTemp1234];
 DROP TABLE dbo.[ItemTemp1234Output];

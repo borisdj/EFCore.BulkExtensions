@@ -31,17 +31,17 @@ namespace EFCore.BulkExtensions
         {
             string targetTable = tableInfo.FullTableName;
             string sourceTable = tableInfo.FullTempTableName;
-            string primaryKey = tableInfo.PrimaryKey;
+            List<string> primaryKeys = tableInfo.PrimaryKeys;
             List<string> columnsNames = tableInfo.PropertyColumnNamesDict.Values.ToList();
-            List<string> nonIdentityColumnsNames = columnsNames.Where(a => a != primaryKey).ToList();
+            List<string> nonIdentityColumnsNames = columnsNames.Where(a => !primaryKeys.Contains(a)).ToList();
             List<string> insertColumnsNames = tableInfo.HasIdentity ? nonIdentityColumnsNames : columnsNames;
 
             if (tableInfo.BulkConfig.PreserveInsertOrder)
-                sourceTable = $"(SELECT TOP {tableInfo.NumberOfEntities} * FROM {sourceTable} ORDER BY {tableInfo.PrimaryKeyFormated})";
+                sourceTable = $"(SELECT TOP {tableInfo.NumberOfEntities} * FROM {sourceTable} ORDER BY {GetCommaSeparatedColumns(primaryKeys)})";
 
             var q = $"MERGE {targetTable} WITH (HOLDLOCK) AS T " +
                     $"USING {sourceTable} AS S " +
-                    $"ON T.{tableInfo.PrimaryKeyFormated} = S.{tableInfo.PrimaryKeyFormated}";
+                    $"ON {GetANDSeparatedColumns(primaryKeys, "T", "S")}";
 
             if (operationType == OperationType.Insert || operationType == OperationType.InsertOrUpdate)
             {
@@ -72,10 +72,17 @@ namespace EFCore.BulkExtensions
             {
                 commaSeparatedColumns += prefixTable != null ? $"{prefixTable}.[{columnName}]" : $"[{columnName}]";
                 commaSeparatedColumns += equalsTable != null ? $" = {equalsTable}.[{columnName}]" : "";
-                commaSeparatedColumns += ",";
+                commaSeparatedColumns += ", ";
             }
-            commaSeparatedColumns = commaSeparatedColumns.Remove(commaSeparatedColumns.Length - 1, 1); // removes last excess comma: ","
+            commaSeparatedColumns = commaSeparatedColumns.Remove(commaSeparatedColumns.Length - 2, 2); // removes last excess comma and space: ", "
             return commaSeparatedColumns;
+        }
+
+        public static string GetANDSeparatedColumns(List<string> columnsNames, string prefixTable = null, string equalsTable = null)
+        {
+            string commaSeparatedColumns = GetCommaSeparatedColumns(columnsNames, prefixTable, equalsTable);
+            string andSeparatedColumns = commaSeparatedColumns.Replace(",", " AND");
+            return andSeparatedColumns;
         }
     }
 }
