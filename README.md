@@ -35,12 +35,7 @@ context.BulkInsert(entitiesList,
                    new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true, BatchSize = 4000});
 context.BulkInsertOrUpdate(entitiesList, new BulkConfig { PreserveInsertOrder = true });
 ```
-Last optional argument is **Action progress** (Example in *EfOperation.Test* *RunInsert()* with *WriteProgress()*).
-```csharp
-context.BulkInsert(entitiesList,
-                   new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true, BatchSize = 4000 },
-                   (a) => WriteProgress(a));
-```
+
 **PreserveInsertOrder** makes sure that entites are inserted to Db as they are ordered in entitiesList.<br>
 However for this to work Id column needs to be set for the proper order.<br>
 For example if table already has rows, let's say it has 1000 rows with Id-s (1:1000), and we now want to add 300 more.<br>
@@ -58,6 +53,13 @@ So if we have list of 8000, say 3000 for update (they keep the real Id) and 5000
 So after Insert is done to first table, we need Id-s that were generated in Db becasue they are FK in second table.<br>
 It is implemented with [OUTPUT](https://docs.microsoft.com/en-us/sql/t-sql/queries/output-clause-transact-sql) as part of MERGE Query, so in this case even the Insert is not done directly to TargetTable but to TempTable and then Merged with TargetTable.<br>
 When used if *PreserveInsertOrder* is also set to *true* Id-s will be updated in entitiesList, and if *PreserveInsertOrder* is *false* then entitiesList will be cleared and reloaded.
+
+Last optional argument is **Action progress** (Example in *EfOperation.Test* *RunInsert()* with *WriteProgress()*).
+```csharp
+context.BulkInsert(entitiesList,
+                   new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true, BatchSize = 4000 },
+                   (a) => WriteProgress(a));
+```
 
 When having TPH ([Table-Per-Hierarchy](https://docs.microsoft.com/en-us/aspnet/core/data/ef-mvc/inheritance)) inheritance model it can be set in 2 ways.<br>
 First automatically by Convention in which case Discriminator column is not directly in Entity but is [Shadow](http://www.learnentityframeworkcore.com/model/shadow-properties) Property.<br>
