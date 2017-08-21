@@ -29,10 +29,9 @@ It makes Update when PK is matched, otherwise does Insert.<br>
 **BulkInsert** and **BulkInsertOrUpdate** methods can have optional argument **BulkConfig** with bool properties:<br>
 `{ PreserveInsertOrder, SetOutputIdentity, BatchSize }`.<br>
 Default behaviour is { false, false, 2000 } and if we want to change it, BulkConfig should be added explicitly with one or both bool properties set to true, and/or **BatchSize** to different number.<br>
-This argument has purpose only when PK has Identity (usually *int* type with AutoIncrement), while if PK is Guid(sequential) created in Application there is no need for it. Also Tables with Composite Keys hava no Identity column so no function for SetOutputIdentity in that case either.
+Bool arguments have purpose only when PK has Identity (usually *int* type with AutoIncrement), while if PK is Guid(sequential) created in Application there is no need for them. Also Tables with Composite Keys have no Identity column so no functionality for them in that case either.
 ```csharp
-context.BulkInsert(entitiesList,
-                   new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true, BatchSize = 4000});
+context.BulkInsert(entitiesList, new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true, BatchSize = 4000});
 context.BulkInsertOrUpdate(entitiesList, new BulkConfig { PreserveInsertOrder = true });
 ```
 
@@ -55,7 +54,9 @@ It is implemented with [OUTPUT](https://docs.microsoft.com/en-us/sql/t-sql/queri
 When used if *PreserveInsertOrder* is also set to *true* Id-s will be updated in entitiesList, and if *PreserveInsertOrder* is *false* then entitiesList will be cleared and reloaded.
 
 Last optional argument is **Action progress** (Example in *EfOperation.Test* *RunInsert()* with *WriteProgress()*).
-```context.BulkInsert(entitiesList, null, (a) => WriteProgress(a));```
+```csharp
+context.BulkInsert(entitiesList, null, (a) => WriteProgress(a));
+```
 
 When having TPH ([Table-Per-Hierarchy](https://docs.microsoft.com/en-us/aspnet/core/data/ef-mvc/inheritance)) inheritance model it can be set in 2 ways.<br>
 First automatically by Convention in which case Discriminator column is not directly in Entity but is [Shadow](http://www.learnentityframeworkcore.com/model/shadow-properties) Property.<br>
