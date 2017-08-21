@@ -21,12 +21,12 @@ Each of these operations are separate transactions.<br>
 So when using multiple operations in single procedure and if one would break because of some Db constraint, previous would stay executed.<br>
 In scenario where All or Nothing is required, there should be additional logic with try/catch block, catch having methods that would revert previously executed operations.
 
-## BulkConfig arguments
-
 **BulkInsertOrUpdate** method can be used when there is need for both operations but in one connection to database.<br>
 It makes Update when PK is matched, otherwise does Insert.<br>
 
-Additionally **BulkInsert** and **BulkInsertOrUpdate** methods can have optional argument **BulkConfig** with bool properties:<br>
+## BulkConfig arguments
+
+**BulkInsert** and **BulkInsertOrUpdate** methods can have optional argument **BulkConfig** with bool properties:<br>
 `{ PreserveInsertOrder, SetOutputIdentity, BatchSize }`.<br>
 Default behaviour is { false, false, 2000 } and if we want to change it, BulkConfig should be added explicitly with one or both bool properties set to true, and/or **BatchSize** to different number.<br>
 This argument has purpose only when PK has Identity (usually *int* type with AutoIncrement), while if PK is Guid(sequential) created in Application there is no need for it. Also Tables with Composite Keys hava no Identity column so no function for SetOutputIdentity in that case either.
