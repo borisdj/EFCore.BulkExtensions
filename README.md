@@ -31,8 +31,15 @@ Additionally **BulkInsert** and **BulkInsertOrUpdate** methods can have optional
 Default behaviour is { false, false, 2000 } and if we want to change it, BulkConfig should be added explicitly with one or both bool properties set to true, and/or **BatchSize** to different number.<br>
 This argument has purpose only when PK has Identity (usually *int* type with AutoIncrement), while if PK is Guid(sequential) created in Application there is no need for it. Also Tables with Composite Keys hava no Identity column so no function for SetOutputIdentity in that case either.
 ```csharp
-context.BulkInsert(entitiesList, new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true, BatchSize = 5000});
+context.BulkInsert(entitiesList,
+                   new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true, BatchSize = 4000});
 context.BulkInsertOrUpdate(entitiesList, new BulkConfig { PreserveInsertOrder = true });
+```
+Last optional argument is **Action progress** (Example in *EfOperation.Test* *RunInsert()* with *WriteProgress()*).
+```csharp
+context.BulkInsert(entitiesList,
+                   new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true, BatchSize = 4000 },
+                   (a) => WriteProgress(a));
 ```
 **PreserveInsertOrder** makes sure that entites are inserted to Db as they are ordered in entitiesList.<br>
 However for this to work Id column needs to be set for the proper order.<br>
