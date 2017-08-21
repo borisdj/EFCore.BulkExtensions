@@ -55,7 +55,7 @@ It is implemented with [OUTPUT](https://docs.microsoft.com/en-us/sql/t-sql/queri
 When used if *PreserveInsertOrder* is also set to *true* Id-s will be updated in entitiesList, and if *PreserveInsertOrder* is *false* then entitiesList will be cleared and reloaded.
 
 Last optional argument is **Action progress** (Example in *EfOperation.Test* *RunInsert()* with *WriteProgress()*).
-`context.BulkInsert(entitiesList, null, (a) => WriteProgress(a));`
+```context.BulkInsert(entitiesList, null, (a) => WriteProgress(a));```
 
 When having TPH ([Table-Per-Hierarchy](https://docs.microsoft.com/en-us/aspnet/core/data/ef-mvc/inheritance)) inheritance model it can be set in 2 ways.<br>
 First automatically by Convention in which case Discriminator column is not directly in Entity but is [Shadow](http://www.learnentityframeworkcore.com/model/shadow-properties) Property.<br>
