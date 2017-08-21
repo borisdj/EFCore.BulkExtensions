@@ -56,7 +56,7 @@ When used if *PreserveInsertOrder* is also set to *true* Id-s will be updated in
 
 Last optional argument is **Action progress** (Example in *EfOperation.Test* *RunInsert()* with *WriteProgress()*).
 ```csharp
-context.BulkInsert(entitiesList, (a) => WriteProgress(a));
+context.BulkInsert(entitiesList, null, (a) => WriteProgress(a));
 ```
 
 When having TPH ([Table-Per-Hierarchy](https://docs.microsoft.com/en-us/aspnet/core/data/ef-mvc/inheritance)) inheritance model it can be set in 2 ways.<br>
