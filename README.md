@@ -86,9 +86,9 @@ TestTable has 6 column(Guid, string, string, int, decimal?, DateTime).<br>
 All were inserted and 2 of them (string, DateTime) were updated.<br>
 Test was done locally on following configuration: INTEL Core i5-3570K 3.40GHz, DDRIII 8GB x 2, SSD 840 EVO 128 GB.
 
-If you find this project useful you can mark it by leaving a Github Star.
-
 ## Contributing
+
+If you find this project useful you can mark it by leaving a Github Star.
 
 Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on code of conduct, and the process for submitting pull requests.
 
