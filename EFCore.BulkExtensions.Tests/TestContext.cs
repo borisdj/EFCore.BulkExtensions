@@ -41,7 +41,6 @@ namespace EFCore.BulkExtensions.Tests
             builder.UseSqlServer(connectionString); // Can NOT Test with UseInMemoryDb (Exception: Relational-specific methods can only be used when the context is using a relational)
             return builder.Options;
         }
-
     }
 
     public static class ModelBuilderExtensions
