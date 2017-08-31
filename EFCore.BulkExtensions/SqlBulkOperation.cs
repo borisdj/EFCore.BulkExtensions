@@ -71,7 +71,7 @@ namespace EFCore.BulkExtensions
             }
             try
             {
-                SqlBulkOperation.Insert<T>(context, entities, tableInfo, progress);
+                Insert(context, entities, tableInfo, progress);
                 context.Database.ExecuteSqlCommand(SqlQueryBuilder.MergeTable(tableInfo, operationType));
                 context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName));
 
@@ -104,7 +104,7 @@ namespace EFCore.BulkExtensions
             }
             try
             {
-                await SqlBulkOperation.InsertAsync<T>(context, entities, tableInfo, progress).ConfigureAwait(false);
+                await InsertAsync(context, entities, tableInfo, progress).ConfigureAwait(false);
                 await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.MergeTable(tableInfo, operationType)).ConfigureAwait(false);
                 await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName)).ConfigureAwait(false);
 
