@@ -17,9 +17,16 @@ context.BulkInsertOrUpdate(entitiesList);        context.BulkInsertOrUpdateAsync
 ```
 In ConnectionString you should have *Trusted_Connection=True;* because Sql credentials are required to stay in connection.<br>
 
-Each of these operations are separate transactions.<br>
-So when using multiple operations in single procedure and if one would break because of some Db constraint, previous would stay executed.<br>
-In scenario where All or Nothing is required, there should be additional logic with try/catch block, catch having methods that would revert previously executed operations.
+When used directly each of these operations are separate transactions.<br>
+And if we need multiple operations in single procedure then explicit transaction should se used, for example:
+```csharp
+using (var transaction = context.Database.BeginTransaction())
+{
+	context.BulkInsert(entitiesList);
+	context.BulkInsert(subEntitiesList);
+	transaction.Commit();
+}
+```
 
 **BulkInsertOrUpdate** method can be used when there is need for both operations but in one connection to database.<br>
 It makes Update when PK is matched, otherwise does Insert.<br>
