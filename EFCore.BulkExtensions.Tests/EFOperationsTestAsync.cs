@@ -45,18 +45,23 @@ namespace EFCore.BulkExtensions.Tests
                 {
                     if (insertTo2Tables)
                     {
-                        await context.BulkInsertAsync(entities, new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true, BatchSize = 4000 });
-
-                        foreach (var entity in entities)
+                        using (var transaction = context.Database.BeginTransaction())
                         {
-                            subEntities.Add(new ItemHistory
+                            await context.BulkInsertAsync(entities, new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true, BatchSize = 4000 });
+
+                            foreach (var entity in entities)
                             {
-                                ItemHistoryId = SeqGuid.Create(),
-                                ItemId = entity.ItemId,
-                                Remark = "some more info"
-                            });
+                                subEntities.Add(new ItemHistory
+                                {
+                                    ItemHistoryId = SeqGuid.Create(),
+                                    ItemId = entity.ItemId,
+                                    Remark = "some more info"
+                                });
+                            }
+                            await context.BulkInsertAsync(subEntities);
+
+                            transaction.Commit();
                         }
-                        await context.BulkInsertAsync(subEntities);
                     }
                     else
                     {

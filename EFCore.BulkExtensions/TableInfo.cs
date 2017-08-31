@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
 using FastMember;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace EFCore.BulkExtensions
 {
@@ -71,12 +73,19 @@ namespace EFCore.BulkExtensions
             int hasIdentity = 0;
             if (HasSinglePrimaryKey)
             {
-                var connection = context.Database.GetDbConnection();
+                var sqlConnection = context.Database.GetDbConnection();
+                var currentTransaction = context.Database.CurrentTransaction;
                 try
                 {
-                    connection.Open();
-                    using (var command = connection.CreateCommand())
+                    if (currentTransaction == null)
                     {
+                        if (sqlConnection.State != ConnectionState.Open)
+                            sqlConnection.Open();
+                    }
+                    using (var command = sqlConnection.CreateCommand())
+                    {
+                        if (currentTransaction != null)
+                            command.Transaction = currentTransaction.GetDbTransaction();
                         command.CommandText = SqlQueryBuilder.SelectIsIdentity(FullTableName, PrimaryKeys[0]);
                         using (var reader = command.ExecuteReader())
                         {
@@ -92,7 +101,8 @@ namespace EFCore.BulkExtensions
                 }
                 finally
                 {
-                    connection.Close();
+                    if (currentTransaction == null)
+                        sqlConnection.Close();
                 }
             }
             HasIdentity = hasIdentity == 1;
@@ -103,12 +113,19 @@ namespace EFCore.BulkExtensions
             int hasIdentity = 0;
             if (HasSinglePrimaryKey)
             {
-                var connection = context.Database.GetDbConnection();
+                var sqlConnection = context.Database.GetDbConnection();
+                var currentTransaction = context.Database.CurrentTransaction;
                 try
                 {
-                    connection.Open();
-                    using (var command = connection.CreateCommand())
+                    if (currentTransaction == null)
                     {
+                        if (sqlConnection.State != ConnectionState.Open)
+                            await sqlConnection.OpenAsync().ConfigureAwait(false);
+                    }
+                    using (var command = sqlConnection.CreateCommand())
+                    {
+                        if (currentTransaction != null)
+                            command.Transaction = currentTransaction.GetDbTransaction();
                         command.CommandText = SqlQueryBuilder.SelectIsIdentity(FullTableName, PrimaryKeys[0]);
                         using (var reader = await command.ExecuteReaderAsync().ConfigureAwait(false))
                         {
@@ -124,7 +141,10 @@ namespace EFCore.BulkExtensions
                 }
                 finally
                 {
-                    connection.Close();
+                    if (currentTransaction == null)
+                    {
+                        sqlConnection.Close();
+                    }
                 }
             }
             HasIdentity = hasIdentity == 1;

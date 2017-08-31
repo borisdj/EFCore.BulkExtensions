@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace EFCore.BulkExtensions
 {
@@ -19,11 +21,11 @@ namespace EFCore.BulkExtensions
     {
         public static void Insert<T>(DbContext context, IList<T> entities, TableInfo tableInfo, Action<decimal> progress)
         {
-            var sqlConnection = (SqlConnection)context.Database.GetDbConnection();
+            var sqlConnection = OpenAndGetSqlConnection(context);
+            var transaction = context.Database.CurrentTransaction;
             try
             {
-                sqlConnection.Open();
-                using (var sqlBulkCopy = new SqlBulkCopy(sqlConnection))
+                using (var sqlBulkCopy = GetSqlBulkCopy(sqlConnection, transaction))
                 {
                     tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, progress);
                     using (var reader = ObjectReaderEx.Create(entities, tableInfo.ShadowProperties, context, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
@@ -34,17 +36,20 @@ namespace EFCore.BulkExtensions
             }
             finally
             {
-                sqlConnection.Close();
+                if (transaction == null)
+                {
+                    sqlConnection.Close();
+                }
             }
         }
 
         public static async Task InsertAsync<T>(DbContext context, IList<T> entities, TableInfo tableInfo, Action<decimal> progress)
         {
-            var sqlConnection = (SqlConnection)context.Database.GetDbConnection();
+            var sqlConnection = await OpenAndGetSqlConnectionAsync(context);
+            var transaction = context.Database.CurrentTransaction;
             try
             {
-                await sqlConnection.OpenAsync().ConfigureAwait(false);
-                using (var sqlBulkCopy = new SqlBulkCopy(sqlConnection))
+                using (var sqlBulkCopy = GetSqlBulkCopy(sqlConnection, transaction))
                 {
                     tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, progress);
                     using (var reader = ObjectReaderEx.Create(entities, tableInfo.ShadowProperties, context, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
@@ -55,7 +60,10 @@ namespace EFCore.BulkExtensions
             }
             finally
             {
-                sqlConnection.Close();
+                if (transaction == null)
+                {
+                    sqlConnection.Close();
+                }
             }
         }
         
@@ -122,6 +130,37 @@ namespace EFCore.BulkExtensions
                 }
                 await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName)).ConfigureAwait(false);
                 throw ex;
+            }
+        }
+
+        internal static SqlConnection OpenAndGetSqlConnection(DbContext context)
+        {
+            if (context.Database.GetDbConnection().State != ConnectionState.Open)
+            {
+                context.Database.GetDbConnection().Open();
+            }
+            return context.Database.GetDbConnection() as SqlConnection;
+        }
+
+        internal static async Task<SqlConnection> OpenAndGetSqlConnectionAsync(DbContext context)
+        {
+            if (context.Database.GetDbConnection().State != ConnectionState.Open)
+            {
+                await context.Database.GetDbConnection().OpenAsync().ConfigureAwait(false);
+            }
+            return context.Database.GetDbConnection() as SqlConnection;
+        }
+
+        private static SqlBulkCopy GetSqlBulkCopy(SqlConnection sqlConnection, IDbContextTransaction transaction)
+        {
+            if (transaction == null)
+            {
+                return new SqlBulkCopy(sqlConnection);
+            }
+            else
+            {
+                var sqlTransaction = (SqlTransaction)transaction.GetDbTransaction();
+                return new SqlBulkCopy(sqlConnection, SqlBulkCopyOptions.Default, sqlTransaction);
             }
         }
     }

@@ -14,8 +14,6 @@ namespace EFCore.BulkExtensions
             if (operationType == OperationType.Insert && !tableInfo.BulkConfig.SetOutputIdentity)
             {
                 SqlBulkOperation.Insert(context, entities, tableInfo, progress);
-
-                SqlBulkOperation.Insert<T>(context, entities, tableInfo, progress);
             }
             else
             {
