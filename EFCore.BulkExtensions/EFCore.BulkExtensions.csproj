@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard1.4</TargetFramework>
-    <Version>1.1.0</Version>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Version>2.0.0-rc</Version>
     <Authors>borisdj</Authors>
     <Description>EntityFrameworkCore Bulk Extensions for Insert Update and Delete (CUD) operations on SQL Server.
 This verions 1.1.0 is the last one that supports EFCore 1.1, and releases after 2.0.0 are for EFCore 2.0+</Description>
