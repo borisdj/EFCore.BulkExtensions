@@ -184,7 +184,7 @@ namespace EFCore.BulkExtensions.Tests
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 // Resets AutoIncrement
-                await context.Database.ExecuteSqlCommandAsync($"DBCC CHECKIDENT ('{nameof(Item)}', RESEED, 0);");
+                context.Database.ExecuteSqlCommand("DBCC CHECKIDENT ('dbo.[" + nameof(Item) + "]', RESEED, 0);");
                 //context.Database.ExecuteSqlCommand($"TRUNCATE TABLE {nameof(Item)};"); // can NOT work when there is ForeignKey - ItemHistoryId
             }
         }

@@ -2,10 +2,10 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <Version>2.0.0-rc</Version>
+    <Version>2.0.0</Version>
     <Authors>borisdj</Authors>
     <Description>EntityFrameworkCore Bulk Extensions for Insert Update and Delete (CUD) operations on SQL Server.
-This verions 2.0.0-rc is for EFCore 2.0+. For EFCore 1.x+ use 1.1.0 nugget version.</Description>
+Latest version 2.0.0 is for EFCore 2.0+. For EFCore 1.0+ use 1.1.0 nugget version.</Description>
     <PackageProjectUrl>https://github.com/borisdj/EFCore.BulkExtensions</PackageProjectUrl>
     <PackageIconUrl>http://i.imgur.com/k5tvW1x.png</PackageIconUrl>
     <Company />
@@ -15,9 +15,9 @@ This verions 2.0.0-rc is for EFCore 2.0+. For EFCore 1.x+ use 1.1.0 nugget versi
 
   <ItemGroup>
     <PackageReference Include="FastMember.Signed" Version="1.1.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="1.1.2" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="1.1.2" />
-    <PackageReference Include="System.Data.SqlClient" Version="4.3.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="2.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="2.0.0" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.4.0" />
   </ItemGroup>
 
 </Project>

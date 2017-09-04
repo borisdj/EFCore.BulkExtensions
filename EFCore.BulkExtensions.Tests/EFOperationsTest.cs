@@ -190,7 +190,7 @@ namespace EFCore.BulkExtensions.Tests
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 // Resets AutoIncrement
-                context.Database.ExecuteSqlCommand($"DBCC CHECKIDENT ('{nameof(Item)}', RESEED, 0);");
+                context.Database.ExecuteSqlCommand("DBCC CHECKIDENT ('dbo.[" + nameof(Item) + "]', RESEED, 0);"); // can NOT use $"...{nameof(Item)..." beacause it get parameterized
                 //context.Database.ExecuteSqlCommand($"TRUNCATE TABLE {nameof(Item)};"); // can NOT work when there is ForeignKey - ItemHistoryId
             }
         }
