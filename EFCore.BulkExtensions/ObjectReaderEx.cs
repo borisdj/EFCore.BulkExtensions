@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EFCore.BulkExtensions
 {
-    internal class ObjectReaderEx : ObjectReader
+    internal class ObjectReaderEx : ObjectReader // Overridden to fix ShadowProperties in FastMember library
     {
         private readonly HashSet<string> _shadowProperties;
         private readonly DbContext _context;

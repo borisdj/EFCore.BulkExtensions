@@ -2,9 +2,10 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard1.4</TargetFramework>
-    <Version>1.0.8</Version>
+    <Version>1.1.0</Version>
     <Authors>borisdj</Authors>
-    <Description>EntityFrameworkCore Bulk Extensions for Insert Update and Delete (CUD) operations on SQL Server</Description>
+    <Description>EntityFrameworkCore Bulk Extensions for Insert Update and Delete (CUD) operations on SQL Server.
+This verions 1.1.0 is the last one that supports EFCore 1.1, and releases after 2.0.0 are for EFCore 2.0+</Description>
     <PackageProjectUrl>https://github.com/borisdj/EFCore.BulkExtensions</PackageProjectUrl>
     <PackageIconUrl>http://i.imgur.com/k5tvW1x.png</PackageIconUrl>
     <Company />
