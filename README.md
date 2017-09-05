@@ -18,7 +18,7 @@ context.BulkInsertOrUpdate(entitiesList);        context.BulkInsertOrUpdateAsync
 ```
 In ConnectionString you should have *Trusted_Connection=True;* because Sql credentials are required to stay in connection.<br>
 
-When used directly each of these operations are separate transactions.<br>
+When used directly each of these operations are separate transactions and are automatically committed.<br>
 And if we need multiple operations in single procedure then explicit transaction should se used, for example:
 ```csharp
 using (var transaction = context.Database.BeginTransaction())
