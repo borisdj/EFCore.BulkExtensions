@@ -154,10 +154,12 @@ namespace EFCore.BulkExtensions
         {
             sqlBulkCopy.DestinationTableName = this.InsertToTempTable ? this.FullTempTableName : this.FullTableName;
             sqlBulkCopy.BatchSize = BulkConfig.BatchSize;
-            sqlBulkCopy.NotifyAfter = BulkConfig.BatchSize;
+            sqlBulkCopy.NotifyAfter = BulkConfig.NotifyAfter ?? BulkConfig.BatchSize;
             sqlBulkCopy.SqlRowsCopied += (sender, e) => {
                 progress?.Invoke((decimal)(e.RowsCopied * 10000 / entities.Count) / 10000); // round to 4 decimal places
             };
+            sqlBulkCopy.BulkCopyTimeout = BulkConfig.BulkCopyTimeout ?? sqlBulkCopy.BulkCopyTimeout;
+            sqlBulkCopy.EnableStreaming = BulkConfig.EnableStreaming;
 
             foreach (var element in this.PropertyColumnNamesDict)
             {

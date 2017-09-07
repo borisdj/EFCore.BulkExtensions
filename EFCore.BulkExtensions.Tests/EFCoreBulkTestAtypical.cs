@@ -1,13 +1,10 @@
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using Microsoft.EntityFrameworkCore;
 using Xunit;
 
 namespace EFCore.BulkExtensions.Tests
 {
-    public class EFOperationsTestAtypical
+    public class EFCoreBulkTestAtypical
     {
         [Fact]
         private void InsertWithDiscriminatorShadow()

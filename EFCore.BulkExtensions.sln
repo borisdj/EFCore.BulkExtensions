@@ -1,11 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26228.10
+VisualStudioVersion = 15.0.26730.3
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EFCore.BulkExtensions", "EFCore.BulkExtensions\EFCore.BulkExtensions.csproj", "{7D066852-F665-4FAB-B65A-5E8244496C24}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.BulkExtensions", "EFCore.BulkExtensions\EFCore.BulkExtensions.csproj", "{7D066852-F665-4FAB-B65A-5E8244496C24}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EFCore.BulkExtensions.Tests", "EFCore.BulkExtensions.Tests\EFCore.BulkExtensions.Tests.csproj", "{2328B243-982C-47B7-885B-999231149C72}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.BulkExtensions.Tests", "EFCore.BulkExtensions.Tests\EFCore.BulkExtensions.Tests.csproj", "{2328B243-982C-47B7-885B-999231149C72}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -24,5 +24,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F6CFFD1D-D456-4A8F-86FC-7CF2C893AB08}
 	EndGlobalSection
 EndGlobal

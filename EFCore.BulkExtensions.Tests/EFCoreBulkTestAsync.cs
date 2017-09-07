@@ -7,7 +7,7 @@ using Xunit;
 
 namespace EFCore.BulkExtensions.Tests
 {
-    public class EFOperationsTestAsync
+    public class EFCoreBulkTestAsync
     {
         private int entitiesNumber = 1000;
 
