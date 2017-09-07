@@ -170,7 +170,7 @@ namespace EFCore.BulkExtensions
             if (this.HasSinglePrimaryKey)
             {
                 var entitiesWithOutputIdentity = QueryOutputTable<T>(context).ToList();
-                UpdateEntitiesIdentity(entitiesWithOutputIdentity);
+                UpdateEntitiesIdentity(entities, entitiesWithOutputIdentity);
             }
         }
 
@@ -179,7 +179,7 @@ namespace EFCore.BulkExtensions
             if (this.HasSinglePrimaryKey)
             {
                 var entitiesWithOutputIdentity = await QueryOutputTable<T>(context).ToListAsync().ConfigureAwait(false);
-                UpdateEntitiesIdentity(entitiesWithOutputIdentity);
+                UpdateEntitiesIdentity(entities, entitiesWithOutputIdentity);
             }
         }
 
@@ -188,18 +188,18 @@ namespace EFCore.BulkExtensions
             return context.Set<T>().FromSql(SqlQueryBuilder.SelectFromTable(this.FullTempOutputTableName, this.PrimaryKeys[0]));
         }
 
-        protected void UpdateEntitiesIdentity<T>(IList<T> entities)
+        protected void UpdateEntitiesIdentity<T>(IList<T> entities, IList<T> entitiesWithOutputIdentity)
         {
             if (this.BulkConfig.PreserveInsertOrder) // Updates PK in entityList
             {
                 var accessor = TypeAccessor.Create(typeof(T));
                 for (int i = 0; i < this.NumberOfEntities; i++)
-                    accessor[entities[i], this.PrimaryKeys[0]] = accessor[entities[i], this.PrimaryKeys[0]];
+                    accessor[entities[i], this.PrimaryKeys[0]] = accessor[entitiesWithOutputIdentity[i], this.PrimaryKeys[0]];
             }
             else // Clears entityList and then refill it with loaded entites from Db
             {
                 entities.Clear();
-                ((List<T>)entities).AddRange(entities);
+                ((List<T>)entities).AddRange(entitiesWithOutputIdentity);
             }
         }
     }
