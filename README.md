@@ -5,7 +5,7 @@ Versions prior to 2.0.0, of which last being 1.1.0 are targeting NetStandard 1.4
 It is Lightweight and very Efficient, having all mostly used CUD operation.<br>
 Under the hood uses [SqlBulkCopy](https://msdn.microsoft.com/en-us/library/system.data.sqlclient.sqlbulkcopy.aspx) for Insert, for Update/Delete combines BulkInsert with raw Sql ['MERGE'](https://docs.microsoft.com/en-us/sql/t-sql/statements/merge-transact-sql) (MsSQL 2008+).
 
-Available on [NuGet](https://www.nuget.org/packages/EFCore.BulkExtensions/). Latest 2.0.0<br>
+Available on [NuGet](https://www.nuget.org/packages/EFCore.BulkExtensions/). Latest 2.0.1<br>
 Package manager console command for installation: *Install-Package EFCore.BulkExtensions*
 
 Usage is simple and pretty straightforward.<br>
