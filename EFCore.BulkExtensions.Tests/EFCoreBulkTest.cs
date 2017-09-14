@@ -14,7 +14,7 @@ namespace EFCore.BulkExtensions.Tests
         [Theory]
         //[InlineData(true)]
         [InlineData(true, true)]
-        //[InlineData(false)] // for speed comparison with Regular EF CUD operations
+        //[InlineData(false, true)] // for speed comparison with Regular EF CUD operations
         public void OperationsTest(bool isBulkOperation, bool insertTo2Tables = false)
         {
             // Test can be run individually by commenting others and running each separately in order one after another
@@ -39,7 +39,7 @@ namespace EFCore.BulkExtensions.Tests
                 {
                     entities.Add(new Item
                     {
-                        ItemId = i,
+                        ItemId = isBulkOperation ? i : 0,
                         Name = "name " + i,
                         Description = "info " + Guid.NewGuid().ToString().Substring(0, 3),
                         Quantity = i % 10,
@@ -47,36 +47,44 @@ namespace EFCore.BulkExtensions.Tests
                         TimeUpdated = DateTime.Now
                     });
                 }
+                if (insertTo2Tables)
+                {
+                    foreach (var entity in entities)
+                    {
+                        subEntities.Add(new ItemHistory
+                        {
+                            ItemHistoryId = SeqGuid.Create(),
+                            ItemId = entity.ItemId,
+                            Remark = "some more info"
+                        });
+                    }
+                }
+
                 if (isBulkOperation)
                 {
-                    if (insertTo2Tables)
+                    if (!insertTo2Tables)
+                    {
+                        context.BulkInsert(entities);
+                    }
+                    else
                     {
                         using (var transaction = context.Database.BeginTransaction())
                         {
                             context.BulkInsert(entities, new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true, BatchSize = 4000 }, (a) => WriteProgress(a));
-
-                            foreach (var entity in entities)
-                            {
-                                subEntities.Add(new ItemHistory
-                                {
-                                    ItemHistoryId = SeqGuid.Create(),
-                                    ItemId = entity.ItemId,
-                                    Remark = "some more info"
-                                });
-                            }
                             context.BulkInsert(subEntities);
-
                             transaction.Commit();
                         }
-                    }
-                    else
-                    {
-                        context.BulkInsert(entities);
                     }
                 }
                 else
                 {
                     context.Items.AddRange(entities);
+
+                    if (insertTo2Tables)
+                    {
+                        context.ItemHistories.AddRange(subEntities);
+                    }
+
                     context.SaveChanges();
                 }
             }
@@ -101,7 +109,7 @@ namespace EFCore.BulkExtensions.Tests
                 {
                     entities.Add(new Item
                     {
-                        ItemId = i,
+                        ItemId = isBulkOperation ? i : 0,
                         Name = "name InsertOrUpdate " + i,
                         Description = "info",
                         Quantity = i,
@@ -115,7 +123,7 @@ namespace EFCore.BulkExtensions.Tests
                 }
                 else
                 {
-                    context.Items.AddRange(entities);
+                    context.Items.Add(entities[entities.Count - 1]);
                     context.SaveChanges();
                 }
             }
