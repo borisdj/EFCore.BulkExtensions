@@ -48,7 +48,7 @@ namespace EFCore.BulkExtensions
                 throw new InvalidOperationException("DbContext does not contain EntitySet for Type: " + typeof(T).Name);
 
             var relationalData = entityType.Relational();
-            Schema = relationalData.Schema;
+            Schema = relationalData.Schema ?? "dbo";
             Name = relationalData.TableName;
             TempTableSufix = Guid.NewGuid().ToString().Substring(0, 8); // 8 chars of Guid as tableNameSufix to avoid same name collision with other tables
 

@@ -59,7 +59,7 @@ namespace EFCore.BulkExtensions
 
             if (tableInfo.BulkConfig.SetOutputIdentity)
             {
-                q += $" OUTPUT INSERTED.* INTO {(tableInfo.Schema == null ? "dbo.":"")}{tableInfo.FullTempOutputTableName}";
+                q += $" OUTPUT INSERTED.* INTO {tableInfo.FullTempOutputTableName}";
             }
 
             return q + ";";

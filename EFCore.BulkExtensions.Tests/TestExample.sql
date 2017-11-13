@@ -11,7 +11,7 @@ SELECT TOP 0 Source.* INTO dbo.[ItemTemp1234Output] FROM dbo.[Item]
 LEFT JOIN dbo.[Item] AS Source ON 1 = 0;
 
 -- Insert into TempTable
-INSERT INTO [ItemTemp1234]
+INSERT INTO dbo.[ItemTemp1234]
 ([ItemId], [Description], [Name], [Price], [Quantity], [TimeUpdated])
 Values
 (1, 'Desc1', 'SomeName1', 22.11, 34, '2017-01-01'),
