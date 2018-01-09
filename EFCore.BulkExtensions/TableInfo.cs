@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Reflection;
 using System.Threading.Tasks;
 using FastMember;
 using Microsoft.EntityFrameworkCore;
@@ -187,7 +189,8 @@ namespace EFCore.BulkExtensions
 
         protected IQueryable<T> QueryOutputTable<T>(DbContext context) where T : class
         {
-            return context.Set<T>().FromSql(SqlQueryBuilder.SelectFromTable(this.FullTempOutputTableName, this.PrimaryKeys[0]));
+            var query = context.Set<T>().FromSql(SqlQueryBuilder.SelectFromTable(this.FullTempOutputTableName));
+            return OrderBy(query, this.PrimaryKeys[0]);
         }
 
         protected void UpdateEntitiesIdentity<T>(IList<T> entities, IList<T> entitiesWithOutputIdentity)
@@ -203,6 +206,17 @@ namespace EFCore.BulkExtensions
                 entities.Clear();
                 ((List<T>)entities).AddRange(entitiesWithOutputIdentity);
             }
+        }
+        
+        private static IQueryable<T> OrderBy<T>(IQueryable<T> source, string ordering)
+        {
+            Type entityType = typeof(T);
+            PropertyInfo property = entityType.GetProperty(ordering);
+            ParameterExpression parameter = Expression.Parameter(entityType);
+            MemberExpression propertyAccess = Expression.MakeMemberAccess(parameter, property);
+            LambdaExpression orderByExp = Expression.Lambda(propertyAccess, parameter);
+            MethodCallExpression resultExp = Expression.Call(typeof(Queryable), "OrderBy", new Type[] { entityType, property.PropertyType }, source.Expression, Expression.Quote(orderByExp));
+            return source.Provider.CreateQuery<T>(resultExp);
         }
     }
 }
