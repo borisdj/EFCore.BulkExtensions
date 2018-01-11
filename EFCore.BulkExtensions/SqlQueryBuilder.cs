@@ -12,9 +12,9 @@ namespace EFCore.BulkExtensions
             return q;
         }
 
-        public static string SelectFromTable(string tableName, string orderByColumnName)
+        public static string SelectFromTable(string tableName)
         {
-            return $"SELECT * FROM {tableName} ORDER BY {orderByColumnName};";
+            return $"SELECT * FROM {tableName};";
         }
 
         public static string DropTable(string tableName)
