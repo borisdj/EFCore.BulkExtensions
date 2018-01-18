@@ -22,8 +22,8 @@ namespace EFCore.BulkExtensions
         public bool HasSinglePrimaryKey { get; set; }
 
         public string TempTableSufix { get; set; }
-        public string FullTempTableName => $"{SchemaFormated}[{Name}{TempTableSufix}]";
-        public string FullTempOutputTableName => $"{SchemaFormated}[{Name}{TempTableSufix}Output]";
+        public string FullTempTableName => BulkConfig.UseTempDB ? $"#{Name}{TempTableSufix}": $"{SchemaFormated}[{Name}{TempTableSufix}]";
+        public string FullTempOutputTableName => BulkConfig.UseTempDB ? $"#{Name}{TempTableSufix}Output": $"{SchemaFormated}[{Name}{TempTableSufix}Output]";
 
         public bool InsertToTempTable { get; set; }
         public bool HasIdentity { get; set; }
