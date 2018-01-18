@@ -19,7 +19,10 @@ namespace EFCore.BulkExtensions
 
         public static string DropTable(string tableName)
         {
-            return $"DROP TABLE {tableName};";
+            var query = "";
+			if (tableName.StartsWith("#"))
+				query = $"IF OBJECT_ID('tempdb..{tableName}') IS NOT NULL";
+			return query+$" DROP TABLE {tableName};";
         }
 
         public static string SelectIsIdentity(string tableName, string idColumnName)
