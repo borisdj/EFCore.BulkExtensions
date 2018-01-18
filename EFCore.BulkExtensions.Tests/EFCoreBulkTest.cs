@@ -70,7 +70,7 @@ namespace EFCore.BulkExtensions.Tests
                     {
                         using (var transaction = context.Database.BeginTransaction())
                         {
-                            context.BulkInsert(entities, new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true, BatchSize = 4000 }, (a) => WriteProgress(a));
+                            context.BulkInsert(entities, new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true, BatchSize = 4000/*, UseTempDB = true*/ }, (a) => WriteProgress(a));
                             context.BulkInsert(subEntities);
                             transaction.Commit();
                         }

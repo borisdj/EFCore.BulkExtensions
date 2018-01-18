@@ -14,15 +14,12 @@ namespace EFCore.BulkExtensions
 
         public static string SelectFromTable(string tableName)
         {
-            return $"SELECT * FROM {tableName};";
+            return $"SELECT * FROM {tableName}";
         }
 
         public static string DropTable(string tableName)
         {
-            var query = "";
-			if (tableName.StartsWith("#"))
-				query = $"IF OBJECT_ID('tempdb..{tableName}') IS NOT NULL";
-			return query+$" DROP TABLE {tableName};";
+            return $"DROP TABLE {tableName}";
         }
 
         public static string SelectIsIdentity(string tableName, string idColumnName)

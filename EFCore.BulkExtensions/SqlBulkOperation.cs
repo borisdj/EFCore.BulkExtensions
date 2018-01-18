@@ -85,16 +85,21 @@ namespace EFCore.BulkExtensions
 
                 if (tableInfo.BulkConfig.SetOutputIdentity && tableInfo.HasSinglePrimaryKey)
                 {
-                    tableInfo.UpdateOutputIdentity(context, entities);
-                    context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName));
+                    try
+                    {
+                        tableInfo.UpdateOutputIdentity(context, entities);
+                        var dp = SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName);
+                        context.Database.ExecuteSqlCommand(dp);
+                    }
+                    catch (Exception ex)
+                    {
+                        context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName));
+                        throw ex;
+                    }
                 }
             }
             catch (Exception ex)
             {
-                if (tableInfo.BulkConfig.SetOutputIdentity && tableInfo.HasSinglePrimaryKey)
-                {
-                    context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName));
-                }
                 context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName));
                 throw ex;
             }

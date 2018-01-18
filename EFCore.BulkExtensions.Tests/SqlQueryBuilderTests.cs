@@ -66,7 +66,7 @@ namespace EFCore.BulkExtensions.Tests
             var tableInfo = new TableInfo()
             {
                 Schema = "dbo",
-                Name = "Item",
+                TableName = "Item",
                 PrimaryKeys = new List<string> { "ItemId" },
                 TempTableSufix = "Temp1234",
                 BulkConfig = new BulkConfig()

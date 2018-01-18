@@ -28,6 +28,9 @@ namespace EFCore.BulkExtensions.Tests
             modelBuilder.RemovePluralizingTableNameConvention();
 
             modelBuilder.Entity<UserRole>().HasKey(a => new { a.UserId, a.RoleId });
+
+            // For testing Global Filter
+            //modelBuilder.Entity<Item>().HasQueryFilter(p => p.Description != "1234");
         }
     }
 

@@ -16,14 +16,16 @@ namespace EFCore.BulkExtensions
     {
         public string Schema { get; set; }
         public string SchemaFormated => Schema != null ? Schema + "." : "";
-        public string Name { get; set; }
-        public string FullTableName => $"{SchemaFormated}[{Name}]";
+        public string TableName { get; set; }
+        public string FullTableName => $"{SchemaFormated}[{TableName}]";
         public List<string> PrimaryKeys { get; set; }
         public bool HasSinglePrimaryKey { get; set; }
 
+        protected string TempDBPrefix => BulkConfig.UseTempDB ? "#" : "";
         public string TempTableSufix { get; set; }
-        public string FullTempTableName => BulkConfig.UseTempDB ? $"#{Name}{TempTableSufix}": $"{SchemaFormated}[{Name}{TempTableSufix}]";
-        public string FullTempOutputTableName => BulkConfig.UseTempDB ? $"#{Name}{TempTableSufix}Output": $"{SchemaFormated}[{Name}{TempTableSufix}Output]";
+        public string TempTableName => $"{TableName}{TempTableSufix}";
+        public string FullTempTableName => $"{SchemaFormated}[{TempDBPrefix}{TempTableName}]";
+        public string FullTempOutputTableName => $"{SchemaFormated}[{TempDBPrefix}{TempTableName}Output]";
 
         public bool InsertToTempTable { get; set; }
         public bool HasIdentity { get; set; }
@@ -51,7 +53,7 @@ namespace EFCore.BulkExtensions
 
             var relationalData = entityType.Relational();
             Schema = relationalData.Schema ?? "dbo";
-            Name = relationalData.TableName;
+            TableName = relationalData.TableName;
             TempTableSufix = Guid.NewGuid().ToString().Substring(0, 8); // 8 chars of Guid as tableNameSufix to avoid same name collision with other tables
 
             PrimaryKeys = entityType.FindPrimaryKey().Properties.Select(a => a.Name).ToList();
@@ -216,7 +218,8 @@ namespace EFCore.BulkExtensions
             MemberExpression propertyAccess = Expression.MakeMemberAccess(parameter, property);
             LambdaExpression orderByExp = Expression.Lambda(propertyAccess, parameter);
             MethodCallExpression resultExp = Expression.Call(typeof(Queryable), "OrderBy", new Type[] { entityType, property.PropertyType }, source.Expression, Expression.Quote(orderByExp));
-            return source.Provider.CreateQuery<T>(resultExp);
+            var orderedQuery = source.Provider.CreateQuery<T>(resultExp);
+            return orderedQuery;
         }
     }
 }
