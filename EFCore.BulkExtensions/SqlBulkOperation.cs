@@ -25,7 +25,7 @@ namespace EFCore.BulkExtensions
             var transaction = context.Database.CurrentTransaction;
             try
             {
-                using (var sqlBulkCopy = GetSqlBulkCopy(sqlConnection, transaction))
+                using (var sqlBulkCopy = GetSqlBulkCopy(sqlConnection, transaction, tableInfo.KeepIdentity))
                 {
                     tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, progress);
                     using (var reader = ObjectReaderEx.Create(entities, tableInfo.ShadowProperties, context, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
@@ -156,16 +156,22 @@ namespace EFCore.BulkExtensions
             return context.Database.GetDbConnection() as SqlConnection;
         }
 
-        private static SqlBulkCopy GetSqlBulkCopy(SqlConnection sqlConnection, IDbContextTransaction transaction)
+        private static SqlBulkCopy GetSqlBulkCopy(SqlConnection sqlConnection, IDbContextTransaction transaction, bool keepIdentity = false)
         {
             if (transaction == null)
             {
-                return new SqlBulkCopy(sqlConnection);
+                if (keepIdentity)
+                    return new SqlBulkCopy(sqlConnection, SqlBulkCopyOptions.KeepIdentity, null);
+                else
+                    return new SqlBulkCopy(sqlConnection);
             }
             else
             {
                 var sqlTransaction = (SqlTransaction)transaction.GetDbTransaction();
-                return new SqlBulkCopy(sqlConnection, SqlBulkCopyOptions.Default, sqlTransaction);
+                if (keepIdentity)
+                    return new SqlBulkCopy(sqlConnection, SqlBulkCopyOptions.KeepIdentity, sqlTransaction);
+                else
+                    return new SqlBulkCopy(sqlConnection, SqlBulkCopyOptions.Default, sqlTransaction);
             }
         }
     }

@@ -30,6 +30,7 @@ namespace EFCore.BulkExtensions
         public bool InsertToTempTable { get; set; }
         public bool HasIdentity { get; set; }
         public int NumberOfEntities { get; set; }
+        public bool KeepIdentity { get; set; }
 
         public BulkConfig BulkConfig { get; set; }
         public Dictionary<string, string> PropertyColumnNamesDict { get; set; } = new Dictionary<string, string>();
@@ -42,6 +43,7 @@ namespace EFCore.BulkExtensions
             tableInfo.NumberOfEntities = entities.Count;
             tableInfo.LoadData<T>(context, isDeleteOperation);
             tableInfo.BulkConfig = bulkConfig ?? new BulkConfig();
+            tableInfo.KeepIdentity = tableInfo.BulkConfig.KeepIdentity;
             return tableInfo;
         }
 

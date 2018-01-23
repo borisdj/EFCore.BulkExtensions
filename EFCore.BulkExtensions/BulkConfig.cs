@@ -13,7 +13,9 @@
         public int? BulkCopyTimeout { get; set; }
 
         public bool EnableStreaming { get; set; }
-        
+
         public bool UseTempDB { get; set; }
+
+        public bool KeepIdentity { get; set; }
     }
 }
