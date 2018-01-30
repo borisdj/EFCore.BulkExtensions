@@ -25,7 +25,7 @@ namespace EFCore.BulkExtensions
             var transaction = context.Database.CurrentTransaction;
             try
             {
-                using (var sqlBulkCopy = GetSqlBulkCopy(sqlConnection, transaction, tableInfo.KeepIdentity))
+                using (var sqlBulkCopy = GetSqlBulkCopy(sqlConnection, transaction, tableInfo.BulkConfig.KeepIdentity))
                 {
                     tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, progress);
                     using (var reader = ObjectReaderEx.Create(entities, tableInfo.ShadowProperties, context, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
@@ -49,7 +49,7 @@ namespace EFCore.BulkExtensions
             var transaction = context.Database.CurrentTransaction;
             try
             {
-                using (var sqlBulkCopy = GetSqlBulkCopy(sqlConnection, transaction))
+                using (var sqlBulkCopy = GetSqlBulkCopy(sqlConnection, transaction, tableInfo.BulkConfig.KeepIdentity))
                 {
                     tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, progress);
                     using (var reader = ObjectReaderEx.Create(entities, tableInfo.ShadowProperties, context, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
