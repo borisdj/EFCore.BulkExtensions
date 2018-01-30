@@ -31,7 +31,7 @@ namespace EFCore.BulkExtensions
         {
             string targetTable = tableInfo.FullTableName;
             string sourceTable = tableInfo.FullTempTableName;
-            List<string> primaryKeys = tableInfo.PrimaryKeys;
+            List<string> primaryKeys = tableInfo.PrimaryKeys.Select(k => tableInfo.PropertyColumnNamesDict[k]).ToList();
             List<string> columnsNames = tableInfo.PropertyColumnNamesDict.Values.ToList();
             List<string> nonIdentityColumnsNames = columnsNames.Where(a => !primaryKeys.Contains(a)).ToList();
             List<string> insertColumnsNames = tableInfo.HasIdentity ? nonIdentityColumnsNames : columnsNames;
