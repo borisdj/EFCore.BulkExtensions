@@ -34,14 +34,15 @@ namespace EFCore.BulkExtensions
             List<string> primaryKeys = tableInfo.PrimaryKeys;
             List<string> columnsNames = tableInfo.PropertyColumnNamesDict.Values.ToList();
             List<string> nonIdentityColumnsNames = columnsNames.Where(a => !primaryKeys.Contains(a)).ToList();
+            List<string> identityColumnsNames = columnsNames.Where(a => primaryKeys.Select(x => x.ToUpper()).Contains(a.ToUpper())).ToList();
             List<string> insertColumnsNames = tableInfo.HasIdentity ? nonIdentityColumnsNames : columnsNames;
 
             if (tableInfo.BulkConfig.PreserveInsertOrder)
-                sourceTable = $"(SELECT TOP {tableInfo.NumberOfEntities} * FROM {sourceTable} ORDER BY {GetCommaSeparatedColumns(primaryKeys)})";
+                sourceTable = $"(SELECT TOP {tableInfo.NumberOfEntities} * FROM {sourceTable} ORDER BY {GetCommaSeparatedColumns(identityColumnsNames)})";
 
             var q = $"MERGE {targetTable} WITH (HOLDLOCK) AS T " +
                     $"USING {sourceTable} AS S " +
-                    $"ON {GetANDSeparatedColumns(primaryKeys, "T", "S")}";
+                    $"ON {GetANDSeparatedColumns(identityColumnsNames, "T", "S")}";
 
             if (operationType == OperationType.Insert || operationType == OperationType.InsertOrUpdate)
             {
