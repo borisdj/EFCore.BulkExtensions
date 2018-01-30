@@ -90,7 +90,7 @@ namespace EFCore.BulkExtensions
                     {
                         if (currentTransaction != null)
                             command.Transaction = currentTransaction.GetDbTransaction();
-                        command.CommandText = SqlQueryBuilder.SelectIsIdentity(FullTableName, PrimaryKeys[0]);
+                        command.CommandText = SqlQueryBuilder.SelectIsIdentity(FullTableName, PropertyColumnNamesDict[PrimaryKeys[0]]);
                         using (var reader = command.ExecuteReader())
                         {
                             if (reader.HasRows)
@@ -130,7 +130,7 @@ namespace EFCore.BulkExtensions
                     {
                         if (currentTransaction != null)
                             command.Transaction = currentTransaction.GetDbTransaction();
-                        command.CommandText = SqlQueryBuilder.SelectIsIdentity(FullTableName, PrimaryKeys[0]);
+                        command.CommandText = SqlQueryBuilder.SelectIsIdentity(FullTableName, PropertyColumnNamesDict[PrimaryKeys[0]]);
                         using (var reader = await command.ExecuteReaderAsync().ConfigureAwait(false))
                         {
                             if (reader.HasRows)
