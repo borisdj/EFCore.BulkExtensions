@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <Version>2.0.3</Version>
+    <Version>2.0.4</Version>
     <Authors>borisdj</Authors>
     <Description>EntityFrameworkCore Bulk Extensions for Insert Update and Delete (CUD) operations on SQL Server.</Description>
     <PackageProjectUrl>https://github.com/borisdj/EFCore.BulkExtensions</PackageProjectUrl>
