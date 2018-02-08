@@ -11,7 +11,7 @@ This project and everyone participating in it is governed by the [Code of Conduc
 
 If you've noticed a bug or have an idea about new feature you can open a issue.
 Before doing that please go through README and existing issues(both open and closed) and check if that question already exist to avoid duplication.
-Once the issue is created we will discus it there and decide the next actions.
+Once the issue is created we will discuss it there and decide the next actions.
 
 If that would be something you think you can fix, please suggest your solution and we can coordinated accordingly.
 When making changes on code please go throug all code for understandin whole picture in order to make change afect everything it should but no more, and to do it in the correct way.
