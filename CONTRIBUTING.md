@@ -14,9 +14,9 @@ Before doing that please go through README and existing issues(both open and clo
 Once the issue is created we will discuss it there and decide the next actions.
 
 If that would be something you think you can fix, please suggest your solution and we can coordinated accordingly.
-When making changes on code please go throug all code for understandin whole picture in order to make change afect everything it should but no more, and to do it in the correct way.
+When making changes on code please go through all code for understanding whole picture in order to make change affect everything it should but no more, and to do it in the correct way.
 
-After that Tests should up updated if change afects them, or new Tests could be created.
+After that Tests should up updated if change affects them, or new Tests could be created.
 Lastly README should be updated if additional explanations are required regarding the change.
 
 ### How Do I Submit A (Good) Bug Report?
