@@ -9,7 +9,7 @@ This project and everyone participating in it is governed by the [Code of Conduc
 
 ### Where do I go from here?
 
-If you've noticed a bug or have an idea about new feature you can opet a issue.
+If you've noticed a bug or have an idea about new feature you can open a issue.
 Before doing that please go through README and existing issues(both open and closed) and check if that question already exist to avoid duplication.
 Once the issue is created we will discus it there and decide the next actions.
 
