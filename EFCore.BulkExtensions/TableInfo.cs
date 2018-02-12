@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using FastMember;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace EFCore.BulkExtensions
@@ -34,14 +35,15 @@ namespace EFCore.BulkExtensions
         public BulkConfig BulkConfig { get; set; }
         public Dictionary<string, string> PropertyColumnNamesDict { get; set; } = new Dictionary<string, string>();
         public HashSet<string> ShadowProperties { get; set; } = new HashSet<string>();
+        public string TimeStampColumn { get; set; }
 
         public static TableInfo CreateInstance<T>(DbContext context, IList<T> entities, OperationType operationType, BulkConfig bulkConfig)
         {
             var tableInfo = new TableInfo();
             var isDeleteOperation = operationType == OperationType.Delete;
             tableInfo.NumberOfEntities = entities.Count;
-            tableInfo.LoadData<T>(context, isDeleteOperation);
             tableInfo.BulkConfig = bulkConfig ?? new BulkConfig();
+            tableInfo.LoadData<T>(context, isDeleteOperation);
             return tableInfo;
         }
 
@@ -54,12 +56,29 @@ namespace EFCore.BulkExtensions
             var relationalData = entityType.Relational();
             Schema = relationalData.Schema ?? "dbo";
             TableName = relationalData.TableName;
-            TempTableSufix = Guid.NewGuid().ToString().Substring(0, 8); // 8 chars of Guid as tableNameSufix to avoid same name collision with other tables
+            TempTableSufix = "Temp" + Guid.NewGuid().ToString().Substring(0, 8); // 8 chars of Guid as tableNameSufix to avoid same name collision with other tables
 
-            PrimaryKeys = entityType.FindPrimaryKey().Properties.Select(a => a.Name).ToList();
+            bool AreSpecifiedUpdateByProperties = BulkConfig.UpdateByProperties?.Count() > 0;
+            PrimaryKeys = AreSpecifiedUpdateByProperties ? BulkConfig.UpdateByProperties : entityType.FindPrimaryKey().Properties.Select(a => a.Name).ToList();
             HasSinglePrimaryKey = PrimaryKeys.Count == 1;
 
-            var properties = entityType.GetProperties().ToList();
+            var allProperties = entityType.GetProperties().AsEnumerable();
+            // timestamp datatype can only be set by database, that's property having [Timestamp] Attribute but keep if one with [ConcurrencyCheck]
+            var timeStampProperties = allProperties.Where(a => a.IsConcurrencyToken == true && a.ValueGenerated == ValueGenerated.OnAddOrUpdate && a.BeforeSaveBehavior == PropertySaveBehavior.Ignore);
+            TimeStampColumn = timeStampProperties.FirstOrDefault()?.Relational().ColumnName; // expected to be only One
+            var properties = allProperties.Except(timeStampProperties);
+
+            bool AreSpecifiedPropertiesToInclude = BulkConfig.PropertiesToInclude?.Count() > 0;
+            bool AreSpecifiedPropertiesToExclude = BulkConfig.PropertiesToExclude?.Count() > 0;
+            if (AreSpecifiedPropertiesToInclude || AreSpecifiedPropertiesToExclude)
+            {
+                if (AreSpecifiedPropertiesToInclude && AreSpecifiedPropertiesToExclude)
+                    throw new InvalidOperationException("Only one group of properties, either PropertiesToInclude or PropertiesToExclude can be specifed, specifying both not allowed.");
+                if (AreSpecifiedPropertiesToInclude)
+                    properties = properties.Where(a => BulkConfig.PropertiesToInclude.Contains(a.Name));
+                if (AreSpecifiedPropertiesToExclude)
+                    properties = properties.Where(a => !BulkConfig.PropertiesToExclude.Contains(a.Name));
+            }
 
             if (loadOnlyPKColumn)
             {
@@ -191,7 +210,7 @@ namespace EFCore.BulkExtensions
 
         protected IQueryable<T> QueryOutputTable<T>(DbContext context) where T : class
         {
-            var query = context.Set<T>().FromSql(SqlQueryBuilder.SelectFromTable(this.FullTempOutputTableName));
+            var query = context.Set<T>().FromSql<T>(SqlQueryBuilder.SelectFromOutputTable(this));
             return OrderBy(query, this.PrimaryKeys[0]);
         }
 
@@ -209,7 +228,7 @@ namespace EFCore.BulkExtensions
                 ((List<T>)entities).AddRange(entitiesWithOutputIdentity);
             }
         }
-        
+
         private static IQueryable<T> OrderBy<T>(IQueryable<T> source, string ordering)
         {
             Type entityType = typeof(T);

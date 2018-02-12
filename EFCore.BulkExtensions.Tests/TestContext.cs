@@ -62,7 +62,7 @@ namespace EFCore.BulkExtensions.Tests
         public int ItemId { get; set; }
         
         public string Name { get; set; }
-
+        
         public string Description { get; set; }
 
         public int Quantity { get; set; }
@@ -70,6 +70,9 @@ namespace EFCore.BulkExtensions.Tests
         public decimal? Price { get; set; }
 
         public DateTime TimeUpdated { get; set; }
+        
+        [Timestamp]
+        public byte[] VersionChange { get; set; }
 
         public ICollection<ItemHistory> ItemHistories { get; set; }
     }

@@ -70,38 +70,34 @@ namespace EFCore.BulkExtensions
         public static void Merge<T>(DbContext context, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress) where T : class
         {
             tableInfo.InsertToTempTable = true;
-            tableInfo.CheckHasIdentity(context);
+            if(tableInfo.BulkConfig.UpdateByProperties == null || tableInfo.BulkConfig.UpdateByProperties.Count() == 0)
+                tableInfo.CheckHasIdentity(context);
 
-            context.Database.ExecuteSqlCommand(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName));
+            context.Database.ExecuteSqlCommand(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo));
             if (tableInfo.BulkConfig.SetOutputIdentity)
             {
-                context.Database.ExecuteSqlCommand(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempOutputTableName));
+                context.Database.ExecuteSqlCommand(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempOutputTableName, tableInfo));
             }
             try
             {
                 Insert(context, entities, tableInfo, progress);
                 context.Database.ExecuteSqlCommand(SqlQueryBuilder.MergeTable(tableInfo, operationType));
-                context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName));
 
                 if (tableInfo.BulkConfig.SetOutputIdentity && tableInfo.HasSinglePrimaryKey)
                 {
                     try
                     {
                         tableInfo.UpdateOutputIdentity(context, entities);
-                        var dp = SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName);
-                        context.Database.ExecuteSqlCommand(dp);
                     }
-                    catch (Exception ex)
+                    finally
                     {
                         context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName));
-                        throw ex;
                     }
                 }
             }
-            catch (Exception ex)
+            finally
             {
                 context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName));
-                throw ex;
             }
         }
 
@@ -110,31 +106,31 @@ namespace EFCore.BulkExtensions
             tableInfo.InsertToTempTable = true;
             await tableInfo.CheckHasIdentityAsync(context).ConfigureAwait(false);
 
-            await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName)).ConfigureAwait(false);
+            await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo)).ConfigureAwait(false);
             if (tableInfo.BulkConfig.SetOutputIdentity && tableInfo.HasIdentity)
             {
-                await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempOutputTableName)).ConfigureAwait(false);
+                await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempOutputTableName, tableInfo)).ConfigureAwait(false);
             }
             try
             {
                 await InsertAsync(context, entities, tableInfo, progress).ConfigureAwait(false);
                 await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.MergeTable(tableInfo, operationType)).ConfigureAwait(false);
-                await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName)).ConfigureAwait(false);
 
                 if (tableInfo.BulkConfig.SetOutputIdentity && tableInfo.HasIdentity)
                 {
-                    await tableInfo.UpdateOutputIdentityAsync(context, entities).ConfigureAwait(false);
-                    await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName)).ConfigureAwait(false);
+                    try
+                    {
+                        await tableInfo.UpdateOutputIdentityAsync(context, entities).ConfigureAwait(false);
+                    }
+                    finally
+                    {
+                        await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName)).ConfigureAwait(false);
+                    }
                 }
             }
-            catch (Exception ex)
+            finally
             {
-                if (tableInfo.BulkConfig.SetOutputIdentity && tableInfo.HasIdentity)
-                {
-                    await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName)).ConfigureAwait(false);
-                }
                 await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName)).ConfigureAwait(false);
-                throw ex;
             }
         }
 

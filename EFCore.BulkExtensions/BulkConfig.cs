@@ -1,4 +1,6 @@
-﻿namespace EFCore.BulkExtensions
+﻿using System.Collections.Generic;
+
+namespace EFCore.BulkExtensions
 {
     public class BulkConfig
     {
@@ -17,5 +19,11 @@
         public bool UseTempDB { get; set; }
 
         public bool KeepIdentity { get; set; }
+
+        public List<string> PropertiesToInclude { get; set; }
+
+        public List<string> PropertiesToExclude { get; set; }
+
+        public List<string> UpdateByProperties { get; set; }
     }
 }

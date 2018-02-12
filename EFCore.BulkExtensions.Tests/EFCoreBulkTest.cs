@@ -70,7 +70,16 @@ namespace EFCore.BulkExtensions.Tests
                     {
                         using (var transaction = context.Database.BeginTransaction())
                         {
-                            context.BulkInsert(entities, new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true, BatchSize = 4000/*, UseTempDB = true*/ }, (a) => WriteProgress(a));
+                            context.BulkInsert(
+                                entities,
+                                new BulkConfig {
+                                    PreserveInsertOrder = true,
+                                    SetOutputIdentity = true,
+                                    BatchSize = 4000
+                                    //,UseTempDB = true
+                                },
+                                (a) => WriteProgress(a)
+                            );
                             context.BulkInsert(subEntities);
                             transaction.Commit();
                         }
@@ -112,7 +121,7 @@ namespace EFCore.BulkExtensions.Tests
                         ItemId = isBulkOperation ? i : 0,
                         Name = "name InsertOrUpdate " + i,
                         Description = "info",
-                        Quantity = i,
+                        Quantity = i + 100,
                         Price = i / (i % 5 + 1),
                         TimeUpdated = dateTimeNow
                     });
@@ -146,12 +155,17 @@ namespace EFCore.BulkExtensions.Tests
                 var entities = context.Items.AsNoTracking().ToList();
                 foreach (var entity in entities)
                 {
-                    entity.Name = "name Update " + counter++;
-                    entity.TimeUpdated = DateTime.Now;
+                    entity.Description = "Desc Update " + counter++;
+                    entity.Quantity = entity.Quantity + 1000; // will not be changed since Quantity property is not in config PropertiesToInclude 
                 }
                 if (isBulkOperation)
                 {
-                    context.BulkUpdate(entities);
+                    context.BulkUpdate(
+                        entities, new BulkConfig {
+                            UpdateByProperties = new List<string> { nameof(Item.Name) },
+                            PropertiesToInclude = new List<string> { nameof(Item.Name), nameof(Item.Description) }
+                        }
+                    );
                 }
                 else
                 {
@@ -166,7 +180,7 @@ namespace EFCore.BulkExtensions.Tests
 
                 Assert.Equal(entitiesNumber, entitiesCount);
                 Assert.NotNull(lastEntity);
-                Assert.Equal("name Update " + entitiesNumber, lastEntity.Name);
+                Assert.Equal("name InsertOrUpdate " + entitiesNumber, lastEntity.Name);
             }
         }
 

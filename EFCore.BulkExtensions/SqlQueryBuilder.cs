@@ -5,16 +5,20 @@ namespace EFCore.BulkExtensions
 {
     public static class SqlQueryBuilder
     {
-        public static string CreateTableCopy(string existingTableName, string newTableName)
+        public static string CreateTableCopy(string existingTableName, string newTableName, TableInfo tableInfo)
         {
-            var q = $"SELECT TOP 0 Source.* INTO {newTableName} FROM {existingTableName} ";
-            q += $"LEFT JOIN {existingTableName} AS Source ON 1 = 0;"; // removes Identity constrain and makes all columns nullable
+            List<string> columnsNames = tableInfo.PropertyColumnNamesDict.Values.ToList();
+            var q = $"SELECT TOP 0 {GetCommaSeparatedColumns(columnsNames, "T")} " +
+                    $"INTO {newTableName} FROM {existingTableName} AS T " +
+                    $"LEFT JOIN {existingTableName} AS Source ON 1 = 0;"; // removes Identity constrain
             return q;
         }
-
-        public static string SelectFromTable(string tableName)
+        
+        public static string SelectFromOutputTable(TableInfo tableInfo)
         {
-            return $"SELECT * FROM {tableName}";
+            List<string> columnsNames = tableInfo.PropertyColumnNamesDict.Values.ToList();
+            string timeStampColumnNull = tableInfo.TimeStampColumn != null ? $", {tableInfo.TimeStampColumn} = NULL" : "";
+            return $"SELECT {GetCommaSeparatedColumns(columnsNames)}{timeStampColumnNull} FROM {tableInfo.FullTempOutputTableName}";
         }
 
         public static string DropTable(string tableName)
@@ -45,8 +49,8 @@ namespace EFCore.BulkExtensions
 
             if (operationType == OperationType.Insert || operationType == OperationType.InsertOrUpdate)
             {
-                q += $" WHEN NOT MATCHED THEN INSERT ({GetCommaSeparatedColumns(insertColumnsNames)})";
-                q += $" VALUES ({GetCommaSeparatedColumns(insertColumnsNames, "S")})";
+                q += $" WHEN NOT MATCHED THEN INSERT ({GetCommaSeparatedColumns(insertColumnsNames)})" +
+                     $" VALUES ({GetCommaSeparatedColumns(insertColumnsNames, "S")})";
             }
             if (operationType == OperationType.Update || operationType == OperationType.InsertOrUpdate)
             {
@@ -59,7 +63,8 @@ namespace EFCore.BulkExtensions
 
             if (tableInfo.BulkConfig.SetOutputIdentity)
             {
-                q += $" OUTPUT INSERTED.* INTO {tableInfo.FullTempOutputTableName}";
+                q += $" OUTPUT {GetCommaSeparatedColumns(columnsNames, "INSERTED")}" +
+                     $" INTO {tableInfo.FullTempOutputTableName}";
             }
 
             return q + ";";
