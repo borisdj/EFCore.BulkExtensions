@@ -163,7 +163,7 @@ namespace EFCore.BulkExtensions.Tests
                     context.BulkUpdate(
                         entities, new BulkConfig {
                             UpdateByProperties = new List<string> { nameof(Item.Name) },
-                            PropertiesToInclude = new List<string> { nameof(Item.Name), nameof(Item.Description) }
+                            PropertiesToInclude = new List<string> { nameof(Item.Description) }
                         }
                     );
                 }

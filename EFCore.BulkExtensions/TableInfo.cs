@@ -67,9 +67,22 @@ namespace EFCore.BulkExtensions
             var timeStampProperties = allProperties.Where(a => a.IsConcurrencyToken == true && a.ValueGenerated == ValueGenerated.OnAddOrUpdate && a.BeforeSaveBehavior == PropertySaveBehavior.Ignore);
             TimeStampColumn = timeStampProperties.FirstOrDefault()?.Relational().ColumnName; // expected to be only One
             var properties = allProperties.Except(timeStampProperties);
-
+            
             bool AreSpecifiedPropertiesToInclude = BulkConfig.PropertiesToInclude?.Count() > 0;
             bool AreSpecifiedPropertiesToExclude = BulkConfig.PropertiesToExclude?.Count() > 0;
+
+            // Adds UpdateByProperties to PropertyToInclude if they are not already explicitly listed
+            if (AreSpecifiedUpdateByProperties && AreSpecifiedPropertiesToInclude)
+            {
+                foreach (var propertyToInclude in BulkConfig.UpdateByProperties)
+                {
+                    if (!BulkConfig.PropertiesToInclude.Contains(propertyToInclude))
+                    {
+                        BulkConfig.PropertiesToInclude.Add(propertyToInclude);
+                    }
+                }
+            }
+
             if (AreSpecifiedPropertiesToInclude || AreSpecifiedPropertiesToExclude)
             {
                 if (AreSpecifiedPropertiesToInclude && AreSpecifiedPropertiesToExclude)
