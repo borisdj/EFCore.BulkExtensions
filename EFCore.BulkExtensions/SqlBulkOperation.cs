@@ -25,7 +25,7 @@ namespace EFCore.BulkExtensions
             var transaction = context.Database.CurrentTransaction;
             try
             {
-                using (var sqlBulkCopy = GetSqlBulkCopy(sqlConnection, transaction, tableInfo.BulkConfig.KeepIdentity))
+                using (var sqlBulkCopy = GetSqlBulkCopy(sqlConnection, transaction, tableInfo.BulkConfig.SqlBulkCopyOptions))
                 {
                     tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, progress);
                     using (var reader = ObjectReaderEx.Create(entities, tableInfo.ShadowProperties, context, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
@@ -49,7 +49,7 @@ namespace EFCore.BulkExtensions
             var transaction = context.Database.CurrentTransaction;
             try
             {
-                using (var sqlBulkCopy = GetSqlBulkCopy(sqlConnection, transaction, tableInfo.BulkConfig.KeepIdentity))
+                using (var sqlBulkCopy = GetSqlBulkCopy(sqlConnection, transaction, tableInfo.BulkConfig.SqlBulkCopyOptions))
                 {
                     tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, progress);
                     using (var reader = ObjectReaderEx.Create(entities, tableInfo.ShadowProperties, context, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
@@ -152,22 +152,16 @@ namespace EFCore.BulkExtensions
             return context.Database.GetDbConnection() as SqlConnection;
         }
 
-        private static SqlBulkCopy GetSqlBulkCopy(SqlConnection sqlConnection, IDbContextTransaction transaction, bool keepIdentity = false)
+        private static SqlBulkCopy GetSqlBulkCopy(SqlConnection sqlConnection, IDbContextTransaction transaction, SqlBulkCopyOptions sqlBulkCopyOptions = SqlBulkCopyOptions.Default)
         {
             if (transaction == null)
             {
-                if (keepIdentity)
-                    return new SqlBulkCopy(sqlConnection, SqlBulkCopyOptions.KeepIdentity, null);
-                else
-                    return new SqlBulkCopy(sqlConnection);
+                return new SqlBulkCopy(sqlConnection, sqlBulkCopyOptions, null);
             }
             else
             {
                 var sqlTransaction = (SqlTransaction)transaction.GetDbTransaction();
-                if (keepIdentity)
-                    return new SqlBulkCopy(sqlConnection, SqlBulkCopyOptions.KeepIdentity, sqlTransaction);
-                else
-                    return new SqlBulkCopy(sqlConnection, SqlBulkCopyOptions.Default, sqlTransaction);
+                return new SqlBulkCopy(sqlConnection, sqlBulkCopyOptions, sqlTransaction);
             }
         }
     }

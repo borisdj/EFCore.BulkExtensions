@@ -5,7 +5,7 @@ It is targeting NetStandard 2.0 so it can used on project targeting NetCore(2.0+
 Versions prior to 2.0.0, of which last being 1.1.0 are targeting NetStandard 1.4 and are compatible with NetCore(1.x) or NetFramework(4.6.1).<br>
 Under the hood uses [SqlBulkCopy](https://msdn.microsoft.com/en-us/library/system.data.sqlclient.sqlbulkcopy.aspx) for Insert, for Update/Delete combines BulkInsert with raw Sql ['MERGE'](https://docs.microsoft.com/en-us/sql/t-sql/statements/merge-transact-sql) (MsSQL 2008+).
 
-Available on [NuGet](https://www.nuget.org/packages/EFCore.BulkExtensions/). Latest 2.0.5<br>
+Available on [NuGet](https://www.nuget.org/packages/EFCore.BulkExtensions/). Latest 2.0.6<br>
 Package manager console command for installation: *Install-Package EFCore.BulkExtensions*
 
 Usage is simple and pretty straightforward.<br>
@@ -34,8 +34,8 @@ It makes Update when PK is matched, otherwise does Insert.<br>
 
 ## BulkConfig arguments
 
-**BulkInsert** and **BulkInsertOrUpdate** methods can have optional argument **BulkConfig** with properties (bool, int, List<string>):<br>
-*{ PreserveInsertOrder, SetOutputIdentity, BatchSize, NotifyAfter, BulkCopyTimeout, EnableStreaming, UseTempDB, KeepIdentity, PropertiesToInclude, PropertiesToExclude, UpdateByProperties }*<br>
+**BulkInsert** and **BulkInsertOrUpdate** methods can have optional argument **BulkConfig** with properties (bool, int, object, List<string>):<br>
+*{ PreserveInsertOrder, SetOutputIdentity, BatchSize, NotifyAfter, BulkCopyTimeout, EnableStreaming, UseTempDB, SqlBulkCopyOptions, PropertiesToInclude, PropertiesToExclude, UpdateByProperties }*<br>
 Default behaviour is { false, false, 2000,  null, null, false, false, false, null, null, null} and if we want to change it, BulkConfig should be added explicitly with one or more bool properties set to true, and/or int props like **BatchSize** to different number.<br>
 When doing update we can chose to exclude one or more properties by adding their names into **PropertiesToExclude**, or if we need to update less then half column then **PropertiesToInclude** can be used. Setting both Lists are not allowed. Additionaly there is **UpdateByProperties** that allows specifying custom properties, besides PK, by which we want update to be done.<br>
 If **NotifyAfter** is not set it will have same value as _BatchSize_ while **BulkCopyTimeout** when not set has SqlBulkCopy default which is 30 seconds and if set to 0 it indicates no limit.<br>
@@ -62,6 +62,9 @@ So if we have list of 8000, say 3000 for update (they keep the real Id) and 5000
 So after Insert is done to first table, we need Id-s that were generated in Db becasue they are FK in second table.<br>
 It is implemented with [OUTPUT](https://docs.microsoft.com/en-us/sql/t-sql/queries/output-clause-transact-sql) as part of MERGE Query, so in this case even the Insert is not done directly to TargetTable but to TempTable and then Merged with TargetTable.<br>
 When used if *PreserveInsertOrder* is also set to *true* Id-s will be updated in entitiesList, and if *PreserveInsertOrder* is *false* then entitiesList will be cleared and reloaded.
+
+**SqlBulkCopyOptions** is Enum with Flags attribute which enable us to specify one or more options:<br>
+*Default, KeepIdentity, CheckConstraints, TableLock, KeepNulls, FireTriggers, UseInternalTransaction*
 
 Last optional argument is **Action progress** (Example in *EfOperationTest.cs* *RunInsert()* with *WriteProgress()*).
 ```csharp

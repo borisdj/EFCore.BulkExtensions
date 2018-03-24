@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Data.SqlClient;
 
 namespace EFCore.BulkExtensions
 {
@@ -17,8 +18,8 @@ namespace EFCore.BulkExtensions
         public bool EnableStreaming { get; set; }
 
         public bool UseTempDB { get; set; }
-
-        public bool KeepIdentity { get; set; }
+        
+        public SqlBulkCopyOptions SqlBulkCopyOptions { get; set; }
 
         public List<string> PropertiesToInclude { get; set; }
 

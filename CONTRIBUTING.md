@@ -38,7 +38,7 @@ Always write a clear log message for your commits. One-line messages are fine fo
 
 ## Coding conventions
 
-Start reading the code and you'll get the hang of it. We optimize for readability:
+Start reading the code and you'll get the hang of it. It is optimized for readability:
 
   * This is open source software. Consider the people who will read your code, and make it look nice for them. It's sort of like driving a car: Perhaps you love doing donuts when you're alone, but with passengers the goal is to make the ride as smooth as possible.
   * https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/index
