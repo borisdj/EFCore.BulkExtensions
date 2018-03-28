@@ -70,15 +70,27 @@ namespace EFCore.BulkExtensions
             
             bool AreSpecifiedPropertiesToInclude = BulkConfig.PropertiesToInclude?.Count() > 0;
             bool AreSpecifiedPropertiesToExclude = BulkConfig.PropertiesToExclude?.Count() > 0;
-
-            // Adds UpdateByProperties to PropertyToInclude if they are not already explicitly listed
-            if (AreSpecifiedUpdateByProperties && AreSpecifiedPropertiesToInclude)
+            
+            if (AreSpecifiedPropertiesToInclude)
             {
-                foreach (var propertyToInclude in BulkConfig.UpdateByProperties)
+                if (AreSpecifiedUpdateByProperties) // Adds UpdateByProperties to PropertyToInclude if they are not already explicitly listed
                 {
-                    if (!BulkConfig.PropertiesToInclude.Contains(propertyToInclude))
+                    foreach (var updateByProperty in BulkConfig.UpdateByProperties)
                     {
-                        BulkConfig.PropertiesToInclude.Add(propertyToInclude);
+                        if (!BulkConfig.PropertiesToInclude.Contains(updateByProperty))
+                        {
+                            BulkConfig.PropertiesToInclude.Add(updateByProperty);
+                        }
+                    }
+                }
+                else // Adds PrimaryKeys to PropertyToInclude if they are not already explicitly listed
+                {
+                    foreach (var primaryKey in PrimaryKeys) 
+                    {
+                        if (!BulkConfig.PropertiesToInclude.Contains(primaryKey))
+                        {
+                            BulkConfig.PropertiesToInclude.Add(primaryKey);
+                        }
                     }
                 }
             }
