@@ -71,6 +71,8 @@ Last optional argument is **Action progress** (Example in *EfOperationTest.cs* *
 context.BulkInsert(entitiesList, null, (a) => WriteProgress(a));
 ```
 
+Library supports [Global Query Filters](https://docs.microsoft.com/en-us/ef/core/querying/filters).
+
 ## TPH inheritance
 
 When having TPH ([Table-Per-Hierarchy](https://docs.microsoft.com/en-us/aspnet/core/data/ef-mvc/inheritance)) inheritance model it can be set in 2 ways.<br>
