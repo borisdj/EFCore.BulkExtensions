@@ -39,10 +39,20 @@ namespace EFCore.BulkExtensions
 
         public static TableInfo CreateInstance<T>(DbContext context, IList<T> entities, OperationType operationType, BulkConfig bulkConfig)
         {
-            var tableInfo = new TableInfo();
+            var tableInfo = new TableInfo
+            {
+                NumberOfEntities = entities.Count,
+                BulkConfig = bulkConfig ?? new BulkConfig()
+            };
+
+            if (operationType != OperationType.Insert)
+            {
+                tableInfo.BulkConfig.UseTempDB = false; // TempDB can only be used with Insert.
+                // Other Operations done with customTemp table.
+                // If using tempdb[#] throws exception: 'Cannot access destination table' (gets Droped too early, probably because transaction ends)
+            }
+
             var isDeleteOperation = operationType == OperationType.Delete;
-            tableInfo.NumberOfEntities = entities.Count;
-            tableInfo.BulkConfig = bulkConfig ?? new BulkConfig();
             tableInfo.LoadData<T>(context, isDeleteOperation);
             return tableInfo;
         }

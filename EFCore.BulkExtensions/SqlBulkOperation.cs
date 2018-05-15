@@ -91,13 +91,15 @@ namespace EFCore.BulkExtensions
                     }
                     finally
                     {
-                        context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName));
+                        if (!tableInfo.BulkConfig.UseTempDB)
+                            context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName));
                     }
                 }
             }
             finally
             {
-                context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName));
+                if (!tableInfo.BulkConfig.UseTempDB)
+                    context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName));
             }
         }
 

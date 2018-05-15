@@ -76,7 +76,7 @@ namespace EFCore.BulkExtensions.Tests
                                     PreserveInsertOrder = true,
                                     SetOutputIdentity = true,
                                     BatchSize = 4000
-                                    //,UseTempDB = true
+                                    ,UseTempDB = true
                                 },
                                 (a) => WriteProgress(a)
                             );

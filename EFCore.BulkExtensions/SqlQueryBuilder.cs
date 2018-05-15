@@ -43,7 +43,9 @@ namespace EFCore.BulkExtensions
             if (tableInfo.BulkConfig.PreserveInsertOrder)
                 sourceTable = $"(SELECT TOP {tableInfo.NumberOfEntities} * FROM {sourceTable} ORDER BY {GetCommaSeparatedColumns(primaryKeys)})";
 
-            var q = $"MERGE {targetTable} WITH (HOLDLOCK) AS T " +
+            string textWITH_HOLDLOCK = tableInfo.BulkConfig.WithHoldlock ? " WITH (HOLDLOCK)" : "";
+
+            var q = $"MERGE {targetTable}{textWITH_HOLDLOCK} AS T " +
                     $"USING {sourceTable} AS S " +
                     $"ON {GetANDSeparatedColumns(primaryKeys, "T", "S")}";
 
@@ -52,7 +54,7 @@ namespace EFCore.BulkExtensions
                 q += $" WHEN NOT MATCHED THEN INSERT ({GetCommaSeparatedColumns(insertColumnsNames)})" +
                      $" VALUES ({GetCommaSeparatedColumns(insertColumnsNames, "S")})";
             }
-            if (operationType == OperationType.Update || operationType == OperationType.InsertOrUpdate)
+            if (operationType == OperationType.Update || (operationType == OperationType.InsertOrUpdate && nonIdentityColumnsNames.Count > 0))
             {
                 q += $" WHEN MATCHED THEN UPDATE SET {GetCommaSeparatedColumns(nonIdentityColumnsNames, "T", "S")}";
             }
