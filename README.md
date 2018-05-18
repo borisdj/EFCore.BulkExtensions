@@ -105,7 +105,8 @@ Test was done locally on following configuration: INTEL Core i5-3570K 3.40GHz, D
 
 ## Contributing
 
-If you find this project useful you can mark it by leaving a Github Star.
+If you find this project useful you can mark it by leaving a Github Star.</br>
+Contact For HIRE: [www.codis.tech](http://www.codis.tech)
 
 Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on code of conduct, and the process for submitting pull requests.
 
