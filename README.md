@@ -1,7 +1,7 @@
 # EFCore.BulkExtensions
 EntityFrameworkCore extensions for Bulk operations (**Insert, Update, Delete**).<br>
 Library is Lightweight and very Efficient, having all mostly used CUD operation.<br>
-It is targeting NetStandard 2.0 so it can used on project targeting NetCore(2.0+) or NetFramework(4.6.1+).<br>
+It is targeting NetStandard 2.0 so it can be used on project targeting NetCore(2.0+) or NetFramework(4.6.1+).<br>
 Versions prior to 2.0.0, of which last being 1.1.0 are targeting NetStandard 1.4 and are compatible with NetCore(1.x) or NetFramework(4.6.1).<br>
 Under the hood uses [SqlBulkCopy](https://msdn.microsoft.com/en-us/library/system.data.sqlclient.sqlbulkcopy.aspx) for Insert, for Update/Delete combines BulkInsert with raw Sql ['MERGE'](https://docs.microsoft.com/en-us/sql/t-sql/statements/merge-transact-sql) (MsSQL 2008+).
 
