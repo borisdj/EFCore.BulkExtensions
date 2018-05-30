@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -17,13 +18,22 @@ namespace EFCore.BulkExtensions.Tests
         public async Task OperationsTestAsync(bool isBulkOperation, bool insertTo2Tables = false)
         {
             // Test can be run individually by commenting others and running each separately in order one after another
-            await RunInsertAsync(isBulkOperation, insertTo2Tables);
-            await RunInsertOrUpdateAsync(isBulkOperation);
-            await RunUpdateAsync(isBulkOperation);
+            var dateTime = new DateTime(2018, 1, 1);
+            await RunInsertAsync(isBulkOperation, dateTime, insertTo2Tables);
+            await TestConversionAsync(dateTime.AddDays(1));
+
+            dateTime = new DateTime(2018, 2, 1);
+            await RunInsertOrUpdateAsync(isBulkOperation, dateTime);
+            await TestConversionAsync(dateTime.AddDays(1));
+
+            dateTime = new DateTime(2018, 3, 1);
+            await RunUpdateAsync(isBulkOperation, dateTime);
+            await TestConversionAsync(dateTime.AddDays(1));
+
             await RunDeleteAsync(isBulkOperation);
         }
 
-        private async Task RunInsertAsync(bool isBulkOperation, bool insertTo2Tables = false)
+        private async Task RunInsertAsync(bool isBulkOperation, DateTime dateTime, bool insertTo2Tables = false)
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
@@ -38,8 +48,8 @@ namespace EFCore.BulkExtensions.Tests
                         Description = "info " + Guid.NewGuid().ToString().Substring(0, 3),
                         Quantity = i % 10,
                         Price = i / (i % 5 + 1),
-                        TimeUpdated = DateTime.Now,
-                        ConvertedTime = DateTime.Now,
+                        TimeUpdated = dateTime,
+                        ConvertedTime = dateTime,
                     });
                 }
                 if (isBulkOperation)
@@ -86,12 +96,11 @@ namespace EFCore.BulkExtensions.Tests
             }
         }
 
-        private async Task RunInsertOrUpdateAsync(bool isBulkOperation)
+        private async Task RunInsertOrUpdateAsync(bool isBulkOperation, DateTime dateTime)
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 var entities = new List<Item>();
-                var dateTimeNow = DateTime.Now;
                 for (int i = 2; i <= entitiesNumber; i += 2)
                 {
                     entities.Add(new Item
@@ -101,8 +110,8 @@ namespace EFCore.BulkExtensions.Tests
                         Description = "info",
                         Quantity = i,
                         Price = i / (i % 5 + 1),
-                        TimeUpdated = dateTimeNow,
-                        ConvertedTime = dateTimeNow
+                        TimeUpdated = dateTime,
+                        ConvertedTime = dateTime
                     });
                 }
                 if (isBulkOperation)
@@ -126,7 +135,7 @@ namespace EFCore.BulkExtensions.Tests
             }
         }
 
-        private async Task RunUpdateAsync(bool isBulkOperation)
+        private async Task RunUpdateAsync(bool isBulkOperation, DateTime dateTime)
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
@@ -136,6 +145,7 @@ namespace EFCore.BulkExtensions.Tests
                 {
                     entity.Name = "name Update " + counter++;
                     entity.TimeUpdated = DateTime.Now;
+                    entity.ConvertedTime = dateTime;
                 }
                 if (isBulkOperation)
                 {
@@ -188,6 +198,29 @@ namespace EFCore.BulkExtensions.Tests
                 // Resets AutoIncrement
                 context.Database.ExecuteSqlCommand("DBCC CHECKIDENT ('dbo.[" + nameof(Item) + "]', RESEED, 0);");
                 //context.Database.ExecuteSqlCommand($"TRUNCATE TABLE {nameof(Item)};"); // can NOT work when there is ForeignKey - ItemHistoryId
+            }
+        }
+
+        private async Task TestConversionAsync(DateTime dateTime)
+        {
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                var conn = context.Database.GetDbConnection();
+                if (conn.State != ConnectionState.Open)
+                    await conn.OpenAsync();
+
+                using (var command = conn.CreateCommand())
+                {
+                    command.CommandText = $"select top 1 * from {nameof(Item)} order by {nameof(Item.ItemId)} desc";
+                    var reader = command.ExecuteReader();
+                    await reader.ReadAsync();
+                    var row = new Item()
+                    {
+                        ConvertedTime = reader.Field<DateTime>(nameof(Item.ConvertedTime)),
+                    };
+                    if (row.ConvertedTime != dateTime)
+                        throw new Exception($"The '{nameof(Item.ConvertedTime)}' was not converted properly");
+                }
             }
         }
     }
