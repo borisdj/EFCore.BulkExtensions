@@ -10,6 +10,7 @@ using FastMember;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace EFCore.BulkExtensions
 {
@@ -35,6 +36,7 @@ namespace EFCore.BulkExtensions
         public BulkConfig BulkConfig { get; set; }
         public Dictionary<string, string> PropertyColumnNamesDict { get; set; } = new Dictionary<string, string>();
         public HashSet<string> ShadowProperties { get; set; } = new HashSet<string>();
+        public Dictionary<string, ValueConverter> ConvertibleProperties { get; set; } = new Dictionary<string, ValueConverter>();
         public string TimeStampColumn { get; set; }
 
         public static TableInfo CreateInstance<T>(DbContext context, IList<T> entities, OperationType operationType, BulkConfig bulkConfig)
@@ -77,10 +79,10 @@ namespace EFCore.BulkExtensions
             var timeStampProperties = allProperties.Where(a => a.IsConcurrencyToken == true && a.ValueGenerated == ValueGenerated.OnAddOrUpdate && a.BeforeSaveBehavior == PropertySaveBehavior.Ignore);
             TimeStampColumn = timeStampProperties.FirstOrDefault()?.Relational().ColumnName; // expected to be only One
             var properties = allProperties.Except(timeStampProperties);
-            
+
             bool AreSpecifiedPropertiesToInclude = BulkConfig.PropertiesToInclude?.Count() > 0;
             bool AreSpecifiedPropertiesToExclude = BulkConfig.PropertiesToExclude?.Count() > 0;
-            
+
             if (AreSpecifiedPropertiesToInclude)
             {
                 if (AreSpecifiedUpdateByProperties) // Adds UpdateByProperties to PropertyToInclude if they are not already explicitly listed
@@ -95,7 +97,7 @@ namespace EFCore.BulkExtensions
                 }
                 else // Adds PrimaryKeys to PropertyToInclude if they are not already explicitly listed
                 {
-                    foreach (var primaryKey in PrimaryKeys) 
+                    foreach (var primaryKey in PrimaryKeys)
                     {
                         if (!BulkConfig.PropertiesToInclude.Contains(primaryKey))
                         {
@@ -123,6 +125,8 @@ namespace EFCore.BulkExtensions
             {
                 PropertyColumnNamesDict = properties.ToDictionary(a => a.Name, b => b.Relational().ColumnName);
                 ShadowProperties = new HashSet<string>(properties.Where(p => p.IsShadowProperty).Select(p => p.Relational().ColumnName));
+                foreach (var property in properties.Where(p => p.GetValueConverter() != null))
+                    ConvertibleProperties.Add(property.Relational().ColumnName, property.GetValueConverter());
             }
         }
 

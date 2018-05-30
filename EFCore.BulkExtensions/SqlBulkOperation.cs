@@ -28,7 +28,7 @@ namespace EFCore.BulkExtensions
                 using (var sqlBulkCopy = GetSqlBulkCopy(sqlConnection, transaction, tableInfo.BulkConfig.SqlBulkCopyOptions))
                 {
                     tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, progress);
-                    using (var reader = ObjectReaderEx.Create(entities, tableInfo.ShadowProperties, context, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
+                    using (var reader = ObjectReaderEx.Create(entities, tableInfo.ShadowProperties, tableInfo.ConvertibleProperties, context, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
                     {
                         sqlBulkCopy.WriteToServer(reader);
                     }
@@ -52,7 +52,7 @@ namespace EFCore.BulkExtensions
                 using (var sqlBulkCopy = GetSqlBulkCopy(sqlConnection, transaction, tableInfo.BulkConfig.SqlBulkCopyOptions))
                 {
                     tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, progress);
-                    using (var reader = ObjectReaderEx.Create(entities, tableInfo.ShadowProperties, context, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
+                    using (var reader = ObjectReaderEx.Create(entities, tableInfo.ShadowProperties, tableInfo.ConvertibleProperties, context, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
                     {
                         await sqlBulkCopy.WriteToServerAsync(reader).ConfigureAwait(false);
                     }
@@ -66,7 +66,7 @@ namespace EFCore.BulkExtensions
                 }
             }
         }
-        
+
         public static void Merge<T>(DbContext context, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress) where T : class
         {
             tableInfo.InsertToTempTable = true;
