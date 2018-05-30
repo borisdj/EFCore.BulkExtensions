@@ -29,6 +29,11 @@ namespace EFCore.BulkExtensions.Tests
 
             modelBuilder.Entity<UserRole>().HasKey(a => new { a.UserId, a.RoleId });
 
+            modelBuilder.Entity<Item>(entity =>
+            {
+                entity.Property(p => p.ConvertedTime).HasConversion((value) => value.AddDays(1), (value) => value.AddDays(-1));
+            });
+
             // For testing Global Filter
             //modelBuilder.Entity<Item>().HasQueryFilter(p => p.Description != "1234");
         }
@@ -40,7 +45,7 @@ namespace EFCore.BulkExtensions.Tests
         {
             var builder = new DbContextOptionsBuilder<TestContext>();
             var databaseName = nameof(EFCoreBulkTest);
-            var connectionString = $"Server=localhost;Database={databaseName};Trusted_Connection=True;MultipleActiveResultSets=true";
+            var connectionString = $"Server=(localdb)\\mssqllocaldb;Database={databaseName};Trusted_Connection=True;MultipleActiveResultSets=true";
             builder.UseSqlServer(connectionString); // Can NOT Test with UseInMemoryDb (Exception: Relational-specific methods can only be used when the context is using a relational)
             return builder.Options;
         }
@@ -60,17 +65,19 @@ namespace EFCore.BulkExtensions.Tests
     public class Item
     {
         public int ItemId { get; set; }
-        
+
         public string Name { get; set; }
-        
+
         public string Description { get; set; }
 
         public int Quantity { get; set; }
-        
+
         public decimal? Price { get; set; }
 
         public DateTime TimeUpdated { get; set; }
-        
+
+        public DateTime ConvertedTime { get; set; }
+
         [Timestamp]
         public byte[] VersionChange { get; set; }
 
@@ -105,7 +112,7 @@ namespace EFCore.BulkExtensions.Tests
     public abstract class Person
     {
         public int PersonId { get; set; }
-	
+
         public string Name { get; set; }
     }
     public class Instructor : Person

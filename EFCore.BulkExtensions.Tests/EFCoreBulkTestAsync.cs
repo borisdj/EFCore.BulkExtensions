@@ -38,7 +38,8 @@ namespace EFCore.BulkExtensions.Tests
                         Description = "info " + Guid.NewGuid().ToString().Substring(0, 3),
                         Quantity = i % 10,
                         Price = i / (i % 5 + 1),
-                        TimeUpdated = DateTime.Now
+                        TimeUpdated = DateTime.Now,
+                        ConvertedTime = DateTime.Now,
                     });
                 }
                 if (isBulkOperation)
@@ -100,7 +101,8 @@ namespace EFCore.BulkExtensions.Tests
                         Description = "info",
                         Quantity = i,
                         Price = i / (i % 5 + 1),
-                        TimeUpdated = dateTimeNow
+                        TimeUpdated = dateTimeNow,
+                        ConvertedTime = dateTimeNow
                     });
                 }
                 if (isBulkOperation)
