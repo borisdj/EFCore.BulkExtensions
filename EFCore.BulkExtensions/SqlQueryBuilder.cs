@@ -98,7 +98,7 @@ namespace EFCore.BulkExtensions
                     string[] columnTS = column.Split('=');
                     string columnT = columnTS[0].Trim();
                     string columnS = columnTS[1].Trim();
-                    string columnNullable = $"({column.Trim()} OR({columnT} IS NULL AND {columnS} IS NULL))";
+                    string columnNullable = $"({column.Trim()} OR ({columnT} IS NULL AND {columnS} IS NULL))";
                     commaSeparatedColumnsNullable += columnNullable;
                 }
                 commaSeparatedColumns = commaSeparatedColumnsNullable;
