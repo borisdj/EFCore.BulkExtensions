@@ -28,5 +28,7 @@ namespace EFCore.BulkExtensions
         public List<string> PropertiesToExclude { get; set; }
 
         public List<string> UpdateByProperties { get; set; }
+
+        public bool UpdateByPropertiesAreNullable { get; set; }
     }
 }
