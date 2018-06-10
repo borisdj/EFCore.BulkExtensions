@@ -9,7 +9,7 @@ namespace EFCore.BulkExtensions.Tests
 {
     public class EFCoreBulkTest
     {
-        private int entitiesNumber = 100000;
+        private int entitiesNumber = 10000;
         
         [Theory]
         //[InlineData(true)]
@@ -75,8 +75,8 @@ namespace EFCore.BulkExtensions.Tests
                                 new BulkConfig {
                                     PreserveInsertOrder = true,
                                     SetOutputIdentity = true,
-                                    BatchSize = 4000
-                                    ,UseTempDB = true
+                                    BatchSize = 4000,
+                                    UseTempDB = true
                                 },
                                 (a) => WriteProgress(a)
                             );
@@ -162,8 +162,9 @@ namespace EFCore.BulkExtensions.Tests
                 {
                     context.BulkUpdate(
                         entities, new BulkConfig {
+                            PropertiesToInclude = new List<string> { nameof(Item.Description) },
                             UpdateByProperties = new List<string> { nameof(Item.Name) },
-                            PropertiesToInclude = new List<string> { nameof(Item.Description) }
+                            UpdateByPropertiesAreNullable = true
                         }
                     );
                 }
@@ -212,7 +213,7 @@ namespace EFCore.BulkExtensions.Tests
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 // Resets AutoIncrement
-                context.Database.ExecuteSqlCommand("DBCC CHECKIDENT ('dbo.[" + nameof(Item) + "]', RESEED, 0);"); // can NOT use $"...{nameof(Item)..." beacause it get parameterized
+                context.Database.ExecuteSqlCommand("DBCC CHECKIDENT ('dbo.[" + nameof(Item) + "]', RESEED, 0);"); // can NOT use $"...{nameof(Item)..." because it gets parameterized
                 //context.Database.ExecuteSqlCommand($"TRUNCATE TABLE {nameof(Item)};"); // can NOT work when there is ForeignKey - ItemHistoryId
             }
         }
