@@ -5,7 +5,7 @@ It is targeting NetStandard 2.0 so it can be used on project targeting NetCore(2
 Versions prior to 2.0.0, of which last being 1.1.0 are targeting NetStandard 1.4 and are compatible with NetCore(1.x) or NetFramework(4.6.1).<br>
 Under the hood uses [SqlBulkCopy](https://msdn.microsoft.com/en-us/library/system.data.sqlclient.sqlbulkcopy.aspx) for Insert, for Update/Delete combines BulkInsert with raw Sql [MERGE](https://docs.microsoft.com/en-us/sql/t-sql/statements/merge-transact-sql) (MsSQL 2008+).
 
-Available on [NuGet](https://www.nuget.org/packages/EFCore.BulkExtensions/). Latest 2.0.8<br>
+Available on [NuGet](https://www.nuget.org/packages/EFCore.BulkExtensions/). Latest 2.0.9<br>
 Package manager console command for installation: *Install-Package EFCore.BulkExtensions*
 
 Usage is simple and pretty straightforward.<br>
@@ -35,8 +35,8 @@ It makes Update when PK is matched, otherwise does Insert.<br>
 ## BulkConfig arguments
 
 **BulkInsert** and **BulkInsertOrUpdate** methods can have optional argument **BulkConfig** with properties (bool, int, object, List<string>):<br>
-*{ PreserveInsertOrder, SetOutputIdentity, BatchSize, NotifyAfter, BulkCopyTimeout, EnableStreaming, UseTempDB, WithHoldlock, SqlBulkCopyOptions, PropertiesToInclude, PropertiesToExclude, UpdateByProperties }*<br>
-Default behaviour is { false, false, 2000,  null, null, false, false, true, Default, null, null, null} and if we want to change it, BulkConfig should be added explicitly with one or more bool properties set to true, and/or int props like **BatchSize** to different number.<br>
+*{ PreserveInsertOrder, SetOutputIdentity, BatchSize, NotifyAfter, BulkCopyTimeout, EnableStreaming, UseTempDB, WithHoldlock, PropertiesToInclude, PropertiesToExclude, UpdateByProperties, SqlBulkCopyOptions }*<br>
+Default behaviour is { false, false, 2000,  null, null, false, false, true, null, null, null, Default } and if we want to change it, BulkConfig should be added explicitly with one or more bool properties set to true, and/or int props like **BatchSize** to different number.<br>
 When doing update we can chose to exclude one or more properties by adding their names into **PropertiesToExclude**, or if we need to update less then half column then **PropertiesToInclude** can be used. Setting both Lists are not allowed. Additionaly there is **UpdateByProperties** that allows specifying custom properties, besides PK, by which we want update to be done.<br>
 If **NotifyAfter** is not set it will have same value as _BatchSize_ while **BulkCopyTimeout** when not set has SqlBulkCopy default which is 30 seconds and if set to 0 it indicates no limit.<br>
 _PreserveInsertOrder_ and _SetOutputIdentity_ have purpose only when PK has Identity (usually *int* type with AutoIncrement), while if PK is Guid(sequential) created in Application there is no need for them. Also Tables with Composite Keys have no Identity column so no functionality for them in that case either.
@@ -106,9 +106,11 @@ Test was done locally on following configuration: INTEL Core i5-3570K 3.40GHz, D
 ## Contributing
 
 If you find this project useful you can mark it by leaving a Github Star.</br>
-Contact For HIRE: [www.codis.tech](http://www.codis.tech)
-
 Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on code of conduct, and the process for submitting pull requests.
 
 [![NuGet](https://img.shields.io/npm/l/express.svg)](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE)
+
+## Contact
+Want to contact us for Hire (Development & Consulting):</br>
+[www.codis.tech](http://www.codis.tech)
 
