@@ -9,7 +9,7 @@ namespace EFCore.BulkExtensions.Tests
 {
     public class EFCoreBulkTest
     {
-        private int entitiesNumber = 10000;
+        private int entitiesNumber = 100000;
         
         [Theory]
         //[InlineData(true)]
@@ -18,10 +18,10 @@ namespace EFCore.BulkExtensions.Tests
         public void OperationsTest(bool isBulkOperation, bool insertTo2Tables = false)
         {
             // Test can be run individually by commenting others and running each separately in order one after another
-            RunInsert(isBulkOperation, insertTo2Tables);
-            RunInsertOrUpdate(isBulkOperation);
+            //RunInsert(isBulkOperation, insertTo2Tables);
+            //RunInsertOrUpdate(isBulkOperation);
             RunUpdate(isBulkOperation);
-            RunDelete(isBulkOperation);
+            //RunDelete(isBulkOperation);
         }
 
         private void WriteProgress(decimal percentage)
@@ -163,8 +163,7 @@ namespace EFCore.BulkExtensions.Tests
                     context.BulkUpdate(
                         entities, new BulkConfig {
                             PropertiesToInclude = new List<string> { nameof(Item.Description) },
-                            UpdateByProperties = new List<string> { nameof(Item.Name) },
-                            UpdateByPropertiesAreNullable = true
+                            UpdateByProperties = new List<string> { nameof(Item.Name) }
                         }
                     );
                 }

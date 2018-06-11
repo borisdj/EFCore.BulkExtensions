@@ -30,10 +30,11 @@ WHEN MATCHED THEN UPDATE SET T.[Description] = S.[Description], T.[Name] = S.[Na
 OUTPUT INSERTED.[ItemId], INSERTED.[Description], INSERTED.[Name], INSERTED.[Price], INSERTED.[Quantity], INSERTED.[TimeUpdated] -- All columns: INSERTED.*
 INTO dbo.[ItemTemp1234Output];
 
--- INSERT/UPDATE when having CompositeKey
+-- INSERT/UPDATE when having CompositeKey,
 MERGE dbo.[UserRole] WITH (HOLDLOCK) AS T
 USING (SELECT TOP 2147483647 * FROM dbo.[UserRoleTemp1234] ORDER BY [UserId], [RoleId]) AS S
 ON T.[UserId] = S.[UserId] AND T.[RoleId] = S.[RoleId]
+-- ON (T.[UserId] = S.[UserId] OR (T.[UserId] IS NULL AND S.[UserId] IS NULL)) AND (T.[RoleId] = S.[RoleId] OR (T.[RoleId] IS NULL AND S.[RoleId] IS NULL)) -- when are Nullable
 WHEN NOT MATCHED THEN INSERT ([Description])
 VALUES (S.[Description])
 WHEN MATCHED THEN UPDATE SET T.[Description] = S.[Description];

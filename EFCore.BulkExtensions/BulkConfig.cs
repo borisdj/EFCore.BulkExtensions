@@ -21,14 +21,12 @@ namespace EFCore.BulkExtensions
 
         public bool WithHoldlock { get; set; } = true;
 
-        public SqlBulkCopyOptions SqlBulkCopyOptions { get; set; }
-
         public List<string> PropertiesToInclude { get; set; }
 
         public List<string> PropertiesToExclude { get; set; }
 
         public List<string> UpdateByProperties { get; set; }
 
-        public bool UpdateByPropertiesAreNullable { get; set; }
+        public SqlBulkCopyOptions SqlBulkCopyOptions { get; set; }
     }
 }

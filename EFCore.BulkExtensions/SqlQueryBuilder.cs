@@ -48,7 +48,7 @@ namespace EFCore.BulkExtensions
 
             var q = $"MERGE {targetTable}{textWITH_HOLDLOCK} AS T " +
                     $"USING {sourceTable} AS S " +
-                    $"ON {GetANDSeparatedColumns(primaryKeys, "T", "S", tableInfo.BulkConfig.UpdateByPropertiesAreNullable)}";
+                    $"ON {GetANDSeparatedColumns(primaryKeys, "T", "S", tableInfo.UpdateByPropertiesAreNullable)}";
 
             if (operationType == OperationType.Insert || operationType == OperationType.InsertOrUpdate)
             {
@@ -89,6 +89,7 @@ namespace EFCore.BulkExtensions
         public static string GetANDSeparatedColumns(List<string> columnsNames, string prefixTable = null, string equalsTable = null, bool updateByPropertiesAreNullable = false)
         {
             string commaSeparatedColumns = GetCommaSeparatedColumns(columnsNames, prefixTable, equalsTable);
+
             if (updateByPropertiesAreNullable)
             {
                 string[] columns = commaSeparatedColumns.Split(',');
@@ -99,12 +100,14 @@ namespace EFCore.BulkExtensions
                     string columnT = columnTS[0].Trim();
                     string columnS = columnTS[1].Trim();
                     string columnNullable = $"({column.Trim()} OR ({columnT} IS NULL AND {columnS} IS NULL))";
-                    commaSeparatedColumnsNullable += columnNullable;
+                    commaSeparatedColumnsNullable += columnNullable + ", ";
                 }
+                commaSeparatedColumnsNullable = commaSeparatedColumnsNullable.Remove(commaSeparatedColumnsNullable.Length - 2, 2);
                 commaSeparatedColumns = commaSeparatedColumnsNullable;
             }
-            string andSeparatedColumns = commaSeparatedColumns.Replace(",", " AND");
-            return andSeparatedColumns;
+
+            string ANDSeparatedColumns = commaSeparatedColumns.Replace(",", " AND");
+            return ANDSeparatedColumns;
         }
     }
 }
