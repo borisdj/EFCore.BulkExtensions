@@ -9,14 +9,15 @@ namespace EFCore.BulkExtensions.Tests
 {
     public class EFCoreBulkTestAtypical
     {
+        protected int EntitiesNumber => 1000;
+
         [Fact]
         private void InsertAndUpdateWithCompositeKey()
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
-                int entitiesNumber = 1000;
                 var entities = new List<UserRole>();
-                for (int i = 0; i < entitiesNumber; i++)
+                for (int i = 0; i < EntitiesNumber; i++)
                 {
                     entities.Add(new UserRole
                     {
@@ -30,8 +31,8 @@ namespace EFCore.BulkExtensions.Tests
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 var entities = context.UserRoles.ToList();
-                int entitiesNumber = entities.Count();
-                for (int i = 0; i < entitiesNumber; i++)
+                int entitiesCount = entities.Count();
+                for (int i = 0; i < entitiesCount; i++)
                 {
                     entities[i].Description = "desc updated " + i;
                 }
@@ -40,7 +41,7 @@ namespace EFCore.BulkExtensions.Tests
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 var entities = context.UserRoles.ToList();
-                Assert.Equal(1000, entities.Count());
+                Assert.Equal(EntitiesNumber, entities.Count());
                 context.BulkDelete(entities);
             }
         }
@@ -50,9 +51,8 @@ namespace EFCore.BulkExtensions.Tests
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
-                int entitiesNumber = 1000;
                 var entities = new List<Student>();
-                for (int i = 1; i <= entitiesNumber; i++)
+                for (int i = 1; i <= EntitiesNumber; i++)
                 {
                     entities.Add(new Student
                     {
@@ -66,7 +66,7 @@ namespace EFCore.BulkExtensions.Tests
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 var entities = context.Students.ToList();
-                Assert.Equal(1000, entities.Count());
+                Assert.Equal(EntitiesNumber, entities.Count());
                 context.BulkDelete(entities);
             }
         }
@@ -78,9 +78,8 @@ namespace EFCore.BulkExtensions.Tests
 
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
-                int entitiesNumber = 1000;
                 var entities = new List<InfoLog>();
-                for (int i = 1; i <= entitiesNumber; i++)
+                for (int i = 1; i <= EntitiesNumber; i++)
                 {
                     entities.Add(new InfoLog
                     {

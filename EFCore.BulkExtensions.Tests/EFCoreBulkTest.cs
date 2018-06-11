@@ -9,7 +9,7 @@ namespace EFCore.BulkExtensions.Tests
 {
     public class EFCoreBulkTest
     {
-        private readonly int entitiesNumber = 100000;
+        protected int EntitiesNumber => 100000;
 
         [Theory]
         //[InlineData(true)]
@@ -35,7 +35,7 @@ namespace EFCore.BulkExtensions.Tests
             {
                 var entities = new List<Item>();
                 var subEntities = new List<ItemHistory>();
-                for (int i = 1; i < entitiesNumber; i++)
+                for (int i = 1; i < EntitiesNumber; i++)
                 {
                     entities.Add(new Item
                     {
@@ -103,9 +103,9 @@ namespace EFCore.BulkExtensions.Tests
                 int entitiesCount = context.Items.Count();
                 Item lastEntity = context.Items.LastOrDefault();
 
-                Assert.Equal(entitiesNumber - 1, entitiesCount);
+                Assert.Equal(EntitiesNumber - 1, entitiesCount);
                 Assert.NotNull(lastEntity);
-                Assert.Equal("name " + (entitiesNumber - 1), lastEntity.Name);
+                Assert.Equal("name " + (EntitiesNumber - 1), lastEntity.Name);
             }
         }
 
@@ -115,7 +115,7 @@ namespace EFCore.BulkExtensions.Tests
             {
                 var entities = new List<Item>();
                 var dateTimeNow = DateTime.Now;
-                for (int i = 2; i <= entitiesNumber; i += 2)
+                for (int i = 2; i <= EntitiesNumber; i += 2)
                 {
                     entities.Add(new Item
                     {
@@ -142,9 +142,9 @@ namespace EFCore.BulkExtensions.Tests
                 int entitiesCount = context.Items.Count();
                 Item lastEntity = context.Items.LastOrDefault();
 
-                Assert.Equal(entitiesNumber, entitiesCount);
+                Assert.Equal(EntitiesNumber, entitiesCount);
                 Assert.NotNull(lastEntity);
-                Assert.Equal("name InsertOrUpdate " + entitiesNumber, lastEntity.Name);
+                Assert.Equal("name InsertOrUpdate " + EntitiesNumber, lastEntity.Name);
             }
         }
 
@@ -180,9 +180,9 @@ namespace EFCore.BulkExtensions.Tests
                 int entitiesCount = context.Items.Count();
                 Item lastEntity = context.Items.LastOrDefault();
 
-                Assert.Equal(entitiesNumber, entitiesCount);
+                Assert.Equal(EntitiesNumber, entitiesCount);
                 Assert.NotNull(lastEntity);
-                Assert.Equal("name InsertOrUpdate " + entitiesNumber, lastEntity.Name);
+                Assert.Equal("name InsertOrUpdate " + EntitiesNumber, lastEntity.Name);
             }
         }
 
