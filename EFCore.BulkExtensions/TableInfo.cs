@@ -108,7 +108,7 @@ namespace EFCore.BulkExtensions
                 }
             }
 
-            UpdateByPropertiesAreNullable = properties.Any(a => BulkConfig.UpdateByProperties.Contains(a.Name) && a.IsNullable);
+            UpdateByPropertiesAreNullable = properties.Any(a => PrimaryKeys.Contains(a.Name) && a.IsNullable);
 
             if (AreSpecifiedPropertiesToInclude || AreSpecifiedPropertiesToExclude)
             {

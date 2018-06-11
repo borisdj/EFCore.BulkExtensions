@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
 	<Title>EFCore.BulkExtensions</Title>
-    <Version>2.0.9</Version>
+    <Version>2.1.0</Version>
     <Authors>borisdj</Authors>
     <Description>EntityFramework EF Core Bulk Extensions for Insert Update and Delete (CUD) operations on SQL Server.</Description>
     <PackageProjectUrl>https://github.com/borisdj/EFCore.BulkExtensions</PackageProjectUrl>
@@ -11,7 +11,7 @@
     <Company />
     <PackageLicenseUrl>https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE</PackageLicenseUrl>
     <PackageTags>EntityFrameworkCore Entity Framework Core EFCore EF Core Bulk Extensions Insert Update Delete</PackageTags>
-    <PackageReleaseNotes>Added Sql (IS NULL) if UpdateByPropertiesAreNullable</PackageReleaseNotes>
+    <PackageReleaseNotes>Updated to .Net EF Core 2.1 and added support for ValueConversions</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

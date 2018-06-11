@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Diagnostics;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
@@ -10,7 +9,7 @@ namespace EFCore.BulkExtensions.Tests
 {
     public class EFCoreBulkTest
     {
-        private int entitiesNumber = 10000;
+        private readonly int entitiesNumber = 100000;
 
         [Theory]
         //[InlineData(true)]
@@ -19,15 +18,9 @@ namespace EFCore.BulkExtensions.Tests
         public void OperationsTest(bool isBulkOperation, bool insertTo2Tables = false)
         {
             // Test can be run individually by commenting others and running each separately in order one after another
-            var dateTime = new DateTime(2018, 1, 1);
-            RunInsert(isBulkOperation, dateTime, insertTo2Tables);
-            TestConversion(dateTime.AddDays(1));
-            dateTime = new DateTime(2018, 2, 1);
-            RunInsertOrUpdate(isBulkOperation, dateTime);
-            TestConversion(dateTime.AddDays(1));
-            dateTime = new DateTime(2018, 3, 1);
-            RunUpdate(isBulkOperation, dateTime);
-            TestConversion(dateTime.AddDays(1));
+            RunInsert(isBulkOperation, insertTo2Tables);
+            RunInsertOrUpdate(isBulkOperation);
+            RunUpdate(isBulkOperation);
             RunDelete(isBulkOperation);
         }
 
@@ -36,7 +29,7 @@ namespace EFCore.BulkExtensions.Tests
             Debug.WriteLine(percentage);
         }
 
-        private void RunInsert(bool isBulkOperation, DateTime dateTime, bool insertTo2Tables = false)
+        private void RunInsert(bool isBulkOperation, bool insertTo2Tables = false)
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
@@ -51,8 +44,7 @@ namespace EFCore.BulkExtensions.Tests
                         Description = "info " + Guid.NewGuid().ToString().Substring(0, 3),
                         Quantity = i % 10,
                         Price = i / (i % 5 + 1),
-                        TimeUpdated = dateTime,
-                        ConvertedTime = dateTime
+                        TimeUpdated = DateTime.Now,
                     });
                 }
                 if (insertTo2Tables)
@@ -117,11 +109,12 @@ namespace EFCore.BulkExtensions.Tests
             }
         }
 
-        private void RunInsertOrUpdate(bool isBulkOperation, DateTime dateTime)
+        private void RunInsertOrUpdate(bool isBulkOperation)
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 var entities = new List<Item>();
+                var dateTimeNow = DateTime.Now;
                 for (int i = 2; i <= entitiesNumber; i += 2)
                 {
                     entities.Add(new Item
@@ -131,8 +124,7 @@ namespace EFCore.BulkExtensions.Tests
                         Description = "info",
                         Quantity = i + 100,
                         Price = i / (i % 5 + 1),
-                        TimeUpdated = dateTime,
-                        ConvertedTime = dateTime
+                        TimeUpdated = dateTimeNow,
                     });
                 }
                 if (isBulkOperation)
@@ -156,7 +148,7 @@ namespace EFCore.BulkExtensions.Tests
             }
         }
 
-        private void RunUpdate(bool isBulkOperation, DateTime dateTime)
+        private void RunUpdate(bool isBulkOperation)
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
@@ -165,15 +157,14 @@ namespace EFCore.BulkExtensions.Tests
                 foreach (var entity in entities)
                 {
                     entity.Description = "Desc Update " + counter++;
-                    entity.Quantity = entity.Quantity + 1000; // will not be changed since Quantity property is not in config PropertiesToInclude 
-                    entity.ConvertedTime = dateTime;
+                    entity.Quantity = entity.Quantity + 1000; // will not be changed since Quantity property is not in config PropertiesToInclude
                 }
                 if (isBulkOperation)
                 {
                     context.BulkUpdate(
                         entities, new BulkConfig
                         {
-                            PropertiesToInclude = new List<string> { nameof(Item.Description), nameof(Item.ConvertedTime) },
+                            PropertiesToInclude = new List<string> { nameof(Item.Description) },
                             UpdateByProperties = new List<string> { nameof(Item.Name) }
                         }
                     );
@@ -225,29 +216,6 @@ namespace EFCore.BulkExtensions.Tests
                 // Resets AutoIncrement
                 context.Database.ExecuteSqlCommand("DBCC CHECKIDENT ('dbo.[" + nameof(Item) + "]', RESEED, 0);"); // can NOT use $"...{nameof(Item)..." because it gets parameterized
                 //context.Database.ExecuteSqlCommand($"TRUNCATE TABLE {nameof(Item)};"); // can NOT work when there is ForeignKey - ItemHistoryId
-            }
-        }
-
-        private void TestConversion(DateTime dateTime)
-        {
-            using (var context = new TestContext(ContextUtil.GetOptions()))
-            {
-                var conn = context.Database.GetDbConnection();
-                if (conn.State != ConnectionState.Open)
-                    conn.Open();
-
-                using (var command = conn.CreateCommand())
-                {
-                    command.CommandText = $"select top 1 * from {nameof(Item)} order by {nameof(Item.ItemId)} desc";
-                    var reader = command.ExecuteReader();
-                    reader.Read();
-                    var row = new Item()
-                    {
-                        ConvertedTime = reader.Field<DateTime>(nameof(Item.ConvertedTime)),
-                    };
-                    if (row.ConvertedTime != dateTime)
-                        throw new Exception($"The '{nameof(Item.ConvertedTime)}' was not converted properly");
-                }
             }
         }
     }

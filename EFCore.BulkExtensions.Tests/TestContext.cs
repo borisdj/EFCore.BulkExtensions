@@ -17,6 +17,7 @@ namespace EFCore.BulkExtensions.Tests
         public DbSet<Person> Persons { get; set; }
         public DbSet<Instructor> Instructors { get; set; }
         public DbSet<Student> Students { get; set; }
+        public DbSet<InfoLog> InfoLogs { get; set; }
 
         public TestContext(DbContextOptions options) : base(options)
         {
@@ -29,7 +30,7 @@ namespace EFCore.BulkExtensions.Tests
 
             modelBuilder.Entity<UserRole>().HasKey(a => new { a.UserId, a.RoleId });
 
-            modelBuilder.Entity<Item>(entity =>
+            modelBuilder.Entity<InfoLog>(entity =>
             {
                 entity.Property(p => p.ConvertedTime).HasConversion((value) => value.AddDays(1), (value) => value.AddDays(-1));
             });
@@ -45,7 +46,6 @@ namespace EFCore.BulkExtensions.Tests
         {
             var builder = new DbContextOptionsBuilder<TestContext>();
             var databaseName = nameof(EFCoreBulkTest);
-            //var connectionString = $"Server=(localdb)\\mssqllocaldb;Database={databaseName};Trusted_Connection=True;MultipleActiveResultSets=true";
             var connectionString = $"Server=localhost;Database={databaseName};Trusted_Connection=True;MultipleActiveResultSets=true";
             builder.UseSqlServer(connectionString); // Can NOT Test with UseInMemoryDb (Exception: Relational-specific methods can only be used when the context is using a relational)
             return builder.Options;
@@ -77,8 +77,6 @@ namespace EFCore.BulkExtensions.Tests
 
         public DateTime TimeUpdated { get; set; }
 
-        public DateTime ConvertedTime { get; set; }
-
         [Timestamp]
         public byte[] VersionChange { get; set; }
 
@@ -109,7 +107,7 @@ namespace EFCore.BulkExtensions.Tests
         public string Description { get; set; }
     }
 
-    // Person, Instructor nad Student are used to test Bulk with Shadow Property and Discriminator column
+    // Person, Instructor nad Student are used to test Bulk with Shadow Property and Discriminator column, and also ValueConversion
     public abstract class Person
     {
         public int PersonId { get; set; }
@@ -123,5 +121,15 @@ namespace EFCore.BulkExtensions.Tests
     public class Student : Person
     {
         public string Subject { get; set; }
+    }
+
+    // For testring ValueConversion
+    public class InfoLog
+    {
+        public int InfoLogId { get; set; }
+
+        public string Message { get; set; }
+
+        public DateTime ConvertedTime { get; set; }
     }
 }
