@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace EFCore.BulkExtensions
@@ -47,7 +48,7 @@ namespace EFCore.BulkExtensions
 
             var q = $"MERGE {targetTable}{textWITH_HOLDLOCK} AS T " +
                     $"USING {sourceTable} AS S " +
-                    $"ON {GetANDSeparatedColumns(primaryKeys, "T", "S")}";
+                    $"ON {GetANDSeparatedColumns(primaryKeys, "T", "S", tableInfo.UpdateByPropertiesAreNullable)}";
 
             if (operationType == OperationType.Insert || operationType == OperationType.InsertOrUpdate)
             {
@@ -85,11 +86,28 @@ namespace EFCore.BulkExtensions
             return commaSeparatedColumns;
         }
 
-        public static string GetANDSeparatedColumns(List<string> columnsNames, string prefixTable = null, string equalsTable = null)
+        public static string GetANDSeparatedColumns(List<string> columnsNames, string prefixTable = null, string equalsTable = null, bool updateByPropertiesAreNullable = false)
         {
             string commaSeparatedColumns = GetCommaSeparatedColumns(columnsNames, prefixTable, equalsTable);
-            string andSeparatedColumns = commaSeparatedColumns.Replace(",", " AND");
-            return andSeparatedColumns;
+
+            if (updateByPropertiesAreNullable)
+            {
+                string[] columns = commaSeparatedColumns.Split(',');
+                string commaSeparatedColumnsNullable = String.Empty;
+                foreach (var column in columns)
+                {
+                    string[] columnTS = column.Split('=');
+                    string columnT = columnTS[0].Trim();
+                    string columnS = columnTS[1].Trim();
+                    string columnNullable = $"({column.Trim()} OR ({columnT} IS NULL AND {columnS} IS NULL))";
+                    commaSeparatedColumnsNullable += columnNullable + ", ";
+                }
+                commaSeparatedColumnsNullable = commaSeparatedColumnsNullable.Remove(commaSeparatedColumnsNullable.Length - 2, 2);
+                commaSeparatedColumns = commaSeparatedColumnsNullable;
+            }
+
+            string ANDSeparatedColumns = commaSeparatedColumns.Replace(",", " AND");
+            return ANDSeparatedColumns;
         }
     }
 }

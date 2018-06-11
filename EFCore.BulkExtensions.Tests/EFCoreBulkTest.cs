@@ -84,8 +84,7 @@ namespace EFCore.BulkExtensions.Tests
                                 {
                                     PreserveInsertOrder = true,
                                     SetOutputIdentity = true,
-                                    BatchSize = 4000
-                                    ,
+                                    BatchSize = 4000,
                                     UseTempDB = true
                                 },
                                 (a) => WriteProgress(a)
@@ -174,8 +173,8 @@ namespace EFCore.BulkExtensions.Tests
                     context.BulkUpdate(
                         entities, new BulkConfig
                         {
-                            UpdateByProperties = new List<string> { nameof(Item.Name) },
-                            PropertiesToInclude = new List<string> { nameof(Item.Description), nameof(Item.ConvertedTime) }
+                            PropertiesToInclude = new List<string> { nameof(Item.Description), nameof(Item.ConvertedTime) },
+                            UpdateByProperties = new List<string> { nameof(Item.Name) }
                         }
                     );
                 }
@@ -224,7 +223,7 @@ namespace EFCore.BulkExtensions.Tests
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 // Resets AutoIncrement
-                context.Database.ExecuteSqlCommand("DBCC CHECKIDENT ('dbo.[" + nameof(Item) + "]', RESEED, 0);"); // can NOT use $"...{nameof(Item)..." beacause it get parameterized
+                context.Database.ExecuteSqlCommand("DBCC CHECKIDENT ('dbo.[" + nameof(Item) + "]', RESEED, 0);"); // can NOT use $"...{nameof(Item)..." because it gets parameterized
                 //context.Database.ExecuteSqlCommand($"TRUNCATE TABLE {nameof(Item)};"); // can NOT work when there is ForeignKey - ItemHistoryId
             }
         }

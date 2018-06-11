@@ -22,6 +22,7 @@ namespace EFCore.BulkExtensions
         public string FullTableName => $"{SchemaFormated}[{TableName}]";
         public List<string> PrimaryKeys { get; set; }
         public bool HasSinglePrimaryKey { get; set; }
+        public bool UpdateByPropertiesAreNullable { get; set; }
 
         protected string TempDBPrefix => BulkConfig.UseTempDB ? "#" : "";
         public string TempTableSufix { get; set; }
@@ -106,6 +107,8 @@ namespace EFCore.BulkExtensions
                     }
                 }
             }
+
+            UpdateByPropertiesAreNullable = properties.Any(a => BulkConfig.UpdateByProperties.Contains(a.Name) && a.IsNullable);
 
             if (AreSpecifiedPropertiesToInclude || AreSpecifiedPropertiesToExclude)
             {
@@ -261,7 +264,7 @@ namespace EFCore.BulkExtensions
                 for (int i = 0; i < this.NumberOfEntities; i++)
                     accessor[entities[i], this.PrimaryKeys[0]] = accessor[entitiesWithOutputIdentity[i], this.PrimaryKeys[0]];
             }
-            else // Clears entityList and then refill it with loaded entites from Db
+            else // Clears entityList and then refills it with loaded entites from Db
             {
                 entities.Clear();
                 ((List<T>)entities).AddRange(entitiesWithOutputIdentity);
