@@ -108,9 +108,9 @@ Test was done locally on following configuration: INTEL Core i5-3570K 3.40GHz, D
 If you find this project useful you can mark it by leaving a Github Star.</br>
 Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on code of conduct, and the process for submitting pull requests.
 
-## Contact
-Want to contact us for Hire (Development & Consulation):</br>
-[www.codis.tech](http://www.codis.tech)
-
 [![NuGet](https://img.shields.io/npm/l/express.svg)](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE)
+
+## Contact
+Want to contact us for Hire (Development & Consulting):</br>
+[www.codis.tech](http://www.codis.tech)
 
