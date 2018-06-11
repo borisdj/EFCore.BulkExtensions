@@ -18,10 +18,10 @@ namespace EFCore.BulkExtensions.Tests
         public void OperationsTest(bool isBulkOperation, bool insertTo2Tables = false)
         {
             // Test can be run individually by commenting others and running each separately in order one after another
-            //RunInsert(isBulkOperation, insertTo2Tables);
-            //RunInsertOrUpdate(isBulkOperation);
+            RunInsert(isBulkOperation, insertTo2Tables);
+            RunInsertOrUpdate(isBulkOperation);
             RunUpdate(isBulkOperation);
-            //RunDelete(isBulkOperation);
+            RunDelete(isBulkOperation);
         }
 
         private void WriteProgress(decimal percentage)
