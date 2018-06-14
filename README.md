@@ -75,7 +75,7 @@ context.BulkInsert(entitiesList, null, (a) => WriteProgress(a));
 ```
 
 Library supports [Global Query Filters](https://docs.microsoft.com/en-us/ef/core/querying/filters) and [Value Conversions](https://docs.microsoft.com/en-us/ef/core/modeling/value-conversions) as well.</br>
-It can also map [OwnedTypes](https://docs.microsoft.com/en-us/ef/core/modeling/owned-entities), but when that is used it will work only if Properties of Entity are in the same order as DbColumns, because this is implemented with `DataTable` class.
+It also maps [OwnedTypes](https://docs.microsoft.com/en-us/ef/core/modeling/owned-entities), but when that is used it will work only if Properties of Entity are in the same order as DbColumns, because this is implemented with `DataTable` class.
 
 ## TPH inheritance
 
