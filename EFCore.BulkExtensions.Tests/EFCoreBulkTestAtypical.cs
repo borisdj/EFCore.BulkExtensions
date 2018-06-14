@@ -78,10 +78,10 @@ namespace EFCore.BulkExtensions.Tests
 
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
-                var entities = new List<InfoLog>();
+                var entities = new List<Info>();
                 for (int i = 1; i <= EntitiesNumber; i++)
                 {
-                    entities.Add(new InfoLog
+                    entities.Add(new Info
                     {
                         Message = "Msg " + i,
                         ConvertedTime = dateTime
@@ -92,7 +92,7 @@ namespace EFCore.BulkExtensions.Tests
 
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
-                var entities = context.InfoLogs.ToList();
+                var entities = context.Infos.ToList();
                 var entity = entities.FirstOrDefault();
 
                 Assert.Equal(entity.ConvertedTime, dateTime);
@@ -102,17 +102,42 @@ namespace EFCore.BulkExtensions.Tests
                     conn.Open();
                 using (var command = conn.CreateCommand())
                 {
-                    command.CommandText = $"SELECT TOP 1 * FROM {nameof(InfoLog)} ORDER BY {nameof(InfoLog.InfoLogId)} DESC";
+                    command.CommandText = $"SELECT TOP 1 * FROM {nameof(Info)} ORDER BY {nameof(Info.InfoId)} DESC";
                     var reader = command.ExecuteReader();
                     reader.Read();
-                    var row = new InfoLog()
+                    var row = new Info()
                     {
-                        ConvertedTime = reader.Field<DateTime>(nameof(InfoLog.ConvertedTime))
+                        ConvertedTime = reader.Field<DateTime>(nameof(Info.ConvertedTime))
                     };
                     Assert.Equal(row.ConvertedTime, dateTime.AddDays(1));
                 }
 
                 context.BulkDelete(entities);
+            }
+        }
+
+        [Fact]
+        private void InsertWithOwnedTypes()
+        {
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.Database.ExecuteSqlCommand("TRUNCATE TABLE [" + nameof(ChangeLog) + "]");
+
+                var entities = new List<ChangeLog>();
+                for (int i = 1; i <= EntitiesNumber; i++)
+                {
+                    entities.Add(new ChangeLog
+                    {
+                        ChangeLogId = 1,
+                        Description = "Dsc " + i,
+                        Audit = new Audit
+                        {
+                            ChangedBy = "User" + 1,
+                            ChangedTime = DateTime.Now
+                        }
+                    });
+                }
+                context.BulkInsert(entities);
             }
         }
     }

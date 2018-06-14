@@ -17,7 +17,8 @@ namespace EFCore.BulkExtensions.Tests
         public DbSet<Person> Persons { get; set; }
         public DbSet<Instructor> Instructors { get; set; }
         public DbSet<Student> Students { get; set; }
-        public DbSet<InfoLog> InfoLogs { get; set; }
+        public DbSet<Info> Infos { get; set; }
+        public DbSet<ChangeLog> ChangeLogs { get; set; }
 
         public TestContext(DbContextOptions options) : base(options)
         {
@@ -30,13 +31,12 @@ namespace EFCore.BulkExtensions.Tests
 
             modelBuilder.Entity<UserRole>().HasKey(a => new { a.UserId, a.RoleId });
 
-            modelBuilder.Entity<InfoLog>(entity =>
+            modelBuilder.Entity<Info>(entity =>
             {
                 entity.Property(p => p.ConvertedTime).HasConversion((value) => value.AddDays(1), (value) => value.AddDays(-1));
             });
 
-            // For testing Global Filter
-            //modelBuilder.Entity<Item>().HasQueryFilter(p => p.Description != "1234");
+            //modelBuilder.Entity<Item>().HasQueryFilter(p => p.Description != "1234"); // For testing Global Filter
         }
     }
 
@@ -58,7 +58,10 @@ namespace EFCore.BulkExtensions.Tests
         {
             foreach (IMutableEntityType entity in modelBuilder.Model.GetEntityTypes())
             {
-                entity.Relational().TableName = entity.ClrType.Name;
+                if (!entity.IsOwned()) // without this exclusion OwnedType would not be by default in Owner Table
+                {
+                    entity.Relational().TableName = entity.ClrType.Name;
+                }
             }
         }
     }
@@ -107,29 +110,50 @@ namespace EFCore.BulkExtensions.Tests
         public string Description { get; set; }
     }
 
-    // Person, Instructor nad Student are used to test Bulk with Shadow Property and Discriminator column, and also ValueConversion
+    // Person, Instructor nad Student are used to test Bulk with Shadow Property and Discriminator column
     public abstract class Person
     {
         public int PersonId { get; set; }
 
         public string Name { get; set; }
     }
+
     public class Instructor : Person
     {
         public string Class { get; set; }
     }
+
     public class Student : Person
     {
         public string Subject { get; set; }
     }
 
     // For testring ValueConversion
-    public class InfoLog
+    public class Info
     {
-        public int InfoLogId { get; set; }
+        public int InfoId { get; set; }
 
         public string Message { get; set; }
 
         public DateTime ConvertedTime { get; set; }
+    }
+
+    // For testring OwnedTypes
+    public class ChangeLog
+    {
+        public int ChangeLogId { get; set; }
+
+        public string Description { get; set; }
+
+        public Audit Audit { get; set; }
+    }
+
+    [Owned]
+    public class Audit
+    {
+        //[Column(nameof(ChangedBy))] // for setting custom column name, in this case prefix OwnedType_ ('Audit_') removed, so column would be only ('ChangedBy')
+        public string ChangedBy { get; set; } // default Column name for Property of OwnedType is OwnedType_Property ('Audit_ChangedBy')
+
+        public DateTime ChangedTime { get; set; }
     }
 }

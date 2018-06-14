@@ -32,6 +32,7 @@ namespace EFCore.BulkExtensions
 
         public bool InsertToTempTable { get; set; }
         public bool HasIdentity { get; set; }
+        public bool HasOwnedTypes { get; set; }
         public int NumberOfEntities { get; set; }
 
         public BulkConfig BulkConfig { get; set; }
@@ -76,6 +77,10 @@ namespace EFCore.BulkExtensions
             HasSinglePrimaryKey = PrimaryKeys.Count == 1;
 
             var allProperties = entityType.GetProperties().AsEnumerable();
+
+            var allNavigationProperties = entityType.GetNavigations().Where(a => a.GetTargetType().IsOwned());
+            HasOwnedTypes = allNavigationProperties.Any();
+
             // timestamp datatype can only be set by database, that's property having [Timestamp] Attribute but keep if one with [ConcurrencyCheck]
             var timeStampProperties = allProperties.Where(a => a.IsConcurrencyToken == true && a.ValueGenerated == ValueGenerated.OnAddOrUpdate && a.BeforeSaveBehavior == PropertySaveBehavior.Ignore);
             TimeStampColumn = timeStampProperties.FirstOrDefault()?.Relational().ColumnName; // expected to be only One
@@ -215,7 +220,7 @@ namespace EFCore.BulkExtensions
             HasIdentity = hasIdentity == 1;
         }
 
-        public void SetSqlBulkCopyConfig<T>(SqlBulkCopy sqlBulkCopy, IList<T> entities, Action<decimal> progress)
+        public void SetSqlBulkCopyConfig<T>(SqlBulkCopy sqlBulkCopy, IList<T> entities, bool setColumnMapping, Action<decimal> progress)
         {
             sqlBulkCopy.DestinationTableName = this.InsertToTempTable ? this.FullTempTableName : this.FullTableName;
             sqlBulkCopy.BatchSize = BulkConfig.BatchSize;
@@ -226,9 +231,12 @@ namespace EFCore.BulkExtensions
             sqlBulkCopy.BulkCopyTimeout = BulkConfig.BulkCopyTimeout ?? sqlBulkCopy.BulkCopyTimeout;
             sqlBulkCopy.EnableStreaming = BulkConfig.EnableStreaming;
 
-            foreach (var element in this.PropertyColumnNamesDict)
+            if (setColumnMapping)
             {
-                sqlBulkCopy.ColumnMappings.Add(element.Key, element.Value);
+                foreach (var element in this.PropertyColumnNamesDict)
+                {
+                    sqlBulkCopy.ColumnMappings.Add(element.Key, element.Value);
+                }
             }
         }
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -27,11 +28,21 @@ namespace EFCore.BulkExtensions
             {
                 using (var sqlBulkCopy = GetSqlBulkCopy(sqlConnection, transaction, tableInfo.BulkConfig.SqlBulkCopyOptions))
                 {
-                    tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, progress);
-                    using (var reader = ObjectReaderEx.Create(entities, tableInfo.ShadowProperties, tableInfo.ConvertibleProperties, context, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
+                    bool setColumnMapping = !tableInfo.HasOwnedTypes;
+                    tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, setColumnMapping, progress);
+                    if (!tableInfo.HasOwnedTypes)
                     {
-                        sqlBulkCopy.WriteToServer(reader);
+                        using (var reader = ObjectReaderEx.Create(entities, tableInfo.ShadowProperties, tableInfo.ConvertibleProperties, context, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
+                        {
+                            sqlBulkCopy.WriteToServer(reader);
+                        }
                     }
+                    else // With OwnedTypes DataTable is used since library FastMember can not (https://github.com/mgravell/fast-member/issues/21)
+                    {
+                        var dataTable = GetDataTable<T>(context, entities);
+                        sqlBulkCopy.WriteToServer(dataTable);
+                    }
+
                 }
             }
             finally
@@ -51,10 +62,19 @@ namespace EFCore.BulkExtensions
             {
                 using (var sqlBulkCopy = GetSqlBulkCopy(sqlConnection, transaction, tableInfo.BulkConfig.SqlBulkCopyOptions))
                 {
-                    tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, progress);
-                    using (var reader = ObjectReaderEx.Create(entities, tableInfo.ShadowProperties, tableInfo.ConvertibleProperties, context, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
+                    bool setColumnMapping = !tableInfo.HasOwnedTypes;
+                    tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, setColumnMapping, progress);
+                    if (!tableInfo.HasOwnedTypes)
                     {
-                        await sqlBulkCopy.WriteToServerAsync(reader).ConfigureAwait(false);
+                        using (var reader = ObjectReaderEx.Create(entities, tableInfo.ShadowProperties, tableInfo.ConvertibleProperties, context, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
+                        {
+                            await sqlBulkCopy.WriteToServerAsync(reader).ConfigureAwait(false);
+                        }
+                    }
+                    else
+                    {
+                        var dataTable = GetDataTable<T>(context, entities);
+                        await sqlBulkCopy.WriteToServerAsync(dataTable);
                     }
                 }
             }
@@ -134,6 +154,84 @@ namespace EFCore.BulkExtensions
             {
                 await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName)).ConfigureAwait(false);
             }
+        }
+
+        // IMPORTANT: works only if Properties of Entity are in the same order as Columns in Db
+        internal static DataTable GetDataTable<T>(DbContext context, IList<T> entities)
+        {
+            var dataTable = new DataTable();
+            var columnsDict = new Dictionary<string, object>();
+
+            var type = typeof(T);
+            var entityType = context.Model.FindEntityType(type);
+            var entityPropertiesDict = entityType.GetProperties().ToDictionary(a => a.Name, a => a);
+            var entityNavigationOwnedDict = entityType.GetNavigations().Where(a => a.GetTargetType().IsOwned()).ToDictionary(a => a.Name, a => a);
+            var properties = type.GetProperties().Where(a => !a.GetGetMethod().IsVirtual);
+
+            foreach (var property in properties)
+            {
+                if (entityPropertiesDict.ContainsKey(property.Name))
+                {
+                    string columnName = entityPropertiesDict[property.Name].Relational().ColumnName;
+                    dataTable.Columns.Add(columnName, property.PropertyType);
+                    columnsDict.Add(property.Name, null);
+                }
+                else if (entityNavigationOwnedDict.ContainsKey(property.Name)) // isOWned
+                {
+                    Type navOwnedType = type.Assembly.GetType(property.PropertyType.FullName);
+
+                    var ownedEntityType = context.Model.FindEntityType(property.PropertyType);
+                    if (ownedEntityType == null) // when single entity has more then one ownedType of same type (e.g. Address HomeAddress, Address WorkAddress)
+                    {
+                        ownedEntityType = context.Model.GetEntityTypes().SingleOrDefault(a => a.DefiningNavigationName == property.Name);
+                    }
+                    var ownedEntityProperties = ownedEntityType.GetProperties().ToList();
+                    var ownedEntityPropertyNameColumnNameDict = new Dictionary<string, string>();
+
+                    foreach (var ownedEntityProperty in ownedEntityProperties)
+                    {
+                        if (!ownedEntityProperty.IsPrimaryKey())
+                        {
+                            string columnName = ownedEntityProperty.Relational().ColumnName;
+                            ownedEntityPropertyNameColumnNameDict.Add(ownedEntityProperty.Name, columnName);
+                        }
+                    }
+
+                    var ownedProperties = property.PropertyType.GetProperties();
+                    foreach (var ownedProperty in ownedProperties)
+                    {
+                        if (ownedEntityPropertyNameColumnNameDict.ContainsKey(ownedProperty.Name))
+                        {
+                            string columnName = ownedEntityPropertyNameColumnNameDict[ownedProperty.Name];
+                            dataTable.Columns.Add(columnName, ownedProperty.PropertyType);
+                            columnsDict.Add(property.Name + "_" + ownedProperty.Name, null);
+                        }
+                    }
+                }
+            }
+
+            foreach (var entity in entities)
+            {
+                foreach (var property in properties)
+                {
+                    var propertyValue = property.GetValue(entity, null);
+                    if (entityPropertiesDict.ContainsKey(property.Name))
+                    {
+                        columnsDict[property.Name] = propertyValue;
+                    }
+                    else if (entityNavigationOwnedDict.ContainsKey(property.Name))
+                    {
+                        var ownedProperties = property.PropertyType.GetProperties();
+                        foreach (var ownedProperty in ownedProperties)
+                        {
+                            columnsDict[property.Name + "_" + ownedProperty.Name] = ownedProperty.GetValue(propertyValue, null);
+                        }
+                    }
+                }
+                var record = columnsDict.Values.ToArray();
+                dataTable.Rows.Add(record);
+            }
+            return dataTable;
         }
 
         internal static SqlConnection OpenAndGetSqlConnection(DbContext context)
