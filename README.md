@@ -3,8 +3,7 @@ EntityFrameworkCore extensions for Bulk operations (**Insert, Update, Delete**).
 Library is Lightweight and very Efficient, having all mostly used CUD operation.<br>
 It is targeting NetStandard 2.0 so it can be used on project targeting NetCore(2.0+) or NetFramework(4.6.1+).<br>
 Current version is using EF Core 2.1.<br>
-For EF Core 2.0 install 2.0.8 Nuget.<br>
-For EF Core 1.x install 1.1.0 Nuget (it is targeting NetStandard 1.4)<br>
+For EF Core 2.0 install 2.0.8 Nuget, and for EF Core 1.x use 1.1.0 (targeting NetStandard 1.4)<br>
 Under the hood uses [SqlBulkCopy](https://msdn.microsoft.com/en-us/library/system.data.sqlclient.sqlbulkcopy.aspx) for Insert, for Update/Delete combines BulkInsert with raw Sql [MERGE](https://docs.microsoft.com/en-us/sql/t-sql/statements/merge-transact-sql) (MsSQL 2008+).
 
 Available on [NuGet](https://www.nuget.org/packages/EFCore.BulkExtensions/). Latest 2.1.1<br>
@@ -76,7 +75,7 @@ context.BulkInsert(entitiesList, null, (a) => WriteProgress(a));
 ```
 
 Library supports [Global Query Filters](https://docs.microsoft.com/en-us/ef/core/querying/filters) and [Value Conversions](https://docs.microsoft.com/en-us/ef/core/modeling/value-conversions) as well.</br>
-It can also map [OwnedTypes](https://docs.microsoft.com/en-us/ef/core/modeling/owned-entities), but wehn that is used it will work only if Properties of Entity are in the same order as Columns in Db, because this is implemented with `DataTable` class.
+It can also map [OwnedTypes](https://docs.microsoft.com/en-us/ef/core/modeling/owned-entities), but when that is used it will work only if Properties of Entity are in the same order as Columns in Db, because this is implemented with `DataTable` class.
 
 ## TPH inheritance
 
