@@ -11,7 +11,7 @@ Package manager console command for installation: *Install-Package EFCore.BulkEx
 
 Usage is simple and pretty straightforward.<br>
 Extensions are made on *DbContext* class and can be used like this (both regular and Async methods are supported):
-```csharp
+```C#
 context.BulkInsert(entitiesList);                context.BulkInsertAsync(entitiesList);
 context.BulkUpdate(entitiesList);                context.BulkUpdateAsync(entitiesList);
 context.BulkDelete(entitiesList);                context.BulkDeleteAsync(entitiesList);
@@ -21,12 +21,12 @@ In ConnectionString there should be *Trusted_Connection=True;* because Sql crede
 
 When used directly each of these operations are separate transactions and are automatically committed.<br>
 And if we need multiple operations in single procedure then explicit transaction should be used, for example:
-```csharp
+```C#
 using (var transaction = context.Database.BeginTransaction())
 {
-	context.BulkInsert(entitiesList);
-	context.BulkInsert(subEntitiesList);
-	transaction.Commit();
+    context.BulkInsert(entitiesList);
+    context.BulkInsert(subEntitiesList);
+    transaction.Commit();
 }
 ```
 
@@ -41,7 +41,7 @@ Default behaviour is { false, false, 2000,  null, null, false, false, true, null
 When doing update we can chose to exclude one or more properties by adding their names into **PropertiesToExclude**, or if we need to update less then half column then **PropertiesToInclude** can be used. Setting both Lists are not allowed. Additionaly there is **UpdateByProperties** that allows specifying custom properties, besides PK, by which we want update to be done.<br>
 If **NotifyAfter** is not set it will have same value as _BatchSize_ while **BulkCopyTimeout** when not set has SqlBulkCopy default which is 30 seconds and if set to 0 it indicates no limit.<br>
 _PreserveInsertOrder_ and _SetOutputIdentity_ have purpose only when PK has Identity (usually *int* type with AutoIncrement), while if PK is Guid(sequential) created in Application there is no need for them. Also Tables with Composite Keys have no Identity column so no functionality for them in that case either.
-```csharp
+```C#
 context.BulkInsert(entitiesList, new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true, BatchSize = 4000});
 context.BulkInsertOrUpdate(entitiesList, new BulkConfig { PreserveInsertOrder = true });
 ```
@@ -83,8 +83,8 @@ When having TPH ([Table-Per-Hierarchy](https://docs.microsoft.com/en-us/aspnet/c
 First is automatically by Convention in which case Discriminator column is not directly in Entity but is [Shadow](http://www.learnentityframeworkcore.com/model/shadow-properties) Property.<br>
 And second is to explicitly define Discriminator property in Entity and configure it with `.HasDiscriminator()`.<br>
 Important remark regarding the first case is that since we can not set directly Discriminator to certain value we need first to add list of entities to DbSet where it will be set and after that we can call Bulk operation. Note that SaveChanges are not called and we could optionally turn of TrackingChanges for performance. Example:
-```csharp
-public class Student : Person { ...
+```C#
+public class Student : Person { ... }
 context.Students.AddRange(entities); // adding to Context so that Shadow property 'Discriminator' gets set
 context.BulkInsert(entities);
 ```
