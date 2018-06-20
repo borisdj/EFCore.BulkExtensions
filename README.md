@@ -59,7 +59,7 @@ If we need to sort those for insert and not have conflict with existing Id-s, th
 One is set Id to really high values, order of magnitude 10^10, and another even better setting them to negative values.<br>
 So if we have list of 8000, say 3000 for update (they keep the real Id) and 5000 for insert then Id-s could be (-5000:-1).
 
-**SetOutputIdentity** is useful when BulkInsert is done to multiple related tables, that have Identity column.<br>
+[**SetOutputIdentity**](#set-output-identity) is useful when BulkInsert is done to multiple related tables, that have Identity column.<br>
 So after Insert is done to first table, we need Id-s that were generated in Db becasue they are FK in second table.<br>
 It is implemented with [OUTPUT](https://docs.microsoft.com/en-us/sql/t-sql/queries/output-clause-transact-sql) as part of MERGE Query, so in this case even the Insert is not done directly to TargetTable but to TempTable and then Merged with TargetTable.<br>
 When used if *PreserveInsertOrder* is also set to *true* Id-s will be updated in entitiesList, and if *PreserveInsertOrder* is *false* then entitiesList will be cleared and reloaded.
