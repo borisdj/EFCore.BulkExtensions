@@ -3,8 +3,7 @@ EntityFrameworkCore extensions for Bulk operations (**Insert, Update, Delete**).
 Library is Lightweight and very Efficient, having all mostly used CUD operation.<br>
 It is targeting NetStandard 2.0 so it can be used on project targeting NetCore(2.0+) or NetFramework(4.6.1+).<br>
 Current version is using EF Core 2.1.<br>
-For EF Core 2.0 install 2.0.8 Nuget.<br>
-For EF Core 1.x install 1.1.0 Nuget (it is targeting NetStandard 1.4)<br>
+For EF Core 2.0 install 2.0.8 Nuget, and for EF Core 1.x use 1.1.0 (targeting NetStandard 1.4)<br>
 Under the hood uses [SqlBulkCopy](https://msdn.microsoft.com/en-us/library/system.data.sqlclient.sqlbulkcopy.aspx) for Insert, for Update/Delete combines BulkInsert with raw Sql [MERGE](https://docs.microsoft.com/en-us/sql/t-sql/statements/merge-transact-sql) (MsSQL 2008+).
 
 Available on [NuGet](https://www.nuget.org/packages/EFCore.BulkExtensions/). Latest 2.1.1<br>
@@ -12,7 +11,7 @@ Package manager console command for installation: *Install-Package EFCore.BulkEx
 
 Usage is simple and pretty straightforward.<br>
 Extensions are made on *DbContext* class and can be used like this (both regular and Async methods are supported):
-```csharp
+```C#
 context.BulkInsert(entitiesList);                context.BulkInsertAsync(entitiesList);
 context.BulkUpdate(entitiesList);                context.BulkUpdateAsync(entitiesList);
 context.BulkDelete(entitiesList);                context.BulkDeleteAsync(entitiesList);
@@ -22,12 +21,12 @@ In ConnectionString there should be *Trusted_Connection=True;* because Sql crede
 
 When used directly each of these operations are separate transactions and are automatically committed.<br>
 And if we need multiple operations in single procedure then explicit transaction should be used, for example:
-```csharp
+```C#
 using (var transaction = context.Database.BeginTransaction())
 {
-	context.BulkInsert(entitiesList);
-	context.BulkInsert(subEntitiesList);
-	transaction.Commit();
+    context.BulkInsert(entitiesList);
+    context.BulkInsert(subEntitiesList);
+    transaction.Commit();
 }
 ```
 
@@ -42,7 +41,7 @@ Default behaviour is { false, false, 2000,  null, null, false, false, true, null
 When doing update we can chose to exclude one or more properties by adding their names into **PropertiesToExclude**, or if we need to update less then half column then **PropertiesToInclude** can be used. Setting both Lists are not allowed. Additionaly there is **UpdateByProperties** that allows specifying custom properties, besides PK, by which we want update to be done.<br>
 If **NotifyAfter** is not set it will have same value as _BatchSize_ while **BulkCopyTimeout** when not set has SqlBulkCopy default which is 30 seconds and if set to 0 it indicates no limit.<br>
 _PreserveInsertOrder_ and _SetOutputIdentity_ have purpose only when PK has Identity (usually *int* type with AutoIncrement), while if PK is Guid(sequential) created in Application there is no need for them. Also Tables with Composite Keys have no Identity column so no functionality for them in that case either.
-```csharp
+```C#
 context.BulkInsert(entitiesList, new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true, BatchSize = 4000});
 context.BulkInsertOrUpdate(entitiesList, new BulkConfig { PreserveInsertOrder = true });
 ```
@@ -76,7 +75,7 @@ context.BulkInsert(entitiesList, null, (a) => WriteProgress(a));
 ```
 
 Library supports [Global Query Filters](https://docs.microsoft.com/en-us/ef/core/querying/filters) and [Value Conversions](https://docs.microsoft.com/en-us/ef/core/modeling/value-conversions) as well.</br>
-It can also map [OwnedTypes](https://docs.microsoft.com/en-us/ef/core/modeling/owned-entities), but wehn that is used it will work only if Properties of Entity are in the same order as Columns in Db, because this is implemented with `DataTable` class.
+It also maps [OwnedTypes](https://docs.microsoft.com/en-us/ef/core/modeling/owned-entities), but when that is used it will work only if Properties of Entity are in the same order as DbColumns, because this is implemented with `DataTable` class.
 
 ## TPH inheritance
 
@@ -84,8 +83,8 @@ When having TPH ([Table-Per-Hierarchy](https://docs.microsoft.com/en-us/aspnet/c
 First is automatically by Convention in which case Discriminator column is not directly in Entity but is [Shadow](http://www.learnentityframeworkcore.com/model/shadow-properties) Property.<br>
 And second is to explicitly define Discriminator property in Entity and configure it with `.HasDiscriminator()`.<br>
 Important remark regarding the first case is that since we can not set directly Discriminator to certain value we need first to add list of entities to DbSet where it will be set and after that we can call Bulk operation. Note that SaveChanges are not called and we could optionally turn of TrackingChanges for performance. Example:
-```csharp
-public class Student : Person { ...
+```C#
+public class Student : Person { ... }
 context.Students.AddRange(entities); // adding to Context so that Shadow property 'Discriminator' gets set
 context.BulkInsert(entities);
 ```
