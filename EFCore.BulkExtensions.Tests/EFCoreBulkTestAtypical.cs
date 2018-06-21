@@ -12,6 +12,35 @@ namespace EFCore.BulkExtensions.Tests
         protected int EntitiesNumber => 1000;
 
         [Fact]
+        private void InsertWithDbComputedColumnsAndOutput()
+        {
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                var entities = new List<Document>();
+                for (int i = 0; i < EntitiesNumber; i++)
+                {
+                    entities.Add(new Document
+                    {
+                        Content = "Some data " + i,
+                    });
+                }
+                context.BulkInsert(
+                    entities,
+                        new BulkConfig
+                        {
+                            SetOutputIdentity = true
+                        }
+                    );
+            }
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                var entities = context.Documents.ToList();
+                Assert.Equal(EntitiesNumber, entities.Count());
+                context.BulkDelete(entities);
+            }
+        }
+
+        [Fact]
         private void InsertAndUpdateWithCompositeKey()
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))

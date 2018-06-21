@@ -14,6 +14,7 @@ namespace EFCore.BulkExtensions.Tests
 
         public DbSet<UserRole> UserRoles { get; set; }
 
+        public DbSet<Document> Documents { get; set; }
         public DbSet<Person> Persons { get; set; }
         public DbSet<Instructor> Instructors { get; set; }
         public DbSet<Student> Students { get; set; }
@@ -31,10 +32,9 @@ namespace EFCore.BulkExtensions.Tests
 
             modelBuilder.Entity<UserRole>().HasKey(a => new { a.UserId, a.RoleId });
 
-            modelBuilder.Entity<Info>(entity =>
-            {
-                entity.Property(p => p.ConvertedTime).HasConversion((value) => value.AddDays(1), (value) => value.AddDays(-1));
-            });
+            modelBuilder.Entity<Info>(e => { e.Property(p => p.ConvertedTime).HasConversion((value) => value.AddDays(1), (value) => value.AddDays(-1)); });
+
+            modelBuilder.Entity<Document>().Property(p => p.ContentLength).HasComputedColumnSql($"len([{nameof(Document.Content)}])");
 
             //modelBuilder.Entity<Item>().HasQueryFilter(p => p.Description != "1234"); // For testing Global Filter
         }
@@ -80,9 +80,6 @@ namespace EFCore.BulkExtensions.Tests
 
         public DateTime TimeUpdated { get; set; }
 
-        [Timestamp]
-        public byte[] VersionChange { get; set; }
-
         public ICollection<ItemHistory> ItemHistories { get; set; }
     }
 
@@ -126,6 +123,22 @@ namespace EFCore.BulkExtensions.Tests
     public class Student : Person
     {
         public string Subject { get; set; }
+    }
+
+    // For testing Computed Columns
+    public class Document
+    {
+        public int DocumentId { get; set; }
+
+        [Required]
+        public string Content { get; set; }
+
+        [Timestamp]
+        public byte[] VersionChange { get; set; }
+
+        [DatabaseGenerated(DatabaseGeneratedOption.Computed)] // Computed columns have to be configured with Fluent API
+        public Int64 ContentLength { get; set; }
+
     }
 
     // For testring ValueConversion

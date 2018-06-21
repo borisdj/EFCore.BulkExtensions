@@ -6,9 +6,9 @@ namespace EFCore.BulkExtensions
 {
     public static class SqlQueryBuilder
     {
-        public static string CreateTableCopy(string existingTableName, string newTableName, TableInfo tableInfo)
+        public static string CreateTableCopy(string existingTableName, string newTableName, TableInfo tableInfo, bool isOutputTable = false)
         {
-            List<string> columnsNames = tableInfo.PropertyColumnNamesDict.Values.ToList();
+            List<string> columnsNames = (isOutputTable ? tableInfo.OutputPropertyColumnNamesDict : tableInfo.PropertyColumnNamesDict).Values.ToList();
             var q = $"SELECT TOP 0 {GetCommaSeparatedColumns(columnsNames, "T")} " +
                     $"INTO {newTableName} FROM {existingTableName} AS T " +
                     $"LEFT JOIN {existingTableName} AS Source ON 1 = 0;"; // removes Identity constrain
@@ -17,7 +17,7 @@ namespace EFCore.BulkExtensions
         
         public static string SelectFromOutputTable(TableInfo tableInfo)
         {
-            List<string> columnsNames = tableInfo.PropertyColumnNamesDict.Values.ToList();
+            List<string> columnsNames = tableInfo.OutputPropertyColumnNamesDict.Values.ToList();
             string timeStampColumnNull = tableInfo.TimeStampColumn != null ? $", {tableInfo.TimeStampColumn} = NULL" : "";
             return $"SELECT {GetCommaSeparatedColumns(columnsNames)}{timeStampColumnNull} FROM {tableInfo.FullTempOutputTableName}";
         }
@@ -38,6 +38,7 @@ namespace EFCore.BulkExtensions
             string sourceTable = tableInfo.FullTempTableName;
             List<string> primaryKeys = tableInfo.PrimaryKeys.Select(k => tableInfo.PropertyColumnNamesDict[k]).ToList();
             List<string> columnsNames = tableInfo.PropertyColumnNamesDict.Values.ToList();
+            List<string> outputColumnsNames = tableInfo.OutputPropertyColumnNamesDict.Values.ToList();
             List<string> nonIdentityColumnsNames = columnsNames.Where(a => !primaryKeys.Contains(a)).ToList();
             List<string> insertColumnsNames = tableInfo.HasIdentity ? nonIdentityColumnsNames : columnsNames;
 
@@ -66,7 +67,7 @@ namespace EFCore.BulkExtensions
 
             if (tableInfo.BulkConfig.SetOutputIdentity)
             {
-                q += $" OUTPUT {GetCommaSeparatedColumns(columnsNames, "INSERTED")}" +
+                q += $" OUTPUT {GetCommaSeparatedColumns(outputColumnsNames, "INSERTED")}" +
                      $" INTO {tableInfo.FullTempOutputTableName}";
             }
 

@@ -44,7 +44,7 @@ namespace EFCore.BulkExtensions.Tests
                         Description = "info " + Guid.NewGuid().ToString().Substring(0, 3),
                         Quantity = i % 10,
                         Price = i / (i % 5 + 1),
-                        TimeUpdated = DateTime.Now,
+                        TimeUpdated = DateTime.Now
                     });
                 }
                 if (insertTo2Tables)
@@ -162,7 +162,8 @@ namespace EFCore.BulkExtensions.Tests
                 if (isBulkOperation)
                 {
                     context.BulkUpdate(
-                        entities, new BulkConfig
+                        entities,
+                        new BulkConfig
                         {
                             PropertiesToInclude = new List<string> { nameof(Item.Description) },
                             UpdateByProperties = new List<string> { nameof(Item.Name) }

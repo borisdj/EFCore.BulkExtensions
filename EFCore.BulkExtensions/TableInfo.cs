@@ -36,6 +36,7 @@ namespace EFCore.BulkExtensions
         public int NumberOfEntities { get; set; }
 
         public BulkConfig BulkConfig { get; set; }
+        public Dictionary<string, string> OutputPropertyColumnNamesDict { get; set; } = new Dictionary<string, string>();
         public Dictionary<string, string> PropertyColumnNamesDict { get; set; } = new Dictionary<string, string>();
         public HashSet<string> ShadowProperties { get; set; } = new HashSet<string>();
         public Dictionary<string, ValueConverter> ConvertibleProperties { get; set; } = new Dictionary<string, ValueConverter>();
@@ -85,6 +86,10 @@ namespace EFCore.BulkExtensions
             var timeStampProperties = allProperties.Where(a => a.IsConcurrencyToken == true && a.ValueGenerated == ValueGenerated.OnAddOrUpdate && a.BeforeSaveBehavior == PropertySaveBehavior.Ignore);
             TimeStampColumn = timeStampProperties.FirstOrDefault()?.Relational().ColumnName; // expected to be only One
             var properties = allProperties.Except(timeStampProperties);
+
+            OutputPropertyColumnNamesDict = properties.ToDictionary(a => a.Name, b => b.Relational().ColumnName);
+
+            properties = properties.Where(a => a.Relational().ComputedColumnSql == null);
 
             bool AreSpecifiedPropertiesToInclude = BulkConfig.PropertiesToInclude?.Count() > 0;
             bool AreSpecifiedPropertiesToExclude = BulkConfig.PropertiesToExclude?.Count() > 0;
@@ -260,8 +265,10 @@ namespace EFCore.BulkExtensions
 
         protected IQueryable<T> QueryOutputTable<T>(DbContext context) where T : class
         {
-            var query = context.Set<T>().FromSql<T>(SqlQueryBuilder.SelectFromOutputTable(this));
-            return OrderBy(query, this.PrimaryKeys[0]);
+            string q = SqlQueryBuilder.SelectFromOutputTable(this);
+            var query = context.Set<T>().FromSql(q);
+            var queryOrdered = OrderBy(query, this.PrimaryKeys[0]);
+            return queryOrdered;
         }
 
         protected void UpdateEntitiesIdentity<T>(IList<T> entities, IList<T> entitiesWithOutputIdentity)
