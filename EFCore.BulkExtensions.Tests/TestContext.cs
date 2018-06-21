@@ -34,7 +34,7 @@ namespace EFCore.BulkExtensions.Tests
 
             modelBuilder.Entity<Info>(e => { e.Property(p => p.ConvertedTime).HasConversion((value) => value.AddDays(1), (value) => value.AddDays(-1)); });
 
-            modelBuilder.Entity<Document>().Property(p => p.ContentLength).HasComputedColumnSql($"len([{nameof(Document.Content)}])");
+            modelBuilder.Entity<Document>().Property(p => p.ContentLength).HasComputedColumnSql($"(CONVERT([int], len([{nameof(Document.Content)}])))");
 
             //modelBuilder.Entity<Item>().HasQueryFilter(p => p.Description != "1234"); // For testing Global Filter
         }
@@ -137,8 +137,7 @@ namespace EFCore.BulkExtensions.Tests
         public byte[] VersionChange { get; set; }
 
         [DatabaseGenerated(DatabaseGeneratedOption.Computed)] // Computed columns have to be configured with Fluent API
-        public Int64 ContentLength { get; set; }
-
+        public int ContentLength { get; set; }
     }
 
     // For testring ValueConversion
@@ -151,7 +150,7 @@ namespace EFCore.BulkExtensions.Tests
         public DateTime ConvertedTime { get; set; }
     }
 
-    // For testring OwnedTypes
+    // For testing OwnedTypes
     public class ChangeLog
     {
         public int ChangeLogId { get; set; }
