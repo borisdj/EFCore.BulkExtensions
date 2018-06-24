@@ -17,7 +17,7 @@ namespace EFCore.BulkExtensions
     public class TableInfo
     {
         public string Schema { get; set; }
-        public string SchemaFormated => Schema != null ? Schema + "." : "";
+        public string SchemaFormated => Schema != null ? $"[{Schema}]." : "";
         public string TableName { get; set; }
         public string FullTableName => $"{SchemaFormated}[{TableName}]";
         public List<string> PrimaryKeys { get; set; }
