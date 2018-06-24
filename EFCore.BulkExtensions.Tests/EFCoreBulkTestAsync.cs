@@ -45,7 +45,7 @@ namespace EFCore.BulkExtensions.Tests
                 {
                     if (insertTo2Tables)
                     {
-                        using (var transaction = context.Database.BeginTransaction())
+                        using (var transaction = await context.Database.BeginTransactionAsync())
                         {
                             await context.BulkInsertAsync(entities, new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true, BatchSize = 4000 });
 
