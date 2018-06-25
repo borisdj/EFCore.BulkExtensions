@@ -62,7 +62,29 @@ So if we have list of 8000, say 3000 for update (they keep the real Id) and 5000
 **SetOutputIdentity** is useful when BulkInsert is done to multiple related tables, that have Identity column.<br>
 So after Insert is done to first table, we need Id-s that were generated in Db becasue they are FK in second table.<br>
 It is implemented with [OUTPUT](https://docs.microsoft.com/en-us/sql/t-sql/queries/output-clause-transact-sql) as part of MERGE Query, so in this case even the Insert is not done directly to TargetTable but to TempTable and then Merged with TargetTable.<br>
-When used if *PreserveInsertOrder* is also set to *true* Id-s will be updated in entitiesList, and if *PreserveInsertOrder* is *false* then entitiesList will be cleared and reloaded.
+When used if *PreserveInsertOrder* is also set to *true* Id-s will be updated in entitiesList, and if *PreserveInsertOrder* is *false* then entitiesList will be cleared and reloaded.<br>
+Example of *SetOutputIdentity* with parent-child FK related tables:
+```C#
+int numberOfEntites = 1000;
+var entities = new List<Item>(); var subEntities = new List<ItemHistory>();
+for (int i = 1; i <= numberOfEntites; i++)
+{
+    var entity = new Item { ItemId = 1, Name = $"Name {i}", ItemHistories = new List<ItemHistory>() };
+    entity.ItemHistories.Add(new ItemHistory { Remark = $"Info {i}.1" });
+    entity.ItemHistories.Add(new ItemHistory { Remark = $"Info {i}.2" });
+}
+using (var transaction = context.Database.BeginTransaction()) {
+    context.BulkInsert(entities, new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true });
+    foreach (var entity in entities) {
+        foreach (var subEntity in entity.ItemHistories)
+            subEntity.ItemId = entity.ItemId; // setting FK to match its linked PK that was generated in DB
+        subEntities.AddRange(entity.ItemHistories);
+    }
+    context.BulkInsert(subEntities);
+    transaction.Commit();
+}
+```
+
 
 **UseTempDB** can be used [only with Insert](https://github.com/borisdj/EFCore.BulkExtensions/issues/49) operation.
 
