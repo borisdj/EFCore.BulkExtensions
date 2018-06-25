@@ -9,7 +9,7 @@ namespace EFCore.BulkExtensions.Tests
 {
     public class EFCoreBulkTest
     {
-        protected int EntitiesNumber => 1000;
+        protected int EntitiesNumber => 100000;
 
         [Theory]
         [InlineData(true)]
@@ -18,9 +18,9 @@ namespace EFCore.BulkExtensions.Tests
         {
             // Test can be run individually by commenting others and running each separately in order one after another
             RunInsert(isBulkOperation);
-            /*RunInsertOrUpdate(isBulkOperation);
+            RunInsertOrUpdate(isBulkOperation);
             RunUpdate(isBulkOperation);
-            RunDelete(isBulkOperation);*/
+            RunDelete(isBulkOperation);
         }
 
         private void WriteProgress(decimal percentage)
