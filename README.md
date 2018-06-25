@@ -126,7 +126,7 @@ foreach (var entity in entities)
     entity.TimeUpdated = DateTime.Now;
 context.BulkUpdate(entities);
 ```
-REMARK When we need to Select from a List of some Unique column Use `Join` insted of `Contains` for [Efficiency](https://stackoverflow.com/questions/16824510/select-multiple-records-based-on-list-of-ids-with-linq):<br>
+REMARK When we need to Select from a List of some Unique column Use `Join` instead of `Contains` for [Efficiency](https://stackoverflow.com/questions/16824510/select-multiple-records-based-on-list-of-ids-with-linq):<br>
 ```C#
 var entities = context.Items.Join(itemsNames, e => e.Name, a => a, (e, a) => e).AsNoTracking().ToList();
 ```
