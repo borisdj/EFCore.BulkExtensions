@@ -112,6 +112,24 @@ context.Students.AddRange(entities); // adding to Context so that Shadow propert
 context.BulkInsert(entities);
 ```
 
+## Batch example
+Batch operations can easily be done using ExecuteSqlCommand method directly or with BulkOps:
+
+```C#
+//SQL
+string textTimeUpdated = nameof(Item.TimeUpdated);
+context.Database.ExecuteSqlCommand(
+    $"UPDATE [dbo.][{nameof(Item)}] SET [{textTimeUpdated}] = GETDATE() WHERE [{textTimeUpdated}] IS NULL");
+//BULK
+var entities = context.Items.Where(a => a.TimeUpdated == null).AsNoTracking().ToList();
+foreach (var entity in entities)
+    entity.TimeUpdated = DateTime.Now;
+context.BulkUpdate(entities);
+```
+REMARK When we need to Select from a List of some Unique column Use `Join` insted of `Contains` for [Efficiency](https://stackoverflow.com/questions/16824510/select-multiple-records-based-on-list-of-ids-with-linq)
+`var entities = context.Items.Join(itemsNames, e => e.Name, a => a, (e, a) => e).AsNoTracking().ToList();`
+
+
 ## Performances
 
 Following are performances (in seconds):
