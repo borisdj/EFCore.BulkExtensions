@@ -76,8 +76,9 @@ for (int i = 1; i <= numberOfEntites; i++)
 using (var transaction = context.Database.BeginTransaction()) {
     context.BulkInsert(entities, new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true });
     foreach (var entity in entities) {
-        foreach (var subEntity in entity.ItemHistories)
+        foreach (var subEntity in entity.ItemHistories) {
             subEntity.ItemId = entity.ItemId; // setting FK to match its linked PK that was generated in DB
+        }
         subEntities.AddRange(entity.ItemHistories);
     }
     context.BulkInsert(subEntities);
@@ -122,8 +123,9 @@ context.Database.ExecuteSqlCommand(
     $"UPDATE [dbo.][{nameof(Item)}] SET [{textTimeUpdated}] = GETDATE() WHERE [{textTimeUpdated}] IS NULL");
 //BULK
 var entities = context.Items.Where(a => a.TimeUpdated == null).AsNoTracking().ToList();
-foreach (var entity in entities)
+foreach (var entity in entities) {
     entity.TimeUpdated = DateTime.Now;
+}
 context.BulkUpdate(entities);
 ```
 REMARK When we need to Select from big List of some Unique Prop./Column Use `Join` instead of `Contains` for [Efficiency](https://stackoverflow.com/questions/16824510/select-multiple-records-based-on-list-of-ids-with-linq):<br>
