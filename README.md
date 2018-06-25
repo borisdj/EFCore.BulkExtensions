@@ -129,7 +129,7 @@ context.BulkUpdate(entities);
 REMARK When we need to Select from a big List of some Unique column Use `Join` instead of `Contains` for [Efficiency](https://stackoverflow.com/questions/16824510/select-multiple-records-based-on-list-of-ids-with-linq):<br>
 ```C#
 var entities = context.Items.Join(itemsNames, e => e.Name, a => a, (e, a) => e).AsNoTracking().ToList();
-var entities = context.Items.Where(a => entities.Contains(a.Name)).AsNoTracking().ToList(); // do Not use
+var entities = context.Items.Where(a => itemsNames.Contains(a.Name)).AsNoTracking().ToList(); // do Not use
 ```
 
 
