@@ -118,13 +118,18 @@ Batch operations can easily be done using ExecuteSqlCommand method directly or w
 
 ```C#
 //SQL
+string textItem = nameof(Item);
 string textTimeUpdated = nameof(Item.TimeUpdated);
-string sql = $"UPDATE [dbo.][{nameof(Item)}] SET [{textTimeUpdated}] = GETDATE() WHERE [{textTimeUpdated}] IS NULL"; // pure SQL (without external values)
+DateTime dateTimeNow = DateTime.Now;
+// pure SQL (without external or variable values)
+string sql = $"UPDATE [dbo.][{textItem}] SET [{textTimeUpdated}] = GETDATE() WHERE [{textTimeUpdated}] IS NULL";
 context.Database.ExecuteSqlCommand(sql);
-sql = $"UPDATE [dbo].[{nameof(Item)}] SET [{textTimeUpdated}] = '{dateTimeNow}' WHERE [{textTimeUpdated}] IS NULL"; // plain SQL - susceptible to SQL Injection
-sql = $"UPDATE [dbo].[{nameof(Item)}] SET [{textTimeUpdated}] = @DateTimeNow WHERE [{textTimeUpdated}] IS NULL"; // parameterized SQL  prevents SQL Injection
-context.Database.ExecuteSqlCommand(sql3, new SqlParameter("@DateTimeNow", dateTimeNow)); // parameterized, against SqlInj.
-//BULK
+// plain SQL - susceptible to SQL Injection
+sql = $"UPDATE [dbo].[{textItem}] SET [{textTimeUpdated}] = '{dateTimeNow}' WHERE [{textTimeUpdated}] IS NULL";
+context.Database.ExecuteSqlCommand(sql);
+// parameterized SQL - prevents SQL Injection
+sql = $"UPDATE [dbo].[{textItem}] SET [{textTimeUpdated}] = @DateTimeNow WHERE [{textTimeUpdated}] IS NULL"; 
+context.Database.ExecuteSqlCommand(sql3, new SqlParameter("@DateTimeNow", dateTimeNow));
 var entities = context.Items.Where(a => a.TimeUpdated == null).AsNoTracking().ToList();
 foreach (var entity in entities) {
     entity.TimeUpdated = DateTime.Now;
