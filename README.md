@@ -122,7 +122,7 @@ string textItem = nameof(Item);
 string textTimeUpdated = nameof(Item.TimeUpdated);
 DateTime dateTimeNow = DateTime.Now;
 // pure SQL (without external or variable values)
-string sql = $"UPDATE [dbo.][{textItem}] SET [{textTimeUpdated}] = GETDATE() WHERE [{textTimeUpdated}] IS NULL";
+string sql = $"UPDATE [dbo].[{textItem}] SET [{textTimeUpdated}] = GETDATE() WHERE [{textTimeUpdated}] IS NULL";
 context.Database.ExecuteSqlCommand(sql);
 // plain SQL - susceptible to SQL Injection
 sql = $"UPDATE [dbo].[{textItem}] SET [{textTimeUpdated}] = '{dateTimeNow}' WHERE [{textTimeUpdated}] IS NULL";
