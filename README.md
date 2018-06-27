@@ -119,8 +119,11 @@ Batch operations can easily be done using ExecuteSqlCommand method directly or w
 ```C#
 //SQL
 string textTimeUpdated = nameof(Item.TimeUpdated);
-context.Database.ExecuteSqlCommand(
-    $"UPDATE [dbo.][{nameof(Item)}] SET [{textTimeUpdated}] = GETDATE() WHERE [{textTimeUpdated}] IS NULL");
+string sql = $"UPDATE [dbo.][{nameof(Item)}] SET [{textTimeUpdated}] = GETDATE() WHERE [{textTimeUpdated}] IS NULL"; // pure SQL (without external values)
+context.Database.ExecuteSqlCommand(sql);
+sql = $"UPDATE [dbo].[{nameof(Item)}] SET [{textTimeUpdated}] = '{dateTimeNow}' WHERE [{textTimeUpdated}] IS NULL"; // plain SQL - susceptible to SQL Injection
+sql = $"UPDATE [dbo].[{nameof(Item)}] SET [{textTimeUpdated}] = @DateTimeNow WHERE [{textTimeUpdated}] IS NULL"; // parameterized SQL  prevents SQL Injection
+context.Database.ExecuteSqlCommand(sql3, new SqlParameter("@DateTimeNow", dateTimeNow)); // parameterized, against SqlInj.
 //BULK
 var entities = context.Items.Where(a => a.TimeUpdated == null).AsNoTracking().ToList();
 foreach (var entity in entities) {
