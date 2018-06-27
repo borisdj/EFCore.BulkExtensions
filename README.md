@@ -117,7 +117,7 @@ context.BulkInsert(entities);
 Batch operations can easily be done using ExecuteSqlCommand method directly or with BulkOps:
 
 ```C#
-//SQL
+// SQL
 string textItem = nameof(Item);
 string textTimeUpdated = nameof(Item.TimeUpdated);
 DateTime dateTimeNow = DateTime.Now;
@@ -130,6 +130,8 @@ context.Database.ExecuteSqlCommand(sql);
 // parameterized SQL - prevents SQL Injection
 sql = $"UPDATE [dbo].[{textItem}] SET [{textTimeUpdated}] = @DateTimeNow WHERE [{textTimeUpdated}] IS NULL"; 
 context.Database.ExecuteSqlCommand(sql3, new SqlParameter("@DateTimeNow", dateTimeNow));
+
+// BULK
 var entities = context.Items.Where(a => a.TimeUpdated == null).AsNoTracking().ToList();
 foreach (var entity in entities) {
     entity.TimeUpdated = DateTime.Now;
