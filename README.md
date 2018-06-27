@@ -129,7 +129,7 @@ sql = $"UPDATE [dbo].[{textItem}] SET [{textTimeUpdated}] = '{dateTimeNow}' WHER
 context.Database.ExecuteSqlCommand(sql);
 // parameterized SQL - prevents SQL Injection
 sql = $"UPDATE [dbo].[{textItem}] SET [{textTimeUpdated}] = @DateTimeNow WHERE [{textTimeUpdated}] IS NULL"; 
-context.Database.ExecuteSqlCommand(sql3, new SqlParameter("@DateTimeNow", dateTimeNow));
+context.Database.ExecuteSqlCommand(sql, new SqlParameter("@DateTimeNow", dateTimeNow));
 
 // BULK
 var entities = context.Items.Where(a => a.TimeUpdated == null).AsNoTracking().ToList();
