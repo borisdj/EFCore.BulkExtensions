@@ -267,7 +267,11 @@ namespace EFCore.BulkExtensions
         {
             string q = SqlQueryBuilder.SelectFromOutputTable(this);
             var query = context.Set<T>().FromSql(q);
+
             var queryOrdered = OrderBy(query, this.PrimaryKeys[0]);
+            // ALTERNATIVELY OrderBy with DynamicLinq ('using System.Linq.Dynamic.Core;' NuGet required) that eliminates need for custom OrderBy<T> method with Expression.
+            //var queryOrdered = query.OrderBy(this.PrimaryKeys[0]);
+
             return queryOrdered;
         }
 
