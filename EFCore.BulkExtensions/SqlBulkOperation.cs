@@ -172,7 +172,8 @@ namespace EFCore.BulkExtensions
                 if (entityPropertiesDict.ContainsKey(property.Name))
                 {
                     string columnName = entityPropertiesDict[property.Name].Relational().ColumnName;
-                    dataTable.Columns.Add(columnName, property.PropertyType);
+                    var propertyType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
+                    dataTable.Columns.Add(columnName, propertyType);
                     columnsDict.Add(property.Name, null);
                 }
                 else if (entityNavigationOwnedDict.ContainsKey(property.Name)) // isOWned
@@ -202,7 +203,8 @@ namespace EFCore.BulkExtensions
                         if (ownedEntityPropertyNameColumnNameDict.ContainsKey(ownedProperty.Name))
                         {
                             string columnName = ownedEntityPropertyNameColumnNameDict[ownedProperty.Name];
-                            dataTable.Columns.Add(columnName, ownedProperty.PropertyType);
+                            var ownedPropertyType = Nullable.GetUnderlyingType(ownedProperty.PropertyType) ?? ownedProperty.PropertyType;
+                            dataTable.Columns.Add(columnName, ownedPropertyType);
                             columnsDict.Add(property.Name + "_" + ownedProperty.Name, null);
                         }
                     }
