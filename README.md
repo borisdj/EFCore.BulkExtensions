@@ -6,7 +6,7 @@ Current version is using EF Core 2.1.<br>
 For EF Core 2.0 install 2.0.8 Nuget, and for EF Core 1.x use 1.1.0 (targeting NetStandard 1.4)<br>
 Under the hood uses [SqlBulkCopy](https://msdn.microsoft.com/en-us/library/system.data.sqlclient.sqlbulkcopy.aspx) for Insert, for Update/Delete combines BulkInsert with raw Sql [MERGE](https://docs.microsoft.com/en-us/sql/t-sql/statements/merge-transact-sql) (MsSQL 2008+).
 
-Available on [NuGet](https://www.nuget.org/packages/EFCore.BulkExtensions/). Latest 2.1.4<br>
+Available on [![NuGet](https://img.shields.io/badge/NuGet-2.1.5-blue.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/)<br>
 Package manager console command for installation: *Install-Package EFCore.BulkExtensions*
 
 Usage is simple and pretty straightforward.<br>
@@ -165,6 +165,10 @@ Test was done locally on following configuration: INTEL Core i5-3570K 3.40GHz, D
 ## Contributing
 
 If you find this project useful you can mark it by leaving a Github Star.</br>
+If you would like to support the project by making a Donation ($10) you are welcome to do so:<br>
+[![Donate](https://img.shields.io/badge/donate-PayPal-yellow.svg)](https://www.paypal.me/BorisDjurdjevic/10) or
+[![Donate Bitcoin](https://img.shields.io/badge/donate-Bitcoin-orange.svg)](https://borisdj.github.io/pages/donateBTC.html)
+
 Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on code of conduct, and the process for submitting pull requests.
 
 [![NuGet](https://img.shields.io/npm/l/express.svg)](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE)
