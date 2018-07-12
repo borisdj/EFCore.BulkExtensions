@@ -164,8 +164,8 @@ Test was done locally on following configuration: INTEL Core i5-3570K 3.40GHz, D
 
 ## Contributing
 
-If you find this project useful you can mark it by leaving a Github Star.</br>
-If you would like to support the project by making a Donation ($10) you are welcome to do so:<br>
+If you find this project useful you can mark it by leaving a Github **\*Star**.</br>
+If you would like to support the project by making a Donation ($10), you are welcome to do so:<br>
 [![Donate](https://img.shields.io/badge/donate-PayPal-yellow.svg)](https://www.paypal.me/BorisDjurdjevic/10) or
 [![Donate Bitcoin](https://img.shields.io/badge/donate-Bitcoin-orange.svg)](https://borisdj.github.io/pages/donateBTC.html)
 
