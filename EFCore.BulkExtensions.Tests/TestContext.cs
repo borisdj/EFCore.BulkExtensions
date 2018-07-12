@@ -166,6 +166,6 @@ namespace EFCore.BulkExtensions.Tests
         //[Column(nameof(ChangedBy))] // for setting custom column name, in this case prefix OwnedType_ ('Audit_') removed, so column would be only ('ChangedBy')
         public string ChangedBy { get; set; } // default Column name for Property of OwnedType is OwnedType_Property ('Audit_ChangedBy')
 
-        public DateTime ChangedTime { get; set; }
+        public DateTime? ChangedTime { get; set; }
     }
 }

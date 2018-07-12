@@ -225,7 +225,7 @@ namespace EFCore.BulkExtensions
                         var ownedProperties = property.PropertyType.GetProperties();
                         foreach (var ownedProperty in ownedProperties)
                         {
-                            columnsDict[property.Name + "_" + ownedProperty.Name] = ownedProperty.GetValue(propertyValue, null);
+                            columnsDict[property.Name + "_" + ownedProperty.Name] = propertyValue == null ? null : ownedProperty.GetValue(propertyValue, null);
                         }
                     }
                 }

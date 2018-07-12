@@ -24,7 +24,7 @@ namespace EFCore.BulkExtensions
 
         public static string DropTable(string tableName)
         {
-            return $"DROP TABLE {tableName}";
+            return $"IF OBJECT_ID('{tableName}', 'U') IS NOT NULL DROP TABLE {tableName}";
         }
 
         public static string SelectIsIdentity(string tableName, string idColumnName)
