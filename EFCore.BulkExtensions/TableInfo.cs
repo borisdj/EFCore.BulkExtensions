@@ -50,11 +50,12 @@ namespace EFCore.BulkExtensions
                 BulkConfig = bulkConfig ?? new BulkConfig()
             };
 
-            if (operationType != OperationType.Insert)
+            bool isExplicitTransaction = context.Database.GetDbConnection().State == ConnectionState.Open;
+            if (tableInfo.BulkConfig.UseTempDB == true && !isExplicitTransaction && operationType != OperationType.Insert)
             {
-                tableInfo.BulkConfig.UseTempDB = false; // TempDB can only be used with Insert.
-                // Other Operations done with customTemp table.
-                // If using tempdb[#] throws exception: 'Cannot access destination table' (gets Droped too early, probably because transaction ends)
+                tableInfo.BulkConfig.UseTempDB = false;
+                // If BulkOps is not in explicit transaction then tempdb[#] can only be used with Insert, other Operations done with customTemp table.
+                // Otherwise throws exception: 'Cannot access destination table' (gets Droped too early because transaction ends before operation is finished)
             }
 
             var isDeleteOperation = operationType == OperationType.Delete;
