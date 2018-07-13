@@ -87,7 +87,7 @@ using (var transaction = context.Database.BeginTransaction()) {
 ```
 
 
-**UseTempDB** when set then BulkOperation have to be [inside Transaction](https://github.com/borisdj/EFCore.BulkExtensions/issues/49)
+**UseTempDB** when set then BulkOperation has to be [inside Transaction](https://github.com/borisdj/EFCore.BulkExtensions/issues/49)
 
 **SqlBulkCopyOptions** is Enum with [[Flags]](https://stackoverflow.com/questions/8447/what-does-the-flags-enum-attribute-mean-in-c) attribute which enables specifying one or more options:<br>
 *Default, KeepIdentity, CheckConstraints, TableLock, KeepNulls, FireTriggers, UseInternalTransaction*
