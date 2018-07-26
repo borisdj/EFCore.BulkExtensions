@@ -280,7 +280,7 @@ namespace EFCore.BulkExtensions
         {
             if (BulkConfig.PreserveInsertOrder) // Updates PK in entityList
             {
-                var accessor = TypeAccessor.Create(typeof(T));
+                var accessor = TypeAccessor.Create(typeof(T), true);
                 for (int i = 0; i < NumberOfEntities; i++)
                     accessor[entities[i], PrimaryKeys[0]] = accessor[entitiesWithOutputIdentity[i], PrimaryKeys[0]];
             }
