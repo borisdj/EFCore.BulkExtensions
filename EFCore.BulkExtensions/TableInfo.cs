@@ -228,7 +228,7 @@ namespace EFCore.BulkExtensions
 
         public void SetSqlBulkCopyConfig<T>(SqlBulkCopy sqlBulkCopy, IList<T> entities, bool setColumnMapping, Action<decimal> progress)
         {
-            sqlBulkCopy.DestinationTableName = this.InsertToTempTable ? this.FullTempTableName : this.FullTableName;
+            sqlBulkCopy.DestinationTableName = InsertToTempTable ? FullTempTableName : FullTableName;
             sqlBulkCopy.BatchSize = BulkConfig.BatchSize;
             sqlBulkCopy.NotifyAfter = BulkConfig.NotifyAfter ?? BulkConfig.BatchSize;
             sqlBulkCopy.SqlRowsCopied += (sender, e) => {
@@ -239,7 +239,7 @@ namespace EFCore.BulkExtensions
 
             if (setColumnMapping)
             {
-                foreach (var element in this.PropertyColumnNamesDict)
+                foreach (var element in PropertyColumnNamesDict)
                 {
                     sqlBulkCopy.ColumnMappings.Add(element.Key, element.Value);
                 }
@@ -248,7 +248,7 @@ namespace EFCore.BulkExtensions
 
         public void UpdateOutputIdentity<T>(DbContext context, IList<T> entities) where T : class
         {
-            if (this.HasSinglePrimaryKey)
+            if (HasSinglePrimaryKey)
             {
                 var entitiesWithOutputIdentity = QueryOutputTable<T>(context).ToList();
                 UpdateEntitiesIdentity(entities, entitiesWithOutputIdentity);
@@ -257,7 +257,7 @@ namespace EFCore.BulkExtensions
 
         public async Task UpdateOutputIdentityAsync<T>(DbContext context, IList<T> entities) where T : class
         {
-            if (this.HasSinglePrimaryKey)
+            if (HasSinglePrimaryKey)
             {
                 var entitiesWithOutputIdentity = await QueryOutputTable<T>(context).ToListAsync().ConfigureAwait(false);
                 UpdateEntitiesIdentity(entities, entitiesWithOutputIdentity);
@@ -269,20 +269,20 @@ namespace EFCore.BulkExtensions
             string q = SqlQueryBuilder.SelectFromOutputTable(this);
             var query = context.Set<T>().FromSql(q);
 
-            var queryOrdered = OrderBy(query, this.PrimaryKeys[0]);
+            var queryOrdered = OrderBy(query, PrimaryKeys[0]);
             // ALTERNATIVELY OrderBy with DynamicLinq ('using System.Linq.Dynamic.Core;' NuGet required) that eliminates need for custom OrderBy<T> method with Expression.
-            //var queryOrdered = query.OrderBy(this.PrimaryKeys[0]);
+            //var queryOrdered = query.OrderBy(PrimaryKeys[0]);
 
             return queryOrdered;
         }
 
         protected void UpdateEntitiesIdentity<T>(IList<T> entities, IList<T> entitiesWithOutputIdentity)
         {
-            if (this.BulkConfig.PreserveInsertOrder) // Updates PK in entityList
+            if (BulkConfig.PreserveInsertOrder) // Updates PK in entityList
             {
                 var accessor = TypeAccessor.Create(typeof(T));
-                for (int i = 0; i < this.NumberOfEntities; i++)
-                    accessor[entities[i], this.PrimaryKeys[0]] = accessor[entitiesWithOutputIdentity[i], this.PrimaryKeys[0]];
+                for (int i = 0; i < NumberOfEntities; i++)
+                    accessor[entities[i], PrimaryKeys[0]] = accessor[entitiesWithOutputIdentity[i], PrimaryKeys[0]];
             }
             else // Clears entityList and then refills it with loaded entites from Db
             {
