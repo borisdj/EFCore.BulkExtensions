@@ -16,17 +16,17 @@ namespace EFCore.BulkExtensions
 {
     public class TableInfo
     {
-        public string Schema { get; set; }
-        public string SchemaFormated => Schema != null ? $"[{Schema}]." : "";
-        public string TableName { get; set; }
+        protected string Schema { get; set; }
+        protected string SchemaFormated => Schema != null ? $"[{Schema}]." : "";
+        protected string TableName { get; set; }
         public string FullTableName => $"{SchemaFormated}[{TableName}]";
         public List<string> PrimaryKeys { get; set; }
         public bool HasSinglePrimaryKey { get; set; }
         public bool UpdateByPropertiesAreNullable { get; set; }
 
         protected string TempDBPrefix => BulkConfig.UseTempDB ? "#" : "";
-        public string TempTableSufix { get; set; }
-        public string TempTableName => $"{TableName}{TempTableSufix}";
+        protected string TempTableSufix { get; set; }
+        protected string TempTableName => $"{TableName}{TempTableSufix}";
         public string FullTempTableName => $"{SchemaFormated}[{TempDBPrefix}{TempTableName}]";
         public string FullTempOutputTableName => $"{SchemaFormated}[{TempDBPrefix}{TempTableName}Output]";
 
