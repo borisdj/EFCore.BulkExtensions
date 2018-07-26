@@ -10,19 +10,19 @@ namespace EFCore.BulkExtensions
 {
     internal class ObjectReaderEx : ObjectReader // Overridden to fix ShadowProperties in FastMember library
     {
-        private readonly HashSet<string> _shadowProperties;
-        private readonly Dictionary<string, ValueConverter> _convertibleProperties;
-        private readonly DbContext _context;
-        private string[] _members;
-        private FieldInfo _current;
+        private readonly HashSet<string> shadowProperties;
+        private readonly Dictionary<string, ValueConverter> convertibleProperties;
+        private readonly DbContext context;
+        private readonly string[] members;
+        private readonly FieldInfo current;
 
         public ObjectReaderEx(Type type, IEnumerable source, HashSet<string> shadowProperties, Dictionary<string, ValueConverter> convertibleProperties, DbContext context, params string[] members) : base(type, source, members)
         {
-            _shadowProperties = shadowProperties;
-            _convertibleProperties = convertibleProperties;
-            _context = context;
-            _members = members;
-            _current = typeof(ObjectReader).GetField("current", BindingFlags.Instance | BindingFlags.NonPublic);
+            this.shadowProperties = shadowProperties;
+            this.convertibleProperties = convertibleProperties;
+            this.context = context;
+            this.members = members;
+            current = typeof(ObjectReader).GetField("current", BindingFlags.Instance | BindingFlags.NonPublic);
         }
 
         public static ObjectReader Create<T>(IEnumerable<T> source, HashSet<string> shadowProperties, Dictionary<string, ValueConverter> convertibleProperties, DbContext context, params string[] members)
@@ -36,15 +36,15 @@ namespace EFCore.BulkExtensions
         {
             get
             {
-                if (_shadowProperties.Contains(name))
+                if (shadowProperties.Contains(name))
                 {
-                    var current = _current.GetValue(this);
-                    return _context.Entry(current).Property(name).CurrentValue;
+                    var current = this.current.GetValue(this);
+                    return context.Entry(current).Property(name).CurrentValue;
                 }
-                else if (_convertibleProperties.TryGetValue(name, out var converter))
+                else if (convertibleProperties.TryGetValue(name, out var converter))
                 {
-                    var current = _current.GetValue(this);
-                    var currentValue = _context.Entry(current).Property(name).CurrentValue;
+                    var current = this.current.GetValue(this);
+                    var currentValue = context.Entry(current).Property(name).CurrentValue;
                     return converter.ConvertToProvider(currentValue);
                 }
                 return base[name];
@@ -55,7 +55,7 @@ namespace EFCore.BulkExtensions
         {
             get
             {
-                var name = _members[i];
+                var name = members[i];
                 return this[name];
             }
         }
