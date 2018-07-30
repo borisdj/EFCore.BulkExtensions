@@ -1,6 +1,7 @@
 # EFCore.BulkExtensions
 EntityFrameworkCore extensions for Bulk operations (**Insert, Update, Delete**).<br>
 Library is Lightweight and very Efficient, having all mostly used CUD operation.<br>
+It was selected in top 15 [EF Core Extensions](https://docs.microsoft.com/en-us/ef/core/extensions/) recommended by Microsoft.<br>
 It is targeting NetStandard 2.0 so it can be used on project targeting NetCore(2.0+) or NetFramework(4.6.1+).<br>
 Current version is using EF Core 2.1.<br>
 For EF Core 2.0 install 2.0.8 Nuget, and for EF Core 1.x use 1.1.0 (targeting NetStandard 1.4)<br>
@@ -60,7 +61,7 @@ One is set Id to really high values, order of magnitude 10^10, and another even 
 So if we have list of 8000, say 3000 for update (they keep the real Id) and 5000 for insert then Id-s could be (-5000:-1).
 
 **SetOutputIdentity** is useful when BulkInsert is done to multiple related tables, that have Identity column.<br>
-After Insert is done to first table, we need Id-s that were generated in Db becasue they are FK(ForeignKey) in second table.<br>
+After Insert is done to first table, we need Id-s that were generated in Db because they are FK(ForeignKey) in second table.<br>
 It is implemented with [OUTPUT](https://docs.microsoft.com/en-us/sql/t-sql/queries/output-clause-transact-sql) as part of MERGE Query, so in this case even the Insert is not done directly to TargetTable but to TempTable and then Merged with TargetTable.<br>
 When used if *PreserveInsertOrder* is also set to *true* Id-s will be updated in entitiesList, and if *PreserveInsertOrder* is *false* then entitiesList will be cleared and reloaded.<br>
 Example of *SetOutputIdentity* with parent-child FK related tables:
