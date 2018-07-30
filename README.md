@@ -1,7 +1,7 @@
 # EFCore.BulkExtensions
 EntityFrameworkCore extensions for Bulk operations (**Insert, Update, Delete**).<br>
 Library is Lightweight and very Efficient, having all mostly used CUD operation.<br>
-It was selected in top 15 [EF Core Extensions](https://docs.microsoft.com/en-us/ef/core/extensions/) recommended by Microsoft.<br>
+Was selected in top 15 [EF Core Extensions](https://docs.microsoft.com/en-us/ef/core/extensions/) recommended by Microsoft.<br>
 It is targeting NetStandard 2.0 so it can be used on project targeting NetCore(2.0+) or NetFramework(4.6.1+).<br>
 Current version is using EF Core 2.1.<br>
 For EF Core 2.0 install 2.0.8 Nuget, and for EF Core 1.x use 1.1.0 (targeting NetStandard 1.4)<br>
