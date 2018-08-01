@@ -70,7 +70,7 @@ int numberOfEntites = 1000;
 var entities = new List<Item>(); var subEntities = new List<ItemHistory>();
 for (int i = 1; i <= numberOfEntites; i++)
 {
-    var entity = new Item { ItemId = 1, Name = $"Name {i}", ItemHistories = new List<ItemHistory>() };
+    var entity = new Item { Name = $"Name {i}", ItemHistories = new List<ItemHistory>() };//ItemId set by Db
     entity.ItemHistories.Add(new ItemHistory { Remark = $"Info {i}.1" });
     entity.ItemHistories.Add(new ItemHistory { Remark = $"Info {i}.2" });
 }
