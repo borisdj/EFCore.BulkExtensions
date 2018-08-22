@@ -18,7 +18,7 @@ context.BulkUpdate(entitiesList);                context.BulkUpdateAsync(entitie
 context.BulkDelete(entitiesList);                context.BulkDeleteAsync(entitiesList);
 context.BulkInsertOrUpdate(entitiesList);        context.BulkInsertOrUpdateAsync(entitiesList);
 ```
-In ConnectionString there should be *Trusted_Connection=True;* because Sql credentials are required to stay in connection.<br>
+If Windows Authentication is used then in ConnectionString there should be *Trusted_Connection=True;* because Sql credentials are required to stay in connection.<br>
 
 When used directly each of these operations are separate transactions and are automatically committed.<br>
 And if we need multiple operations in single procedure then explicit transaction should be used, for example:
