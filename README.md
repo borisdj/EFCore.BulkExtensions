@@ -56,8 +56,8 @@ Here single Id value itself doesn't matter, db will change it to (1001:1300), wh
 Insertion order is implemented with [TOP](https://docs.microsoft.com/en-us/sql/t-sql/queries/top-transact-sql) in conjuction with ORDER BY. [stackoverflow:merge-into-insertion-order](https://stackoverflow.com/questions/884187/merge-into-insertion-order).
 
 When using **PreserveInsertOrder** with **SetOutputIdentity** Id value does matter.<br>
-IF it's BulkInsertOrUpdate method for those that will be updated it has to match Id.
-If we need to sort those for Insert and not have conflict with existing Id-s, there are 2 ways:<br>
+If it's BulkInsertOrUpdate method for those that will be updated it has to match Id.<br>
+And if we need to sort those for insert(BulkInsert/OrUpdate) and not have conflict with existing Id-s, there are 2 ways:<br>
 One is set Id to really high values, order of magnitude 10^10, and another even better setting them to negative values.<br>
 So if we have list of 8000, say 3000 for update (they keep the real Id) and 5000 for insert then Id-s could be (-5000:-1).
 
