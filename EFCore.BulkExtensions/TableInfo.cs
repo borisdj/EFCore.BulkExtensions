@@ -250,7 +250,7 @@ namespace EFCore.BulkExtensions
         {
             if (HasSinglePrimaryKey)
             {
-                var entitiesWithOutputIdentity = QueryOutputTable<T>(context).ToList();
+                var entitiesWithOutputIdentity = QueryOutputTable<T>(context);
                 UpdateEntitiesIdentity(entities, entitiesWithOutputIdentity);
             }
         }
@@ -259,21 +259,36 @@ namespace EFCore.BulkExtensions
         {
             if (HasSinglePrimaryKey)
             {
-                var entitiesWithOutputIdentity = await QueryOutputTable<T>(context).ToListAsync().ConfigureAwait(false);
+                var entitiesWithOutputIdentity = (await QueryOutputTableAsync<T>(context).ConfigureAwait(false)).ToList();
                 UpdateEntitiesIdentity(entities, entitiesWithOutputIdentity);
             }
         }
+        
 
-        protected IQueryable<T> QueryOutputTable<T>(DbContext context) where T : class
+        protected IList<T> QueryOutputTable<T>(DbContext context) where T : class
+        {
+            var compiled = EF.CompileQuery(GetQueryExpression<T>());
+            var result = compiled(context).ToList();
+            return result;
+        }
+
+        protected Task<IEnumerable<T>> QueryOutputTableAsync<T>(DbContext context) where T : class
+        {
+            var compiled = EF.CompileAsyncQuery(GetQueryExpression<T>());
+            var result = compiled(context);
+            return result;
+        }
+
+        private Expression<Func<DbContext, IEnumerable<T>>> GetQueryExpression<T>() where T : class
         {
             string q = SqlQueryBuilder.SelectFromOutputTable(this);
-            var query = context.Set<T>().FromSql(q);
+            Expression<Func<DbContext, IEnumerable<T>>> expr = (ctx) => ctx.Set<T>().FromSql(q);
+            var ordered = OrderBy(expr, PrimaryKeys[0]);
 
-            var queryOrdered = OrderBy(query, PrimaryKeys[0]);
             // ALTERNATIVELY OrderBy with DynamicLinq ('using System.Linq.Dynamic.Core;' NuGet required) that eliminates need for custom OrderBy<T> method with Expression.
             //var queryOrdered = query.OrderBy(PrimaryKeys[0]);
 
-            return queryOrdered;
+            return ordered;
         }
 
         protected void UpdateEntitiesIdentity<T>(IList<T> entities, IList<T> entitiesWithOutputIdentity)
@@ -291,16 +306,15 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        private static IQueryable<T> OrderBy<T>(IQueryable<T> source, string ordering)
+        private static Expression<Func<DbContext, IEnumerable<T>>> OrderBy<T>(Expression<Func<DbContext, IEnumerable<T>>> source, string ordering)
         {
             Type entityType = typeof(T);
             PropertyInfo property = entityType.GetProperty(ordering);
             ParameterExpression parameter = Expression.Parameter(entityType);
             MemberExpression propertyAccess = Expression.MakeMemberAccess(parameter, property);
             LambdaExpression orderByExp = Expression.Lambda(propertyAccess, parameter);
-            MethodCallExpression resultExp = Expression.Call(typeof(Queryable), "OrderBy", new Type[] { entityType, property.PropertyType }, source.Expression, Expression.Quote(orderByExp));
-            var orderedQuery = source.Provider.CreateQuery<T>(resultExp);
-            return orderedQuery;
+            MethodCallExpression resultExp = Expression.Call(typeof(Queryable), "OrderBy", new Type[] { entityType, property.PropertyType }, source.Body, Expression.Quote(orderByExp));
+            return Expression.Lambda<Func<DbContext, IEnumerable<T>>>(resultExp, source.Parameters);
         }
     }
 }
