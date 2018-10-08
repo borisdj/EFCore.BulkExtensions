@@ -228,7 +228,7 @@ namespace EFCore.BulkExtensions
             //tableInfo.UpdateEntities(context, entities); // UpdateOutputIdentity
         }
 
-        public static void Read<T>(DbContext context, IList<T> entities, TableInfo tableInfo, Action<decimal> progress) where T : class
+        public static IEnumerable<OperationStats> Read<T>(DbContext context, IList<T> entities, TableInfo tableInfo, Action<decimal> progress) where T : class
         {
             Dictionary<string, string> tempDict = ConfigureBulkReadTableInfo(context, tableInfo);
 
@@ -248,6 +248,8 @@ namespace EFCore.BulkExtensions
                 var existingEntities = compiled(context).ToList();
 
                 UpdateReadEntities(entities, existingEntities, tableInfo);
+
+				return null;
             }
             finally
             {
@@ -256,7 +258,7 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        public static async Task ReadAsync<T>(DbContext context, IList<T> entities, TableInfo tableInfo, Action<decimal> progress) where T : class
+        public static async Task<IEnumerable<OperationStats>> ReadAsync<T>(DbContext context, IList<T> entities, TableInfo tableInfo, Action<decimal> progress) where T : class
         {
             Dictionary<string, string> tempDict = ConfigureBulkReadTableInfo(context, tableInfo);
 
@@ -276,6 +278,8 @@ namespace EFCore.BulkExtensions
                 var existingEntities = (await compiled(context).ConfigureAwait(false)).ToList();
 
                 UpdateReadEntities(entities, existingEntities, tableInfo);
+
+				return null;
             }
             finally
             {

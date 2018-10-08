@@ -17,7 +17,7 @@ namespace EFCore.BulkExtensions
             }
             else if (operationType == OperationType.Read)
             {
-                SqlBulkOperation.Read(context, entities, tableInfo, progress);
+                return SqlBulkOperation.Read(context, entities, tableInfo, progress);
             }
             else
             {
