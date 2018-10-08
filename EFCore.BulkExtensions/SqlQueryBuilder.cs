@@ -51,6 +51,10 @@ namespace EFCore.BulkExtensions
                     $"USING {sourceTable} AS S " +
                     $"ON {GetANDSeparatedColumns(primaryKeys, "T", "S", tableInfo.UpdateByPropertiesAreNullable)}";
 
+            if (tableInfo.BulkConfig.GenerateStats)
+            {
+                q = $"CREATE table #t (ChangeType VARCHAR(100), InputID int, DeletedId int) " + q;
+            }
             if (operationType == OperationType.Insert || operationType == OperationType.InsertOrUpdate)
             {
                 q += $" WHEN NOT MATCHED THEN INSERT ({GetCommaSeparatedColumns(insertColumnsNames)})" +
@@ -69,6 +73,11 @@ namespace EFCore.BulkExtensions
             {
                 q += $" OUTPUT {GetCommaSeparatedColumns(outputColumnsNames, "INSERTED")}" +
                      $" INTO {tableInfo.FullTempOutputTableName}";
+            }
+            else if (tableInfo.BulkConfig.GenerateStats)
+            {
+                q += $" OUTPUT $action, Inserted.ID AS InsertedID, Deleted.ID AS DeletedID into #t;";
+                q += $"SELECT ChangeType, COUNT(*) AS [Count] FROM #t GROUP BY ChangeType";
             }
 
             return q + ";";
