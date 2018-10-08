@@ -22,23 +22,11 @@ namespace EFCore.BulkExtensions.Tests
         //[InlineData(false)] // for speed comparison with Regular EF CUD operations
         public async Task OperationsTestAsync(bool isBulkOperation, bool insertTo2Tables = false)
         {
-            using (var context = new TestContext(ContextUtil.GetOptions()))
-            {
-                context.Database.EnsureDeleted();
-            }
-
             // Test can be run individually by commenting others and running each separately in order one after another
             await RunInsertAsync(isBulkOperation, insertTo2Tables);
             await RunInsertOrUpdateAsync(isBulkOperation);
             await RunUpdateAsync(isBulkOperation);
             await RunDeleteAsync(isBulkOperation);
-                                 
-            using (var context = new TestContext(ContextUtil.GetOptions()))
-            {
-                var compiledQueryCache = ((MemoryCache)context.GetService<IMemoryCache>());
-
-                Assert.Equal(0, compiledQueryCache.Count);
-            }
         }
 
         private async Task RunInsertAsync(bool isBulkOperation, bool insertTo2Tables = false)

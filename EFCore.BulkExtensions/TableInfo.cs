@@ -250,7 +250,7 @@ namespace EFCore.BulkExtensions
         {
             if (HasSinglePrimaryKey)
             {
-                var entitiesWithOutputIdentity = QueryOutputTable<T>(context);
+                var entitiesWithOutputIdentity = QueryOutputTable<T>(context).ToList();
                 UpdateEntitiesIdentity(entities, entitiesWithOutputIdentity);
             }
         }
@@ -265,10 +265,10 @@ namespace EFCore.BulkExtensions
         }
         
 
-        protected IList<T> QueryOutputTable<T>(DbContext context) where T : class
+        protected IEnumerable<T> QueryOutputTable<T>(DbContext context) where T : class
         {
             var compiled = EF.CompileQuery(GetQueryExpression<T>());
-            var result = compiled(context).ToList();
+            var result = compiled(context);
             return result;
         }
 
@@ -282,7 +282,7 @@ namespace EFCore.BulkExtensions
         private Expression<Func<DbContext, IEnumerable<T>>> GetQueryExpression<T>() where T : class
         {
             string q = SqlQueryBuilder.SelectFromOutputTable(this);
-            Expression<Func<DbContext, IEnumerable<T>>> expr = (ctx) => ctx.Set<T>().FromSql(q);
+            Expression<Func<DbContext, IEnumerable<T>>> expr = (ctx) => ctx.Set<T>().FromSql(q).AsNoTracking();
             var ordered = OrderBy(expr, PrimaryKeys[0]);
 
             // ALTERNATIVELY OrderBy with DynamicLinq ('using System.Linq.Dynamic.Core;' NuGet required) that eliminates need for custom OrderBy<T> method with Expression.
