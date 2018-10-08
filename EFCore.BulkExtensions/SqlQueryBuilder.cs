@@ -32,6 +32,20 @@ namespace EFCore.BulkExtensions
             return $"SELECT columnproperty(object_id('{tableName}'),'{idColumnName}','IsIdentity');";
         }
 
+        public static string SelectJoinTable(TableInfo tableInfo)
+        {
+            string sourceTable = tableInfo.FullTableName;
+            string joinTable = tableInfo.FullTempTableName;
+            List<string> columnsNames = tableInfo.PropertyColumnNamesDict.Values.ToList();
+            List<string> selectByPropertyNames = tableInfo.PropertyColumnNamesDict.Keys.Where(a => tableInfo.PrimaryKeys.Contains(a)).ToList();
+
+            var q = $"SELECT {GetCommaSeparatedColumns(columnsNames, "S")} FROM {sourceTable} AS S " +
+                    $"JOIN {joinTable} AS J " +
+                    $"ON {GetANDSeparatedColumns(selectByPropertyNames, "S", "J", tableInfo.UpdateByPropertiesAreNullable)}";
+
+            return q + ";";
+        }
+
         public static string MergeTable(TableInfo tableInfo, OperationType operationType)
         {
             string targetTable = tableInfo.FullTableName;

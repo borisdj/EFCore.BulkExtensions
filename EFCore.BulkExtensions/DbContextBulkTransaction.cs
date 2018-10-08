@@ -15,6 +15,10 @@ namespace EFCore.BulkExtensions
             {
                 return SqlBulkOperation.Insert(context, entities, tableInfo, progress);
             }
+            else if (operationType == OperationType.Read)
+            {
+                SqlBulkOperation.Read(context, entities, tableInfo, progress);
+            }
             else
             {
                 return SqlBulkOperation.Merge(context, entities, tableInfo, operationType, progress);
@@ -28,6 +32,10 @@ namespace EFCore.BulkExtensions
             if (operationType == OperationType.Insert && !tableInfo.BulkConfig.SetOutputIdentity && !tableInfo.BulkConfig.GenerateStats)
             {
                 return SqlBulkOperation.InsertAsync(context, entities, tableInfo, progress);
+            }
+            else if (operationType == OperationType.Read)
+            {
+                return SqlBulkOperation.ReadAsync(context, entities, tableInfo, progress);
             }
             else
             {
