@@ -3,24 +3,52 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Extensions.Caching.Memory;
 using Xunit;
 
 namespace EFCore.BulkExtensions.Tests
 {
     public class EFCoreBulkTest
     {
-        protected int EntitiesNumber => 100000;
+        protected int EntitiesNumber => 10000;
+
+        private static Func<TestContext, int> ItemsCountQuery = EF.CompileQuery<TestContext, int>(ctx => ctx.Items.Count());
+        private static Func<TestContext, Item> LastItemQuery = EF.CompileQuery<TestContext, Item>(ctx => ctx.Items.LastOrDefault());
+        private static Func<TestContext, IEnumerable<Item>> AllItemsQuery = EF.CompileQuery<TestContext, IEnumerable<Item>>(ctx => ctx.Items.AsNoTracking());
 
         [Theory]
         [InlineData(true)]
         //[InlineData(false)] // for speed comparison with Regular EF CUD operations
         public void OperationsTest(bool isBulkOperation)
         {
-            // Test can be run individually by commenting others and running each separately in order one after another
+            //DeletePreviousDatabase();
+
             RunInsert(isBulkOperation);
             RunInsertOrUpdate(isBulkOperation);
             RunUpdate(isBulkOperation);
-            RunDelete(isBulkOperation);
+            RunRead(isBulkOperation);
+            //RunDelete(isBulkOperation);
+
+            CheckQueryCache();
+        }
+
+        private void DeletePreviousDatabase()
+        {
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.Database.EnsureDeleted();
+            }
+        }
+
+        private void CheckQueryCache()
+        {
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                var compiledQueryCache = ((MemoryCache)context.GetService<IMemoryCache>());
+
+                Assert.Equal(0, compiledQueryCache.Count);
+            }
         }
 
         private void WriteProgress(decimal percentage)
@@ -101,15 +129,15 @@ namespace EFCore.BulkExtensions.Tests
 
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
-                int entitiesCount = context.Items.Count();
-                Item lastEntity = context.Items.LastOrDefault();
+                int entitiesCount = ItemsCountQuery(context);
+                Item lastEntity = LastItemQuery(context);
 
                 Assert.Equal(EntitiesNumber - 1, entitiesCount);
                 Assert.NotNull(lastEntity);
                 Assert.Equal("name " + (EntitiesNumber - 1), lastEntity.Name);
             }
         }
-
+        
         private void RunInsertOrUpdate(bool isBulkOperation)
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
@@ -130,7 +158,7 @@ namespace EFCore.BulkExtensions.Tests
                 }
                 if (isBulkOperation)
                 {
-                    context.BulkInsertOrUpdate(entities, null, (a) => WriteProgress(a));
+                    context.BulkInsertOrUpdate(entities, new BulkConfig() { SetOutputIdentity = true }, (a) => WriteProgress(a));
                 }
                 else
                 {
@@ -140,8 +168,8 @@ namespace EFCore.BulkExtensions.Tests
             }
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
-                int entitiesCount = context.Items.Count();
-                Item lastEntity = context.Items.LastOrDefault();
+                int entitiesCount = ItemsCountQuery(context);
+                Item lastEntity = LastItemQuery(context);
 
                 Assert.Equal(EntitiesNumber, entitiesCount);
                 Assert.NotNull(lastEntity);
@@ -154,7 +182,7 @@ namespace EFCore.BulkExtensions.Tests
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 int counter = 1;
-                var entities = context.Items.AsNoTracking().ToList();
+                var entities = AllItemsQuery(context).ToList(); // context.Items.AsNoTracking());
                 foreach (var entity in entities)
                 {
                     entity.Description = "Desc Update " + counter++;
@@ -179,8 +207,8 @@ namespace EFCore.BulkExtensions.Tests
             }
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
-                int entitiesCount = context.Items.Count();
-                Item lastEntity = context.Items.LastOrDefault();
+                int entitiesCount = ItemsCountQuery(context);
+                Item lastEntity = LastItemQuery(context);
 
                 Assert.Equal(EntitiesNumber, entitiesCount);
                 Assert.NotNull(lastEntity);
@@ -188,11 +216,42 @@ namespace EFCore.BulkExtensions.Tests
             }
         }
 
+        private void RunRead(bool isBulkOperation)
+        {
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                var entities = new List<Item>();
+
+                for (int i = 1; i < EntitiesNumber; i++)
+                {
+                    var entity = new Item
+                    {
+                        Name = "name " + i,
+                    };
+                    entities.Add(entity);
+                }
+
+                context.BulkRead(
+                    entities,
+                    new BulkConfig
+                    {
+                        UseTempDB = false,
+                        UpdateByProperties = new List<string> { nameof(Item.Name) }
+                    }
+                );
+
+                Assert.Equal(1, entities[0].ItemId);
+                Assert.Equal(0, entities[1].ItemId);
+                Assert.Equal(3, entities[2].ItemId);
+                Assert.Equal(0, entities[3].ItemId);
+            }
+        }
+
         private void RunDelete(bool isBulkOperation)
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
-                var entities = context.Items.AsNoTracking().ToList();
+                var entities = AllItemsQuery(context).ToList();
                 // ItemHistories will also be deleted because of Relationship - ItemId (Delete Rule: Cascade)
                 if (isBulkOperation)
                 {
@@ -206,8 +265,8 @@ namespace EFCore.BulkExtensions.Tests
             }
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
-                int entitiesCount = context.Items.Count();
-                Item lastEntity = context.Items.LastOrDefault();
+                int entitiesCount = ItemsCountQuery(context);
+                Item lastEntity = LastItemQuery(context);
 
                 Assert.Equal(0, entitiesCount);
                 Assert.Null(lastEntity);

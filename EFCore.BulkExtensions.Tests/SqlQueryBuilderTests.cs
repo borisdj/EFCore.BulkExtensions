@@ -49,6 +49,19 @@ namespace EFCore.BulkExtensions.Tests
         }
 
         [Fact]
+        public void SelectJoinTableReadTest()
+        {
+            TableInfo tableInfo = GetTestTableInfo();
+            string result = SqlQueryBuilder.SelectJoinTable(tableInfo);
+
+            string expected = "SELECT S.[ItemId], S.[Name] FROM [dbo].[Item] AS S " +
+                              "JOIN [dbo].[ItemTemp1234] AS J " +
+                              "ON S.[ItemId] = J.[ItemId];";
+
+            Assert.Equal(result, expected);
+        }
+
+        [Fact]
         public void MergeTableDeleteDeleteTest()
         {
             var tableInfo = GetTestTableInfo();
