@@ -52,6 +52,7 @@ namespace EFCore.BulkExtensions.Tests
         public void SelectJoinTableReadTest()
         {
             TableInfo tableInfo = GetTestTableInfo();
+            tableInfo.BulkConfig.UpdateByProperties = new List<string> { nameof(Item.Name) };
             string result = SqlQueryBuilder.SelectJoinTable(tableInfo);
 
             string expected = "SELECT S.[ItemId], S.[Name] FROM [dbo].[Item] AS S " +

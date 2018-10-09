@@ -26,10 +26,11 @@ namespace EFCore.BulkExtensions.Tests
             await RunInsertAsync(isBulkOperation, insertTo2Tables);
             await RunInsertOrUpdateAsync(isBulkOperation);
             await RunUpdateAsync(isBulkOperation);
+            await RunReadAsync(isBulkOperation);
             await RunDeleteAsync(isBulkOperation);
         }
 
-        private async Task RunInsertAsync(bool isBulkOperation, bool insertTo2Tables = false)
+        private async Task RunInsertAsync(bool isBulkOperation, bool insertTo2Tables)
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
@@ -138,7 +139,7 @@ namespace EFCore.BulkExtensions.Tests
                 var entities = AllItemsQuery(context).ToList();
                 foreach (var entity in entities)
                 {
-                    entity.Name = "name Update " + counter++;
+                    entity.Description = "Desc Update " + counter++;
                     entity.TimeUpdated = DateTime.Now;
                 }
                 if (isBulkOperation)
@@ -158,7 +159,38 @@ namespace EFCore.BulkExtensions.Tests
 
                 Assert.Equal(EntitiesNumber, entitiesCount);
                 Assert.NotNull(lastEntity);
-                Assert.Equal("name Update " + EntitiesNumber, lastEntity.Name);
+                Assert.Equal("Desc Update " + EntitiesNumber, lastEntity.Description);
+            }
+        }
+
+        private async Task RunReadAsync(bool isBulkOperation)
+        {
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                var entities = new List<Item>();
+
+                for (int i = 1; i < EntitiesNumber; i++)
+                {
+                    var entity = new Item
+                    {
+                        Name = "name " + i,
+                    };
+                    entities.Add(entity);
+                }
+
+                await context.BulkReadAsync(
+                    entities,
+                    new BulkConfig
+                    {
+                        UseTempDB = false,
+                        UpdateByProperties = new List<string> { nameof(Item.Name) }
+                    }
+                );
+
+                Assert.Equal(1, entities[0].ItemId);
+                Assert.Equal(0, entities[1].ItemId);
+                Assert.Equal(3, entities[2].ItemId);
+                Assert.Equal(0, entities[3].ItemId);
             }
         }
 

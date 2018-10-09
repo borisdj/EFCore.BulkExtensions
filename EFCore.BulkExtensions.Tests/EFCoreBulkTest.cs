@@ -28,7 +28,7 @@ namespace EFCore.BulkExtensions.Tests
             RunInsertOrUpdate(isBulkOperation);
             RunUpdate(isBulkOperation);
             RunRead(isBulkOperation);
-            //RunDelete(isBulkOperation);
+            RunDelete(isBulkOperation);
 
             CheckQueryCache();
         }

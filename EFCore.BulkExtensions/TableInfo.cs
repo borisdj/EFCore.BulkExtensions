@@ -246,49 +246,55 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        public void UpdateOutputIdentity<T>(DbContext context, IList<T> entities) where T : class
+        public static string GetUniquePropertyValues<T>(T entity, List<string> propertiesNames, TypeAccessor accessor)
         {
-            if (HasSinglePrimaryKey)
+            string result = String.Empty;
+            foreach (var propertyName in propertiesNames)
             {
-                var entitiesWithOutputIdentity = QueryOutputTable<T>(context).ToList();
-                UpdateEntitiesIdentity(entities, entitiesWithOutputIdentity);
+                result += accessor[entity, propertyName];
             }
-        }
-
-        public async Task UpdateOutputIdentityAsync<T>(DbContext context, IList<T> entities) where T : class
-        {
-            if (HasSinglePrimaryKey)
-            {
-                var entitiesWithOutputIdentity = (await QueryOutputTableAsync<T>(context).ConfigureAwait(false)).ToList();
-                UpdateEntitiesIdentity(entities, entitiesWithOutputIdentity);
-            }
-        }
-        
-
-        protected IEnumerable<T> QueryOutputTable<T>(DbContext context) where T : class
-        {
-            var compiled = EF.CompileQuery(GetQueryExpression<T>());
-            var result = compiled(context);
             return result;
         }
 
-        protected Task<IEnumerable<T>> QueryOutputTableAsync<T>(DbContext context) where T : class
+        public Dictionary<string, string> ConfigureBulkReadTableInfo(DbContext context)
         {
-            var compiled = EF.CompileAsyncQuery(GetQueryExpression<T>());
-            var result = compiled(context);
-            return result;
+            InsertToTempTable = true;
+            if (BulkConfig.UpdateByProperties == null || BulkConfig.UpdateByProperties.Count() == 0)
+                CheckHasIdentity(context);
+
+            var previousPropertyColumnNamesDict = PropertyColumnNamesDict;
+            BulkConfig.PropertiesToInclude = PrimaryKeys;
+            PropertyColumnNamesDict = PropertyColumnNamesDict.Where(a => PrimaryKeys.Contains(a.Key)).ToDictionary(i => i.Key, i => i.Value);
+            return previousPropertyColumnNamesDict;
         }
 
-        private Expression<Func<DbContext, IEnumerable<T>>> GetQueryExpression<T>() where T : class
+        public void UpdateReadEntities<T>(IList<T> entities, IList<T> existingEntities)
         {
-            string q = SqlQueryBuilder.SelectFromOutputTable(this);
-            Expression<Func<DbContext, IEnumerable<T>>> expr = (ctx) => ctx.Set<T>().FromSql(q).AsNoTracking();
-            var ordered = OrderBy(expr, PrimaryKeys[0]);
+            List<string> propertyNames = PropertyColumnNamesDict.Keys.ToList();
+            List<string> selectByPropertyNames = PropertyColumnNamesDict.Keys.Where(a => PrimaryKeys.Contains(a)).ToList();
 
-            // ALTERNATIVELY OrderBy with DynamicLinq ('using System.Linq.Dynamic.Core;' NuGet required) that eliminates need for custom OrderBy<T> method with Expression.
-            //var queryOrdered = query.OrderBy(PrimaryKeys[0]);
+            var accessor = TypeAccessor.Create(typeof(T), true);
+            Dictionary<string, T> existingEntitiesDict = new Dictionary<string, T>();
+            foreach (var existingEntity in existingEntities)
+            {
+                string uniqueProperyValues = GetUniquePropertyValues(existingEntity, selectByPropertyNames, accessor);
+                existingEntitiesDict.Add(uniqueProperyValues, existingEntity);
+            }
 
-            return ordered;
+            for (int i = 0; i < NumberOfEntities; i++)
+            {
+                var entity = entities[i];
+                string uniqueProperyValues = GetUniquePropertyValues(entity, selectByPropertyNames, accessor);
+                if (existingEntitiesDict.ContainsKey(uniqueProperyValues))
+                {
+                    var existingEntity = existingEntitiesDict[uniqueProperyValues];
+
+                    foreach (var propertyName in propertyNames)
+                    {
+                        accessor[entities[i], propertyName] = accessor[existingEntity, propertyName];
+                    }
+                }
+            }
         }
 
         protected void UpdateEntitiesIdentity<T>(IList<T> entities, IList<T> entitiesWithOutputIdentity)
@@ -306,6 +312,57 @@ namespace EFCore.BulkExtensions
             }
         }
 
+        // Compiled queries created manually to avoid EF Memory leak bug when using EF with dynamic SQL:
+        // https://github.com/borisdj/EFCore.BulkExtensions/issues/73
+        // Once the following Issue gets fixed(expected in EF 3.0) this can be replaced with code segment: DirectQuery
+        // https://github.com/aspnet/EntityFrameworkCore/issues/12905
+        #region CompiledQuery
+        public void UpdateOutputIdentity<T>(DbContext context, IList<T> entities) where T : class
+        {
+            if (HasSinglePrimaryKey)
+            {
+                string sqlQuery = SqlQueryBuilder.SelectFromOutputTable(this);
+                var entitiesWithOutputIdentity = QueryOutputTable<T>(context, sqlQuery).ToList();
+                UpdateEntitiesIdentity(entities, entitiesWithOutputIdentity);
+            }
+        }
+
+        public async Task UpdateOutputIdentityAsync<T>(DbContext context, IList<T> entities) where T : class
+        {
+            if (HasSinglePrimaryKey)
+            {
+                string sqlQuery = SqlQueryBuilder.SelectFromOutputTable(this);
+                var entitiesWithOutputIdentity = (await QueryOutputTableAsync<T>(context, sqlQuery).ConfigureAwait(false)).ToList();
+                UpdateEntitiesIdentity(entities, entitiesWithOutputIdentity);
+            }
+        }
+        
+
+        protected IEnumerable<T> QueryOutputTable<T>(DbContext context, string sqlQuery) where T : class
+        {
+            var compiled = EF.CompileQuery(GetQueryExpression<T>(sqlQuery));
+            var result = compiled(context);
+            return result;
+        }
+
+        protected Task<IEnumerable<T>> QueryOutputTableAsync<T>(DbContext context, string sqlQuery) where T : class
+        {
+            var compiled = EF.CompileAsyncQuery(GetQueryExpression<T>(sqlQuery));
+            var result = compiled(context);
+            return result;
+        }
+
+        public Expression<Func<DbContext, IEnumerable<T>>> GetQueryExpression<T>(string sqlQuery) where T : class
+        {
+            Expression<Func<DbContext, IEnumerable<T>>> expr = (ctx) => ctx.Set<T>().FromSql(sqlQuery).AsNoTracking();
+            var ordered = OrderBy(expr, PrimaryKeys[0]);
+
+            // ALTERNATIVELY OrderBy with DynamicLinq ('using System.Linq.Dynamic.Core;' NuGet required) that eliminates need for custom OrderBy<T> method with Expression.
+            //var queryOrdered = query.OrderBy(PrimaryKeys[0]);
+
+            return ordered;
+        }
+
         private static Expression<Func<DbContext, IEnumerable<T>>> OrderBy<T>(Expression<Func<DbContext, IEnumerable<T>>> source, string ordering)
         {
             Type entityType = typeof(T);
@@ -316,5 +373,51 @@ namespace EFCore.BulkExtensions
             MethodCallExpression resultExp = Expression.Call(typeof(Queryable), "OrderBy", new Type[] { entityType, property.PropertyType }, source.Body, Expression.Quote(orderByExp));
             return Expression.Lambda<Func<DbContext, IEnumerable<T>>>(resultExp, source.Parameters);
         }
+        #endregion
+
+        // Currently not used until issue from previous segment is fixed in EFCore
+        #region CompiledQuery
+        /*public void UpdateOutputIdentity<T>(DbContext context, IList<T> entities) where T : class
+        {
+            if (HasSinglePrimaryKey)
+            {
+                var entitiesWithOutputIdentity = QueryOutputTable<T>(context).ToList();
+                UpdateEntitiesIdentity(entities, entitiesWithOutputIdentity);
+            }
+        }
+
+        public async Task UpdateOutputIdentityAsync<T>(DbContext context, IList<T> entities) where T : class
+        {
+            if (HasSinglePrimaryKey)
+            {
+                var entitiesWithOutputIdentity = await QueryOutputTable<T>(context).ToListAsync().ConfigureAwait(false);
+                UpdateEntitiesIdentity(entities, entitiesWithOutputIdentity);
+            }
+        }
+
+        protected IQueryable<T> QueryOutputTable<T>(DbContext context) where T : class
+        {
+            string q = SqlQueryBuilder.SelectFromOutputTable(this);
+            var query = context.Set<T>().FromSql(q);
+
+            var queryOrdered = OrderBy(query, PrimaryKeys[0]);
+            // ALTERNATIVELY OrderBy with DynamicLinq ('using System.Linq.Dynamic.Core;' NuGet required) that eliminates need for custom OrderBy<T> method with Expression.
+            //var queryOrdered = query.OrderBy(PrimaryKeys[0]);
+
+            return queryOrdered;
+        }
+
+        private static IQueryable<T> OrderBy<T>(IQueryable<T> source, string ordering)
+        {
+            Type entityType = typeof(T);
+            PropertyInfo property = entityType.GetProperty(ordering);
+            ParameterExpression parameter = Expression.Parameter(entityType);
+            MemberExpression propertyAccess = Expression.MakeMemberAccess(parameter, property);
+            LambdaExpression orderByExp = Expression.Lambda(propertyAccess, parameter);
+            MethodCallExpression resultExp = Expression.Call(typeof(Queryable), "OrderBy", new Type[] { entityType, property.PropertyType }, source.Expression, Expression.Quote(orderByExp));
+            var orderedQuery = source.Provider.CreateQuery<T>(resultExp);
+            return orderedQuery;
+        }*/
+        #endregion
     }
 }

@@ -83,7 +83,7 @@ namespace EFCore.BulkExtensions.Tests
         public ICollection<ItemHistory> ItemHistories { get; set; }
     }
 
-    // ItemHistory is used to test bulk Ops to mutiple tables(Item and ItemHistory), to test Guid as PK and to test other Schema(his)
+    // ItemHistory is used to test bulk Ops to multiple tables(Item and ItemHistory), to test Guid as PK and to test other Schema(his)
     [Table(nameof(ItemHistory), Schema = "his")]
     public class ItemHistory
     {

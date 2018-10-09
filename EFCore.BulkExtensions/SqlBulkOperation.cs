@@ -22,6 +22,7 @@ namespace EFCore.BulkExtensions
 
     internal static class SqlBulkOperation
     {
+        #region MainOps
         public static void Insert<T>(DbContext context, IList<T> entities, TableInfo tableInfo, Action<decimal> progress)
         {
             var sqlConnection = OpenAndGetSqlConnection(context);
@@ -158,51 +159,9 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        private static Dictionary<string, string> ConfigureBulkReadTableInfo(DbContext context, TableInfo tableInfo)
-        {
-            tableInfo.InsertToTempTable = true;
-            if (tableInfo.BulkConfig.UpdateByProperties == null || tableInfo.BulkConfig.UpdateByProperties.Count() == 0)
-                tableInfo.CheckHasIdentity(context);
-
-            var tempDict = tableInfo.PropertyColumnNamesDict;
-            tableInfo.BulkConfig.PropertiesToInclude = tableInfo.PrimaryKeys;
-            tableInfo.PropertyColumnNamesDict = tableInfo.PropertyColumnNamesDict.Where(a => tableInfo.PrimaryKeys.Contains(a.Key)).ToDictionary(i => i.Key, i => i.Value);
-            return tempDict;
-        }
-
-        private static void UpdateReadEntities<T>(IList<T> entities, IList<T> existingEntities, TableInfo tableInfo)
-        {
-            List<string> propertyNames = tableInfo.PropertyColumnNamesDict.Keys.ToList();
-            List<string> selectByPropertyNames = tableInfo.PropertyColumnNamesDict.Keys.Where(a => tableInfo.PrimaryKeys.Contains(a)).ToList();
-
-            Dictionary<string, T> existingEntitiesDict = new Dictionary<string, T>();
-            foreach (var existingEntity in existingEntities)
-            {
-                string uniqueProperyValues = GetUniquePropertyValues(existingEntity, selectByPropertyNames);
-                existingEntitiesDict.Add(uniqueProperyValues, existingEntity);
-            }
-
-            var accessor = TypeAccessor.Create(typeof(T), true);
-            for (int i = 0; i < tableInfo.NumberOfEntities; i++)
-            {
-                var entity = entities[i];
-                string uniqueProperyValues = GetUniquePropertyValues(entity, selectByPropertyNames);
-                if (existingEntitiesDict.ContainsKey(uniqueProperyValues))
-                {
-                    var existingEntity = existingEntitiesDict[uniqueProperyValues];
-
-                    foreach (var propertyName in propertyNames)
-                    {
-                        accessor[entities[i], propertyName] = accessor[existingEntity, propertyName];
-                    }
-                }
-            }
-            //tableInfo.UpdateEntities(context, entities); // UpdateOutputIdentity
-        }
-
         public static void Read<T>(DbContext context, IList<T> entities, TableInfo tableInfo, Action<decimal> progress) where T : class
         {
-            Dictionary<string, string> tempDict = ConfigureBulkReadTableInfo(context, tableInfo);
+            Dictionary<string, string> previousPropertyColumnNamesDict = tableInfo.ConfigureBulkReadTableInfo(context);
 
             context.Database.ExecuteSqlCommand(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo));
 
@@ -210,16 +169,16 @@ namespace EFCore.BulkExtensions
             {
                 Insert(context, entities, tableInfo, progress);
 
-                tableInfo.PropertyColumnNamesDict = tempDict;
+                tableInfo.PropertyColumnNamesDict = previousPropertyColumnNamesDict;
 
-                var q = SqlQueryBuilder.SelectJoinTable(tableInfo);
+                var sqlQuery = SqlQueryBuilder.SelectJoinTable(tableInfo);
 
                 //var existingEntities = context.Set<T>().FromSql(q).AsNoTracking().ToList();
-                Expression<Func<DbContext, IEnumerable<T>>> expression = (ctx) => ctx.Set<T>().FromSql(q).AsNoTracking();
+                Expression<Func<DbContext, IEnumerable<T>>> expression = (ctx) => ctx.Set<T>().FromSql(sqlQuery).AsNoTracking();
                 var compiled = EF.CompileQuery(expression);
                 var existingEntities = compiled(context).ToList();
 
-                UpdateReadEntities(entities, existingEntities, tableInfo);
+                tableInfo.UpdateReadEntities(entities, existingEntities);
             }
             finally
             {
@@ -230,7 +189,7 @@ namespace EFCore.BulkExtensions
 
         public static async Task ReadAsync<T>(DbContext context, IList<T> entities, TableInfo tableInfo, Action<decimal> progress) where T : class
         {
-            Dictionary<string, string> tempDict = ConfigureBulkReadTableInfo(context, tableInfo);
+            Dictionary<string, string> previousPropertyColumnNamesDict = tableInfo.ConfigureBulkReadTableInfo(context);
 
             await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo));
 
@@ -238,16 +197,20 @@ namespace EFCore.BulkExtensions
             {
                 await InsertAsync(context, entities, tableInfo, progress);
 
-                tableInfo.PropertyColumnNamesDict = tempDict;
+                tableInfo.PropertyColumnNamesDict = previousPropertyColumnNamesDict;
 
-                var q = SqlQueryBuilder.SelectJoinTable(tableInfo);
+                var sqlQuery = SqlQueryBuilder.SelectJoinTable(tableInfo);
 
-                //var existingEntities = await context.Set<T>().FromSql(q).AsNoTracking().ToListAsync();
-                Expression<Func<DbContext, IEnumerable<T>>> expression = (ctx) => ctx.Set<T>().FromSql(q).AsNoTracking();
+                // Async with Expression has bug:
+                // https://github.com/aspnet/EntityFrameworkCore/issues/11023
+                /*Expression<Func<DbContext, IEnumerable<T>>> expression = (ctx) => ctx.Set<T>().FromSql(sqlQuery).AsNoTracking();
                 var compiled = EF.CompileAsyncQuery(expression);
-                var existingEntities = (await compiled(context).ConfigureAwait(false)).ToList();
+                var existingEntities = (await compiled(context).ConfigureAwait(false)).ToList();*/
 
-                UpdateReadEntities(entities, existingEntities, tableInfo);
+                // So instead we have omitted Expression
+                var existingEntities = await context.Set<T>().FromSql(sqlQuery).ToListAsync();
+
+                tableInfo.UpdateReadEntities(entities, existingEntities);
             }
             finally
             {
@@ -255,22 +218,9 @@ namespace EFCore.BulkExtensions
                     await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName));
             }
         }
+        #endregion
 
-        public static string GetUniquePropertyValues<T>(T entity, List<string> propertiesNames)
-        {
-            string result = String.Empty;
-            foreach (var propertyName in propertiesNames)
-            {
-                result += entity.GetType().GetProperty(propertyName).GetValue(entity, null);
-            }
-            return result;
-        }
-
-        public static object GetPropValue(object src, string propName)
-        {
-            return src.GetType().GetProperty(propName).GetValue(src, null);
-        }
-
+        #region DataTable
         // IMPORTANT: works only if Properties of Entity are in the same order as Columns in Db
         internal static DataTable GetDataTable<T>(DbContext context, IList<T> entities)
         {
@@ -350,7 +300,9 @@ namespace EFCore.BulkExtensions
             }
             return dataTable;
         }
+        #endregion
 
+        #region Connection
         internal static SqlConnection OpenAndGetSqlConnection(DbContext context)
         {
             if (context.Database.GetDbConnection().State != ConnectionState.Open)
@@ -381,5 +333,6 @@ namespace EFCore.BulkExtensions
                 return new SqlBulkCopy(sqlConnection, sqlBulkCopyOptions, sqlTransaction);
             }
         }
+        #endregion
     }
 }
