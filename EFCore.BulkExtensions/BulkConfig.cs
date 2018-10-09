@@ -21,6 +21,9 @@ namespace EFCore.BulkExtensions
 
         public bool WithHoldlock { get; set; } = true;
 
+        public bool CalculateStats { get; set; }
+        public StatsInfo StatsInfo { get; set; }
+
         public List<string> PropertiesToInclude { get; set; }
 
         public List<string> PropertiesToExclude { get; set; }
@@ -28,5 +31,12 @@ namespace EFCore.BulkExtensions
         public List<string> UpdateByProperties { get; set; }
 
         public SqlBulkCopyOptions SqlBulkCopyOptions { get; set; }
+    }
+
+    public class StatsInfo
+    {
+        public int StatsNumberInserted { get; set; }
+
+        public int StatsNumberUpdated { get; set; }
     }
 }

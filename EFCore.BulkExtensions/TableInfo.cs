@@ -319,25 +319,38 @@ namespace EFCore.BulkExtensions
         #region CompiledQuery
         public void UpdateOutputIdentity<T>(DbContext context, IList<T> entities) where T : class
         {
-            if (HasSinglePrimaryKey)
+            string sqlQuery = SqlQueryBuilder.SelectFromOutputTable(this);
+            var entitiesWithOutputIdentity = QueryOutputTable<T>(context, sqlQuery).ToList();
+            UpdateEntitiesIdentity(entities, entitiesWithOutputIdentity);
+
+            if (BulkConfig.CalculateStats)
             {
-                string sqlQuery = SqlQueryBuilder.SelectFromOutputTable(this);
-                var entitiesWithOutputIdentity = QueryOutputTable<T>(context, sqlQuery).ToList();
-                UpdateEntitiesIdentity(entities, entitiesWithOutputIdentity);
+                int numberUpdated = context.Database.ExecuteSqlCommand(SqlQueryBuilder.SelectCountIsUpdateFromOutputTable(this));
+                BulkConfig.StatsInfo = new StatsInfo
+                {
+                    StatsNumberUpdated = numberUpdated,
+                    StatsNumberInserted = entities.Count - numberUpdated
+                };
             }
         }
 
         public async Task UpdateOutputIdentityAsync<T>(DbContext context, IList<T> entities) where T : class
         {
-            if (HasSinglePrimaryKey)
+            string sqlQuery = SqlQueryBuilder.SelectFromOutputTable(this);
+            var entitiesWithOutputIdentity = (await QueryOutputTableAsync<T>(context, sqlQuery).ConfigureAwait(false)).ToList();
+            UpdateEntitiesIdentity(entities, entitiesWithOutputIdentity);
+
+            if (BulkConfig.CalculateStats)
             {
-                string sqlQuery = SqlQueryBuilder.SelectFromOutputTable(this);
-                var entitiesWithOutputIdentity = (await QueryOutputTableAsync<T>(context, sqlQuery).ConfigureAwait(false)).ToList();
-                UpdateEntitiesIdentity(entities, entitiesWithOutputIdentity);
+                int numberUpdated = await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.SelectCountIsUpdateFromOutputTable(this));
+                BulkConfig.StatsInfo = new StatsInfo
+                {
+                    StatsNumberUpdated = numberUpdated,
+                    StatsNumberInserted = entities.Count - numberUpdated
+                };
             }
         }
         
-
         protected IEnumerable<T> QueryOutputTable<T>(DbContext context, string sqlQuery) where T : class
         {
             var compiled = EF.CompileQuery(GetQueryExpression<T>(sqlQuery));

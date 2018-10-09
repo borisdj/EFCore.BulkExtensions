@@ -9,7 +9,8 @@ namespace EFCore.BulkExtensions
         public static string CreateTableCopy(string existingTableName, string newTableName, TableInfo tableInfo, bool isOutputTable = false)
         {
             List<string> columnsNames = (isOutputTable ? tableInfo.OutputPropertyColumnNamesDict : tableInfo.PropertyColumnNamesDict).Values.ToList();
-            var q = $"SELECT TOP 0 {GetCommaSeparatedColumns(columnsNames, "T")} " +
+            string isUpdateStatsColumn = (tableInfo.BulkConfig.CalculateStats && isOutputTable) ? ", [IsUpdate] = CAST(0 AS bit)" : "";
+            var q = $"SELECT TOP 0 {GetCommaSeparatedColumns(columnsNames, "T")} " + isUpdateStatsColumn +
                     $"INTO {newTableName} FROM {existingTableName} AS T " +
                     $"LEFT JOIN {existingTableName} AS Source ON 1 = 0;"; // removes Identity constrain
             return q;
@@ -20,6 +21,11 @@ namespace EFCore.BulkExtensions
             List<string> columnsNames = tableInfo.OutputPropertyColumnNamesDict.Values.ToList();
             string timeStampColumnNull = tableInfo.TimeStampColumn != null ? $", {tableInfo.TimeStampColumn} = NULL" : "";
             return $"SELECT {GetCommaSeparatedColumns(columnsNames)}{timeStampColumnNull} FROM {tableInfo.FullTempOutputTableName}";
+        }
+
+        public static string SelectCountIsUpdateFromOutputTable(TableInfo tableInfo)
+        {
+            return $"SELECT COUNT(*) FROM {tableInfo.FullTempOutputTableName} WHERE [IsUpdate] = 1";
         }
 
         public static string DropTable(string tableName)
@@ -56,6 +62,8 @@ namespace EFCore.BulkExtensions
             List<string> nonIdentityColumnsNames = columnsNames.Where(a => !primaryKeys.Contains(a)).ToList();
             List<string> insertColumnsNames = tableInfo.HasIdentity ? nonIdentityColumnsNames : columnsNames;
 
+            string isUpdateStatsValue = (tableInfo.BulkConfig.CalculateStats && tableInfo.BulkConfig.SetOutputIdentity) ? ",(CASE $action WHEN 'UPDATE' THEN 1 Else 0 END)" : "";
+
             if (tableInfo.BulkConfig.PreserveInsertOrder)
                 sourceTable = $"(SELECT TOP {tableInfo.NumberOfEntities} * FROM {sourceTable} ORDER BY {GetCommaSeparatedColumns(primaryKeys)})";
 
@@ -81,7 +89,7 @@ namespace EFCore.BulkExtensions
 
             if (tableInfo.BulkConfig.SetOutputIdentity)
             {
-                q += $" OUTPUT {GetCommaSeparatedColumns(outputColumnsNames, "INSERTED")}" +
+                q += $" OUTPUT {GetCommaSeparatedColumns(outputColumnsNames, "INSERTED")}" + isUpdateStatsValue +
                      $" INTO {tableInfo.FullTempOutputTableName}";
             }
 
