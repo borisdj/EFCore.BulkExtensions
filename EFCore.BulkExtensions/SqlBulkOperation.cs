@@ -5,7 +5,6 @@ using System.Data.SqlClient;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
-using Dapper;
 using FastMember;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -112,7 +111,7 @@ namespace EFCore.BulkExtensions
 
                 if (tableInfo.BulkConfig.GenerateStats)
                 {
-                    result = context.Database.GetDbConnection().Query<OperationStats>(SqlQueryBuilder.MergeTable(tableInfo, operationType));
+                    result = context.QueryWithStats(SqlQueryBuilder.MergeTable(tableInfo, operationType));
                 }
                 else
                 {
@@ -141,7 +140,7 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        public static async Task<IEnumerable<OperationStats>> MergeAsync<T>(DbContext context, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress) where T : class
+		public static async Task<IEnumerable<OperationStats>> MergeAsync<T>(DbContext context, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress) where T : class
         {
             tableInfo.InsertToTempTable = true;
             await tableInfo.CheckHasIdentityAsync(context).ConfigureAwait(false);
@@ -159,7 +158,7 @@ namespace EFCore.BulkExtensions
 
                 if (tableInfo.BulkConfig.GenerateStats)
                 {
-                    result = await context.Database.GetDbConnection().QueryAsync<OperationStats>(SqlQueryBuilder.MergeTable(tableInfo, operationType));
+                    result = await context.QueryWithStatsAsync(SqlQueryBuilder.MergeTable(tableInfo, operationType));
                 }
                 else
                 {
@@ -413,5 +412,47 @@ namespace EFCore.BulkExtensions
                 return new SqlBulkCopy(sqlConnection, sqlBulkCopyOptions, sqlTransaction);
             }
         }
-    }
+
+		private static IEnumerable<OperationStats> QueryWithStats(this DbContext context, string query)
+		{
+			var result = new List<OperationStats>();
+
+			var conn = context.Database.GetDbConnection();
+			conn.Open();
+			var command = conn.CreateCommand();
+			command.CommandText = query;
+			var reader = command.ExecuteReader();
+			while (reader.Read())
+			{
+				result.Add(new OperationStats
+				{
+					ChangeType = reader.GetString(0),
+					Count = reader.GetInt32(1)
+				});
+			}
+
+			return result;
+		}
+
+		private static async Task<IEnumerable<OperationStats>> QueryWithStatsAsync(this DbContext context, string query)
+		{
+			var result = new List<OperationStats>();
+
+			var conn = context.Database.GetDbConnection();
+			await conn.OpenAsync();
+			var command = conn.CreateCommand();
+			command.CommandText = query;
+			var reader = await command.ExecuteReaderAsync();
+			while (await reader.ReadAsync())
+			{
+				result.Add(new OperationStats
+				{
+					ChangeType = reader.GetString(0),
+					Count = reader.GetInt32(1)
+				});
+			}
+
+			return result;
+		}
+	}
 }
