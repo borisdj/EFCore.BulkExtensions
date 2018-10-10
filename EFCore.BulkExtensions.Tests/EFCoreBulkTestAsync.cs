@@ -22,6 +22,8 @@ namespace EFCore.BulkExtensions.Tests
         //[InlineData(false)] // for speed comparison with Regular EF CUD operations
         public async Task OperationsTestAsync(bool isBulkOperation, bool insertTo2Tables = false)
         {
+            // await RunDeleteAsync(isBulkOperation);
+
             // Test can be run individually by commenting others and running each separately in order one after another
             await RunInsertAsync(isBulkOperation, insertTo2Tables);
             await RunInsertOrUpdateAsync(isBulkOperation);
@@ -112,7 +114,8 @@ namespace EFCore.BulkExtensions.Tests
                 }
                 if (isBulkOperation)
                 {
-                    await context.BulkInsertOrUpdateAsync(entities);
+                    var bulkConfig = new BulkConfig() { SetOutputIdentity = true };
+                    await context.BulkInsertOrUpdateAsync(entities, bulkConfig);
                 }
                 else
                 {
