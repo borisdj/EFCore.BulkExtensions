@@ -36,6 +36,9 @@ using (var transaction = context.Database.BeginTransaction())
 **BulkInsertOrUpdate** method can be used when there is need for both operations but in one connection to database.<br>
 It makes Update when PK(PrimaryKey) is matched, otherwise does Insert.<br>
 
+**BulkRead** does Select with Join based on one or more Unique columns that are specified in Config field 1UpdateByProperties1.<br>
+More info in the Example at the bottom.<br>
+
 ## BulkConfig arguments
 
 **BulkInsert** and **BulkInsertOrUpdate** methods can have optional argument **BulkConfig** with properties (bool, int, object, List<string>):<br>
@@ -150,7 +153,7 @@ var entities = context.Items.Join(itemsNames, a => a.Name, p => p, (a, p) => a).
 var entities = context.Items.Where(a => itemsNames.Contains(a.Name)).AsNoTracking().ToList();
 // use
 var items = itemsNames.Select(a => new Item { Name = a });
-var entities = context.Items.BulkRead(items, new BulkConfig { UpdateByProperties = new List<string> { nameof(Item.Name) })
+context.Items.BulkRead(items, new BulkConfig { UpdateByProperties = new List<string> { nameof(Item.Name) }) // items loaded with data
 ```
 
 
