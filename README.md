@@ -36,7 +36,7 @@ using (var transaction = context.Database.BeginTransaction())
 **BulkInsertOrUpdate** method can be used when there is need for both operations but in one connection to database.<br>
 It makes Update when PK(PrimaryKey) is matched, otherwise does Insert.<br>
 
-**BulkRead** does Select with Join based on one or more Unique columns that are specified in Config field 1UpdateByProperties1.<br>
+**BulkRead** does SELECT and JOIN based on one or more Unique columns that are specified in Config `UpdateByProperties`.<br>
 More info in the Example at the bottom.<br>
 
 ## BulkConfig arguments
