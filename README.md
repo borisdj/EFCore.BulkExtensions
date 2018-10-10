@@ -7,7 +7,7 @@ Current version is using EF Core 2.1.<br>
 For EF Core 2.0 install 2.0.8 Nuget, and for EF Core 1.x use 1.1.0 (targeting NetStandard 1.4)<br>
 Under the hood uses [SqlBulkCopy](https://msdn.microsoft.com/en-us/library/system.data.sqlclient.sqlbulkcopy.aspx) for Insert, for Update/Delete combines BulkInsert with raw Sql [MERGE](https://docs.microsoft.com/en-us/sql/t-sql/statements/merge-transact-sql) (MsSQL 2008+).
 
-Available on [![NuGet](https://img.shields.io/badge/NuGet-2.1.7-blue.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/) latest version.<br>
+Available on [![NuGet](https://img.shields.io/badge/NuGet-2.1.8-blue.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/) latest version.<br>
 Package manager console command for installation: *Install-Package EFCore.BulkExtensions*
 
 Usage is simple and pretty straightforward.<br>
@@ -17,6 +17,7 @@ context.BulkInsert(entitiesList);                context.BulkInsertAsync(entitie
 context.BulkUpdate(entitiesList);                context.BulkUpdateAsync(entitiesList);
 context.BulkDelete(entitiesList);                context.BulkDeleteAsync(entitiesList);
 context.BulkInsertOrUpdate(entitiesList);        context.BulkInsertOrUpdateAsync(entitiesList);
+context.BulkInsertOrUpdateOrDelete(entitiesList);context.BulkInsertOrUpdateOrDeleteAsync(entitiesList);
 ```
 If Windows Authentication is used then in ConnectionString there should be *Trusted_Connection=True;* because Sql credentials are required to stay in connection.<br>
 
@@ -37,7 +38,7 @@ It makes Update when PK(PrimaryKey) is matched, otherwise does Insert.<br>
 ## BulkConfig arguments
 
 **BulkInsert** and **BulkInsertOrUpdate** methods can have optional argument **BulkConfig** with properties (bool, int, object, List<string>):<br>
-*{ PreserveInsertOrder, SetOutputIdentity, BatchSize, NotifyAfter, BulkCopyTimeout, EnableStreaming, UseTempDB, WithHoldlock, PropertiesToInclude, PropertiesToExclude, UpdateByProperties, SqlBulkCopyOptions }*<br>
+*{ PreserveInsertOrder, SetOutputIdentity, BatchSize, NotifyAfter, BulkCopyTimeout, EnableStreaming, UseTempDB, WithHoldlock, CalculateStats, StatsInfo, PropertiesToInclude, PropertiesToExclude, UpdateByProperties, SqlBulkCopyOptions }*<br>
 Default behaviour is { false, false, 2000,  null, null, false, false, true, null, null, null, Default } and if we want to change it, BulkConfig should be added explicitly with one or more bool properties set to true, and/or int props like **BatchSize** to different number.<br>
 When doing update we can chose to exclude one or more properties by adding their names into **PropertiesToExclude**, or if we need to update less then half column then **PropertiesToInclude** can be used. Setting both Lists are not allowed. Additionaly there is **UpdateByProperties** that allows specifying custom properties, besides PK, by which we want update to be done.<br>
 If **NotifyAfter** is not set it will have same value as _BatchSize_ while **BulkCopyTimeout** when not set has SqlBulkCopy default which is 30 seconds and if set to 0 it indicates no limit.<br>
@@ -93,6 +94,8 @@ using (var transaction = context.Database.BeginTransaction()) {
 
 **SqlBulkCopyOptions** is Enum with [[Flags]](https://stackoverflow.com/questions/8447/what-does-the-flags-enum-attribute-mean-in-c) attribute which enables specifying one or more options:<br>
 *Default, KeepIdentity, CheckConstraints, TableLock, KeepNulls, FireTriggers, UseInternalTransaction*
+
+When **CalculateStats** is set to True result is return in `StatsInfo` (*NumberInserted* and *StatsNumberUpdated*).
 
 Last optional argument is **Action progress** (Example in *EfOperationTest.cs* *RunInsert()* with *WriteProgress()*).
 ```C#
