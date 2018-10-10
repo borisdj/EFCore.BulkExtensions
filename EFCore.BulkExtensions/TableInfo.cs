@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using FastMember;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
@@ -337,7 +338,8 @@ namespace EFCore.BulkExtensions
         public async Task UpdateOutputIdentityAsync<T>(DbContext context, IList<T> entities) where T : class
         {
             string sqlQuery = SqlQueryBuilder.SelectFromOutputTable(this);
-            var entitiesWithOutputIdentity = (await QueryOutputTableAsync<T>(context, sqlQuery).ConfigureAwait(false)).ToList();
+
+            var entitiesWithOutputIdentity = await QueryOutputTableAsync<T>(context, sqlQuery).ToListAsync().ConfigureAwait(false);
             UpdateEntitiesIdentity(entities, entitiesWithOutputIdentity);
 
             if (BulkConfig.CalculateStats)
@@ -358,16 +360,16 @@ namespace EFCore.BulkExtensions
             return result;
         }
 
-        protected Task<IEnumerable<T>> QueryOutputTableAsync<T>(DbContext context, string sqlQuery) where T : class
+        protected AsyncEnumerable<T> QueryOutputTableAsync<T>(DbContext context, string sqlQuery) where T : class
         {
             var compiled = EF.CompileAsyncQuery(GetQueryExpression<T>(sqlQuery));
             var result = compiled(context);
             return result;
         }
 
-        public Expression<Func<DbContext, IEnumerable<T>>> GetQueryExpression<T>(string sqlQuery) where T : class
+        public Expression<Func<DbContext, IQueryable<T>>> GetQueryExpression<T>(string sqlQuery) where T : class
         {
-            Expression<Func<DbContext, IEnumerable<T>>> expr = (ctx) => ctx.Set<T>().FromSql(sqlQuery).AsNoTracking();
+            Expression<Func<DbContext, IQueryable<T>>> expr = (ctx) => ctx.Set<T>().FromSql(sqlQuery).AsNoTracking();
             var ordered = OrderBy(expr, PrimaryKeys[0]);
 
             // ALTERNATIVELY OrderBy with DynamicLinq ('using System.Linq.Dynamic.Core;' NuGet required) that eliminates need for custom OrderBy<T> method with Expression.
@@ -376,7 +378,7 @@ namespace EFCore.BulkExtensions
             return ordered;
         }
 
-        private static Expression<Func<DbContext, IEnumerable<T>>> OrderBy<T>(Expression<Func<DbContext, IEnumerable<T>>> source, string ordering)
+        private static Expression<Func<DbContext, IQueryable<T>>> OrderBy<T>(Expression<Func<DbContext, IQueryable<T>>> source, string ordering)
         {
             Type entityType = typeof(T);
             PropertyInfo property = entityType.GetProperty(ordering);
@@ -384,7 +386,7 @@ namespace EFCore.BulkExtensions
             MemberExpression propertyAccess = Expression.MakeMemberAccess(parameter, property);
             LambdaExpression orderByExp = Expression.Lambda(propertyAccess, parameter);
             MethodCallExpression resultExp = Expression.Call(typeof(Queryable), "OrderBy", new Type[] { entityType, property.PropertyType }, source.Body, Expression.Quote(orderByExp));
-            return Expression.Lambda<Func<DbContext, IEnumerable<T>>>(resultExp, source.Parameters);
+            return Expression.Lambda<Func<DbContext, IQueryable<T>>>(resultExp, source.Parameters);
         }
         #endregion
 
