@@ -13,11 +13,12 @@ Package manager console command for installation: *Install-Package EFCore.BulkEx
 Usage is simple and pretty straightforward.<br>
 Extensions are made on *DbContext* class and can be used like this (both regular and Async methods are supported):
 ```C#
-context.BulkInsert(entitiesList);                context.BulkInsertAsync(entitiesList);
-context.BulkUpdate(entitiesList);                context.BulkUpdateAsync(entitiesList);
-context.BulkDelete(entitiesList);                context.BulkDeleteAsync(entitiesList);
-context.BulkInsertOrUpdate(entitiesList);        context.BulkInsertOrUpdateAsync(entitiesList);
-context.BulkInsertOrUpdateOrDelete(entitiesList);context.BulkInsertOrUpdateOrDeleteAsync(entitiesList);
+context.BulkInsert(entitiesList);                 context.BulkInsertAsync(entitiesList);
+context.BulkUpdate(entitiesList);                 context.BulkUpdateAsync(entitiesList);
+context.BulkDelete(entitiesList);                 context.BulkDeleteAsync(entitiesList);
+context.BulkInsertOrUpdate(entitiesList);         context.BulkInsertOrUpdateAsync(entitiesList);         // Upsert
+context.BulkInsertOrUpdateOrDelete(entitiesList); context.BulkInsertOrUpdateOrDeleteAsync(entitiesList); // Sync
+context.BulkRead(entitiesList);                   context.BulkReadAsync(entitiesList);
 ```
 If Windows Authentication is used then in ConnectionString there should be *Trusted_Connection=True;* because Sql credentials are required to stay in connection.<br>
 
@@ -142,10 +143,14 @@ foreach (var entity in entities) {
 }
 context.BulkUpdate(entities);
 ```
-REMARK When we need to Select from big List of some Unique Prop./Column Use `Join` instead of `Contains` for [Efficiency](https://stackoverflow.com/questions/16824510/select-multiple-records-based-on-list-of-ids-with-linq):<br>
+When we need to Select from big List of some Unique Prop./Column instead of `Join` or `Contains` use BulkRead for [Efficiency](https://stackoverflow.com/questions/16824510/select-multiple-records-based-on-list-of-ids-with-linq):<br>
 ```C#
-var entities = context.Items.Join(itemsNames, a => a.Name, p => p, (a, p) => a).AsNoTracking().ToList(); // use
-var entities = context.Items.Where(a => itemsNames.Contains(a.Name)).AsNoTracking().ToList(); // do NOT use
+// instead of
+var entities = context.Items.Join(itemsNames, a => a.Name, p => p, (a, p) => a).AsNoTracking().ToList(); // or
+var entities = context.Items.Where(a => itemsNames.Contains(a.Name)).AsNoTracking().ToList();
+// use
+var items = itemsNames.Select(a => new Item { Name = a });
+var entities = context.Items.BulkRead(items, new BulkConfig { UpdateByProperties = new List<string> { nameof(Item.Name) })
 ```
 
 
