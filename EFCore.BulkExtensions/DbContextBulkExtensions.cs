@@ -17,6 +17,11 @@ namespace EFCore.BulkExtensions
             DbContextBulkTransaction.Execute(context, entities, OperationType.InsertOrUpdate,  bulkConfig, progress);
         }
 
+        public static void BulkInsertOrUpdateOrDelete<T>(this DbContext context, IList<T> entities, BulkConfig bulkConfig = null, Action<decimal> progress = null) where T : class
+        {
+            DbContextBulkTransaction.Execute(context, entities, OperationType.InsertOrUpdateDelete, bulkConfig, progress);
+        }
+
         public static void BulkUpdate<T>(this DbContext context, IList<T> entities, BulkConfig bulkConfig = null, Action<decimal> progress = null) where T : class
         {
             DbContextBulkTransaction.Execute(context, entities, OperationType.Update,  bulkConfig, progress);
@@ -42,6 +47,11 @@ namespace EFCore.BulkExtensions
         public static Task BulkInsertOrUpdateAsync<T>(this DbContext context, IList<T> entities, BulkConfig bulkConfig = null, Action<decimal> progress = null) where T : class
         {
             return DbContextBulkTransaction.ExecuteAsync(context, entities, OperationType.InsertOrUpdate,  bulkConfig, progress);
+        }
+
+        public static Task BulkInsertOrUpdateOrDeleteAsync<T>(this DbContext context, IList<T> entities, BulkConfig bulkConfig = null, Action<decimal> progress = null) where T : class
+        {
+            return DbContextBulkTransaction.ExecuteAsync(context, entities, OperationType.InsertOrUpdateDelete, bulkConfig, progress);
         }
 
         public static Task BulkUpdateAsync<T>(this DbContext context, IList<T> entities, BulkConfig bulkConfig = null, Action<decimal> progress = null) where T : class

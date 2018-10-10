@@ -20,13 +20,14 @@ VALUES
 (2, 'Desc2', 'SomeName2', 12.66, 45, '2017-01-01'),
 (3, 'Desc3', 'SomeName3', 14.35, 46, '2017-01-01');
 
--- INSERT/UPDATE with MERGE from TempTable
+-- INSERT/UPDATE(DELETE) with MERGE from TempTable
 MERGE [dbo].[Item] WITH (HOLDLOCK) AS T
 USING (SELECT TOP 2147483647 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S
 ON T.[ItemId] = S.[ItemId]
-WHEN NOT MATCHED THEN INSERT ([Description], [Name], [Price], [Quantity], [TimeUpdated])
+WHEN NOT MATCHED BY TARGET THEN INSERT ([Description], [Name], [Price], [Quantity], [TimeUpdated])
 VALUES (S.[Description], S.[Name], S.[Price], S.[Quantity], S.[TimeUpdated])
 WHEN MATCHED THEN UPDATE SET T.[Description] = S.[Description], T.[Name] = S.[Name], T.[Price] = S.[Price], T.[Quantity] = S.[Quantity], T.[TimeUpdated] = S.[TimeUpdated]
+--WHEN NOT MATCHED BY SOURCE THEN DELETE
 OUTPUT INSERTED.[ItemId], INSERTED.[Description], INSERTED.[Name], INSERTED.[Price], INSERTED.[Quantity], INSERTED.[TimeUpdated] -- All columns: INSERTED.*
 INTO [dbo].[ItemTemp1234Output];
 
@@ -40,6 +41,6 @@ MERGE [dbo].[UserRole] WITH (HOLDLOCK) AS T
 USING (SELECT TOP 2147483647 * FROM [dbo].[UserRoleTemp1234] ORDER BY [UserId], [RoleId]) AS S
 ON T.[UserId] = S.[UserId] AND T.[RoleId] = S.[RoleId]
 -- ON (T.[UserId] = S.[UserId] OR (T.[UserId] IS NULL AND S.[UserId] IS NULL)) AND (T.[RoleId] = S.[RoleId] OR (T.[RoleId] IS NULL AND S.[RoleId] IS NULL)) -- when are Nullable
-WHEN NOT MATCHED THEN INSERT ([Description])
+WHEN NOT MATCHED BY TARGET THEN INSERT ([Description])
 VALUES (S.[Description])
 WHEN MATCHED THEN UPDATE SET T.[Description] = S.[Description];

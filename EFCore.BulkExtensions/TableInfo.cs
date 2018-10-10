@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using FastMember;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
@@ -29,6 +30,8 @@ namespace EFCore.BulkExtensions
         public string TempTableName => $"{TableName}{TempTableSufix}";
         public string FullTempTableName => $"{SchemaFormated}[{TempDBPrefix}{TempTableName}]";
         public string FullTempOutputTableName => $"{SchemaFormated}[{TempDBPrefix}{TempTableName}Output]";
+
+        public bool CreatedOutputTable => (BulkConfig.SetOutputIdentity && HasSinglePrimaryKey) || BulkConfig.CalculateStats;
 
         public bool InsertToTempTable { get; set; }
         public bool HasIdentity { get; set; }
@@ -63,6 +66,7 @@ namespace EFCore.BulkExtensions
             return tableInfo;
         }
 
+        #region Main
         public void LoadData<T>(DbContext context, bool loadOnlyPKColumn)
         {
             var entityType = context.Model.FindEntityType(typeof(T));
@@ -144,6 +148,28 @@ namespace EFCore.BulkExtensions
             }
         }
 
+        public void SetSqlBulkCopyConfig<T>(SqlBulkCopy sqlBulkCopy, IList<T> entities, bool setColumnMapping, Action<decimal> progress)
+        {
+            sqlBulkCopy.DestinationTableName = InsertToTempTable ? FullTempTableName : FullTableName;
+            sqlBulkCopy.BatchSize = BulkConfig.BatchSize;
+            sqlBulkCopy.NotifyAfter = BulkConfig.NotifyAfter ?? BulkConfig.BatchSize;
+            sqlBulkCopy.SqlRowsCopied += (sender, e) => {
+                progress?.Invoke((decimal)(e.RowsCopied * 10000 / entities.Count) / 10000); // round to 4 decimal places
+            };
+            sqlBulkCopy.BulkCopyTimeout = BulkConfig.BulkCopyTimeout ?? sqlBulkCopy.BulkCopyTimeout;
+            sqlBulkCopy.EnableStreaming = BulkConfig.EnableStreaming;
+
+            if (setColumnMapping)
+            {
+                foreach (var element in PropertyColumnNamesDict)
+                {
+                    sqlBulkCopy.ColumnMappings.Add(element.Key, element.Value);
+                }
+            }
+        }
+        #endregion
+
+        #region SqlCommands
         public void CheckHasIdentity(DbContext context)
         {
             int hasIdentity = 0;
@@ -226,25 +252,23 @@ namespace EFCore.BulkExtensions
             HasIdentity = hasIdentity == 1;
         }
 
-        public void SetSqlBulkCopyConfig<T>(SqlBulkCopy sqlBulkCopy, IList<T> entities, bool setColumnMapping, Action<decimal> progress)
+        protected int GetNumberUpdated(DbContext context)
         {
-            sqlBulkCopy.DestinationTableName = InsertToTempTable ? FullTempTableName : FullTableName;
-            sqlBulkCopy.BatchSize = BulkConfig.BatchSize;
-            sqlBulkCopy.NotifyAfter = BulkConfig.NotifyAfter ?? BulkConfig.BatchSize;
-            sqlBulkCopy.SqlRowsCopied += (sender, e) => {
-                progress?.Invoke((decimal)(e.RowsCopied * 10000 / entities.Count) / 10000); // round to 4 decimal places
-            };
-            sqlBulkCopy.BulkCopyTimeout = BulkConfig.BulkCopyTimeout ?? sqlBulkCopy.BulkCopyTimeout;
-            sqlBulkCopy.EnableStreaming = BulkConfig.EnableStreaming;
-
-            if (setColumnMapping)
-            {
-                foreach (var element in PropertyColumnNamesDict)
-                {
-                    sqlBulkCopy.ColumnMappings.Add(element.Key, element.Value);
-                }
-            }
+            var resultParameter = new SqlParameter("@result", SqlDbType.Int) { Direction = ParameterDirection.Output };
+            string sqlQueryCount = SqlQueryBuilder.SelectCountIsUpdateFromOutputTable(this);
+            context.Database.ExecuteSqlCommand($"SET @result = ({sqlQueryCount});", resultParameter);
+            return (int)resultParameter.Value;
         }
+
+        protected async Task<int> GetNumberUpdatedAsync(DbContext context)
+        {
+            var resultParameter = new SqlParameter("@result", SqlDbType.Int) { Direction = ParameterDirection.Output };
+            string sqlQueryCount = SqlQueryBuilder.SelectCountIsUpdateFromOutputTable(this);
+            await context.Database.ExecuteSqlCommandAsync($"SET @result = ({sqlQueryCount});", resultParameter);
+            return (int)resultParameter.Value;
+        }
+
+        #endregion
 
         public static string GetUniquePropertyValues<T>(T entity, List<string> propertiesNames, TypeAccessor accessor)
         {
@@ -256,6 +280,7 @@ namespace EFCore.BulkExtensions
             return result;
         }
 
+        #region ReadProcedures
         public Dictionary<string, string> ConfigureBulkReadTableInfo(DbContext context)
         {
             InsertToTempTable = true;
@@ -311,21 +336,26 @@ namespace EFCore.BulkExtensions
                 ((List<T>)entities).AddRange(entitiesWithOutputIdentity);
             }
         }
+        #endregion
 
         // Compiled queries created manually to avoid EF Memory leak bug when using EF with dynamic SQL:
         // https://github.com/borisdj/EFCore.BulkExtensions/issues/73
         // Once the following Issue gets fixed(expected in EF 3.0) this can be replaced with code segment: DirectQuery
         // https://github.com/aspnet/EntityFrameworkCore/issues/12905
         #region CompiledQuery
-        public void UpdateOutputIdentity<T>(DbContext context, IList<T> entities) where T : class
+        public void LoadOutputData<T>(DbContext context, IList<T> entities) where T : class
         {
-            string sqlQuery = SqlQueryBuilder.SelectFromOutputTable(this);
-            var entitiesWithOutputIdentity = QueryOutputTable<T>(context, sqlQuery).ToList();
-            UpdateEntitiesIdentity(entities, entitiesWithOutputIdentity);
-
+            if (BulkConfig.SetOutputIdentity && HasSinglePrimaryKey)
+            {
+                string sqlQuery = SqlQueryBuilder.SelectFromOutputTable(this);
+                var entitiesWithOutputIdentity = QueryOutputTable<T>(context, sqlQuery).ToList();
+                UpdateEntitiesIdentity(entities, entitiesWithOutputIdentity);
+            }
             if (BulkConfig.CalculateStats)
             {
-                int numberUpdated = context.Database.ExecuteSqlCommand(SqlQueryBuilder.SelectCountIsUpdateFromOutputTable(this));
+                string sqlQueryCount =  SqlQueryBuilder.SelectCountIsUpdateFromOutputTable(this);
+
+                int numberUpdated = GetNumberUpdated(context);
                 BulkConfig.StatsInfo = new StatsInfo
                 {
                     StatsNumberUpdated = numberUpdated,
@@ -334,15 +364,17 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        public async Task UpdateOutputIdentityAsync<T>(DbContext context, IList<T> entities) where T : class
+        public async Task LoadOutputDataAsync<T>(DbContext context, IList<T> entities) where T : class
         {
-            string sqlQuery = SqlQueryBuilder.SelectFromOutputTable(this);
-            var entitiesWithOutputIdentity = (await QueryOutputTableAsync<T>(context, sqlQuery).ConfigureAwait(false)).ToList();
-            UpdateEntitiesIdentity(entities, entitiesWithOutputIdentity);
-
+            if (BulkConfig.SetOutputIdentity && HasSinglePrimaryKey)
+            {
+                string sqlQuery = SqlQueryBuilder.SelectFromOutputTable(this);
+                var entitiesWithOutputIdentity = await QueryOutputTableAsync<T>(context, sqlQuery).ToListAsync().ConfigureAwait(false);
+                UpdateEntitiesIdentity(entities, entitiesWithOutputIdentity);
+            }
             if (BulkConfig.CalculateStats)
             {
-                int numberUpdated = await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.SelectCountIsUpdateFromOutputTable(this));
+                int numberUpdated = await GetNumberUpdatedAsync(context);
                 BulkConfig.StatsInfo = new StatsInfo
                 {
                     StatsNumberUpdated = numberUpdated,
@@ -358,16 +390,16 @@ namespace EFCore.BulkExtensions
             return result;
         }
 
-        protected Task<IEnumerable<T>> QueryOutputTableAsync<T>(DbContext context, string sqlQuery) where T : class
+        protected AsyncEnumerable<T> QueryOutputTableAsync<T>(DbContext context, string sqlQuery) where T : class
         {
             var compiled = EF.CompileAsyncQuery(GetQueryExpression<T>(sqlQuery));
             var result = compiled(context);
             return result;
         }
 
-        public Expression<Func<DbContext, IEnumerable<T>>> GetQueryExpression<T>(string sqlQuery) where T : class
+        public Expression<Func<DbContext, IQueryable<T>>> GetQueryExpression<T>(string sqlQuery) where T : class
         {
-            Expression<Func<DbContext, IEnumerable<T>>> expr = (ctx) => ctx.Set<T>().FromSql(sqlQuery).AsNoTracking();
+            Expression<Func<DbContext, IQueryable<T>>> expr = (ctx) => ctx.Set<T>().FromSql(sqlQuery).AsNoTracking();
             var ordered = OrderBy(expr, PrimaryKeys[0]);
 
             // ALTERNATIVELY OrderBy with DynamicLinq ('using System.Linq.Dynamic.Core;' NuGet required) that eliminates need for custom OrderBy<T> method with Expression.
@@ -376,7 +408,7 @@ namespace EFCore.BulkExtensions
             return ordered;
         }
 
-        private static Expression<Func<DbContext, IEnumerable<T>>> OrderBy<T>(Expression<Func<DbContext, IEnumerable<T>>> source, string ordering)
+        private static Expression<Func<DbContext, IQueryable<T>>> OrderBy<T>(Expression<Func<DbContext, IQueryable<T>>> source, string ordering)
         {
             Type entityType = typeof(T);
             PropertyInfo property = entityType.GetProperty(ordering);
@@ -384,12 +416,12 @@ namespace EFCore.BulkExtensions
             MemberExpression propertyAccess = Expression.MakeMemberAccess(parameter, property);
             LambdaExpression orderByExp = Expression.Lambda(propertyAccess, parameter);
             MethodCallExpression resultExp = Expression.Call(typeof(Queryable), "OrderBy", new Type[] { entityType, property.PropertyType }, source.Body, Expression.Quote(orderByExp));
-            return Expression.Lambda<Func<DbContext, IEnumerable<T>>>(resultExp, source.Parameters);
+            return Expression.Lambda<Func<DbContext, IQueryable<T>>>(resultExp, source.Parameters);
         }
         #endregion
 
         // Currently not used until issue from previous segment is fixed in EFCore
-        #region CompiledQuery
+        #region DirectQuery
         /*public void UpdateOutputIdentity<T>(DbContext context, IList<T> entities) where T : class
         {
             if (HasSinglePrimaryKey)

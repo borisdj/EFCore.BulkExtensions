@@ -15,6 +15,7 @@ namespace EFCore.BulkExtensions
     {
         Insert,
         InsertOrUpdate,
+        InsertOrUpdateDelete,
         Update,
         Delete,
         Read
@@ -22,6 +23,8 @@ namespace EFCore.BulkExtensions
 
     internal static class SqlBulkOperation
     {
+        internal static string ColumnMappingExceptionMessage => "The given ColumnMapping does not match up with any column in the source or destination";
+        
         #region MainOps
         public static void Insert<T>(DbContext context, IList<T> entities, TableInfo tableInfo, Action<decimal> progress)
         {
@@ -33,19 +36,29 @@ namespace EFCore.BulkExtensions
                 {
                     bool setColumnMapping = !tableInfo.HasOwnedTypes;
                     tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, setColumnMapping, progress);
-                    if (!tableInfo.HasOwnedTypes)
+                    try
                     {
-                        using (var reader = ObjectReaderEx.Create(entities, tableInfo.ShadowProperties, tableInfo.ConvertibleProperties, context, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
+                        if (!tableInfo.HasOwnedTypes)
                         {
-                            sqlBulkCopy.WriteToServer(reader);
+                            using (var reader = ObjectReaderEx.Create(entities, tableInfo.ShadowProperties, tableInfo.ConvertibleProperties, context, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
+                            {
+                                sqlBulkCopy.WriteToServer(reader);
+                            }
+                        }
+                        else // With OwnedTypes DataTable is used since library FastMember can not (https://github.com/mgravell/fast-member/issues/21)
+                        {
+                            var dataTable = GetDataTable<T>(context, entities);
+                            sqlBulkCopy.WriteToServer(dataTable);
                         }
                     }
-                    else // With OwnedTypes DataTable is used since library FastMember can not (https://github.com/mgravell/fast-member/issues/21)
+                    catch (InvalidOperationException ex)
                     {
-                        var dataTable = GetDataTable<T>(context, entities);
-                        sqlBulkCopy.WriteToServer(dataTable);
+                        if (!ex.Message.Contains(ColumnMappingExceptionMessage))
+                            throw ex;
+                        context.Database.ExecuteSqlCommand(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo)); // Exception specify missing db column: Invalid column name ''
+                        if (!tableInfo.BulkConfig.UseTempDB)
+                            context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName));
                     }
-
                 }
             }
             finally
@@ -67,17 +80,28 @@ namespace EFCore.BulkExtensions
                 {
                     bool setColumnMapping = !tableInfo.HasOwnedTypes;
                     tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, setColumnMapping, progress);
-                    if (!tableInfo.HasOwnedTypes)
+                    try
                     {
-                        using (var reader = ObjectReaderEx.Create(entities, tableInfo.ShadowProperties, tableInfo.ConvertibleProperties, context, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
+                        if (!tableInfo.HasOwnedTypes)
                         {
-                            await sqlBulkCopy.WriteToServerAsync(reader).ConfigureAwait(false);
+                            using (var reader = ObjectReaderEx.Create(entities, tableInfo.ShadowProperties, tableInfo.ConvertibleProperties, context, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
+                            {
+                                await sqlBulkCopy.WriteToServerAsync(reader).ConfigureAwait(false);
+                            }
+                        }
+                        else
+                        {
+                            var dataTable = GetDataTable<T>(context, entities);
+                            await sqlBulkCopy.WriteToServerAsync(dataTable);
                         }
                     }
-                    else
+                    catch (InvalidOperationException ex)
                     {
-                        var dataTable = GetDataTable<T>(context, entities);
-                        await sqlBulkCopy.WriteToServerAsync(dataTable);
+                        if (!ex.Message.Contains(ColumnMappingExceptionMessage))
+                            throw ex;
+                        await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo));
+                        if (!tableInfo.BulkConfig.UseTempDB)
+                            await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName));
                     }
                 }
             }
@@ -97,7 +121,7 @@ namespace EFCore.BulkExtensions
                 tableInfo.CheckHasIdentity(context);
 
             context.Database.ExecuteSqlCommand(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo));
-            if (tableInfo.BulkConfig.SetOutputIdentity)
+            if (tableInfo.CreatedOutputTable)
             {
                 context.Database.ExecuteSqlCommand(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempOutputTableName, tableInfo, true));
             }
@@ -106,11 +130,11 @@ namespace EFCore.BulkExtensions
                 Insert(context, entities, tableInfo, progress);
                 context.Database.ExecuteSqlCommand(SqlQueryBuilder.MergeTable(tableInfo, operationType));
 
-                if (tableInfo.BulkConfig.SetOutputIdentity && tableInfo.HasSinglePrimaryKey)
+                if (tableInfo.CreatedOutputTable)
                 {
                     try
                     {
-                        tableInfo.UpdateOutputIdentity(context, entities);
+                        tableInfo.LoadOutputData(context, entities);
                     }
                     finally
                     {
@@ -132,7 +156,7 @@ namespace EFCore.BulkExtensions
             await tableInfo.CheckHasIdentityAsync(context).ConfigureAwait(false);
 
             await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo)).ConfigureAwait(false);
-            if (tableInfo.BulkConfig.SetOutputIdentity && tableInfo.HasIdentity)
+            if (tableInfo.CreatedOutputTable)
             {
                 await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempOutputTableName, tableInfo, true)).ConfigureAwait(false);
             }
@@ -141,21 +165,24 @@ namespace EFCore.BulkExtensions
                 await InsertAsync(context, entities, tableInfo, progress).ConfigureAwait(false);
                 await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.MergeTable(tableInfo, operationType)).ConfigureAwait(false);
 
-                if (tableInfo.BulkConfig.SetOutputIdentity && tableInfo.HasIdentity)
+                if (tableInfo.CreatedOutputTable)
                 {
                     try
                     {
-                        await tableInfo.UpdateOutputIdentityAsync(context, entities).ConfigureAwait(false);
+
+                        await tableInfo.LoadOutputDataAsync(context, entities).ConfigureAwait(false);
                     }
                     finally
                     {
-                        await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName)).ConfigureAwait(false);
+                        if (!tableInfo.BulkConfig.UseTempDB)
+                            await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName)).ConfigureAwait(false);
                     }
                 }
             }
             finally
             {
-                await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName)).ConfigureAwait(false);
+                if (!tableInfo.BulkConfig.UseTempDB)
+                    await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName)).ConfigureAwait(false);
             }
         }
 
@@ -173,9 +200,9 @@ namespace EFCore.BulkExtensions
 
                 var sqlQuery = SqlQueryBuilder.SelectJoinTable(tableInfo);
 
-                //var existingEntities = context.Set<T>().FromSql(q).AsNoTracking().ToList();
-                Expression<Func<DbContext, IEnumerable<T>>> expression = (ctx) => ctx.Set<T>().FromSql(sqlQuery).AsNoTracking();
-                var compiled = EF.CompileQuery(expression);
+                //var existingEntities = context.Set<T>().FromSql(q).AsNoTracking().ToList(); // Not used because of EF Memory leak bug
+                Expression<Func<DbContext, IQueryable<T>>> expression = (ctx) => ctx.Set<T>().FromSql(sqlQuery).AsNoTracking();
+                var compiled = EF.CompileQuery(expression); // instead using Compiled queries
                 var existingEntities = compiled(context).ToList();
 
                 tableInfo.UpdateReadEntities(entities, existingEntities);
@@ -201,14 +228,10 @@ namespace EFCore.BulkExtensions
 
                 var sqlQuery = SqlQueryBuilder.SelectJoinTable(tableInfo);
 
-                // Async with Expression has bug:
-                // https://github.com/aspnet/EntityFrameworkCore/issues/11023
-                /*Expression<Func<DbContext, IEnumerable<T>>> expression = (ctx) => ctx.Set<T>().FromSql(sqlQuery).AsNoTracking();
+                //var existingEntities = await context.Set<T>().FromSql(sqlQuery).ToListAsync();
+                Expression<Func<DbContext, IQueryable<T>>> expression = (ctx) => ctx.Set<T>().FromSql(sqlQuery).AsNoTracking();
                 var compiled = EF.CompileAsyncQuery(expression);
-                var existingEntities = (await compiled(context).ConfigureAwait(false)).ToList();*/
-
-                // So instead we have omitted Expression
-                var existingEntities = await context.Set<T>().FromSql(sqlQuery).ToListAsync();
+                var existingEntities = (await compiled(context).ToListAsync().ConfigureAwait(false));
 
                 tableInfo.UpdateReadEntities(entities, existingEntities);
             }

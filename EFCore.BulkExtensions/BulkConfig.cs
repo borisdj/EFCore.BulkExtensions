@@ -31,6 +31,8 @@ namespace EFCore.BulkExtensions
         public List<string> UpdateByProperties { get; set; }
 
         public SqlBulkCopyOptions SqlBulkCopyOptions { get; set; }
+
+        protected bool HasOutput { get; set; }
     }
 
     public class StatsInfo

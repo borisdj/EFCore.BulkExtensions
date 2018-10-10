@@ -112,7 +112,8 @@ namespace EFCore.BulkExtensions.Tests
                 }
                 if (isBulkOperation)
                 {
-                    await context.BulkInsertOrUpdateAsync(entities);
+                    var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
+                    await context.BulkInsertOrUpdateAsync(entities, bulkConfig);
                 }
                 else
                 {
