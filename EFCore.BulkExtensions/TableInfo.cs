@@ -321,6 +321,7 @@ namespace EFCore.BulkExtensions
                 }
             }
         }
+        #endregion
 
         protected void UpdateEntitiesIdentity<T>(IList<T> entities, IList<T> entitiesWithOutputIdentity)
         {
@@ -336,7 +337,6 @@ namespace EFCore.BulkExtensions
                 ((List<T>)entities).AddRange(entitiesWithOutputIdentity);
             }
         }
-        #endregion
 
         // Compiled queries created manually to avoid EF Memory leak bug when using EF with dynamic SQL:
         // https://github.com/borisdj/EFCore.BulkExtensions/issues/73
