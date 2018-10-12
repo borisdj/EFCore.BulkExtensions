@@ -37,6 +37,7 @@ using (var transaction = context.Database.BeginTransaction())
 It makes Update when PK(PrimaryKey) is matched, otherwise does Insert.<br>
 
 **BulkInsertOrUpdateOrDelete** effectively [synchronizes](https://www.mssqltips.com/sqlservertip/1704/using-merge-in-sql-server-to-insert-update-and-delete-at-the-same-time/) table rows with input data.<br>
+Those in Db that are not found in the list will be deleted.<br>
 
 **BulkRead** does SELECT and JOIN based on one or more Unique columns that are specified in Config `UpdateByProperties`.<br>
 More info in the Example at the bottom.<br>
