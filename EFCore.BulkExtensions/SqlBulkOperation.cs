@@ -243,7 +243,7 @@ namespace EFCore.BulkExtensions
         #endregion
 
         #region DataTable
-        // IMPORTANT: works only if Properties of Entity are in the same order as Columns in Db
+     
         internal static DataTable GetDataTable<T>(DbContext context, IList<T> entities, SqlBulkCopy sqlBulkCopy)
         {
             var dataTable = new DataTable();
