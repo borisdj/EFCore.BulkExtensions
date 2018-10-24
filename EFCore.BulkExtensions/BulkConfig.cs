@@ -19,6 +19,8 @@ namespace EFCore.BulkExtensions
 
         public bool UseTempDB { get; set; }
 
+        public bool TrackingEntities { get; set; }
+
         public bool WithHoldlock { get; set; } = true;
 
         public bool CalculateStats { get; set; }

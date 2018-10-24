@@ -436,7 +436,7 @@ namespace EFCore.BulkExtensions
 
         public Expression<Func<DbContext, IQueryable<T>>> GetQueryExpression<T>(string sqlQuery) where T : class
         {
-            Expression<Func<DbContext, IQueryable<T>>> expr = (ctx) => ctx.Set<T>().FromSql(sqlQuery).AsNoTracking();
+            Expression<Func<DbContext, IQueryable<T>>> expr = (ctx) => BulkConfig.TrackingEntities ? ctx.Set<T>().FromSql(sqlQuery) : ctx.Set<T>().FromSql(sqlQuery).AsNoTracking();
             var ordered = OrderBy(expr, PrimaryKeys[0]);
 
             // ALTERNATIVELY OrderBy with DynamicLinq ('using System.Linq.Dynamic.Core;' NuGet required) that eliminates need for custom OrderBy<T> method with Expression.
@@ -481,6 +481,10 @@ namespace EFCore.BulkExtensions
         {
             string q = SqlQueryBuilder.SelectFromOutputTable(this);
             var query = context.Set<T>().FromSql(q);
+            if (!BulkConfig.IsTrackingQutput)
+            {
+                query = query.AsNoTracking();
+            }
 
             var queryOrdered = OrderBy(query, PrimaryKeys[0]);
             // ALTERNATIVELY OrderBy with DynamicLinq ('using System.Linq.Dynamic.Core;' NuGet required) that eliminates need for custom OrderBy<T> method with Expression.

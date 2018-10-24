@@ -200,7 +200,7 @@ namespace EFCore.BulkExtensions
                 var sqlQuery = SqlQueryBuilder.SelectJoinTable(tableInfo);
 
                 //var existingEntities = context.Set<T>().FromSql(q).AsNoTracking().ToList(); // Not used because of EF Memory leak bug
-                Expression<Func<DbContext, IQueryable<T>>> expression = (ctx) => ctx.Set<T>().FromSql(sqlQuery).AsNoTracking();
+                Expression<Func<DbContext, IQueryable<T>>> expression = (ctx) => tableInfo.BulkConfig.TrackingEntities ? ctx.Set<T>().FromSql(sqlQuery) : ctx.Set<T>().FromSql(sqlQuery).AsNoTracking();
                 var compiled = EF.CompileQuery(expression); // instead using Compiled queries
                 var existingEntities = compiled(context).ToList();
 
@@ -228,7 +228,7 @@ namespace EFCore.BulkExtensions
                 var sqlQuery = SqlQueryBuilder.SelectJoinTable(tableInfo);
 
                 //var existingEntities = await context.Set<T>().FromSql(sqlQuery).ToListAsync();
-                Expression<Func<DbContext, IQueryable<T>>> expression = (ctx) => ctx.Set<T>().FromSql(sqlQuery).AsNoTracking();
+                Expression<Func<DbContext, IQueryable<T>>> expression = (ctx) => tableInfo.BulkConfig.TrackingEntities ? ctx.Set<T>().FromSql(sqlQuery) : ctx.Set<T>().FromSql(sqlQuery).AsNoTracking();
                 var compiled = EF.CompileAsyncQuery(expression);
                 var existingEntities = (await compiled(context).ToListAsync().ConfigureAwait(false));
 
