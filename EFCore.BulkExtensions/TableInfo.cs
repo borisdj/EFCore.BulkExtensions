@@ -145,6 +145,43 @@ namespace EFCore.BulkExtensions
                 ShadowProperties = new HashSet<string>(properties.Where(p => p.IsShadowProperty).Select(p => p.Relational().ColumnName));
                 foreach (var property in properties.Where(p => p.GetValueConverter() != null))
                     ConvertibleProperties.Add(property.Relational().ColumnName, property.GetValueConverter());
+                
+                if (HasOwnedTypes)  // Support owned entity property update. todo: Optimize
+                {
+                    var type = typeof(T);
+                    foreach (var navgationProperty in allNavigationProperties)
+                    {
+                        var property = navgationProperty.PropertyInfo;
+                        Type navOwnedType = type.Assembly.GetType(property.PropertyType.FullName);
+                         var ownedEntityType = context.Model.FindEntityType(property.PropertyType);
+                        if (ownedEntityType == null) // when single entity has more then one ownedType of same type (e.g. Address HomeAddress, Address WorkAddress)
+                        {
+                            ownedEntityType = context.Model.GetEntityTypes().SingleOrDefault(a => a.DefiningNavigationName == property.Name && a.DefiningEntityType.Name == entityType.Name);
+                            //ownedEntityType = context.Model.GetEntityTypes().SingleOrDefault(a => a.DefiningNavigationName == property.Name);
+                        }
+                        var ownedEntityProperties = ownedEntityType.GetProperties().ToList();
+                        var ownedEntityPropertyNameColumnNameDict = new Dictionary<string, string>();
+                         foreach (var ownedEntityProperty in ownedEntityProperties)
+                        {
+                            if (!ownedEntityProperty.IsPrimaryKey())
+                            {
+                                string columnName = ownedEntityProperty.Relational().ColumnName;
+                                ownedEntityPropertyNameColumnNameDict.Add(ownedEntityProperty.Name, columnName);
+                            }
+                        }
+                         var ownedProperties = property.PropertyType.GetProperties();
+                        foreach (var ownedProperty in ownedProperties)
+                        {
+                            if (ownedEntityPropertyNameColumnNameDict.ContainsKey(ownedProperty.Name))
+                            {
+                                string columnName = ownedEntityPropertyNameColumnNameDict[ownedProperty.Name];
+                                var ownedPropertyType = Nullable.GetUnderlyingType(ownedProperty.PropertyType) ?? ownedProperty.PropertyType;
+                                 PropertyColumnNamesDict.Add(property.Name + "." + ownedProperty.Name, property.Name + "_" + ownedProperty.Name);
+                                OutputPropertyColumnNamesDict.Add(property.Name + "." + ownedProperty.Name, property.Name + "_" + ownedProperty.Name);
+                            }
+                        }
+                    }
+                 }
             }
         }
 
