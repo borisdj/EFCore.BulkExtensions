@@ -93,7 +93,7 @@ namespace EFCore.BulkExtensions
                 q += " WHEN MATCHED THEN DELETE";
             }
 
-            if (tableInfo.BulkConfig.SetOutputIdentity)
+            if (tableInfo.CreatedOutputTable)
             {
                 q += $" OUTPUT {GetCommaSeparatedColumns(outputColumnsNames, "INSERTED")}" + isUpdateStatsValue +
                      $" INTO {tableInfo.FullTempOutputTableName}";
