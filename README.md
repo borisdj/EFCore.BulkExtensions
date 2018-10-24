@@ -95,7 +95,7 @@ using (var transaction = context.Database.BeginTransaction()) {
     transaction.Commit();
 }
 ```
-When **CalculateStats** is set to True the result is return in `BulkConfig.StatsInfo` (*StatsNumberInserted* and *StatsNumberUpdated*).
+When **CalculateStats** is set to True the result is return in `BulkConfig.StatsInfo` (*StatsNumber-Inserted/Updated*).
 
 **UseTempDB** when set then BulkOperation has to be [inside Transaction](https://github.com/borisdj/EFCore.BulkExtensions/issues/49)
 
