@@ -1,13 +1,12 @@
-﻿using System;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
-using FastMember;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 
 namespace EFCore.BulkExtensions
 {
@@ -24,7 +23,7 @@ namespace EFCore.BulkExtensions
     internal static class SqlBulkOperation
     {
         internal static string ColumnMappingExceptionMessage => "The given ColumnMapping does not match up with any column in the source or destination";
-        
+
         #region MainOps
         public static void Insert<T>(DbContext context, IList<T> entities, TableInfo tableInfo, Action<decimal> progress)
         {
@@ -47,7 +46,7 @@ namespace EFCore.BulkExtensions
                         }
                         else // With OwnedTypes DataTable is used since library FastMember can not (https://github.com/mgravell/fast-member/issues/21)
                         {
-                            var dataTable = GetDataTable<T>(context, entities);
+                            var dataTable = GetDataTable<T>(context, entities, sqlBulkCopy);
                             sqlBulkCopy.WriteToServer(dataTable);
                         }
                     }
@@ -91,7 +90,7 @@ namespace EFCore.BulkExtensions
                         }
                         else
                         {
-                            var dataTable = GetDataTable<T>(context, entities);
+                            var dataTable = GetDataTable<T>(context, entities, sqlBulkCopy);
                             await sqlBulkCopy.WriteToServerAsync(dataTable);
                         }
                     }
@@ -117,7 +116,7 @@ namespace EFCore.BulkExtensions
         public static void Merge<T>(DbContext context, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress) where T : class
         {
             tableInfo.InsertToTempTable = true;
-            if(tableInfo.BulkConfig.UpdateByProperties == null || tableInfo.BulkConfig.UpdateByProperties.Count() == 0)
+            if (tableInfo.BulkConfig.UpdateByProperties == null || tableInfo.BulkConfig.UpdateByProperties.Count() == 0)
                 tableInfo.CheckHasIdentity(context);
 
             context.Database.ExecuteSqlCommand(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo));
@@ -244,8 +243,8 @@ namespace EFCore.BulkExtensions
         #endregion
 
         #region DataTable
-        // IMPORTANT: works only if Properties of Entity are in the same order as Columns in Db
-        internal static DataTable GetDataTable<T>(DbContext context, IList<T> entities)
+     
+        internal static DataTable GetDataTable<T>(DbContext context, IList<T> entities, SqlBulkCopy sqlBulkCopy)
         {
             var dataTable = new DataTable();
             var columnsDict = new Dictionary<string, object>();
@@ -254,7 +253,7 @@ namespace EFCore.BulkExtensions
             var entityType = context.Model.FindEntityType(type);
             var entityPropertiesDict = entityType.GetProperties().ToDictionary(a => a.Name, a => a);
             var entityNavigationOwnedDict = entityType.GetNavigations().Where(a => a.GetTargetType().IsOwned()).ToDictionary(a => a.Name, a => a);
-            var properties = type.GetProperties().Where(a => !a.GetGetMethod().IsVirtual);
+            var properties = type.GetProperties();//.Where(a => !a.GetGetMethod().IsVirtual);       //Support virtual property, leehom0123
 
             foreach (var property in properties)
             {
@@ -272,7 +271,8 @@ namespace EFCore.BulkExtensions
                     var ownedEntityType = context.Model.FindEntityType(property.PropertyType);
                     if (ownedEntityType == null) // when single entity has more then one ownedType of same type (e.g. Address HomeAddress, Address WorkAddress)
                     {
-                        ownedEntityType = context.Model.GetEntityTypes().SingleOrDefault(a => a.DefiningNavigationName == property.Name);
+                        ownedEntityType = context.Model.GetEntityTypes().SingleOrDefault(a => a.DefiningNavigationName == property.Name && a.DefiningEntityType.Name == entityType.Name);  //bug fix, leehom0123
+                        //ownedEntityType = context.Model.GetEntityTypes().SingleOrDefault(a => a.DefiningNavigationName == property.Name);
                     }
                     var ownedEntityProperties = ownedEntityType.GetProperties().ToList();
                     var ownedEntityPropertyNameColumnNameDict = new Dictionary<string, string>();
@@ -320,6 +320,10 @@ namespace EFCore.BulkExtensions
                 }
                 var record = columnsDict.Values.ToArray();
                 dataTable.Rows.Add(record);
+            }
+            foreach (DataColumn item in dataTable.Columns)  //Add mapping
+            {
+                sqlBulkCopy.ColumnMappings.Add(item.ColumnName, item.ColumnName);
             }
             return dataTable;
         }
