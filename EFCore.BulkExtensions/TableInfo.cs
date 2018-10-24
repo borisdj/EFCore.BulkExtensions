@@ -54,7 +54,7 @@ namespace EFCore.BulkExtensions
             };
 
             bool isExplicitTransaction = context.Database.GetDbConnection().State == ConnectionState.Open;
-            if (tableInfo.BulkConfig.UseTempDB == true && !isExplicitTransaction && operationType != OperationType.Insert)
+            if (tableInfo.BulkConfig.UseTempDB == true && !isExplicitTransaction && (operationType != OperationType.Insert || tableInfo.BulkConfig.SetOutputIdentity))
             {
                 tableInfo.BulkConfig.UseTempDB = false;
                 // If BulkOps is not in explicit transaction then tempdb[#] can only be used with Insert, other Operations done with customTemp table.
