@@ -57,6 +57,7 @@ namespace EFCore.BulkExtensions
                         context.Database.ExecuteSqlCommand(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo)); // Exception specify missing db column: Invalid column name ''
                         if (!tableInfo.BulkConfig.UseTempDB)
                             context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName));
+                        throw ex;
                     }
                 }
             }
@@ -101,6 +102,7 @@ namespace EFCore.BulkExtensions
                         await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo));
                         if (!tableInfo.BulkConfig.UseTempDB)
                             await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName));
+                        throw ex;
                     }
                 }
             }
@@ -200,7 +202,16 @@ namespace EFCore.BulkExtensions
                 var sqlQuery = SqlQueryBuilder.SelectJoinTable(tableInfo);
 
                 //var existingEntities = context.Set<T>().FromSql(q).AsNoTracking().ToList(); // Not used because of EF Memory leak bug
-                Expression<Func<DbContext, IQueryable<T>>> expression = (ctx) => tableInfo.BulkConfig.TrackingEntities ? ctx.Set<T>().FromSql(sqlQuery) : ctx.Set<T>().FromSql(sqlQuery).AsNoTracking();
+                Expression<Func<DbContext, IQueryable<T>>> expression = null;
+                if (tableInfo.BulkConfig.TrackingEntities)
+                {
+                    expression = (ctx) => ctx.Set<T>().FromSql(sqlQuery);
+                }
+                else
+                {
+                    expression = (ctx) => ctx.Set<T>().FromSql(sqlQuery).AsNoTracking();
+                }
+
                 var compiled = EF.CompileQuery(expression); // instead using Compiled queries
                 var existingEntities = compiled(context).ToList();
 
@@ -228,7 +239,15 @@ namespace EFCore.BulkExtensions
                 var sqlQuery = SqlQueryBuilder.SelectJoinTable(tableInfo);
 
                 //var existingEntities = await context.Set<T>().FromSql(sqlQuery).ToListAsync();
-                Expression<Func<DbContext, IQueryable<T>>> expression = (ctx) => tableInfo.BulkConfig.TrackingEntities ? ctx.Set<T>().FromSql(sqlQuery) : ctx.Set<T>().FromSql(sqlQuery).AsNoTracking();
+                Expression<Func<DbContext, IQueryable<T>>> expression = null;
+                if (tableInfo.BulkConfig.TrackingEntities)
+                {
+                    expression = (ctx) => ctx.Set<T>().FromSql(sqlQuery);
+                }
+                else
+                {
+                    expression = (ctx) => ctx.Set<T>().FromSql(sqlQuery).AsNoTracking();
+                }
                 var compiled = EF.CompileAsyncQuery(expression);
                 var existingEntities = (await compiled(context).ToListAsync().ConfigureAwait(false));
 
@@ -253,7 +272,7 @@ namespace EFCore.BulkExtensions
             var entityType = context.Model.FindEntityType(type);
             var entityPropertiesDict = entityType.GetProperties().ToDictionary(a => a.Name, a => a);
             var entityNavigationOwnedDict = entityType.GetNavigations().Where(a => a.GetTargetType().IsOwned()).ToDictionary(a => a.Name, a => a);
-            var properties = type.GetProperties();//.Where(a => !a.GetGetMethod().IsVirtual);       //Support virtual property, leehom0123
+            var properties = type.GetProperties();
 
             foreach (var property in properties)
             {
@@ -269,10 +288,9 @@ namespace EFCore.BulkExtensions
                     Type navOwnedType = type.Assembly.GetType(property.PropertyType.FullName);
 
                     var ownedEntityType = context.Model.FindEntityType(property.PropertyType);
-                    if (ownedEntityType == null) // when single entity has more then one ownedType of same type (e.g. Address HomeAddress, Address WorkAddress)
+                    if (ownedEntityType == null)
                     {
-                        ownedEntityType = context.Model.GetEntityTypes().SingleOrDefault(a => a.DefiningNavigationName == property.Name && a.DefiningEntityType.Name == entityType.Name);  //bug fix, leehom0123
-                        //ownedEntityType = context.Model.GetEntityTypes().SingleOrDefault(a => a.DefiningNavigationName == property.Name);
+                        ownedEntityType = context.Model.GetEntityTypes().SingleOrDefault(a => a.DefiningNavigationName == property.Name && a.DefiningEntityType.Name == entityType.Name);
                     }
                     var ownedEntityProperties = ownedEntityType.GetProperties().ToList();
                     var ownedEntityPropertyNameColumnNameDict = new Dictionary<string, string>();

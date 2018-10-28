@@ -146,22 +146,22 @@ namespace EFCore.BulkExtensions
                 foreach (var property in properties.Where(p => p.GetValueConverter() != null))
                     ConvertibleProperties.Add(property.Relational().ColumnName, property.GetValueConverter());
                 
-                if (HasOwnedTypes)  // Support owned entity property update. todo: Optimize
+                if (HasOwnedTypes)  // Support owned entity property update. TODO: Optimize
                 {
                     var type = typeof(T);
                     foreach (var navgationProperty in allNavigationProperties)
                     {
                         var property = navgationProperty.PropertyInfo;
                         Type navOwnedType = type.Assembly.GetType(property.PropertyType.FullName);
-                         var ownedEntityType = context.Model.FindEntityType(property.PropertyType);
-                        if (ownedEntityType == null) // when single entity has more then one ownedType of same type (e.g. Address HomeAddress, Address WorkAddress)
+                        var ownedEntityType = context.Model.FindEntityType(property.PropertyType);
+                        if (ownedEntityType == null) // when entity has more then one ownedType (e.g. Address HomeAddress, Address WorkAddress) or one ownedType is in multiple Entities like Audit is usually.
                         {
                             ownedEntityType = context.Model.GetEntityTypes().SingleOrDefault(a => a.DefiningNavigationName == property.Name && a.DefiningEntityType.Name == entityType.Name);
-                            //ownedEntityType = context.Model.GetEntityTypes().SingleOrDefault(a => a.DefiningNavigationName == property.Name);
                         }
                         var ownedEntityProperties = ownedEntityType.GetProperties().ToList();
                         var ownedEntityPropertyNameColumnNameDict = new Dictionary<string, string>();
-                         foreach (var ownedEntityProperty in ownedEntityProperties)
+
+                        foreach (var ownedEntityProperty in ownedEntityProperties)
                         {
                             if (!ownedEntityProperty.IsPrimaryKey())
                             {
@@ -169,15 +169,15 @@ namespace EFCore.BulkExtensions
                                 ownedEntityPropertyNameColumnNameDict.Add(ownedEntityProperty.Name, columnName);
                             }
                         }
-                         var ownedProperties = property.PropertyType.GetProperties();
+                        var ownedProperties = property.PropertyType.GetProperties();
                         foreach (var ownedProperty in ownedProperties)
                         {
                             if (ownedEntityPropertyNameColumnNameDict.ContainsKey(ownedProperty.Name))
                             {
                                 string columnName = ownedEntityPropertyNameColumnNameDict[ownedProperty.Name];
                                 var ownedPropertyType = Nullable.GetUnderlyingType(ownedProperty.PropertyType) ?? ownedProperty.PropertyType;
-                                 PropertyColumnNamesDict.Add(property.Name + "." + ownedProperty.Name, property.Name + "_" + ownedProperty.Name);
-                                OutputPropertyColumnNamesDict.Add(property.Name + "." + ownedProperty.Name, property.Name + "_" + ownedProperty.Name);
+                                PropertyColumnNamesDict.Add(property.Name + "." + ownedProperty.Name, columnName);
+                                OutputPropertyColumnNamesDict.Add(property.Name + "." + ownedProperty.Name, columnName);
                             }
                         }
                     }
@@ -436,8 +436,16 @@ namespace EFCore.BulkExtensions
 
         public Expression<Func<DbContext, IQueryable<T>>> GetQueryExpression<T>(string sqlQuery) where T : class
         {
-            Expression<Func<DbContext, IQueryable<T>>> expr = (ctx) => BulkConfig.TrackingEntities ? ctx.Set<T>().FromSql(sqlQuery) : ctx.Set<T>().FromSql(sqlQuery).AsNoTracking();
-            var ordered = OrderBy(expr, PrimaryKeys[0]);
+            Expression<Func<DbContext, IQueryable<T>>> expression = null;
+            if (BulkConfig.TrackingEntities) // If Else can not be replaced with Ternary operator for Expression
+            {
+                expression = (ctx) => ctx.Set<T>().FromSql(sqlQuery);
+            }
+            else
+            {
+                expression = (ctx) => ctx.Set<T>().FromSql(sqlQuery).AsNoTracking();
+            }
+            var ordered = OrderBy(expression, PrimaryKeys[0]);
 
             // ALTERNATIVELY OrderBy with DynamicLinq ('using System.Linq.Dynamic.Core;' NuGet required) that eliminates need for custom OrderBy<T> method with Expression.
             //var queryOrdered = query.OrderBy(PrimaryKeys[0]);
