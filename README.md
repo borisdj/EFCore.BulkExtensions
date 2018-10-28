@@ -7,7 +7,7 @@ Current version is using EF Core 2.1.<br>
 For EF Core 2.0 install 2.0.8 Nuget, and for EF Core 1.x use 1.1.0 (targeting NetStandard 1.4)<br>
 Under the hood uses [SqlBulkCopy](https://msdn.microsoft.com/en-us/library/system.data.sqlclient.sqlbulkcopy.aspx) for Insert, for Update/Delete combines BulkInsert with raw Sql [MERGE](https://docs.microsoft.com/en-us/sql/t-sql/statements/merge-transact-sql) (MsSQL 2008+).
 
-Available on [![NuGet](https://img.shields.io/badge/NuGet-2.1.8-blue.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/) latest version.<br>
+Available on [![NuGet](https://img.shields.io/badge/NuGet-2.1.9-blue.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/) latest version.<br>
 Package manager console command for installation: *Install-Package EFCore.BulkExtensions*
 
 Usage is simple and pretty straightforward.<br>
@@ -61,7 +61,8 @@ For example if table already has rows, let's say it has 1000 rows with Id-s (1:1
 Since Id-s are generated in Db we could not set them, they would all be 0 (int default) in list.<br>
 But if we want to keep the order as they are ordered in list then those Id-s should be set say 1 to 300.<br>
 Here single Id value itself doesn't matter, db will change it to (1001:1300), what matters is their mutual relationship for sorting.<br>
-Insertion order is implemented with [TOP](https://docs.microsoft.com/en-us/sql/t-sql/queries/top-transact-sql) in conjuction with ORDER BY. [stackoverflow:merge-into-insertion-order](https://stackoverflow.com/questions/884187/merge-into-insertion-order).
+Insertion order is implemented with [TOP](https://docs.microsoft.com/en-us/sql/t-sql/queries/top-transact-sql) in conjuction with ORDER BY. [stackoverflow:merge-into-insertion-order](https://stackoverflow.com/questions/884187/merge-into-insertion-order).<br>
+This config should also be used when we have set *SetOutputIdentity* on Entity containing NotMapped Property. [issues/76](https://github.com/borisdj/EFCore.BulkExtensions/issues/76)
 
 When using **PreserveInsertOrder** with **SetOutputIdentity** Id value does matter.<br>
 If it's BulkInsertOrUpdate method for those that will be updated it has to match Id.<br>
@@ -96,6 +97,7 @@ using (var transaction = context.Database.BeginTransaction()) {
 }
 ```
 When **CalculateStats** is set to True the result is return in `BulkConfig.StatsInfo` (*StatsNumber-Inserted/Updated*).
+**TrackingEntities** can be set to True if we want to have tracking of entities from BulkRead or when SetOutputIdentity is set.
 
 **UseTempDB** when set then BulkOperation has to be [inside Transaction](https://github.com/borisdj/EFCore.BulkExtensions/issues/49)
 
