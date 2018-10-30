@@ -273,6 +273,7 @@ namespace EFCore.BulkExtensions
             var entityPropertiesDict = entityType.GetProperties().ToDictionary(a => a.Name, a => a);
             var entityNavigationOwnedDict = entityType.GetNavigations().Where(a => a.GetTargetType().IsOwned()).ToDictionary(a => a.Name, a => a);
             var properties = type.GetProperties();
+            var ownedEntitiesPropertyNameColumnNameDict = new Dictionary<string, Dictionary<string, string>>();
 
             foreach (var property in properties)
             {
@@ -315,6 +316,8 @@ namespace EFCore.BulkExtensions
                             columnsDict.Add(property.Name + "_" + ownedProperty.Name, null);
                         }
                     }
+
+                    ownedEntitiesPropertyNameColumnNameDict.Add(property.Name, ownedEntityPropertyNameColumnNameDict);
                 }
             }
 
@@ -329,10 +332,14 @@ namespace EFCore.BulkExtensions
                     }
                     else if (entityNavigationOwnedDict.ContainsKey(property.Name))
                     {
+                        var ownedEntityPropertyNameColumnNameDict = ownedEntitiesPropertyNameColumnNameDict[property.Name];
                         var ownedProperties = property.PropertyType.GetProperties();
                         foreach (var ownedProperty in ownedProperties)
                         {
-                            columnsDict[property.Name + "_" + ownedProperty.Name] = propertyValue == null ? null : ownedProperty.GetValue(propertyValue, null);
+                            if (ownedEntityPropertyNameColumnNameDict.ContainsKey(ownedProperty.Name))
+                            {
+                                columnsDict[property.Name + "_" + ownedProperty.Name] = propertyValue == null ? null : ownedProperty.GetValue(propertyValue, null);
+                            }
                         }
                     }
                 }
