@@ -1,17 +1,17 @@
 # EFCore.BulkExtensions
-EntityFrameworkCore extensions for Bulk operations (**Insert, Update, Delete, Read**).<br>
+EntityFrameworkCore extensions: Bulk operations (**Insert, Update, Delete, Read, Upsert, Sync**) and Batch (**Delete, Update**)<br>
 Library is Lightweight and very Efficient, having all mostly used CRUD operation.<br>
-Was selected in top 15 [EF Core Extensions](https://docs.microsoft.com/en-us/ef/core/extensions/) recommended by Microsoft.<br>
+Was selected in top 20 [EF Core Extensions](https://docs.microsoft.com/en-us/ef/core/extensions/) recommended by Microsoft.<br>
 It is targeting NetStandard 2.0 so it can be used on project targeting NetCore(2.0+) or NetFramework(4.6.1+).<br>
 Current version is using EF Core 2.1.<br>
 For EF Core 2.0 install 2.0.8 Nuget, and for EF Core 1.x use 1.1.0 (targeting NetStandard 1.4)<br>
 Under the hood uses [SqlBulkCopy](https://msdn.microsoft.com/en-us/library/system.data.sqlclient.sqlbulkcopy.aspx) for Insert, for Update/Delete combines BulkInsert with raw Sql [MERGE](https://docs.microsoft.com/en-us/sql/t-sql/statements/merge-transact-sql) (MsSQL 2008+).
 
-Available on [![NuGet](https://img.shields.io/badge/NuGet-2.1.9-blue.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/) latest version.<br>
+Available on [![NuGet](https://img.shields.io/badge/NuGet-2.2.0-blue.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/) latest version.<br>
 Package manager console command for installation: *Install-Package EFCore.BulkExtensions*
 
 Usage is simple and pretty straightforward.<br>
-Extensions are made on *DbContext* class and can be used like this (both regular and Async methods are supported):
+**Bulk** Extensions are made on *DbContext* class and can be used like this (both regular and Async methods are supported):
 ```C#
 context.BulkInsert(entitiesList);                 context.BulkInsertAsync(entitiesList);
 context.BulkUpdate(entitiesList);                 context.BulkUpdateAsync(entitiesList);
@@ -20,6 +20,15 @@ context.BulkInsertOrUpdate(entitiesList);         context.BulkInsertOrUpdateAsyn
 context.BulkInsertOrUpdateOrDelete(entitiesList); context.BulkInsertOrUpdateOrDeleteAsync(entitiesList); // Sync
 context.BulkRead(entitiesList);                   context.BulkReadAsync(entitiesList);
 ```
+**Batch** Extensions are made on *IQueryable* DbSet and can be used in the following way:<br>
+(*updateColumns* is optional parameter in which PropertyName is added explicitly when we need update to default value):
+```C#
+context.Items.Where(a => a.ItemId <= 500).BatchUpdate(context, new Item { Description = "Updated" });
+context.Items.Where(a => a.ItemId <= 500).BatchUpdateAsync(context, new Item { Description = "Updated" }, updateColumns);
+context.Items.Where(a => a.ItemId >  500).BatchDelete(context);
+context.Items.Where(a => a.ItemId >  500).BatchDeleteAsync(context);
+```
+## Bulk info
 If Windows Authentication is used then in ConnectionString there should be *Trusted_Connection=True;* because Sql credentials are required to stay in connection.<br>
 
 When used directly each of these operations are separate transactions and are automatically committed.<br>
