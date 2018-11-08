@@ -136,31 +136,8 @@ context.Students.AddRange(entities); // adding to Context so that Shadow propert
 context.BulkInsert(entities);
 ```
 
-## Batch example with PureSQL and with BULK
-Batch operations can easily be done using ExecuteSqlCommand method directly or with BulkOps:
+## Read example
 
-```C#
-// SQL
-string textItem = nameof(Item);
-string textTimeUpdated = nameof(Item.TimeUpdated);
-// pure SQL (without external or variable values)
-string sql = $"UPDATE [dbo].[{textItem}] SET [{textTimeUpdated}] = GETDATE() WHERE [{textTimeUpdated}] IS NULL";
-context.Database.ExecuteSqlCommand(sql);
-DateTime dateTimeNow = DateTime.Now;
-// plain SQL - susceptible to SQL Injection
-sql = $"UPDATE [dbo].[{textItem}] SET [{textTimeUpdated}] = '{dateTimeNow}' WHERE [{textTimeUpdated}] IS NULL";
-context.Database.ExecuteSqlCommand(sql);
-// parameterized SQL - prevents SQL Injection
-sql = $"UPDATE [dbo].[{textItem}] SET [{textTimeUpdated}] = @DateTimeNow WHERE [{textTimeUpdated}] IS NULL"; 
-context.Database.ExecuteSqlCommand(sql, new SqlParameter("@DateTimeNow", dateTimeNow));
-
-// BULK
-var entities = context.Items.Where(a => a.TimeUpdated == null).AsNoTracking().ToList();
-foreach (var entity in entities) {
-    entity.TimeUpdated = DateTime.Now;
-}
-context.BulkUpdate(entities);
-```
 When we need to Select from big List of some Unique Prop./Column instead of `Join` or `Contains` use BulkRead for [Efficiency](https://stackoverflow.com/questions/16824510/select-multiple-records-based-on-list-of-ids-with-linq):<br>
 ```C#
 // instead of
@@ -170,7 +147,6 @@ var entities = context.Items.Where(a => itemsNames.Contains(a.Name)).AsNoTrackin
 var items = itemsNames.Select(a => new Item { Name = a });
 context.Items.BulkRead(items, new BulkConfig { UpdateByProperties = new List<string> { nameof(Item.Name) }) // items loaded with data
 ```
-
 
 ## Performances
 
