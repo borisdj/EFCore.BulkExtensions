@@ -56,8 +56,8 @@ namespace EFCore.BulkExtensions
             return $"DELETE {sql}";
         }
 
-        // SELECT [a].[Column1], [a].[Column2], ... FROM
-        // [Table] AS [a]/r/n
+        // SELECT [a].[Column1], [a].[Column2], ...
+        // FROM [Table] AS [a]/r/n
         // WHERE [a].[Column] = FilterValue
         // --
         // UPDATE
