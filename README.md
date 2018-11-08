@@ -21,7 +21,7 @@ context.BulkInsertOrUpdateOrDelete(entitiesList); context.BulkInsertOrUpdateOrDe
 context.BulkRead(entitiesList);                   context.BulkReadAsync(entitiesList);
 ```
 **Batch** Extensions are made on *IQueryable* DbSet and can be used in the following way:<br>
-(*updateColumns* is optional parameter in which PropertyName is added explicitly when we need update to default value):
+(*updateColumns* optional parameter in which PropertyName added explicitly when we need update to it's default value):
 ```C#
 context.Items.Where(a => a.ItemId <= 500).BatchUpdate(context, new Item { Description = "Updated" });
 context.Items.Where(a => a.ItemId <= 500).BatchUpdateAsync(context, new Item { Description = "Updated" }, updateColumns);
