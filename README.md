@@ -135,7 +135,7 @@ context.Students.AddRange(entities); // adding to Context so that Shadow propert
 context.BulkInsert(entities);
 ```
 
-## Batch example
+## Batch example with PureSQL and with BULK
 Batch operations can easily be done using ExecuteSqlCommand method directly or with BulkOps:
 
 ```C#
