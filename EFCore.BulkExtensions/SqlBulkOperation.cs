@@ -2,10 +2,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace EFCore.BulkExtensions
@@ -262,11 +264,12 @@ namespace EFCore.BulkExtensions
         #endregion
 
         #region DataTable
-     
+
         internal static DataTable GetDataTable<T>(DbContext context, IList<T> entities, SqlBulkCopy sqlBulkCopy)
         {
             var dataTable = new DataTable();
             var columnsDict = new Dictionary<string, object>();
+            var ownedPropertiesDict = new Dictionary<string, PropertyInfo>();
 
             var type = typeof(T);
             var entityType = context.Model.FindEntityType(type);
@@ -292,7 +295,11 @@ namespace EFCore.BulkExtensions
                     {
                         ownedEntityType = context.Model.GetEntityTypes().SingleOrDefault(a => a.DefiningNavigationName == property.Name && a.DefiningEntityType.Name == entityType.Name);
                     }
-                    var ownedEntityProperties = ownedEntityType.GetProperties().ToList();
+
+                    var ownedProperties = property.PropertyType.GetProperties().Where(prop => !Attribute.IsDefined(prop, typeof(NotMappedAttribute)));
+                    ownedPropertiesDict = ownedProperties.ToList().ToDictionary(a => a.Name, a => a);
+
+                    var ownedEntityProperties = ownedEntityType.GetProperties().Where(a => ownedPropertiesDict.Keys.Contains(a.Name)).ToList();
                     var ownedEntityPropertyNameColumnNameDict = new Dictionary<string, string>();
 
                     foreach (var ownedEntityProperty in ownedEntityProperties)
@@ -304,7 +311,6 @@ namespace EFCore.BulkExtensions
                         }
                     }
 
-                    var ownedProperties = property.PropertyType.GetProperties();
                     foreach (var ownedProperty in ownedProperties)
                     {
                         if (ownedEntityPropertyNameColumnNameDict.ContainsKey(ownedProperty.Name))
@@ -329,7 +335,7 @@ namespace EFCore.BulkExtensions
                     }
                     else if (entityNavigationOwnedDict.ContainsKey(property.Name))
                     {
-                        var ownedProperties = property.PropertyType.GetProperties();
+                        var ownedProperties = property.PropertyType.GetProperties().Where(a => ownedPropertiesDict.Keys.Contains(a.Name));
                         foreach (var ownedProperty in ownedProperties)
                         {
                             columnsDict[property.Name + "_" + ownedProperty.Name] = propertyValue == null ? null : ownedProperty.GetValue(propertyValue, null);
