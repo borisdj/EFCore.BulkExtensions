@@ -97,13 +97,16 @@ namespace EFCore.BulkExtensions
         public static string ReplaceLetterInBracketsWithA(string sql)
         {
             sql = sql.Replace("[i]", "[a]");
-            for (char letter = 'a'; letter <= 'z'; letter++)
+            if (!sql.Contains("[a]"))
             {
-                string letterInBracket = $"[{letter}]";
-                if (sql.Contains(letterInBracket))
+                for (char letter = 'b'; letter <= 'z'; letter++)
                 {
-                    sql = sql.Replace(letterInBracket, "[a]");
-                    break;
+                    string letterInBracket = $"[{letter}]";
+                    if (sql.Contains(letterInBracket))
+                    {
+                        sql = sql.Replace(letterInBracket, "[a]");
+                        break;
+                    }
                 }
             }
             return sql;
