@@ -69,6 +69,7 @@ namespace EFCore.BulkExtensions
             int indexFROM = sqlQuery.IndexOf("FROM") + 5;
             string sqlSET = GetSqlSetSegment(context, updateValues, updateColumns);
             string sql = sqlQuery.Substring(indexFROM, sqlQuery.Length - indexFROM);
+            sql = ReplaceLetterInBracketsWithA(sql);
             sql = sql.Replace("AS [a]", sqlSET).Replace("[a].", "");
             return $"UPDATE {sql}";
         }
