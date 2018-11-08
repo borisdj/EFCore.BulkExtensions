@@ -18,7 +18,7 @@ namespace EFCore.BulkExtensions
 
         private static readonly PropertyInfo DatabaseDependenciesField = typeof(Database).GetTypeInfo().DeclaredProperties.Single(x => x.Name == "Dependencies");
 
-        internal static string ToSql<TEntity>(this IQueryable<TEntity> query, bool isAsync = false) where TEntity : class
+        internal static string ToSql<TEntity>(this IQueryable<TEntity> query) where TEntity : class
         {
             var queryCompiler = (QueryCompiler)QueryCompilerField.GetValue(query.Provider);
             var modelGenerator = (QueryModelGenerator)QueryModelGeneratorField.GetValue(queryCompiler);
@@ -26,16 +26,13 @@ namespace EFCore.BulkExtensions
             var database = (IDatabase)DataBaseField.GetValue(queryCompiler);
             var databaseDependencies = (DatabaseDependencies)DatabaseDependenciesField.GetValue(database);
             var queryCompilationContext = databaseDependencies.QueryCompilationContextFactory.Create(false);
-
             var modelVisitor = (RelationalQueryModelVisitor)queryCompilationContext.CreateQueryModelVisitor();
-            if (isAsync)
-            {
-                modelVisitor.CreateAsyncQueryExecutor<TEntity>(queryModel);
-            }
-            else
-            {
-                modelVisitor.CreateQueryExecutor<TEntity>(queryModel);
-            }
+
+            modelVisitor.CreateQueryExecutor<TEntity>(queryModel);
+            //modelVisitor.CreateAsyncQueryExecutor<TEntity>(queryModel);
+            // CreateAsync not used, throws: Message: System.ArgumentException : Expression of type 'System.Collections.Generic.IEnumerable`1[EFCore.BulkExtensions.Tests.Item]'
+            // cannot be used for return type 'System.Collections.Generic.IAsyncEnumerable`1[EFCore.BulkExtensions.Tests.Item]'
+
             string sql = modelVisitor.Queries.First().ToString();
             return sql;
         }

@@ -28,7 +28,7 @@ namespace EFCore.BulkExtensions
             await context.Database.ExecuteSqlCommandAsync(sql);
         }
 
-        public static async Task GetSqlUpdate<T>(this IQueryable<T> query, DbContext context, T updateValues, List<string> updateColumns = null) where T : class, new()
+        public static async Task BatchUpdateAsync<T>(this IQueryable<T> query, DbContext context, T updateValues, List<string> updateColumns = null) where T : class, new()
         {
             string sql = BatchUtil.GetSqlUpdate(query, context, updateValues, updateColumns);
             await context.Database.ExecuteSqlCommandAsync(sql);
@@ -51,7 +51,7 @@ namespace EFCore.BulkExtensions
             string sqlQuery = query.ToSql();
             int indexFROM = sqlQuery.IndexOf("FROM");
             string sql = sqlQuery.Substring(indexFROM, sqlQuery.Length - indexFROM);
-            sql = ReplaceLetterInBracketsWithA(sql); //sql = sql.Replace("[i]", "[a]");
+            sql = ReplaceLetterInBracketsWithA(sql);
             sql = sql.Replace("AS [a]", "").Replace("[a].", "");
             return $"DELETE {sql}";
         }
@@ -96,12 +96,14 @@ namespace EFCore.BulkExtensions
 
         public static string ReplaceLetterInBracketsWithA(string sql)
         {
-            for (char letter = 'b'; letter <= 'z'; letter++)
+            sql = sql.Replace("[i]", "[a]");
+            for (char letter = 'a'; letter <= 'z'; letter++)
             {
                 string letterInBracket = $"[{letter}]";
                 if (sql.Contains(letterInBracket))
                 {
                     sql = sql.Replace(letterInBracket, "[a]");
+                    break;
                 }
             }
             return sql;
