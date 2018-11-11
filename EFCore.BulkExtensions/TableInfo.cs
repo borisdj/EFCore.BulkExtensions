@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
@@ -43,7 +44,8 @@ namespace EFCore.BulkExtensions
         public Dictionary<string, string> PropertyColumnNamesDict { get; set; } = new Dictionary<string, string>();
         public HashSet<string> ShadowProperties { get; set; } = new HashSet<string>();
         public Dictionary<string, ValueConverter> ConvertibleProperties { get; set; } = new Dictionary<string, ValueConverter>();
-        public string TimeStampColumn { get; set; }
+        public string TimeStampOutColumnType => "varbinary(8)";
+        public string TimeStampColumnName { get; set; }
 
         public static TableInfo CreateInstance<T>(DbContext context, IList<T> entities, OperationType operationType, BulkConfig bulkConfig)
         {
@@ -87,14 +89,14 @@ namespace EFCore.BulkExtensions
             var allNavigationProperties = entityType.GetNavigations().Where(a => a.GetTargetType().IsOwned());
             HasOwnedTypes = allNavigationProperties.Any();
 
-            // timestamp datatype can only be set by database, that's property having [Timestamp] Attribute but keep if one with [ConcurrencyCheck]
-            var timeStampProperties = allProperties.Where(a => a.IsConcurrencyToken == true && a.ValueGenerated == ValueGenerated.OnAddOrUpdate && a.BeforeSaveBehavior == PropertySaveBehavior.Ignore);
-            TimeStampColumn = timeStampProperties.FirstOrDefault()?.Relational().ColumnName; // expected to be only One
+            // timestamp DbType only set by Db, that's property having [Timestamp] Attribute (IsConcurrencyToken) or configured in in FluentAPI with .HasColumnType("timestamp")
+            string timestampDbTypeName = nameof(TimestampAttribute).Replace("Attribute", "").ToLower(); // = "timestamp";
+            var timeStampProperties = allProperties.Where(a => a.IsConcurrencyToken || a.Relational().ColumnType == timestampDbTypeName);
+            TimeStampColumnName = timeStampProperties.FirstOrDefault()?.Relational().ColumnName; // can be only One
             var properties = allProperties.Except(timeStampProperties);
+            properties = properties.Where(a => a.Relational().ComputedColumnSql == null); // a.ValueGenerated == ValueGenerated.OnAddOrUpdate // CONSIDER only Add or only Update
 
-            OutputPropertyColumnNamesDict = properties.ToDictionary(a => a.Name, b => b.Relational().ColumnName);
-
-            properties = properties.Where(a => a.Relational().ComputedColumnSql == null);
+            OutputPropertyColumnNamesDict = allProperties.ToDictionary(a => a.Name, b => b.Relational().ColumnName);
 
             bool AreSpecifiedPropertiesToInclude = BulkConfig.PropertiesToInclude?.Count() > 0;
             bool AreSpecifiedPropertiesToExclude = BulkConfig.PropertiesToExclude?.Count() > 0;
@@ -513,5 +515,5 @@ namespace EFCore.BulkExtensions
             return orderedQuery;
         }*/
         #endregion
-    }
+        }
 }

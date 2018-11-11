@@ -36,6 +36,9 @@ namespace EFCore.BulkExtensions.Tests
 
             modelBuilder.Entity<Document>().Property(p => p.ContentLength).HasComputedColumnSql($"(CONVERT([int], len([{nameof(Document.Content)}])))");
 
+            // [Timestamp] alternative:
+            //modelBuilder.Entity<Document>().Property(x => x.RowVersion).HasColumnType("timestamp").ValueGeneratedOnAddOrUpdate().HasConversion(new NumberToBytesConverter<ulong>()).IsConcurrencyToken();
+
             //modelBuilder.Entity<Item>().HasQueryFilter(p => p.Description != "1234"); // For testing Global Filter
         }
     }
@@ -135,6 +138,7 @@ namespace EFCore.BulkExtensions.Tests
 
         [Timestamp]
         public byte[] VersionChange { get; set; }
+        //public ulong RowVersion { get; set; }
 
         [DatabaseGenerated(DatabaseGeneratedOption.Computed)] // Computed columns have to be configured with Fluent API
         public int ContentLength { get; set; }
@@ -158,6 +162,10 @@ namespace EFCore.BulkExtensions.Tests
         public string Description { get; set; }
 
         public Audit Audit { get; set; }
+
+        //public AuditExtended AuditExtended { get; set; }
+
+        //public AuditExtended AuditExtendedSecond { get; set; }
     }
 
     [Owned]
@@ -166,7 +174,21 @@ namespace EFCore.BulkExtensions.Tests
         [Column(nameof(ChangedBy))] // for setting custom column name, in this case prefix OwnedType_ ('Audit_') removed, so column would be only ('ChangedBy')
         public string ChangedBy { get; set; } // default Column name for Property of OwnedType is OwnedType_Property ('Audit_ChangedBy')
 
-        //[NotMapped]
+        public bool IsDeleted { get; set; }
+
+        [NotMapped] // alternatively in OnModelCreating(): modelBuilder.Entity<Audit>().Ignore(a => a.ChangedTime);
         public DateTime? ChangedTime { get; set; }
+    }
+
+    [Owned]
+    public class AuditExtended
+    {
+        public string CreatedBy { get; set; }
+
+        [NotMapped]
+        public DateTime? CreatedTime { get; set; }
+
+        [NotMapped]
+        public string Remark { get; set; }
     }
 }

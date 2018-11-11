@@ -54,11 +54,14 @@ namespace EFCore.BulkExtensions
                     }
                     catch (InvalidOperationException ex)
                     {
-                        if (!ex.Message.Contains(ColumnMappingExceptionMessage))
-                            throw ex;
-                        context.Database.ExecuteSqlCommand(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo)); // Exception specify missing db column: Invalid column name ''
                         if (!tableInfo.BulkConfig.UseTempDB)
+                        {
                             context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName));
+                        }
+                        if (ex.Message.Contains(ColumnMappingExceptionMessage))
+                        {
+                            context.Database.ExecuteSqlCommand(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo)); // Will throw Exception specify missing db column: Invalid column name ''
+                        }
                         throw ex;
                     }
                 }
@@ -99,11 +102,14 @@ namespace EFCore.BulkExtensions
                     }
                     catch (InvalidOperationException ex)
                     {
-                        if (!ex.Message.Contains(ColumnMappingExceptionMessage))
-                            throw ex;
-                        await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo));
                         if (!tableInfo.BulkConfig.UseTempDB)
+                        {
                             await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName));
+                        }
+                        if (ex.Message.Contains(ColumnMappingExceptionMessage))
+                        {
+                            await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo));
+                        }
                         throw ex;
                     }
                 }
@@ -127,6 +133,10 @@ namespace EFCore.BulkExtensions
             if (tableInfo.CreatedOutputTable)
             {
                 context.Database.ExecuteSqlCommand(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempOutputTableName, tableInfo, true));
+                if (tableInfo.TimeStampColumnName != null)
+                {
+                    context.Database.ExecuteSqlCommand(SqlQueryBuilder.AddColumn(tableInfo.FullTempOutputTableName, tableInfo.TimeStampColumnName, tableInfo.TimeStampOutColumnType));
+                }
             }
             try
             {
@@ -162,6 +172,10 @@ namespace EFCore.BulkExtensions
             if (tableInfo.CreatedOutputTable)
             {
                 await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempOutputTableName, tableInfo, true)).ConfigureAwait(false);
+                if (tableInfo.TimeStampColumnName != null)
+                {
+                    context.Database.ExecuteSqlCommand(SqlQueryBuilder.AddColumn(tableInfo.FullTempOutputTableName, tableInfo.TimeStampColumnName, tableInfo.TimeStampOutColumnType));
+                }
             }
             try
             {
@@ -265,11 +279,101 @@ namespace EFCore.BulkExtensions
 
         #region DataTable
 
+        /*internal static DataTable GetDataTable<T>(DbContext context, IList<T> entities, SqlBulkCopy sqlBulkCopy)
+        {
+            var dataTable = new DataTable();
+            var columnsDict = new Dictionary<string, object>();
+
+            var type = typeof(T);
+            var entityType = context.Model.FindEntityType(type);
+            var entityPropertiesDict = entityType.GetProperties().ToDictionary(a => a.Name, a => a);
+            var entityNavigationOwnedDict = entityType.GetNavigations().Where(a => a.GetTargetType().IsOwned()).ToDictionary(a => a.Name, a => a);
+            var properties = type.GetProperties();
+            var ownedEntitiesPropertyNameColumnNameDict = new Dictionary<string, Dictionary<string, string>>();
+
+            foreach (var property in properties)
+            {
+                if (entityPropertiesDict.ContainsKey(property.Name))
+                {
+                    string columnName = entityPropertiesDict[property.Name].Relational().ColumnName;
+                    var propertyType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
+                    dataTable.Columns.Add(columnName, propertyType);
+                    columnsDict.Add(property.Name, null);
+                }
+                else if (entityNavigationOwnedDict.ContainsKey(property.Name)) // isOWned
+                {
+                    Type navOwnedType = type.Assembly.GetType(property.PropertyType.FullName);
+
+                    var ownedEntityType = context.Model.FindEntityType(property.PropertyType);
+                    if (ownedEntityType == null)
+                    {
+                        ownedEntityType = context.Model.GetEntityTypes().SingleOrDefault(a => a.DefiningNavigationName == property.Name && a.DefiningEntityType.Name == entityType.Name);
+                    }
+                    var ownedEntityProperties = ownedEntityType.GetProperties().ToList();
+                    var ownedEntityPropertyNameColumnNameDict = new Dictionary<string, string>();
+
+                    foreach (var ownedEntityProperty in ownedEntityProperties)
+                    {
+                        if (!ownedEntityProperty.IsPrimaryKey())
+                        {
+                            string columnName = ownedEntityProperty.Relational().ColumnName;
+                            ownedEntityPropertyNameColumnNameDict.Add(ownedEntityProperty.Name, columnName);
+                        }
+                    }
+
+                    var ownedProperties = property.PropertyType.GetProperties();
+                    foreach (var ownedProperty in ownedProperties)
+                    {
+                        if (ownedEntityPropertyNameColumnNameDict.ContainsKey(ownedProperty.Name))
+                        {
+                            string columnName = ownedEntityPropertyNameColumnNameDict[ownedProperty.Name];
+                            var ownedPropertyType = Nullable.GetUnderlyingType(ownedProperty.PropertyType) ?? ownedProperty.PropertyType;
+                            dataTable.Columns.Add(columnName, ownedPropertyType);
+                            columnsDict.Add(property.Name + "_" + ownedProperty.Name, null);
+                        }
+                    }
+
+                    ownedEntitiesPropertyNameColumnNameDict.Add(property.Name, ownedEntityPropertyNameColumnNameDict);
+                }
+            }
+
+            foreach (var entity in entities)
+            {
+                foreach (var property in properties)
+                {
+                    var propertyValue = property.GetValue(entity, null);
+                    if (entityPropertiesDict.ContainsKey(property.Name))
+                    {
+                        columnsDict[property.Name] = propertyValue;
+                    }
+                    else if (entityNavigationOwnedDict.ContainsKey(property.Name))
+                    {
+                        var ownedEntityPropertyNameColumnNameDict = ownedEntitiesPropertyNameColumnNameDict[property.Name];
+                        var ownedProperties = property.PropertyType.GetProperties();
+                        foreach (var ownedProperty in ownedProperties)
+                        {
+                            if (ownedEntityPropertyNameColumnNameDict.ContainsKey(ownedProperty.Name))
+                            {
+                                columnsDict[property.Name + "_" + ownedProperty.Name] = propertyValue == null ? null : ownedProperty.GetValue(propertyValue, null);
+                            }
+                        }
+                    }
+                }
+                var record = columnsDict.Values.ToArray();
+                dataTable.Rows.Add(record);
+            }
+            foreach (DataColumn item in dataTable.Columns)  //Add mapping
+            {
+                sqlBulkCopy.ColumnMappings.Add(item.ColumnName, item.ColumnName);
+            }
+            return dataTable;
+        }*/
+
         internal static DataTable GetDataTable<T>(DbContext context, IList<T> entities, SqlBulkCopy sqlBulkCopy)
         {
             var dataTable = new DataTable();
             var columnsDict = new Dictionary<string, object>();
-            var ownedPropertiesDict = new Dictionary<string, PropertyInfo>();
+            var ownedEntitiesMappedProperties = new HashSet<string>();
 
             var type = typeof(T);
             var entityType = context.Model.FindEntityType(type);
@@ -295,11 +399,7 @@ namespace EFCore.BulkExtensions
                     {
                         ownedEntityType = context.Model.GetEntityTypes().SingleOrDefault(a => a.DefiningNavigationName == property.Name && a.DefiningEntityType.Name == entityType.Name);
                     }
-
-                    var ownedProperties = property.PropertyType.GetProperties().Where(prop => !Attribute.IsDefined(prop, typeof(NotMappedAttribute)));
-                    ownedPropertiesDict = ownedProperties.ToList().ToDictionary(a => a.Name, a => a);
-
-                    var ownedEntityProperties = ownedEntityType.GetProperties().Where(a => ownedPropertiesDict.Keys.Contains(a.Name)).ToList();
+                    var ownedEntityProperties = ownedEntityType.GetProperties().ToList();
                     var ownedEntityPropertyNameColumnNameDict = new Dictionary<string, string>();
 
                     foreach (var ownedEntityProperty in ownedEntityProperties)
@@ -308,17 +408,19 @@ namespace EFCore.BulkExtensions
                         {
                             string columnName = ownedEntityProperty.Relational().ColumnName;
                             ownedEntityPropertyNameColumnNameDict.Add(ownedEntityProperty.Name, columnName);
+                            ownedEntitiesMappedProperties.Add(property.Name + "_" + ownedEntityProperty.Name);
                         }
                     }
 
-                    foreach (var ownedProperty in ownedProperties)
+                    var innerProperties = property.PropertyType.GetProperties();
+                    foreach (var innerProperty in innerProperties)
                     {
-                        if (ownedEntityPropertyNameColumnNameDict.ContainsKey(ownedProperty.Name))
+                        if (ownedEntityPropertyNameColumnNameDict.ContainsKey(innerProperty.Name))
                         {
-                            string columnName = ownedEntityPropertyNameColumnNameDict[ownedProperty.Name];
-                            var ownedPropertyType = Nullable.GetUnderlyingType(ownedProperty.PropertyType) ?? ownedProperty.PropertyType;
+                            string columnName = ownedEntityPropertyNameColumnNameDict[innerProperty.Name];
+                            var ownedPropertyType = Nullable.GetUnderlyingType(innerProperty.PropertyType) ?? innerProperty.PropertyType;
                             dataTable.Columns.Add(columnName, ownedPropertyType);
-                            columnsDict.Add(property.Name + "_" + ownedProperty.Name, null);
+                            columnsDict.Add(property.Name + "_" + innerProperty.Name, null);
                         }
                     }
                 }
@@ -335,7 +437,7 @@ namespace EFCore.BulkExtensions
                     }
                     else if (entityNavigationOwnedDict.ContainsKey(property.Name))
                     {
-                        var ownedProperties = property.PropertyType.GetProperties().Where(a => ownedPropertiesDict.Keys.Contains(a.Name));
+                        var ownedProperties = property.PropertyType.GetProperties().Where(a => ownedEntitiesMappedProperties.Contains(property.Name + "_" + a.Name));
                         foreach (var ownedProperty in ownedProperties)
                         {
                             columnsDict[property.Name + "_" + ownedProperty.Name] = propertyValue == null ? null : ownedProperty.GetValue(propertyValue, null);

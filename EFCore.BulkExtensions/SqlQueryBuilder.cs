@@ -10,6 +10,10 @@ namespace EFCore.BulkExtensions
         {
             // TODO: (optionaly) if CalculateStats = True but SetOutputIdentity = False then Columns could be ommited from Create and from MergeOutput
             List<string> columnsNames = (isOutputTable ? tableInfo.OutputPropertyColumnNamesDict : tableInfo.PropertyColumnNamesDict).Values.ToList();
+            if (tableInfo.TimeStampColumnName != null)
+            {
+                columnsNames.Remove(tableInfo.TimeStampColumnName);
+            }
             string isUpdateStatsColumn = (tableInfo.BulkConfig.CalculateStats && isOutputTable) ? ",[IsUpdate] = CAST(0 AS bit)" : "";
 
             var q = $"SELECT TOP 0 {GetCommaSeparatedColumns(columnsNames, "T")} " + isUpdateStatsColumn +
@@ -17,27 +21,36 @@ namespace EFCore.BulkExtensions
                     $"LEFT JOIN {existingTableName} AS Source ON 1 = 0;"; // removes Identity constrain
             return q;
         }
-        
+
+        public static string AddColumn(string fullTableName, string columnName, string columnType)
+        {
+            var q = $"ALTER TABLE {fullTableName} ADD [{columnName}] {columnType};";
+            return q;
+        }
+
         public static string SelectFromOutputTable(TableInfo tableInfo)
         {
             List<string> columnsNames = tableInfo.OutputPropertyColumnNamesDict.Values.ToList();
-            string timeStampColumnNull = tableInfo.TimeStampColumn != null ? $", {tableInfo.TimeStampColumn} = NULL" : "";
-            return $"SELECT {GetCommaSeparatedColumns(columnsNames)}{timeStampColumnNull} FROM {tableInfo.FullTempOutputTableName}";
+            var q = $"SELECT {GetCommaSeparatedColumns(columnsNames)} FROM {tableInfo.FullTempOutputTableName}";
+            return q;
         }
 
         public static string SelectCountIsUpdateFromOutputTable(TableInfo tableInfo)
         {
-            return $"SELECT COUNT(*) FROM {tableInfo.FullTempOutputTableName} WHERE [IsUpdate] = 1";
+            var q = $"SELECT COUNT(*) FROM {tableInfo.FullTempOutputTableName} WHERE [IsUpdate] = 1";
+            return q;
         }
 
         public static string DropTable(string tableName)
         {
-            return $"IF OBJECT_ID('{tableName}', 'U') IS NOT NULL DROP TABLE {tableName}";
+            var q = $"IF OBJECT_ID('{tableName}', 'U') IS NOT NULL DROP TABLE {tableName}";
+            return q;
         }
 
         public static string SelectIsIdentity(string tableName, string idColumnName)
         {
-            return $"SELECT columnproperty(object_id('{tableName}'),'{idColumnName}','IsIdentity');";
+            var q = $"SELECT columnproperty(object_id('{tableName}'),'{idColumnName}','IsIdentity');";
+            return q;
         }
 
         public static string SelectJoinTable(TableInfo tableInfo)
@@ -49,9 +62,9 @@ namespace EFCore.BulkExtensions
 
             var q = $"SELECT {GetCommaSeparatedColumns(columnsNames, "S")} FROM {sourceTable} AS S " +
                     $"JOIN {joinTable} AS J " +
-                    $"ON {GetANDSeparatedColumns(selectByPropertyNames, "S", "J", tableInfo.UpdateByPropertiesAreNullable)}";
-
-            return q + ";";
+                    $"ON {GetANDSeparatedColumns(selectByPropertyNames, "S", "J", tableInfo.UpdateByPropertiesAreNullable)}" +
+                    $";";
+            return q;
         }
 
         public static string MergeTable(TableInfo tableInfo, OperationType operationType)
@@ -92,14 +105,13 @@ namespace EFCore.BulkExtensions
             {
                 q += " WHEN MATCHED THEN DELETE";
             }
-
             if (tableInfo.CreatedOutputTable)
             {
                 q += $" OUTPUT {GetCommaSeparatedColumns(outputColumnsNames, "INSERTED")}" + isUpdateStatsValue +
                      $" INTO {tableInfo.FullTempOutputTableName}";
             }
-
-            return q + ";";
+            q += ";";
+            return q;
         }
 
         public static string GetCommaSeparatedColumns(List<string> columnsNames, string prefixTable = null, string equalsTable = null)
