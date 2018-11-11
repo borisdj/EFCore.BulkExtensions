@@ -7,7 +7,7 @@ Current version is using EF Core 2.1. and at the moment supports ONLY MsSQL(2008
 For EF Core 2.0 install 2.0.8 Nuget, and for EF Core 1.x use 1.1.0 (targeting NetStandard 1.4)<br>
 Under the hood uses [SqlBulkCopy](https://msdn.microsoft.com/en-us/library/system.data.sqlclient.sqlbulkcopy.aspx) for Insert, for Update/Delete combines BulkInsert with raw Sql [MERGE](https://docs.microsoft.com/en-us/sql/t-sql/statements/merge-transact-sql).
 
-Available on [![NuGet](https://img.shields.io/badge/NuGet-2.2.2-blue.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/) latest version.<br>
+Available on [![NuGet](https://img.shields.io/badge/NuGet-2.2.3-blue.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/) latest version.<br>
 Package manager console command for installation: *Install-Package EFCore.BulkExtensions*
 
 Usage is simple and pretty straightforward.<br>
@@ -20,9 +20,9 @@ context.BulkInsertOrUpdate(entitiesList);         context.BulkInsertOrUpdateAsyn
 context.BulkInsertOrUpdateOrDelete(entitiesList); context.BulkInsertOrUpdateOrDeleteAsync(entitiesList); // Sync
 context.BulkRead(entitiesList);                   context.BulkReadAsync(entitiesList);
 ```
-**Batch** Extensions are made on *IQueryable* DbSet and can be used in the following way.<br>
-(*updateColumns* optional parameter in which PropertyName is added explicitly when we need update to it's default value):
-They are done as pure sql and no check is done whether some are prior loaded in memory and are being Tracked. 
+**Batch** Extensions are made on *IQueryable* DbSet and can be used as in the following code segment.<br>
+They are done as pure sql and no check is done whether some are prior loaded in memory and are being Tracked.
+(*updateColumns* optional parameter in which PropertyName is added explicitly when we need update to it's default value)
 ```C#
 context.Items.Where(a => a.ItemId <= 500).BatchUpdate(context, new Item { Description = "Updated" });
 context.Items.Where(a => a.ItemId <= 500).BatchUpdateAsync(context, new Item { Description = "Updated" }, updateColumns);
@@ -121,7 +121,7 @@ context.BulkInsert(entitiesList, null, (a) => WriteProgress(a));
 
 Library supports [Global Query Filters](https://docs.microsoft.com/en-us/ef/core/querying/filters) and [Value Conversions](https://docs.microsoft.com/en-us/ef/core/modeling/value-conversions) as well.</br>
 It also maps [OwnedTypes](https://docs.microsoft.com/en-us/ef/core/modeling/owned-entities), which is implemented with `DataTable` class.</br>
-With [Computed](https://docs.microsoft.com/en-us/ef/core/modeling/relational/computed-columns) and [Timestamp](https://docs.microsoft.com/en-us/ef/core/modeling/concurrency) Columns it will work in a way that they are automatically excluded from Insert. And when combined with *SetOutputIdentity* then ComputedColumns will be Selected while Timestamp will not (it stays Null).<br>
+With [Computed](https://docs.microsoft.com/en-us/ef/core/modeling/relational/computed-columns) and [Timestamp](https://docs.microsoft.com/en-us/ef/core/modeling/concurrency) Columns it will work in a way that they are automatically excluded from Insert. And when combined with *SetOutputIdentity* they will be Selected.<br>
 Bulk Extension methods can be [Overridden](https://github.com/borisdj/EFCore.BulkExtensions/issues/56) if required, for example to set AuditInfo.
 
 ## TPH inheritance
