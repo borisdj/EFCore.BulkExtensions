@@ -1,13 +1,13 @@
 # EFCore.BulkExtensions
-EntityFrameworkCore extensions: Bulk operations (**Insert, Update, Delete, Read, Upsert, Sync**) and Batch (**Delete, Update**)<br>
+EntityFrameworkCore extensions: Bulk operations (**Insert, Update, Delete, Read, Upsert, Sync**) and Batch (**Delete, Update**).<br>
 Library is Lightweight and very Efficient, having all mostly used CRUD operation.<br>
 Was selected in top 20 [EF Core Extensions](https://docs.microsoft.com/en-us/ef/core/extensions/) recommended by Microsoft.<br>
 It is targeting NetStandard 2.0 so it can be used on project targeting NetCore(2.0+) or NetFramework(4.6.1+).<br>
-Current version is using EF Core 2.1.<br>
+Current version is using EF Core 2.1. and at the moment supports ONLY MsSQL(2008+).<br>
 For EF Core 2.0 install 2.0.8 Nuget, and for EF Core 1.x use 1.1.0 (targeting NetStandard 1.4)<br>
-Under the hood uses [SqlBulkCopy](https://msdn.microsoft.com/en-us/library/system.data.sqlclient.sqlbulkcopy.aspx) for Insert, for Update/Delete combines BulkInsert with raw Sql [MERGE](https://docs.microsoft.com/en-us/sql/t-sql/statements/merge-transact-sql) (MsSQL 2008+).
+Under the hood uses [SqlBulkCopy](https://msdn.microsoft.com/en-us/library/system.data.sqlclient.sqlbulkcopy.aspx) for Insert, for Update/Delete combines BulkInsert with raw Sql [MERGE](https://docs.microsoft.com/en-us/sql/t-sql/statements/merge-transact-sql).
 
-Available on [![NuGet](https://img.shields.io/badge/NuGet-2.2.1-blue.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/) latest version.<br>
+Available on [![NuGet](https://img.shields.io/badge/NuGet-2.2.2-blue.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/) latest version.<br>
 Package manager console command for installation: *Install-Package EFCore.BulkExtensions*
 
 Usage is simple and pretty straightforward.<br>
@@ -20,8 +20,9 @@ context.BulkInsertOrUpdate(entitiesList);         context.BulkInsertOrUpdateAsyn
 context.BulkInsertOrUpdateOrDelete(entitiesList); context.BulkInsertOrUpdateOrDeleteAsync(entitiesList); // Sync
 context.BulkRead(entitiesList);                   context.BulkReadAsync(entitiesList);
 ```
-**Batch** Extensions are made on *IQueryable* DbSet and can be used in the following way:<br>
-(*updateColumns* optional parameter in which PropertyName added explicitly when we need update to it's default value):
+**Batch** Extensions are made on *IQueryable* DbSet and can be used in the following way.<br>
+(*updateColumns* optional parameter in which PropertyName is added explicitly when we need update to it's default value):
+They are done as pure sql and no check is done whether some are prior loaded in memory and are being Tracked. 
 ```C#
 context.Items.Where(a => a.ItemId <= 500).BatchUpdate(context, new Item { Description = "Updated" });
 context.Items.Where(a => a.ItemId <= 500).BatchUpdateAsync(context, new Item { Description = "Updated" }, updateColumns);
@@ -135,31 +136,8 @@ context.Students.AddRange(entities); // adding to Context so that Shadow propert
 context.BulkInsert(entities);
 ```
 
-## Batch example with PureSQL and with BULK
-Batch operations can easily be done using ExecuteSqlCommand method directly or with BulkOps:
+## Read example
 
-```C#
-// SQL
-string textItem = nameof(Item);
-string textTimeUpdated = nameof(Item.TimeUpdated);
-// pure SQL (without external or variable values)
-string sql = $"UPDATE [dbo].[{textItem}] SET [{textTimeUpdated}] = GETDATE() WHERE [{textTimeUpdated}] IS NULL";
-context.Database.ExecuteSqlCommand(sql);
-DateTime dateTimeNow = DateTime.Now;
-// plain SQL - susceptible to SQL Injection
-sql = $"UPDATE [dbo].[{textItem}] SET [{textTimeUpdated}] = '{dateTimeNow}' WHERE [{textTimeUpdated}] IS NULL";
-context.Database.ExecuteSqlCommand(sql);
-// parameterized SQL - prevents SQL Injection
-sql = $"UPDATE [dbo].[{textItem}] SET [{textTimeUpdated}] = @DateTimeNow WHERE [{textTimeUpdated}] IS NULL"; 
-context.Database.ExecuteSqlCommand(sql, new SqlParameter("@DateTimeNow", dateTimeNow));
-
-// BULK
-var entities = context.Items.Where(a => a.TimeUpdated == null).AsNoTracking().ToList();
-foreach (var entity in entities) {
-    entity.TimeUpdated = DateTime.Now;
-}
-context.BulkUpdate(entities);
-```
 When we need to Select from big List of some Unique Prop./Column instead of `Join` or `Contains` use BulkRead for [Efficiency](https://stackoverflow.com/questions/16824510/select-multiple-records-based-on-list-of-ids-with-linq):<br>
 ```C#
 // instead of
@@ -169,7 +147,6 @@ var entities = context.Items.Where(a => itemsNames.Contains(a.Name)).AsNoTrackin
 var items = itemsNames.Select(a => new Item { Name = a });
 context.Items.BulkRead(items, new BulkConfig { UpdateByProperties = new List<string> { nameof(Item.Name) }) // items loaded with data
 ```
-
 
 ## Performances
 
