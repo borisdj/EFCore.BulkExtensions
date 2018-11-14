@@ -93,7 +93,7 @@ namespace EFCore.BulkExtensions
                 q += $" WHEN NOT MATCHED BY TARGET THEN INSERT ({GetCommaSeparatedColumns(insertColumnsNames)})" +
                      $" VALUES ({GetCommaSeparatedColumns(insertColumnsNames, "S")})";
             }
-            if (operationType == OperationType.Update || ((operationType == OperationType.InsertOrUpdate || operationType == OperationType.InsertOrUpdateDelete) ))
+            if ((operationType == OperationType.Update || operationType == OperationType.InsertOrUpdate || operationType == OperationType.InsertOrUpdateDelete) & nonIdentityColumnsNames.Count() > 0)
             {
                 q += $" WHEN MATCHED THEN UPDATE SET {GetCommaSeparatedColumns(nonIdentityColumnsNames, "T", "S")}";
             }
