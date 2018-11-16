@@ -58,7 +58,7 @@ namespace EFCore.BulkExtensions
             string sourceTable = tableInfo.FullTableName;
             string joinTable = tableInfo.FullTempTableName;
             List<string> columnsNames = tableInfo.PropertyColumnNamesDict.Values.ToList();
-            List<string> selectByPropertyNames = tableInfo.PropertyColumnNamesDict.Keys.Where(a => tableInfo.PrimaryKeys.Contains(a)).ToList();
+            List<string> selectByPropertyNames = tableInfo.PropertyColumnNamesDict.Where(a => tableInfo.PrimaryKeys.Contains(a.Key)).Select(a => a.Value).ToList();
 
             var q = $"SELECT {GetCommaSeparatedColumns(columnsNames, "S")} FROM {sourceTable} AS S " +
                     $"JOIN {joinTable} AS J " +
