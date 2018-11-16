@@ -10,7 +10,19 @@ Under the hood uses [SqlBulkCopy](https://msdn.microsoft.com/en-us/library/syste
 Available on [![NuGet](https://img.shields.io/badge/NuGet-2.2.4-blue.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/) latest version.<br>
 Package manager console command for installation: *Install-Package EFCore.BulkExtensions*
 
-Usage is simple and pretty straightforward.<br>
+## Contributing
+
+If you find this project useful you can mark it by leaving a Github **\*Star**.</br>
+If you would like to support the Project by making a Donation ($10) #BuyMeBeer, you are welcome to do so:<br>
+[![Donate](https://img.shields.io/badge/donate-PayPal-yellow.svg)](https://www.paypal.me/BorisDjurdjevic/10) or
+[![Donate Bitcoin](https://img.shields.io/badge/donate-Bitcoin-orange.svg)](https://borisdj.github.io/pages/donateBTC.html)<br>
+Please read [CONTRIBUTING](CONTRIBUTING.md) for details on code of conduct, and the process for submitting pull requests.<br>
+[![NuGet](https://img.shields.io/npm/l/express.svg)](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE)
+
+Want to **Contact** us for Hire (Development & Consulting): [www.codis.tech](http://www.codis.tech)
+
+## Usage
+It's pretty simple and straightforward.<br>
 **Bulk** Extensions are made on *DbContext* class and can be used like this (both regular and Async methods are supported):
 ```C#
 context.BulkInsert(entitiesList);                 context.BulkInsertAsync(entitiesList);
@@ -122,7 +134,8 @@ context.BulkInsert(entitiesList, null, (a) => WriteProgress(a));
 Library supports [Global Query Filters](https://docs.microsoft.com/en-us/ef/core/querying/filters) and [Value Conversions](https://docs.microsoft.com/en-us/ef/core/modeling/value-conversions) as well.</br>
 It also maps [OwnedTypes](https://docs.microsoft.com/en-us/ef/core/modeling/owned-entities), which is implemented with `DataTable` class.</br>
 With [Computed](https://docs.microsoft.com/en-us/ef/core/modeling/relational/computed-columns) and [Timestamp](https://docs.microsoft.com/en-us/ef/core/modeling/concurrency) Columns it will work in a way that they are automatically excluded from Insert. And when combined with *SetOutputIdentity* they will be Selected.<br>
-Bulk Extension methods can be [Overridden](https://github.com/borisdj/EFCore.BulkExtensions/issues/56) if required, for example to set AuditInfo.
+Bulk Extension methods can be [Overridden](https://github.com/borisdj/EFCore.BulkExtensions/issues/56) if required, for example to set AuditInfo.<br>
+For mapping FKs explicit Id properties have to be in entity. Having only [Navigation](https://github.com/borisdj/EFCore.BulkExtensions/issues/95) property is not supported.
 
 ## TPH inheritance
 
@@ -163,19 +176,4 @@ Following are performances (in seconds):
 TestTable has 6 columns (Guid, string, string, int, decimal?, DateTime).<br>
 All were inserted and 2 of them (string, DateTime) were updated.<br>
 Test was done locally on following configuration: INTEL Core i5-3570K 3.40GHz, DDRIII 8GB x 2, SSD 840 EVO 128 GB.
-
-## Contributing
-
-If you find this project useful you can mark it by leaving a Github **\*Star**.</br>
-If you would like to support the Project by making a Donation ($10), you are welcome to do so:<br>
-[![Donate](https://img.shields.io/badge/donate-PayPal-yellow.svg)](https://www.paypal.me/BorisDjurdjevic/10) or
-[![Donate Bitcoin](https://img.shields.io/badge/donate-Bitcoin-orange.svg)](https://borisdj.github.io/pages/donateBTC.html)
-
-Please read [CONTRIBUTING](CONTRIBUTING.md) for details on code of conduct, and the process for submitting pull requests.
-
-[![NuGet](https://img.shields.io/npm/l/express.svg)](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE)
-
-## Contact
-Want to contact us for Hire (Development & Consulting):</br>
-[www.codis.tech](http://www.codis.tech)
 
