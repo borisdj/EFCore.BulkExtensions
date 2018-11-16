@@ -11,7 +11,7 @@
     <Company />
     <PackageLicenseUrl>https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE</PackageLicenseUrl>
     <PackageTags>EntityFrameworkCore Entity Framework Core EFCore EF Core Bulk Batch Extensions Insert Update Delete Read</PackageTags>
-    <PackageReleaseNotes>BatchExtensions with internal DbContext</PackageReleaseNotes>
+    <PackageReleaseNotes>BatchExtensions with internal DbContext and ReadColName fix</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
