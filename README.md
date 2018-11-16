@@ -152,11 +152,11 @@ context.BulkInsert(entities);
 
 ## Read example
 
-When we need to Select from big List of some Unique Prop./Column instead use BulkRead (SQL JOIN) for [Efficiency](https://stackoverflow.com/questions/16824510/select-multiple-records-based-on-list-of-ids-with-linq):<br>
+When we need to Select from big List of some Unique Prop./Column instead use BulkRead (JOIN in Sql) for Efficiency:<br>
 ```C#
 // instead of 
-var entities = context.Items.Where(a => itemsNames.Contains(a.Name)).AsNoTracking().ToList(); // SQL IN
-// or Join in Memory that loads entire table
+var entities = context.Items.Where(a => itemsNames.Contains(a.Name)).AsNoTracking().ToList(); // SQL IN operator
+// or JOIN in Memory that loads entire table
 var entities = context.Items.Join(itemsNames, a => a.Name, p => p, (a, p) => a).AsNoTracking().ToList();
 // use
 var items = itemsNames.Select(a => new Item { Name = a }); // items list will be loaded with data
