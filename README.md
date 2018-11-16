@@ -41,7 +41,7 @@ context.Items.Where(a => a.ItemId >  500).BatchDeleteAsync();
 context.Items.Where(a => a.ItemId <= 500).BatchUpdate(new Item { Description = "Updated" });
 context.Items.Where(a => a.ItemId <= 500).BatchUpdateAsync(new Item { Description = "Updated" });
 
-var updateColumns = new List<string> { nameof(Item.Quantity) }; // Update 'Quantity' to it's default value(0-zero)
+var updateColumns = new List<string> { nameof(Item.Quantity) }; // Update 'Quantity' to it's default value ('0'-zero)
 context.Items.Where(a => a.ItemId <= 500).BatchUpdate(new Item { Description = "Updated" }, updateColumns);
 ```
 ## Bulk info
