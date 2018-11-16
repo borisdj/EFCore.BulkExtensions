@@ -31,7 +31,7 @@ namespace EFCore.BulkExtensions.Tests
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
-                context.Items.BatchDelete(context);
+                context.Items.BatchDelete();
             }
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
@@ -44,7 +44,7 @@ namespace EFCore.BulkExtensions.Tests
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 //var updateColumns = new List<string> { nameof(Item.Quantity) }; // Adding explicitly PropertyName for update to its default value
-                context.Items.Where(a => a.ItemId <= 500 && a.Price >= 0).BatchUpdate(context, new Item { Description = "Updated", Price = 1.5m }/*, updateColumns*/);
+                context.Items.Where(a => a.ItemId <= 500 && a.Price >= 0).BatchUpdate(new Item { Description = "Updated", Price = 1.5m }/*, updateColumns*/);
             }
         }
 
@@ -52,7 +52,7 @@ namespace EFCore.BulkExtensions.Tests
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
-                context.Items.Where(a => a.ItemId > 500).BatchDelete(context);
+                context.Items.Where(a => a.ItemId > 500).BatchDelete();
             }
         }
 
