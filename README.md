@@ -34,12 +34,13 @@ context.BulkRead(entitiesList);                   context.BulkReadAsync(entities
 ```
 **Batch** Extensions are made on *IQueryable* DbSet and can be used as in the following code segment.<br>
 They are done as pure sql and no check is done whether some are prior loaded in memory and are being Tracked.
-(*updateColumns* optional parameter in which PropertyName is added explicitly when we need update to it's default value)
+(*updateColumns* optional parameter in which PropertyName added explicitly when we need update to it's default value)
 ```C#
-context.Items.Where(a => a.ItemId <= 500).BatchUpdate(new Item { Description = "Updated" });
-context.Items.Where(a => a.ItemId <= 500).BatchUpdateAsync(new Item { Description = "Updated" }, updateColumns);
 context.Items.Where(a => a.ItemId >  500).BatchDelete();
 context.Items.Where(a => a.ItemId >  500).BatchDeleteAsync();
+context.Items.Where(a => a.ItemId <= 500).BatchUpdate(new Item { Description = "Updated" });
+var updateColumns = new List<string> { nameof(Item.Quantity) }; // Update 'Quantity' to it's default value(0-zero)
+context.Items.Where(a => a.ItemId <= 500).BatchUpdateAsync(new Item { Description = "Updated" }, updateColumns);
 ```
 ## Bulk info
 If Windows Authentication is used then in ConnectionString there should be *Trusted_Connection=True;* because Sql credentials are required to stay in connection.<br>
@@ -73,8 +74,8 @@ When doing update we can chose to exclude one or more properties by adding their
 If **NotifyAfter** is not set it will have same value as _BatchSize_ while **BulkCopyTimeout** when not set has SqlBulkCopy default which is 30 seconds and if set to 0 it indicates no limit.<br>
 _PreserveInsertOrder_ and _SetOutputIdentity_ have purpose only when PK has Identity (usually *int* type with AutoIncrement), while if PK is Guid(sequential) created in Application there is no need for them. Also Tables with Composite Keys have no Identity column so no functionality for them in that case either.
 ```C#
-context.BulkInsert(entitiesList, new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true, BatchSize = 4000 });
-context.BulkInsertOrUpdate(entitiesList, new BulkConfig { PreserveInsertOrder = true });
+context.BulkInsert(entList, new BulkConfig {PreserveInsertOrder= true, SetOutputIdentity= true, BatchSize= 4000});
+context.BulkInsertOrUpdate(entList, new BulkConfig { PreserveInsertOrder = true });
 ```
 
 **PreserveInsertOrder** makes sure that entites are inserted to Db as they are ordered in entitiesList.<br>
