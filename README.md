@@ -17,8 +17,7 @@ If you would like to support the Project by making a Donation ($10) #BuyMeBeer, 
 [![Donate](https://img.shields.io/badge/donate-PayPal-yellow.svg)](https://www.paypal.me/BorisDjurdjevic/10) or
 [![Donate Bitcoin](https://img.shields.io/badge/donate-Bitcoin-orange.svg)](https://borisdj.github.io/pages/donateBTC.html)<br>
 Please read [CONTRIBUTING](CONTRIBUTING.md) for details on code of conduct, and the process for submitting pull requests.<br>
-[![NuGet](https://img.shields.io/npm/l/express.svg)](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE)
-
+[![NuGet](https://img.shields.io/npm/l/express.svg)](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE)<br>
 Want to **Contact** us for Hire (Development & Consulting): [www.codis.tech](http://www.codis.tech)
 
 ## Usage
