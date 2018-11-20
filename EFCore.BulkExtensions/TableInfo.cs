@@ -490,7 +490,7 @@ namespace EFCore.BulkExtensions
         {
             string q = SqlQueryBuilder.SelectFromOutputTable(this);
             var query = context.Set<T>().FromSql(q);
-            if (!BulkConfig.IsTrackingQutput)
+            if (!BulkConfig.TrackingEntities)
             {
                 query = query.AsNoTracking();
             }
@@ -514,5 +514,5 @@ namespace EFCore.BulkExtensions
             return orderedQuery;
         }*/
         #endregion
-        }
+    }
 }
