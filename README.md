@@ -37,11 +37,12 @@ They are done as pure sql and no check is done whether some are prior loaded in 
 ```C#
 context.Items.Where(a => a.ItemId >  500).BatchDelete();
 context.Items.Where(a => a.ItemId >  500).BatchDeleteAsync();
-context.Items.Where(a => a.ItemId <= 500).BatchUpdate(new Item { Description = "Updated" });
-context.Items.Where(a => a.ItemId <= 500).BatchUpdateAsync(new Item { Description = "Updated" });
+
+var updateQuery = context.Items.Where(a => a.ItemId <= 500);
+updateQuery.BatchUpdate(new Item { Description = "Updated" });
+updateQuery.BatchUpdateAsync(new Item { Description = "Updated" });
 
 var updateColumns = new List<string> { nameof(Item.Quantity) }; // Update 'Quantity' to default value ('0'-zero)
-var updateQuery = context.Items.Where(a => a.ItemId <= 500);
 int affected = updateQuery.BatchUpdate(new Item { Description = "Updated" }, updateColumns);
 ```
 ## Bulk info
