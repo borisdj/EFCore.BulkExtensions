@@ -43,8 +43,8 @@ context.Items.Where(a => a.ItemId <= 500).BatchUpdate(new Item { Description = "
 context.Items.Where(a => a.ItemId <= 500).BatchUpdateAsync(new Item { Description = "Updated" });
 
 var updateColumns = new List<string> { nameof(Item.Quantity) }; // Update 'Quantity' to default value ('0'-zero)
-var query = context.Items.Where(a => a.ItemId <= 500);
-int affected = query.BatchUpdate(new Item { Description = "Updated" }, updateColumns); // result assigned to variable
+var q = context.Items.Where(a => a.ItemId <= 500);
+int affected = q.BatchUpdate(new Item { Description = "Updated" }, updateColumns); // result assigned to variable
 ```
 ## Bulk info
 If Windows Authentication is used then in ConnectionString there should be *Trusted_Connection=True;* because Sql credentials are required to stay in connection.<br>
