@@ -35,13 +35,14 @@ context.BulkRead(entitiesList);                   context.BulkReadAsync(entities
 They are done as pure sql and no check is done whether some are prior loaded in memory and are being Tracked.
 (*updateColumns* optional parameter in which PropertyName added explicitly when we need update to it's default value)
 ```C#
+// Batch Delete
 context.Items.Where(a => a.ItemId >  500).BatchDelete();
 context.Items.Where(a => a.ItemId >  500).BatchDeleteAsync();
-
+// Batch Update
 var updateQuery = context.Items.Where(a => a.ItemId <= 500);
 updateQuery.BatchUpdate(new Item { Description = "Updated" });
 updateQuery.BatchUpdateAsync(new Item { Description = "Updated" });
-
+// Example using updateColumns parameter and assigning number affected result to variable
 var updateColumns = new List<string> { nameof(Item.Quantity) }; // Update 'Quantity' to default value ('0'-zero)
 int affected = updateQuery.BatchUpdate(new Item { Description = "Updated" }, updateColumns);
 ```
