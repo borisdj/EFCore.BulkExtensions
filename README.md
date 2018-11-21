@@ -111,7 +111,8 @@ for (int i = 1; i <= numberOfEntites; i++)
     entity.ItemHistories.Add(new ItemHistory { Remark = $"Info {i}.1" });
     entity.ItemHistories.Add(new ItemHistory { Remark = $"Info {i}.2" });
 }
-using (var transaction = context.Database.BeginTransaction()) {
+using (var transaction = context.Database.BeginTransaction())
+{
     context.BulkInsert(entities, new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true });
     foreach (var entity in entities) {
         foreach (var subEntity in entity.ItemHistories) {
