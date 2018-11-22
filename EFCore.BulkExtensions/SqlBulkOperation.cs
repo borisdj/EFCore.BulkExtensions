@@ -136,9 +136,15 @@ namespace EFCore.BulkExtensions
                     context.Database.ExecuteSqlCommand(SqlQueryBuilder.AddColumn(tableInfo.FullTempOutputTableName, tableInfo.TimeStampColumnName, tableInfo.TimeStampOutColumnType));
                 }
             }
+
+            bool keepIdentity = tableInfo.BulkConfig.SqlBulkCopyOptions.HasFlag(SqlBulkCopyOptions.KeepIdentity);
             try
             {
                 Insert(context, entities, tableInfo, progress);
+
+                if (keepIdentity && tableInfo.HasIdentity)
+                    context.Database.ExecuteSqlCommand(SqlQueryBuilder.SetIdentityInsert(tableInfo.FullTableName, true));
+
                 context.Database.ExecuteSqlCommand(SqlQueryBuilder.MergeTable(tableInfo, operationType));
 
                 if (tableInfo.CreatedOutputTable)
@@ -156,6 +162,9 @@ namespace EFCore.BulkExtensions
             }
             finally
             {
+                if (keepIdentity && tableInfo.HasIdentity)
+                    context.Database.ExecuteSqlCommand(SqlQueryBuilder.SetIdentityInsert(tableInfo.FullTableName, false));
+
                 if (!tableInfo.BulkConfig.UseTempDB)
                     context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName));
             }
@@ -164,7 +173,8 @@ namespace EFCore.BulkExtensions
         public static async Task MergeAsync<T>(DbContext context, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress) where T : class
         {
             tableInfo.InsertToTempTable = true;
-            await tableInfo.CheckHasIdentityAsync(context).ConfigureAwait(false);
+            if (tableInfo.BulkConfig.UpdateByProperties == null || tableInfo.BulkConfig.UpdateByProperties.Count() == 0)
+                await tableInfo.CheckHasIdentityAsync(context).ConfigureAwait(false);
 
             await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo)).ConfigureAwait(false);
             if (tableInfo.CreatedOutputTable)
@@ -175,9 +185,15 @@ namespace EFCore.BulkExtensions
                     context.Database.ExecuteSqlCommand(SqlQueryBuilder.AddColumn(tableInfo.FullTempOutputTableName, tableInfo.TimeStampColumnName, tableInfo.TimeStampOutColumnType));
                 }
             }
+
+            bool keepIdentity = tableInfo.BulkConfig.SqlBulkCopyOptions.HasFlag(SqlBulkCopyOptions.KeepIdentity);
             try
             {
                 await InsertAsync(context, entities, tableInfo, progress).ConfigureAwait(false);
+
+                if (keepIdentity && tableInfo.HasIdentity)
+                    context.Database.ExecuteSqlCommand(SqlQueryBuilder.SetIdentityInsert(tableInfo.FullTableName, true));
+
                 await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.MergeTable(tableInfo, operationType)).ConfigureAwait(false);
 
                 if (tableInfo.CreatedOutputTable)
@@ -196,6 +212,9 @@ namespace EFCore.BulkExtensions
             }
             finally
             {
+                if (keepIdentity && tableInfo.HasIdentity)
+                    context.Database.ExecuteSqlCommand(SqlQueryBuilder.SetIdentityInsert(tableInfo.FullTableName, false));
+
                 if (!tableInfo.BulkConfig.UseTempDB)
                     await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName)).ConfigureAwait(false);
             }

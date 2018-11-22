@@ -48,8 +48,8 @@ WHEN MATCHED THEN UPDATE SET T.[Description] = S.[Description];
 ----------BATCH Examples----------
 
 -- BatchDelete
-SELECT [i].[ItemId], [i].[Description], [i].[Name], [i].[Price], [i].[Quantity], [i].[TimeUpdated]\r\nFROM [Item] AS [i]
-SELECT [i].[ItemId], [i].[Description], [i].[Name], [i].[Price], [i].[Quantity], [i].[TimeUpdated]    FROM [Item] AS [i]
+SELECT [a].[ItemId], [a].[Description], [a].[Name], [a].[Price], [a].[Quantity], [a].[TimeUpdated]\r\nFROM [Item] AS [a]
+SELECT [a].[ItemId], [a].[Description], [a].[Name], [a].[Price], [a].[Quantity], [a].[TimeUpdated]    FROM [Item] AS [a]
 DELETE FROM [Item]
 
 -- BatchDelete Where

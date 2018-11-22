@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Linq;
 
 namespace EFCore.BulkExtensions
@@ -67,15 +68,23 @@ namespace EFCore.BulkExtensions
             return q;
         }
 
+        public static string SetIdentityInsert(string tableName, bool identityInsert)
+        {
+            string ON_OFF = identityInsert ? "ON" : "OFF";
+            var q = $"SET IDENTITY_INSERT {tableName} {ON_OFF};";
+            return q;
+        }
+
         public static string MergeTable(TableInfo tableInfo, OperationType operationType)
         {
             string targetTable = tableInfo.FullTableName;
             string sourceTable = tableInfo.FullTempTableName;
+            bool keepIdentity = tableInfo.BulkConfig.SqlBulkCopyOptions.HasFlag(SqlBulkCopyOptions.KeepIdentity);
             List<string> primaryKeys = tableInfo.PrimaryKeys.Select(k => tableInfo.PropertyColumnNamesDict[k]).ToList();
             List<string> columnsNames = tableInfo.PropertyColumnNamesDict.Values.ToList();
             List<string> outputColumnsNames = tableInfo.OutputPropertyColumnNamesDict.Values.ToList();
             List<string> nonIdentityColumnsNames = columnsNames.Where(a => !primaryKeys.Contains(a)).ToList();
-            List<string> insertColumnsNames = tableInfo.HasIdentity ? nonIdentityColumnsNames : columnsNames;
+            List<string> insertColumnsNames = (tableInfo.HasIdentity && !keepIdentity) ? nonIdentityColumnsNames : columnsNames;
 
             string isUpdateStatsValue = (tableInfo.BulkConfig.CalculateStats) ? ",(CASE $action WHEN 'UPDATE' THEN 1 Else 0 END)" : "";
 

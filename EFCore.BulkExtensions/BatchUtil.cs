@@ -9,6 +9,19 @@ using Microsoft.EntityFrameworkCore.Query.Internal;
 
 namespace EFCore.BulkExtensions
 {
+    public static class StringExtensionMethods
+    {
+        public static string ReplaceFirst(this string text, string search, string replace)
+        {
+            int pos = text.IndexOf(search);
+            if (pos < 0)
+            {
+                return text;
+            }
+            return text.Substring(0, pos) + replace + text.Substring(pos + search.Length);
+        }
+    }
+
     static class BatchUtil
     {
         // In comment are Examples of how QuerySQL is changed for Batch SQL
@@ -26,7 +39,7 @@ namespace EFCore.BulkExtensions
             int indexFROM = sqlQuery.IndexOf("FROM");
             string sql = sqlQuery.Substring(indexFROM, sqlQuery.Length - indexFROM);
             sql = ReplaceLetterInBracketsWithA(sql);
-            sql = sql.Replace("AS [a]", "").Replace("[a].", "");
+            sql = sql.ReplaceFirst("AS [a]", "").Replace("[a].", "");
             return $"DELETE {sql}";
         }
 
@@ -44,7 +57,7 @@ namespace EFCore.BulkExtensions
             string sqlSET = GetSqlSetSegment(context, updateValues, updateColumns);
             string sql = sqlQuery.Substring(indexFROM, sqlQuery.Length - indexFROM);
             sql = ReplaceLetterInBracketsWithA(sql);
-            sql = sql.Replace("AS [a]", sqlSET).Replace("[a].", "");
+            sql = sql.ReplaceFirst("AS [a]", sqlSET).Replace("[a].", "");
             return $"UPDATE {sql}";
         }
 
@@ -69,21 +82,79 @@ namespace EFCore.BulkExtensions
             return $"SET {sql}";
         }
 
-        public static string ReplaceLetterInBracketsWithA(string sql)
+        public class QuotedData
         {
-            sql = sql.Replace("[i]", "[a]");
-            if (!sql.Contains("[a]"))
+            public int StartIndex { get; set; }
+            public int Length { get; set; }
+            public string Value { get; set; }
+
+            public static List<QuotedData> GetGetQuotedSegments(string sql)
             {
-                for (char letter = 'b'; letter <= 'z'; letter++)
+                List<QuotedData> quotedSegments = new List<QuotedData>();
+                int length = sql.Length;
+                for (int i = 0; i < length; i++)
                 {
-                    string letterInBracket = $"[{letter}]";
-                    if (sql.Contains(letterInBracket))
+                    if (sql[i] == '\'')
                     {
-                        sql = sql.Replace(letterInBracket, "[a]");
-                        break;
+                        int counter = 0;
+                        while (i < length && sql[i] == '\'')
+                        {
+                            counter++;
+                            i++;
+                        }
+                        if (counter % 2 != 0)
+                        {
+                            if (quotedSegments.Count > 0 && quotedSegments.Last().Value == null)
+                            {
+                                quotedSegments.Last().Length = i - counter - quotedSegments.Last().StartIndex;
+                                quotedSegments.Last().Value = sql.Substring(quotedSegments.Last().StartIndex, quotedSegments.Last().Length);
+                            }
+                            else
+                            {
+                                quotedSegments.Add(new QuotedData { StartIndex = i - counter + 1 });
+                            }
+
+                        }
                     }
                 }
+                return quotedSegments;
             }
+        }
+
+        public static string ReplaceLetterInBracketsWithA(string sql)
+        {
+            string letterAInBracket = String.Empty;
+            string letterAInBracketPrefixAS = String.Empty;
+
+            List<QuotedData> quotedSegments = QuotedData.GetGetQuotedSegments(sql); // Example: WHERE Column = 'some info [a].[b]'
+            foreach (var quote in quotedSegments)
+            {
+                sql = sql.Remove(quote.StartIndex, quote.Length); // removes values under single quotation if they contains text like: [a].[
+            }                                                     // so they are not altered
+
+            for (char letter = 'a'; letter <= 'z'; letter++)
+            {
+                string letterInBracket = $"[{letter}].[";
+                string letterInBracketPrefixAS = $" AS [{letter}]";
+                if (letter == 'a')
+                {
+                    letterAInBracket = letterInBracket;
+                    letterAInBracketPrefixAS = letterInBracketPrefixAS;
+                }
+
+                if (sql.Contains(letterInBracketPrefixAS))
+                {
+                    sql = sql.ReplaceFirst(letterInBracketPrefixAS, letterAInBracketPrefixAS);
+                    sql = sql.Replace(letterInBracket, letterAInBracket);
+                    break;
+                }
+            }
+
+            foreach (var quote in quotedSegments)
+            {
+                sql = sql.Insert(quote.StartIndex, quote.Value); // returns original quoted segments
+            }
+
             return sql;
         }
 
