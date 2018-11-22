@@ -11,7 +11,7 @@ namespace EFCore.BulkExtensions
 {
     static class BatchUtil
     {
-        // In comment are Examples of how QuerySQL is changed for Batch SQL
+        // In comment are Examples of how SqlQuery is changed for Sql Batch
 
         // SELECT [a].[Column1], [a].[Column2], .../r/n
         // FROM [Table] AS [a]/r/n
