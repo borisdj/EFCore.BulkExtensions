@@ -166,7 +166,7 @@ var entities = context.Items.Where(a => itemsNames.Contains(a.Name)).AsNoTrackin
 var entities = context.Items.Join(itemsNames, a => a.Name, p => p, (a, p) => a).AsNoTracking().ToList();
 // use
 var items = itemsNames.Select(a => new Item { Name = a }); // items list will be loaded with data
-context.Items.BulkRead(items, new BulkConfig { UpdateByProperties = new List<string> { nameof(Item.Name) })
+context.Items.BulkRead(items, new BulkConfig { UpdateByProperties = new List<string> { nameof(Item.Name) });
 ```
 
 ## Performances
