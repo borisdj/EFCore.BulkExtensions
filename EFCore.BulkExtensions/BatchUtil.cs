@@ -9,56 +9,41 @@ using Microsoft.EntityFrameworkCore.Query.Internal;
 
 namespace EFCore.BulkExtensions
 {
-    public static class StringExtensionMethods
-    {
-        public static string ReplaceFirst(this string text, string search, string replace)
-        {
-            int pos = text.IndexOf(search);
-            if (pos < 0)
-            {
-                return text;
-            }
-            return text.Substring(0, pos) + replace + text.Substring(pos + search.Length);
-        }
-    }
-
     static class BatchUtil
     {
         // In comment are Examples of how QuerySQL is changed for Batch SQL
 
-        // SELECT [a].[Column1], [a].[Column2], ...
+        // SELECT [a].[Column1], [a].[Column2], .../r/n
         // FROM [Table] AS [a]/r/n
         // WHERE [a].[Column] = FilterValue
         // --
-        // DELETE
-        // FROM [Table]
-        // WHERE [Columns] = FilterValues
+        // DELETE [a]
+        // FROM [Table] AS [a]
+        // WHERE [a].[Columns] = FilterValues
         public static string GetSqlDelete<T>(IQueryable<T> query, DbContext context) where T : class
         {
             string sqlQuery = query.ToSql();
-            int indexFROM = sqlQuery.IndexOf("FROM");
+            string tableAlias = sqlQuery.Substring(8, 1);
+            int indexFROM = sqlQuery.IndexOf(Environment.NewLine);
             string sql = sqlQuery.Substring(indexFROM, sqlQuery.Length - indexFROM);
-            sql = ReplaceLetterInBracketsWithA(sql);
-            sql = sql.ReplaceFirst("AS [a]", "").Replace("[a].", "");
-            return $"DELETE {sql}";
+            return $"DELETE [{tableAlias}]{sql}";
         }
 
-        // SELECT [a].[Column1], [a].[Column2], ...
+        // SELECT [a].[Column1], [a].[Column2], .../r/n
         // FROM [Table] AS [a]/r/n
         // WHERE [a].[Column] = FilterValue
         // --
-        // UPDATE
-        // [Table] SET [UpdateColumns] = 'updateValues'
+        // UPDATE [a] SET [UpdateColumns] = 'updateValues'
+        // FROM [Table] AS [a]
         // WHERE [Columns] = FilterValues
         public static string GetSqlUpdate<T>(IQueryable<T> query, DbContext context, T updateValues, List<string> updateColumns) where T : class, new()
         {
             string sqlQuery = query.ToSql();
-            int indexFROM = sqlQuery.IndexOf("FROM") + 5;
+            string tableAlias = sqlQuery.Substring(8, 1);
+            int indexFROM = sqlQuery.IndexOf(Environment.NewLine);
             string sqlSET = GetSqlSetSegment(context, updateValues, updateColumns);
             string sql = sqlQuery.Substring(indexFROM, sqlQuery.Length - indexFROM);
-            sql = ReplaceLetterInBracketsWithA(sql);
-            sql = sql.ReplaceFirst("AS [a]", sqlSET).Replace("[a].", "");
-            return $"UPDATE {sql}";
+            return $"UPDATE [{tableAlias}] {sqlSET}{sql}";
         }
 
         public static string GetSqlSetSegment<T>(DbContext context, T updateValues, List<string> updateColumns) where T : class, new()
@@ -78,84 +63,12 @@ namespace EFCore.BulkExtensions
                     sql += propertyColumn.Value + " = '" + propertyUpdateValue + "'" + ", ";
                 }
             }
+            if (String.IsNullOrEmpty(sql))
+            {
+                throw new InvalidOperationException("SET Columns not defined. If one or more columns should be updated to theirs default value use 'updateColumns' argument.");
+            }
             sql = sql.Remove(sql.Length - 2, 2); // removes last excess comma and space: ", "
             return $"SET {sql}";
-        }
-
-        public class QuotedData
-        {
-            public int StartIndex { get; set; }
-            public int Length { get; set; }
-            public string Value { get; set; }
-
-            public static List<QuotedData> GetGetQuotedSegments(string sql)
-            {
-                List<QuotedData> quotedSegments = new List<QuotedData>();
-                int length = sql.Length;
-                for (int i = 0; i < length; i++)
-                {
-                    if (sql[i] == '\'')
-                    {
-                        int counter = 0;
-                        while (i < length && sql[i] == '\'')
-                        {
-                            counter++;
-                            i++;
-                        }
-                        if (counter % 2 != 0)
-                        {
-                            if (quotedSegments.Count > 0 && quotedSegments.Last().Value == null)
-                            {
-                                quotedSegments.Last().Length = i - counter - quotedSegments.Last().StartIndex;
-                                quotedSegments.Last().Value = sql.Substring(quotedSegments.Last().StartIndex, quotedSegments.Last().Length);
-                            }
-                            else
-                            {
-                                quotedSegments.Add(new QuotedData { StartIndex = i - counter + 1 });
-                            }
-
-                        }
-                    }
-                }
-                return quotedSegments;
-            }
-        }
-
-        public static string ReplaceLetterInBracketsWithA(string sql)
-        {
-            string letterAInBracket = String.Empty;
-            string letterAInBracketPrefixAS = String.Empty;
-
-            List<QuotedData> quotedSegments = QuotedData.GetGetQuotedSegments(sql); // Example: WHERE Column = 'some info [a].[b]'
-            foreach (var quote in quotedSegments)
-            {
-                sql = sql.Remove(quote.StartIndex, quote.Length); // removes values under single quotation if they contains text like: [a].[
-            }                                                     // so they are not altered
-
-            for (char letter = 'a'; letter <= 'z'; letter++)
-            {
-                string letterInBracket = $"[{letter}].[";
-                string letterInBracketPrefixAS = $" AS [{letter}]";
-                if (letter == 'a')
-                {
-                    letterAInBracket = letterInBracket;
-                    letterAInBracketPrefixAS = letterInBracketPrefixAS;
-                }
-
-                if (sql.Contains(letterInBracketPrefixAS))
-                {
-                    sql = sql.ReplaceFirst(letterInBracketPrefixAS, letterAInBracketPrefixAS);
-                    sql = sql.Replace(letterInBracket, letterAInBracket);
-                    break;
-                }
-            }
-
-            foreach (var quote in quotedSegments)
-            {
-                sql = sql.Insert(quote.StartIndex, quote.Value); // returns original quoted segments
-            }
-
-            return sql;
         }
 
         public static DbContext GetDbContext(IQueryable query)
