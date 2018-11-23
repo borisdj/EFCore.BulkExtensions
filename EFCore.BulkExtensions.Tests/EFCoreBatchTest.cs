@@ -44,7 +44,7 @@ namespace EFCore.BulkExtensions.Tests
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 //var updateColumns = new List<string> { nameof(Item.Quantity) }; // Adding explicitly PropertyName for update to its default value
-                context.Items.Where(a => a.ItemId <= 500 && a.Price >= 0).BatchUpdate(new Item { Description = "Updated", Price = 1.5m }/*, updateColumns*/);
+                context.Items.Where(ab => ab.ItemId <= 500 && ab.Price >= 0).BatchUpdate(new Item { Description = "Updated", Price = 1.5m }/*, updateColumns*/);
             }
         }
 

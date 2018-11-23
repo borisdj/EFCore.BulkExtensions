@@ -20,12 +20,9 @@ namespace EFCore.BulkExtensions
         // DELETE [a]
         // FROM [Table] AS [a]
         // WHERE [a].[Columns] = FilterValues
-        public static string GetSqlDelete<T>(IQueryable<T> query) where T : class
+        public static string GetSqlDelete<T>(IQueryable<T> query) where T : class, new()
         {
-            string sqlQuery = query.ToSql();
-            string tableAlias = sqlQuery.Substring(8, 1);
-            int indexFROM = sqlQuery.IndexOf(Environment.NewLine);
-            string sql = sqlQuery.Substring(indexFROM, sqlQuery.Length - indexFROM);
+            (string sql, string tableAlias) = GetBatchSql(query);
             return $"DELETE [{tableAlias}]{sql}";
         }
 
@@ -38,12 +35,18 @@ namespace EFCore.BulkExtensions
         // WHERE [a].[Columns] = FilterValues
         public static string GetSqlUpdate<T>(IQueryable<T> query, DbContext context, T updateValues, List<string> updateColumns) where T : class, new()
         {
-            string sqlQuery = query.ToSql();
-            string tableAlias = sqlQuery.Substring(8, 1);
-            int indexFROM = sqlQuery.IndexOf(Environment.NewLine);
+            (string sql, string tableAlias) = GetBatchSql(query);
             string sqlSET = GetSqlSetSegment(context, updateValues, updateColumns);
-            string sql = sqlQuery.Substring(indexFROM, sqlQuery.Length - indexFROM);
             return $"UPDATE [{tableAlias}] {sqlSET}{sql}";
+        }
+
+        public static (string, string) GetBatchSql<T>(IQueryable<T> query) where T : class, new()
+        {
+            string sqlQuery = query.ToSql();
+            string tableAlias = sqlQuery.Substring(8, sqlQuery.IndexOf("]") - 8);
+            int indexFROM = sqlQuery.IndexOf(Environment.NewLine);
+            string sql = sqlQuery.Substring(indexFROM, sqlQuery.Length - indexFROM);
+            return (sql, tableAlias);
         }
 
         public static string GetSqlSetSegment<T>(DbContext context, T updateValues, List<string> updateColumns) where T : class, new()
