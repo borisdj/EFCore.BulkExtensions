@@ -59,5 +59,5 @@ DELETE																								  FROM [Item]			WHERE [ItemId] > 500
 
 -- BatchUpdate Where
 SELECT [a].[ItemId], [a].[Description], [a].[Name], [a].[Price], [a].[Quantity], [a].[TimeUpdated]    FROM [Item] AS [a]    WHERE ([a].[ItemId] <= 500) AND ([a].[Price] >= 0.0)
-UPDATE [a] SET [a].Description = 'Updated', [a].Price = '1.5'										  FROM [Item] AS [a]	WHERE ([ItemId] <= 500) AND ([Price] >= 0.0)
-UPDATE [Item] SET Description = 'Updated', Price = '1.5'																	WHERE ([ItemId] <= 500) AND ([Price] >= 0.0)
+UPDATE [a] SET [Description] = N'Updated', [Price] = '1.5'											  FROM [Item] AS [a]	WHERE ([a].[ItemId] <= 500) AND ([a].[Price] >= 0.0)
+UPDATE [Item] SET [Description] = N'Updated', [Price] = '1.5'																WHERE ([ItemId] <= 500) AND ([Price] >= 0.0)

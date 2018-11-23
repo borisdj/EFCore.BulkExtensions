@@ -33,9 +33,9 @@ namespace EFCore.BulkExtensions
         // FROM [Table] AS [a]/r/n
         // WHERE [a].[Column] = FilterValue
         // --
-        // UPDATE [a] SET [UpdateColumns] = 'updateValues'
+        // UPDATE [a] SET [UpdateColumns] = N'updateValues'
         // FROM [Table] AS [a]
-        // WHERE [Columns] = FilterValues
+        // WHERE [a].[Columns] = FilterValues
         public static string GetSqlUpdate<T>(IQueryable<T> query, DbContext context, T updateValues, List<string> updateColumns) where T : class, new()
         {
             string sqlQuery = query.ToSql();
@@ -55,12 +55,13 @@ namespace EFCore.BulkExtensions
             foreach (var propertyColumn in tableInfo.PropertyColumnNamesDict)
             {
                 var property = updateValuesType.GetProperty(propertyColumn.Key);
+                string prefixN = property.PropertyType.Name == nameof(String) ? "N" : "";
                 var propertyUpdateValue = property.GetValue(updateValues);
                 var propertyDefaultValue = property.GetValue(defaultValues);
                 bool isDifferentFromDefault = propertyUpdateValue?.ToString() != propertyDefaultValue?.ToString();
                 if (isDifferentFromDefault || (updateColumns != null && updateColumns.Contains(propertyColumn.Key)))
                 {
-                    sql += propertyColumn.Value + " = '" + propertyUpdateValue + "'" + ", ";
+                    sql += $"[{ propertyColumn.Value}] = {prefixN}'{propertyUpdateValue}', ";
                 }
             }
             if (String.IsNullOrEmpty(sql))
