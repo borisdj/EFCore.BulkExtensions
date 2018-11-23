@@ -20,7 +20,7 @@ namespace EFCore.BulkExtensions
         // DELETE [a]
         // FROM [Table] AS [a]
         // WHERE [a].[Columns] = FilterValues
-        public static string GetSqlDelete<T>(IQueryable<T> query, DbContext context) where T : class
+        public static string GetSqlDelete<T>(IQueryable<T> query) where T : class
         {
             string sqlQuery = query.ToSql();
             string tableAlias = sqlQuery.Substring(8, 1);

@@ -10,7 +10,7 @@ namespace EFCore.BulkExtensions
         public static int BatchDelete<T>(this IQueryable<T> query) where T : class, new()
         {
             DbContext context = BatchUtil.GetDbContext(query);
-            string sql = BatchUtil.GetSqlDelete(query, context);
+            string sql = BatchUtil.GetSqlDelete(query);
             return context.Database.ExecuteSqlCommand(sql);
         }
 
@@ -26,7 +26,7 @@ namespace EFCore.BulkExtensions
         public static async Task<int> BatchDeleteAsync<T>(this IQueryable<T> query) where T : class, new()
         {
             DbContext context = BatchUtil.GetDbContext(query);
-            string sql = BatchUtil.GetSqlDelete(query, context);
+            string sql = BatchUtil.GetSqlDelete(query);
             return await context.Database.ExecuteSqlCommandAsync(sql);
         }
 
