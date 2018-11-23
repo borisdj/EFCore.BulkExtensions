@@ -67,7 +67,7 @@ It makes Update when PK(PrimaryKey) is matched, otherwise does Insert.<br>
 Those in Db that are not found in the list will be deleted.<br>
 
 **BulkRead** does SELECT and JOIN based on one or more Unique columns that are specified in Config `UpdateByProperties`.<br>
-More info in the Example at the bottom.<br>
+More info in the [Example](https://github.com/borisdj/EFCore.BulkExtensions#read-example) at the bottom.<br>
 
 ## BulkConfig arguments
 
