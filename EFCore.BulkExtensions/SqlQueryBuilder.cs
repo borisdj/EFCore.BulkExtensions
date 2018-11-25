@@ -97,7 +97,7 @@ namespace EFCore.BulkExtensions
                     $"USING {sourceTable} AS S " +
                     $"ON {GetANDSeparatedColumns(primaryKeys, "T", "S", tableInfo.UpdateByPropertiesAreNullable)}";
 
-            if (operationType == OperationType.Insert || operationType == OperationType.InsertOrUpdate)
+            if (operationType == OperationType.Insert || operationType == OperationType.InsertOrUpdate || operationType == OperationType.InsertOrUpdateDelete)
             {
                 q += $" WHEN NOT MATCHED BY TARGET THEN INSERT ({GetCommaSeparatedColumns(insertColumnsNames)})" +
                      $" VALUES ({GetCommaSeparatedColumns(insertColumnsNames, "S")})";
