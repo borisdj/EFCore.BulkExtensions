@@ -80,8 +80,9 @@ namespace EFCore.BulkExtensions
             TempTableSufix = "Temp" + Guid.NewGuid().ToString().Substring(0, 8); // 8 chars of Guid as tableNameSufix to avoid same name collision with other tables
 
             bool AreSpecifiedUpdateByProperties = BulkConfig.UpdateByProperties?.Count() > 0;
-            PrimaryKeys = AreSpecifiedUpdateByProperties ? BulkConfig.UpdateByProperties : entityType.FindPrimaryKey().Properties.Select(a => a.Name).ToList();
-            HasSinglePrimaryKey = PrimaryKeys.Count == 1;
+            var primaryKeys = entityType.FindPrimaryKey().Properties.Select(a => a.Name).ToList();
+            HasSinglePrimaryKey = primaryKeys.Count == 1;
+            PrimaryKeys = AreSpecifiedUpdateByProperties ? BulkConfig.UpdateByProperties : primaryKeys;
 
             var allProperties = entityType.GetProperties().AsEnumerable();
 

@@ -137,7 +137,7 @@ namespace EFCore.BulkExtensions.Tests
                 Assert.Equal("name " + (EntitiesNumber - 1), lastEntity.Name);
             }
         }
-        
+
         private void RunInsertOrUpdate(bool isBulkOperation)
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
