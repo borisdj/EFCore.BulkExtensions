@@ -59,7 +59,8 @@ namespace EFCore.BulkExtensions
             foreach (var propertyNameColumnName in tableInfo.PropertyColumnNamesDict)
             {
                 var property = updateValuesType.GetProperty(propertyNameColumnName.Key);
-                var propertyUpdateValue = property.PropertyType.BaseType.Name == "Enum" ? (int)property.GetValue(updateValues) : property.GetValue(updateValues);
+                bool isEnum = property.PropertyType.BaseType.Name == "Enum";
+                var propertyUpdateValue = isEnum ? (int)property.GetValue(updateValues) : property.GetValue(updateValues);
                 var propertyDefaultValue = property.GetValue(defaultValues);
                 bool isDifferentFromDefault = propertyUpdateValue?.ToString() != propertyDefaultValue?.ToString();
                 if (isDifferentFromDefault || (updateColumns != null && updateColumns.Contains(propertyNameColumnName.Key)))
