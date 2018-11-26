@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
@@ -33,10 +34,10 @@ namespace EFCore.BulkExtensions
         // UPDATE [a] SET [UpdateColumns] = N'updateValues'
         // FROM [Table] AS [a]
         // WHERE [a].[Columns] = FilterValues
-        public static string GetSqlUpdate<T>(IQueryable<T> query, DbContext context, T updateValues, List<string> updateColumns) where T : class, new()
+        public static string GetSqlUpdate<T>(IQueryable<T> query, DbContext context, T updateValues, List<string> updateColumns, List<SqlParameter> parameters) where T : class, new()
         {
             (string sql, string tableAlias) = GetBatchSql(query);
-            string sqlSET = GetSqlSetSegment(context, updateValues, updateColumns);
+            string sqlSET = GetSqlSetSegment(context, updateValues, updateColumns, parameters);
             return $"UPDATE [{tableAlias}] {sqlSET}{sql}";
         }
 
@@ -49,22 +50,22 @@ namespace EFCore.BulkExtensions
             return (sql, tableAlias);
         }
 
-        public static string GetSqlSetSegment<T>(DbContext context, T updateValues, List<string> updateColumns) where T : class, new()
+        public static string GetSqlSetSegment<T>(DbContext context, T updateValues, List<string> updateColumns, List<SqlParameter> parameters) where T : class, new()
         {
             var tableInfo = TableInfo.CreateInstance<T>(context, new List<T>(), OperationType.Read, new BulkConfig());
             string sql = string.Empty;
             Type updateValuesType = typeof(T);
             var defaultValues = new T();
-            foreach (var propertyColumn in tableInfo.PropertyColumnNamesDict)
+            foreach (var propertyNameColumnName in tableInfo.PropertyColumnNamesDict)
             {
-                var property = updateValuesType.GetProperty(propertyColumn.Key);
-                string prefixN = property.PropertyType.Name == nameof(String) ? "N" : "";
-                var propertyUpdateValue = property.GetValue(updateValues);
+                var property = updateValuesType.GetProperty(propertyNameColumnName.Key);
+                var propertyUpdateValue = property.PropertyType.BaseType.Name == "Enum" ? (int)property.GetValue(updateValues) : property.GetValue(updateValues);
                 var propertyDefaultValue = property.GetValue(defaultValues);
                 bool isDifferentFromDefault = propertyUpdateValue?.ToString() != propertyDefaultValue?.ToString();
-                if (isDifferentFromDefault || (updateColumns != null && updateColumns.Contains(propertyColumn.Key)))
+                if (isDifferentFromDefault || (updateColumns != null && updateColumns.Contains(propertyNameColumnName.Key)))
                 {
-                    sql += $"[{ propertyColumn.Value}] = {prefixN}'{propertyUpdateValue}', ";
+                    sql += $"[{ propertyNameColumnName.Value}] = @{propertyNameColumnName.Value}, ";
+                    parameters.Add(new SqlParameter($"@{propertyNameColumnName.Value}", propertyUpdateValue));
                 }
             }
             if (String.IsNullOrEmpty(sql))
