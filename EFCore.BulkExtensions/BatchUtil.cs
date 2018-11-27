@@ -47,6 +47,8 @@ namespace EFCore.BulkExtensions
             string tableAlias = sqlQuery.Substring(8, sqlQuery.IndexOf("]") - 8);
             int indexFROM = sqlQuery.IndexOf(Environment.NewLine);
             string sql = sqlQuery.Substring(indexFROM, sqlQuery.Length - indexFROM);
+            sql = sql.Contains("{") ? sql.Replace("{", "{{") : sql; // Curly brackets have to escaped:
+            sql = sql.Contains("}") ? sql.Replace("}", "}}") : sql; // https://github.com/aspnet/EntityFrameworkCore/issues/8820
             return (sql, tableAlias);
         }
 
