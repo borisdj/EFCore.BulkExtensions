@@ -60,10 +60,20 @@ namespace EFCore.BulkExtensions
             {
                 string propertyName = propertyNameColumnName.Key;
                 string columnName = propertyNameColumnName.Value;
-                var property = updateValuesType.GetProperty(propertyName);
-                bool isEnum = property.PropertyType.BaseType.Name == "Enum";
-                var propertyUpdateValue = isEnum ? (int)property.GetValue(updateValues) : property.GetValue(updateValues);
-                var propertyDefaultValue = property.GetValue(defaultValues);
+                var pArray = propertyName.Split(new char[] { '.' });
+                Type lastType = updateValuesType;
+                PropertyInfo property = lastType.GetProperty(pArray[0]);
+                object propertyUpdateValue = property.GetValue(updateValues);
+                object propertyDefaultValue = property.GetValue(defaultValues);
+                for (int i = 1; i < pArray.Length; i++)
+                {
+                    lastType = property.PropertyType;
+                    property = lastType.GetProperty(pArray[i]);
+                    propertyUpdateValue = property.GetValue(propertyUpdateValue);
+                    var lastDefaultValues = lastType.Assembly.CreateInstance(lastType.FullName);
+                    propertyDefaultValue = property.GetValue(lastDefaultValues);
+                }
+         
                 bool isDifferentFromDefault = propertyUpdateValue?.ToString() != propertyDefaultValue?.ToString();
                 if (isDifferentFromDefault || (updateColumns != null && updateColumns.Contains(propertyName)))
                 {
