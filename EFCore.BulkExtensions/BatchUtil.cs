@@ -69,12 +69,12 @@ namespace EFCore.BulkExtensions
                 {
                     lastType = property.PropertyType;
                     property = lastType.GetProperty(pArray[i]);
-                    propertyUpdateValue = property.GetValue(propertyUpdateValue);
+                    propertyUpdateValue = propertyUpdateValue != null ? property.GetValue(propertyUpdateValue) : propertyUpdateValue;
                     var lastDefaultValues = lastType.Assembly.CreateInstance(lastType.FullName);
                     propertyDefaultValue = property.GetValue(lastDefaultValues);
                 }
-         
-                bool isDifferentFromDefault = propertyUpdateValue?.ToString() != propertyDefaultValue?.ToString();
+
+                bool isDifferentFromDefault = propertyUpdateValue != null && propertyUpdateValue?.ToString() != propertyDefaultValue?.ToString();
                 if (isDifferentFromDefault || (updateColumns != null && updateColumns.Contains(propertyName)))
                 {
                     sql += $"[{columnName}] = @{columnName}, ";
