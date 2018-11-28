@@ -23,7 +23,15 @@ namespace EFCore.BulkExtensions.Tests
 
         public TestContext(DbContextOptions options) : base(options)
         {
-            Database.EnsureCreated();
+            try
+            {
+                Database.EnsureCreated();
+                //var x = new Microsoft.EntityFrameworkCore.SqlServer.Storage.Internal.SqlServerDatabaseCreator();
+            }
+            catch (Exception e)
+            {
+                throw;
+            }
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -49,7 +57,7 @@ namespace EFCore.BulkExtensions.Tests
         {
             var builder = new DbContextOptionsBuilder<TestContext>();
             var databaseName = nameof(EFCoreBulkTest);
-            var connectionString = $"Server=localhost;Database={databaseName};Trusted_Connection=True;MultipleActiveResultSets=true";
+            var connectionString = $"Server=.\\SQLEXPRESS;Database={databaseName};Trusted_Connection=True;MultipleActiveResultSets=true";
             builder.UseSqlServer(connectionString); // Can NOT Test with UseInMemoryDb (Exception: Relational-specific methods can only be used when the context is using a relational)
             return builder.Options;
         }
