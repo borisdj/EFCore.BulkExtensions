@@ -33,7 +33,7 @@ context.BulkRead(entitiesList);                   context.BulkReadAsync(entities
 ```
 **Batch** Extensions are made on *IQueryable* DbSet and can be used as in the following code segment.<br>
 They are done as pure sql and no check is done whether some are prior loaded in memory and are being Tracked.
-(*updateColumns* optional parameter in which PropertyName added explicitly when we need update to it's default value)
+(*updateColumns* is optional parameter in which PropertyNames are added explicitly when we need update to it's default value)
 ```C#
 // Delete
 context.Items.Where(a => a.ItemId >  500).BatchDelete();
@@ -71,7 +71,7 @@ More info in the [Example](https://github.com/borisdj/EFCore.BulkExtensions#read
 
 ## BulkConfig arguments
 
-**BulkInsert** and **BulkInsertOrUpdate** methods can have optional argument **BulkConfig** with properties (bool, int, object, List<string>):<br>
+**BulkInsert_/OrUpdate/OrDelete** methods can have optional argument **BulkConfig** with properties (bool, int, object, List<string>):<br>
 *{ PreserveInsertOrder, SetOutputIdentity, BatchSize, NotifyAfter, BulkCopyTimeout, EnableStreaming, UseTempDB, WithHoldlock, TrackingEntities, CalculateStats, StatsInfo, PropertiesToInclude, PropertiesToExclude, UpdateByProperties, SqlBulkCopyOptions }*<br>
 Default behaviour is { false, false, 2000,  null, null, false, false, true, false, false, null, null, null, null, Default } and if we want to change it, BulkConfig should be added explicitly with one or more bool properties set to true, and/or int props like **BatchSize** to different number.<br>
 When doing update we can chose to exclude one or more properties by adding their names into **PropertiesToExclude**, or if we need to update less then half column then **PropertiesToInclude** can be used. Setting both Lists are not allowed. Additionaly there is **UpdateByProperties** for specifying custom properties, by which we want update to be done.<br>
