@@ -279,7 +279,11 @@ namespace EFCore.BulkExtensions.Tests
                 // ItemHistories will also be deleted because of Relationship - ItemId (Delete Rule: Cascade)
                 if (isBulkOperation)
                 {
-                    context.BulkDelete(entities);
+                    context.BulkDelete(entities, new BulkConfig()
+                    {
+                        GetUnderlyingConnection = GetUnderlyingConnection,
+                        GetUnderlyingTransaction =  GetUnderlyingTransaction
+                    });
                 }
                 else
                 {
