@@ -13,7 +13,7 @@ Package manager console command for installation: *Install-Package EFCore.BulkEx
 ## Contributing
 
 If you find this project useful you can mark it by leaving a Github **\*Star**.</br>
-If you would like to support the Project by making a Donation ($10) #BuyMeBeer, you are welcome to do so:<br>
+If you would like to support the Project by making a Donation ($10) *#BuyMeBeer*, you are welcome to do so:<br>
 [![Donate](https://img.shields.io/badge/donate-PayPal-yellow.svg)](https://www.paypal.me/BorisDjurdjevic/10) or
 [![Donate Bitcoin](https://img.shields.io/badge/donate-Bitcoin-orange.svg)](https://borisdj.github.io/pages/donateBTC.html)<br>
 Please read [CONTRIBUTING](CONTRIBUTING.md) for details on code of conduct, and the process for submitting pull requests.<br>
