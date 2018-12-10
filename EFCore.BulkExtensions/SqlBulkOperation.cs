@@ -395,20 +395,22 @@ namespace EFCore.BulkExtensions
         #region Connection
         internal static SqlConnection OpenAndGetSqlConnection(DbContext context, BulkConfig config)
         {
-            if (context.Database.GetDbConnection().State != ConnectionState.Open)
+            var connection = context.GetUnderlyingConnection(config);
+            if (connection.State != ConnectionState.Open)
             {
-                context.Database.GetDbConnection().Open();
+                connection.Open();
             }
-            return context.GetUnderlyingConnection(config) as SqlConnection;
+            return (SqlConnection)connection;
         }
 
         internal static async Task<SqlConnection> OpenAndGetSqlConnectionAsync(DbContext context, BulkConfig config)
         {
-            if (context.Database.GetDbConnection().State != ConnectionState.Open)
+            var connection = context.GetUnderlyingConnection(config);
+            if (connection.State != ConnectionState.Open)
             {
-                await context.Database.GetDbConnection().OpenAsync().ConfigureAwait(false);
+                await connection.OpenAsync().ConfigureAwait(false);
             }
-            return context.GetUnderlyingConnection(config) as SqlConnection;
+            return (SqlConnection)connection;
         }
 
         private static SqlBulkCopy GetSqlBulkCopy(SqlConnection sqlConnection, IDbContextTransaction transaction, BulkConfig config)

@@ -14,7 +14,7 @@ namespace EFCore.BulkExtensions.Tests
 {
     public class EFCoreBulkUnderlyingTest
     {
-        protected int EntitiesNumber => 100000;
+        protected int EntitiesNumber => 1000;
 
         private static Func<TestContext, int> ItemsCountQuery = EF.CompileQuery<TestContext, int>(ctx => ctx.Items.Count());
         private static Func<TestContext, Item> LastItemQuery = EF.CompileQuery<TestContext, Item>(ctx => ctx.Items.LastOrDefault());
@@ -22,55 +22,22 @@ namespace EFCore.BulkExtensions.Tests
 
         [Theory]
         [InlineData(true)]
-        //[InlineData(false)] // for speed comparison with Regular EF CUD operations
         public void OperationsTest(bool isBulkOperation)
         {
-            //DeletePreviousDatabase();
-
             RunInsert(isBulkOperation);
-            RunInsertOrUpdate(isBulkOperation);
-            RunUpdate(isBulkOperation);
-            RunRead(isBulkOperation);
             RunDelete(isBulkOperation);
-
-            CheckQueryCache();
-        }
-
-        private void DeletePreviousDatabase()
-        {
-            using (var context = new TestContext(GetOptions()))
-            {
-                context.Database.EnsureDeleted();
-            }
-        }
-
-        private void CheckQueryCache()
-        {
-            using (var context = new TestContext(GetOptions()))
-            {
-                var compiledQueryCache = ((MemoryCache)context.GetService<IMemoryCache>());
-
-                Assert.Equal(0, compiledQueryCache.Count);
-            }
-        }
-
-        private void WriteProgress(decimal percentage)
-        {
-            Debug.WriteLine(percentage);
         }
 
         public static DbContextOptions GetOptions()
         {
             var builder = new DbContextOptionsBuilder<TestContext>();
             var databaseName = nameof(EFCoreBulkTest);
-            var connectionString = $"Server=.\\SQLEXPRESS;Database={databaseName};Trusted_Connection=True;MultipleActiveResultSets=true";
-            //builder.UseSqlServer(connectionString);
+            var connectionString = $"Server=localhost;Database={databaseName};Trusted_Connection=True;MultipleActiveResultSets=true";
             var connection = new SqlConnection(connectionString) as DbConnection;
             connection = new MyConnection(connection);
-            builder.UseSqlServer(connection); // Can NOT Test with UseInMemoryDb (Exception: Relational-specific methods can only be used when the context is using a relational)
+            builder.UseSqlServer(connection);
             return builder.Options;
         }
-
 
         private void RunInsert(bool isBulkOperation)
         {
@@ -119,10 +86,9 @@ namespace EFCore.BulkExtensions.Tests
                                 SetOutputIdentity = true,
                                 BatchSize = 4000,
                                 UseTempDB = true,
-                                GetUnderlyingConnection = GetUnderlyingConnection,
-                                GetUnderlyingTransaction = GetUnderlyingTransaction
-                            },
-                            (a) => WriteProgress(a)
+                                UnderlyingConnection = GetUnderlyingConnection,
+                                UnderlyingTransaction = GetUnderlyingTransaction
+                            }
                         );
 
                         foreach (var entity in entities)
@@ -135,7 +101,7 @@ namespace EFCore.BulkExtensions.Tests
                         }
                         context.BulkInsert(subEntities, new BulkConfig()
                         {
-                            GetUnderlyingConnection = GetUnderlyingConnection, GetUnderlyingTransaction = GetUnderlyingTransaction
+                            UnderlyingConnection = GetUnderlyingConnection, UnderlyingTransaction = GetUnderlyingTransaction
                         });
 
                         transaction.Commit();
@@ -159,118 +125,6 @@ namespace EFCore.BulkExtensions.Tests
             }
         }
 
-        private void RunInsertOrUpdate(bool isBulkOperation)
-        {
-            using (var context = new TestContext(GetOptions()))
-            {
-                var entities = new List<Item>();
-                var dateTimeNow = DateTime.Now;
-                for (int i = 2; i <= EntitiesNumber; i += 2)
-                {
-                    entities.Add(new Item
-                    {
-                        ItemId = isBulkOperation ? i : 0,
-                        Name = "name InsertOrUpdate " + i,
-                        Description = "info",
-                        Quantity = i + 100,
-                        Price = i / (i % 5 + 1),
-                        TimeUpdated = dateTimeNow
-                    });
-                }
-                if (isBulkOperation)
-                {
-                    var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true, GetUnderlyingConnection = GetUnderlyingConnection, GetUnderlyingTransaction = GetUnderlyingTransaction};
-                    context.BulkInsertOrUpdate(entities, bulkConfig, (a) => WriteProgress(a));
-                }
-                else
-                {
-                    context.Items.Add(entities[entities.Count - 1]);
-                    context.SaveChanges();
-                }
-            }
-            using (var context = new TestContext(GetOptions()))
-            {
-                int entitiesCount = ItemsCountQuery(context);
-                Item lastEntity = LastItemQuery(context);
-
-                Assert.Equal(EntitiesNumber, entitiesCount);
-                Assert.NotNull(lastEntity);
-                Assert.Equal("name InsertOrUpdate " + EntitiesNumber, lastEntity.Name);
-            }
-        }
-
-        private void RunUpdate(bool isBulkOperation)
-        {
-            using (var context = new TestContext(GetOptions()))
-            {
-                int counter = 1;
-                var entities = AllItemsQuery(context).ToList(); // context.Items.AsNoTracking());
-                foreach (var entity in entities)
-                {
-                    entity.Description = "Desc Update " + counter++;
-                    entity.Quantity = entity.Quantity + 1000; // will not be changed since Quantity property is not in config PropertiesToInclude
-                }
-                if (isBulkOperation)
-                {
-                    context.BulkUpdate(
-                        entities,
-                        new BulkConfig
-                        {
-                            PropertiesToInclude = new List<string> { nameof(Item.Description) },
-                            UpdateByProperties = new List<string> { nameof(Item.Name) }
-                            , GetUnderlyingConnection = GetUnderlyingConnection, GetUnderlyingTransaction = GetUnderlyingTransaction
-                        }
-                    );
-                }
-                else
-                {
-                    context.Items.UpdateRange(entities);
-                    context.SaveChanges();
-                }
-            }
-            using (var context = new TestContext(GetOptions()))
-            {
-                int entitiesCount = ItemsCountQuery(context);
-                Item lastEntity = LastItemQuery(context);
-
-                Assert.Equal(EntitiesNumber, entitiesCount);
-                Assert.NotNull(lastEntity);
-                Assert.Equal("name InsertOrUpdate " + EntitiesNumber, lastEntity.Name);
-            }
-        }
-
-        private void RunRead(bool isBulkOperation)
-        {
-            using (var context = new TestContext(GetOptions()))
-            {
-                var entities = new List<Item>();
-
-                for (int i = 1; i < EntitiesNumber; i++)
-                {
-                    var entity = new Item
-                    {
-                        Name = "name " + i,
-                    };
-                    entities.Add(entity);
-                }
-
-                context.BulkRead(
-                    entities,
-                    new BulkConfig
-                    {
-                        UseTempDB = false,
-                        UpdateByProperties = new List<string> { nameof(Item.Name) }
-                        , GetUnderlyingConnection = GetUnderlyingConnection, GetUnderlyingTransaction = GetUnderlyingTransaction
-                    }
-                );
-
-                Assert.Equal(1, entities[0].ItemId);
-                Assert.Equal(0, entities[1].ItemId);
-                Assert.Equal(3, entities[2].ItemId);
-                Assert.Equal(0, entities[3].ItemId);
-            }
-        }
-
         private void RunDelete(bool isBulkOperation)
         {
             using (var context = new TestContext(GetOptions()))
@@ -281,8 +135,8 @@ namespace EFCore.BulkExtensions.Tests
                 {
                     context.BulkDelete(entities, new BulkConfig()
                     {
-                        GetUnderlyingConnection = GetUnderlyingConnection,
-                        GetUnderlyingTransaction =  GetUnderlyingTransaction
+                        UnderlyingConnection = GetUnderlyingConnection,
+                        UnderlyingTransaction = GetUnderlyingTransaction
                     });
                 }
                 else
@@ -303,8 +157,7 @@ namespace EFCore.BulkExtensions.Tests
             using (var context = new TestContext(GetOptions()))
             {
                 // Resets AutoIncrement
-                context.Database.ExecuteSqlCommand("DBCC CHECKIDENT ('dbo.[" + nameof(Item) + "]', RESEED, 0);"); // can NOT use $"...{nameof(Item)..." because it gets parameterized
-                //context.Database.ExecuteSqlCommand($"TRUNCATE TABLE {nameof(Item)};"); // can NOT work when there is ForeignKey - ItemHistoryId
+                context.Database.ExecuteSqlCommand("DBCC CHECKIDENT ('dbo.[" + nameof(Item) + "]', RESEED, 0);");
             }
         }
 
@@ -322,37 +175,37 @@ namespace EFCore.BulkExtensions.Tests
 
     public class MyConnection : DbConnection
     {
-        public MyConnection(DbConnection underlyingConnection)
-        {
-            this.UnderlyingConection = underlyingConnection;
-        }
-
         public DbConnection UnderlyingConection { get; }
-        public override string ConnectionString { get => UnderlyingConection.ConnectionString;
+
+        public override string Database => UnderlyingConection.Database;
+        public override string DataSource => UnderlyingConection.DataSource;
+        public override string ServerVersion => UnderlyingConection.ServerVersion;
+        public override ConnectionState State => UnderlyingConection.State;
+
+        public override string ConnectionString
+        {
+            get => UnderlyingConection.ConnectionString;
             set => UnderlyingConection.ConnectionString = value;
         }
 
-        public override string Database => UnderlyingConection.Database;
-
-        public override string DataSource => UnderlyingConection.DataSource;
-
-        public override string ServerVersion => UnderlyingConection.ServerVersion;
-
-        public override ConnectionState State => UnderlyingConection.State;
+        public MyConnection(DbConnection underlyingConnection)
+        {
+            UnderlyingConection = underlyingConnection;
+        }
 
         public override void ChangeDatabase(string databaseName)
         {
             UnderlyingConection.ChangeDatabase(databaseName);
         }
 
-        public override void Close()
-        {
-            UnderlyingConection.Close();
-        }
-
         public override void Open()
         {
             UnderlyingConection.Open();
+        }
+
+        public override void Close()
+        {
+            UnderlyingConection.Close();
         }
 
         protected override DbTransaction BeginDbTransaction(IsolationLevel isolationLevel)
@@ -368,26 +221,26 @@ namespace EFCore.BulkExtensions.Tests
 
     class MyTransaction : DbTransaction
     {
-        public MyTransaction(DbTransaction underlyingTransaction, MyConnection connection)
-        {
-            this.UnderlyingTransaction = underlyingTransaction;
-            this.MyConnection = connection;
-        }
-        public override IsolationLevel IsolationLevel => UnderlyingTransaction.IsolationLevel;
-
         public DbTransaction UnderlyingTransaction { get; }
         public MyConnection MyConnection { get; }
 
-        protected override DbConnection DbConnection => this.MyConnection;
+        public override IsolationLevel IsolationLevel => UnderlyingTransaction.IsolationLevel;
+        protected override DbConnection DbConnection => MyConnection;
+
+        public MyTransaction(DbTransaction underlyingTransaction, MyConnection connection)
+        {
+            UnderlyingTransaction = underlyingTransaction;
+            MyConnection = connection;
+        }
 
         public override void Commit()
         {
-            this.UnderlyingTransaction.Commit();
+            UnderlyingTransaction.Commit();
         }
 
         public override void Rollback()
         {
-            this.UnderlyingTransaction.Rollback();
+            UnderlyingTransaction.Rollback();
         }
     }
 
@@ -398,16 +251,16 @@ namespace EFCore.BulkExtensions.Tests
 
         public MyCommand(DbCommand underlyingCommand, MyConnection connection)
         {
-            this.UnderlyingCommand = underlyingCommand;
-            this.MyConnection = connection;
+            UnderlyingCommand = underlyingCommand;
+            MyConnection = connection;
         }
 
-        public override string CommandText { get => this.UnderlyingCommand.CommandText; set => this.UnderlyingCommand.CommandText =value; }
-        public override int CommandTimeout { get => this.UnderlyingCommand.CommandTimeout; set => this.UnderlyingCommand.CommandTimeout = value; }
-        public override CommandType CommandType { get => this.UnderlyingCommand.CommandType; set => this.UnderlyingCommand.CommandType = value; }
-        public override bool DesignTimeVisible { get => this.UnderlyingCommand.DesignTimeVisible; set => this.UnderlyingCommand.DesignTimeVisible = value; }
-        public override UpdateRowSource UpdatedRowSource { get => this.UnderlyingCommand.UpdatedRowSource; set => this.UnderlyingCommand.UpdatedRowSource = value; }
-        protected override DbConnection DbConnection { get => this.MyConnection; set => this.MyConnection = (MyConnection)value; }
+        public override string CommandText { get => UnderlyingCommand.CommandText; set => UnderlyingCommand.CommandText = value; }
+        public override int CommandTimeout { get => UnderlyingCommand.CommandTimeout; set => UnderlyingCommand.CommandTimeout = value; }
+        public override CommandType CommandType { get => UnderlyingCommand.CommandType; set => UnderlyingCommand.CommandType = value; }
+        public override bool DesignTimeVisible { get => UnderlyingCommand.DesignTimeVisible; set => UnderlyingCommand.DesignTimeVisible = value; }
+        public override UpdateRowSource UpdatedRowSource { get => UnderlyingCommand.UpdatedRowSource; set => UnderlyingCommand.UpdatedRowSource = value; }
+        protected override DbConnection DbConnection { get => MyConnection; set => MyConnection = (MyConnection)value; }
 
         protected override DbParameterCollection DbParameterCollection => this.UnderlyingCommand.Parameters;
 
@@ -418,14 +271,14 @@ namespace EFCore.BulkExtensions.Tests
             get => MyTransaction;
             set
             {
-                this.MyTransaction = (MyTransaction)value;
-                UnderlyingCommand.Transaction = this.MyTransaction?.UnderlyingTransaction;
+                MyTransaction = (MyTransaction)value;
+                UnderlyingCommand.Transaction = MyTransaction?.UnderlyingTransaction;
             }
         }
 
         public override void Cancel()
         {
-            this.UnderlyingCommand.Cancel();
+            UnderlyingCommand.Cancel();
         }
 
         public override int ExecuteNonQuery()
@@ -453,7 +306,4 @@ namespace EFCore.BulkExtensions.Tests
             return UnderlyingCommand.ExecuteReader(behavior);
         }
     }
-
-
-
 }
