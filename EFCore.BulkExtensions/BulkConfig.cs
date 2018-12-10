@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.Common;
 using System.Data.SqlClient;
 
 namespace EFCore.BulkExtensions
@@ -33,6 +36,10 @@ namespace EFCore.BulkExtensions
         public List<string> UpdateByProperties { get; set; }
 
         public SqlBulkCopyOptions SqlBulkCopyOptions { get; set; }
+
+        public Func<DbConnection, DbConnection> GetUnderlyingConnection { get; set; }
+        public Func<DbTransaction, DbTransaction> GetUnderlyingTransaction { get; set; }
+
 
         protected bool HasOutput { get; set; }
     }

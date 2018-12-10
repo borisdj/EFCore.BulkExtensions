@@ -27,11 +27,11 @@ namespace EFCore.BulkExtensions
         #region MainOps
         public static void Insert<T>(DbContext context, IList<T> entities, TableInfo tableInfo, Action<decimal> progress)
         {
-            var sqlConnection = OpenAndGetSqlConnection(context);
+            var sqlConnection = OpenAndGetSqlConnection(context, tableInfo.BulkConfig);
             var transaction = context.Database.CurrentTransaction;
             try
             {
-                using (var sqlBulkCopy = GetSqlBulkCopy(sqlConnection, transaction, tableInfo.BulkConfig.SqlBulkCopyOptions))
+                using (var sqlBulkCopy = GetSqlBulkCopy(sqlConnection, transaction, tableInfo.BulkConfig))
                 {
                     bool setColumnMapping = !tableInfo.HasOwnedTypes;
                     tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, setColumnMapping, progress);
@@ -75,11 +75,11 @@ namespace EFCore.BulkExtensions
 
         public static async Task InsertAsync<T>(DbContext context, IList<T> entities, TableInfo tableInfo, Action<decimal> progress)
         {
-            var sqlConnection = await OpenAndGetSqlConnectionAsync(context);
+            var sqlConnection = await OpenAndGetSqlConnectionAsync(context, tableInfo.BulkConfig);
             var transaction = context.Database.CurrentTransaction;
             try
             {
-                using (var sqlBulkCopy = GetSqlBulkCopy(sqlConnection, transaction, tableInfo.BulkConfig.SqlBulkCopyOptions))
+                using (var sqlBulkCopy = GetSqlBulkCopy(sqlConnection, transaction, tableInfo.BulkConfig))
                 {
                     bool setColumnMapping = !tableInfo.HasOwnedTypes;
                     tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, setColumnMapping, progress);
@@ -393,33 +393,34 @@ namespace EFCore.BulkExtensions
         #endregion
 
         #region Connection
-        internal static SqlConnection OpenAndGetSqlConnection(DbContext context)
+        internal static SqlConnection OpenAndGetSqlConnection(DbContext context, BulkConfig config)
         {
             if (context.Database.GetDbConnection().State != ConnectionState.Open)
             {
                 context.Database.GetDbConnection().Open();
             }
-            return context.Database.GetDbConnection() as SqlConnection;
+            return context.GetUnderlyingConnection(config) as SqlConnection;
         }
 
-        internal static async Task<SqlConnection> OpenAndGetSqlConnectionAsync(DbContext context)
+        internal static async Task<SqlConnection> OpenAndGetSqlConnectionAsync(DbContext context, BulkConfig config)
         {
             if (context.Database.GetDbConnection().State != ConnectionState.Open)
             {
                 await context.Database.GetDbConnection().OpenAsync().ConfigureAwait(false);
             }
-            return context.Database.GetDbConnection() as SqlConnection;
+            return context.GetUnderlyingConnection(config) as SqlConnection;
         }
 
-        private static SqlBulkCopy GetSqlBulkCopy(SqlConnection sqlConnection, IDbContextTransaction transaction, SqlBulkCopyOptions sqlBulkCopyOptions = SqlBulkCopyOptions.Default)
+        private static SqlBulkCopy GetSqlBulkCopy(SqlConnection sqlConnection, IDbContextTransaction transaction, BulkConfig config)
         {
+            var sqlBulkCopyOptions = config.SqlBulkCopyOptions;
             if (transaction == null)
             {
                 return new SqlBulkCopy(sqlConnection, sqlBulkCopyOptions, null);
             }
             else
             {
-                var sqlTransaction = (SqlTransaction)transaction.GetDbTransaction();
+                var sqlTransaction = (SqlTransaction)transaction.GetUnderlyingTransaction(config);
                 return new SqlBulkCopy(sqlConnection, sqlBulkCopyOptions, sqlTransaction);
             }
         }
