@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
 	<Title>EFCore.BulkExtensions</Title>
-    <Version>2.3.4</Version>
+    <Version>2.3.5</Version>
     <Authors>borisdj</Authors>
     <Description>EntityFramework EF Core Bulk Batch Extensions for Insert Update Delete and Read (CRUD) operations on SQL Server.</Description>
     <PackageProjectUrl>https://github.com/borisdj/EFCore.BulkExtensions</PackageProjectUrl>
@@ -11,7 +11,7 @@
     <Company />
     <PackageLicenseUrl>https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE</PackageLicenseUrl>
     <PackageTags>EntityFrameworkCore Entity Framework Core EFCore EF Core Bulk Batch Extensions Insert Update Delete Read</PackageTags>
-    <PackageReleaseNotes>Batch Owned type null fix</PackageReleaseNotes>
+    <PackageReleaseNotes>Added Support of Underlying Connection and Transactions</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
