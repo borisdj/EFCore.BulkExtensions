@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using FastMember;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
@@ -89,9 +90,10 @@ namespace EFCore.BulkExtensions
             var allNavigationProperties = entityType.GetNavigations().Where(a => a.GetTargetType().IsOwned());
             HasOwnedTypes = allNavigationProperties.Any();
 
-            // timestamp DbType only set by Db, that's property having [Timestamp] Attribute (IsConcurrencyToken) or configured in in FluentAPI with .HasColumnType("timestamp")
+            // timestamp/row version properties are only set by the Db, the property has a [Timestamp] Attribute or is configured in in FluentAPI with .IsRowVersion()
+            // They can be identified by the columne type "timestamp" or .IsConcurrencyToken in combination with .ValueGenerated == ValueGenerated.OnAddOrUpdate
             string timestampDbTypeName = nameof(TimestampAttribute).Replace("Attribute", "").ToLower(); // = "timestamp";
-            var timeStampProperties = allProperties.Where(a => a.IsConcurrencyToken || a.Relational().ColumnType == timestampDbTypeName);
+            var timeStampProperties = allProperties.Where(a => (a.IsConcurrencyToken && a.ValueGenerated == ValueGenerated.OnAddOrUpdate) || a.Relational().ColumnType == timestampDbTypeName);
             TimeStampColumnName = timeStampProperties.FirstOrDefault()?.Relational().ColumnName; // can be only One
             var properties = allProperties.Except(timeStampProperties);
             properties = properties.Where(a => a.Relational().ComputedColumnSql == null); // a.ValueGenerated == ValueGenerated.OnAddOrUpdate // CONSIDER only Add or only Update
