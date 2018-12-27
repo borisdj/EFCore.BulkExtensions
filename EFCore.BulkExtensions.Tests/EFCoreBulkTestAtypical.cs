@@ -16,6 +16,8 @@ namespace EFCore.BulkExtensions.Tests
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
+                context.BulkDelete(context.Documents.ToList());
+
                 var entities = new List<Document>();
                 for (int i = 0; i < EntitiesNumber; i++)
                 {
@@ -36,7 +38,6 @@ namespace EFCore.BulkExtensions.Tests
             {
                 var entities = context.Documents.ToList();
                 Assert.Equal(EntitiesNumber, entities.Count());
-                context.BulkDelete(entities);
             }
         }
 

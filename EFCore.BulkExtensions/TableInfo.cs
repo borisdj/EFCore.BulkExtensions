@@ -95,10 +95,11 @@ namespace EFCore.BulkExtensions
             string timestampDbTypeName = nameof(TimestampAttribute).Replace("Attribute", "").ToLower(); // = "timestamp";
             var timeStampProperties = allProperties.Where(a => (a.IsConcurrencyToken && a.ValueGenerated == ValueGenerated.OnAddOrUpdate) || a.Relational().ColumnType == timestampDbTypeName);
             TimeStampColumnName = timeStampProperties.FirstOrDefault()?.Relational().ColumnName; // can be only One
-            var properties = allProperties.Except(timeStampProperties);
-            properties = properties.Where(a => a.Relational().ComputedColumnSql == null); // a.ValueGenerated == ValueGenerated.OnAddOrUpdate // CONSIDER only Add or only Update
+            var allPropertiesExceptTimeStamp = allProperties.Except(timeStampProperties);
+            var properties = allPropertiesExceptTimeStamp.Where(a => a.Relational().ComputedColumnSql == null);
 
-            OutputPropertyColumnNamesDict = allProperties.ToDictionary(a => a.Name, b => b.Relational().ColumnName);
+            // TimeStamp prop. is last column in OutputTable since it is added later with varbinary(8) type in which Output can be inserted
+            OutputPropertyColumnNamesDict = allPropertiesExceptTimeStamp.Concat(timeStampProperties).ToDictionary(a => a.Name, b => b.Relational().ColumnName);
 
             bool AreSpecifiedPropertiesToInclude = BulkConfig.PropertiesToInclude?.Count() > 0;
             bool AreSpecifiedPropertiesToExclude = BulkConfig.PropertiesToExclude?.Count() > 0;
