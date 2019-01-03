@@ -1,8 +1,11 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
+using System.Text;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
 using Microsoft.EntityFrameworkCore.Query;
@@ -103,6 +106,88 @@ namespace EFCore.BulkExtensions
             var stateManager = (IStateManager)stateManagerProperty;
 
             return stateManager.Context;
+        }
+
+        /// <summary>
+        /// get Update Sql
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="query"></param>
+        /// <param name="expression"></param>
+        /// <returns></returns>
+        public static (string, List<SqlParameter>) GetSqlUpdate<T>(IQueryable<T> query, Expression<Func<T, bool>> expression) where T : class, new()
+        {
+            (string sql, string tableAlias) = GetBatchSql(query);
+            var sb = new StringBuilder();
+            var sp = new List<SqlParameter>();
+            var dic = TableInfo.CreateInstance(GetDbContext(query), new List<T>(), OperationType.Read, new BulkConfig()).PropertyColumnNamesDict;
+            CreateUpdateBody(dic, tableAlias, expression.Body, ref sb, ref sp);
+            return ($"UPDATE [{tableAlias}] SET {sb.ToString()} {sql}", sp);
+        }
+
+        /// <summary>
+        /// Recursive analytic expression 
+        /// </summary>
+        /// <param name="tableAlias"></param>
+        /// <param name="expression"></param>
+        /// <param name="sb"></param>
+        /// <param name="sp"></param>
+        public static void CreateUpdateBody(Dictionary<string, string> dic, string tableAlias, Expression expression, ref StringBuilder sb, ref List<SqlParameter> sp)
+        {
+
+            if (expression is BinaryExpression binaryExpression)
+            {
+                CreateUpdateBody(dic, tableAlias, binaryExpression.Left, ref sb, ref sp);
+
+                switch (binaryExpression.NodeType)
+                {
+                    case ExpressionType.Add:
+                        sb.Append(" +");
+                        break;
+                    case ExpressionType.Divide:
+                        sb.Append(" /");
+                        break;
+                    case ExpressionType.Multiply:
+                        sb.Append(" *");
+                        break;
+                    case ExpressionType.Subtract:
+                        sb.Append(" -");
+                        break;
+                    case ExpressionType.And:
+                        sb.Append(" ,");
+                        break;
+                    case ExpressionType.AndAlso:
+                        sb.Append(" ,");
+                        break;
+                    case ExpressionType.Or:
+                        sb.Append(" ,");
+                        break;
+                    case ExpressionType.OrElse:
+                        sb.Append(" ,");
+                        break;
+                    case ExpressionType.Equal:
+                        sb.Append(" =");
+                        break;
+                    default: break;
+                }
+
+                CreateUpdateBody(dic, tableAlias, binaryExpression.Right, ref sb, ref sp);
+            }
+
+            if (expression is ConstantExpression constantExpression)
+            {
+                var parmName = $"param_{sp.Count}";
+                sp.Add(new SqlParameter(parmName, constantExpression.Value));
+                sb.Append($" @{parmName}");
+            }
+
+            if (expression is MemberExpression memberExpression)
+            {
+                if (dic.TryGetValue(memberExpression.Member.Name, out string value))
+                    sb.Append($"[{tableAlias}].[{value}]");
+                else
+                    sb.Append($"[{tableAlias}].[{memberExpression.Member.Name}]");
+            }
         }
     }
 }
