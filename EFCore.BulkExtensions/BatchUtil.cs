@@ -115,7 +115,7 @@ namespace EFCore.BulkExtensions
         /// <param name="query"></param>
         /// <param name="expression"></param>
         /// <returns></returns>
-        public static (string, List<SqlParameter>) GetSqlUpdate<T>(IQueryable<T> query, Expression<Func<T, bool>> expression) where T : class, new()
+        public static (string, List<SqlParameter>) GetSqlUpdate<T>(IQueryable<T> query, Expression<Func<T, T>> expression) where T : class, new()
         {
             (string sql, string tableAlias) = GetBatchSql(query);
             var sb = new StringBuilder();
@@ -132,8 +132,58 @@ namespace EFCore.BulkExtensions
         /// <param name="expression"></param>
         /// <param name="sb"></param>
         /// <param name="sp"></param>
-        public static void CreateUpdateBody(Dictionary<string, string> dic, string tableAlias, Expression expression, ref StringBuilder sb, ref List<SqlParameter> sp)
+      public static void CreateUpdateBody(Dictionary<string, string> dic, string tableAlias, Expression expression, ref StringBuilder sb, ref List<SqlParameter> sp)
         {
+            if (expression is MemberInitExpression memberInitExpression)
+            {
+                foreach (var item in memberInitExpression.Bindings)
+                {
+                    if (item is MemberAssignment assignment)
+                    {
+                        if (dic.TryGetValue(assignment.Member.Name, out string value))
+                            sb.Append($" [{tableAlias}].[{value}]");
+                        else
+                            sb.Append($" [{tableAlias}].[{assignment.Member.Name}]");
+
+                        sb.Append(" =");
+
+                        CreateUpdateBody(dic, tableAlias, assignment.Expression, ref sb, ref sp);
+
+                        if (memberInitExpression.Bindings.IndexOf(item) < (memberInitExpression.Bindings.Count - 1))
+                            sb.Append(" ,");
+                    }
+                }
+            }
+
+            if (expression is MemberExpression memberExpression)
+            {
+                if (dic.TryGetValue(memberExpression.Member.Name, out string value))
+                    sb.Append($" [{tableAlias}].[{value}]");
+                else
+                    sb.Append($" [{tableAlias}].[{memberExpression.Member.Name}]");
+            }
+
+            if (expression is ConstantExpression constantExpression)
+            {
+                var parmName = $"param_{sp.Count}";
+                sp.Add(new SqlParameter(parmName, constantExpression.Value));
+                sb.Append($" @{parmName}");
+            }
+
+            if (expression is UnaryExpression unaryExpression)
+            {
+                switch (unaryExpression.NodeType)
+                {
+                    case ExpressionType.Convert:
+                        CreateUpdateBody(dic,tableAlias, unaryExpression.Operand, ref sb, ref sp);
+                        break;
+                    case ExpressionType.Not:
+                        sb.Append(" ~");//this way only for SQL Server 
+                        CreateUpdateBody(dic,tableAlias, unaryExpression.Operand, ref sb, ref sp);
+                        break;
+                    default: break;
+                }
+            }
 
             if (expression is BinaryExpression binaryExpression)
             {
@@ -153,41 +203,12 @@ namespace EFCore.BulkExtensions
                     case ExpressionType.Subtract:
                         sb.Append(" -");
                         break;
-                    case ExpressionType.And:
-                        sb.Append(" ,");
-                        break;
-                    case ExpressionType.AndAlso:
-                        sb.Append(" ,");
-                        break;
-                    case ExpressionType.Or:
-                        sb.Append(" ,");
-                        break;
-                    case ExpressionType.OrElse:
-                        sb.Append(" ,");
-                        break;
-                    case ExpressionType.Equal:
-                        sb.Append(" =");
-                        break;
                     default: break;
                 }
 
                 CreateUpdateBody(dic, tableAlias, binaryExpression.Right, ref sb, ref sp);
             }
-
-            if (expression is ConstantExpression constantExpression)
-            {
-                var parmName = $"param_{sp.Count}";
-                sp.Add(new SqlParameter(parmName, constantExpression.Value));
-                sb.Append($" @{parmName}");
-            }
-
-            if (expression is MemberExpression memberExpression)
-            {
-                if (dic.TryGetValue(memberExpression.Member.Name, out string value))
-                    sb.Append($"[{tableAlias}].[{value}]");
-                else
-                    sb.Append($"[{tableAlias}].[{memberExpression.Member.Name}]");
-            }
         }
+   
     }
 }
