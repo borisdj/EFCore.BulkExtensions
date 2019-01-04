@@ -26,13 +26,9 @@ namespace EFCore.BulkExtensions.Tests
                         Content = "Some data " + i,
                     });
                 }
-                context.BulkInsert(
-                    entities,
-                        new BulkConfig
-                        {
-                            SetOutputIdentity = true
-                        }
-                    );
+
+                //context.BulkInsert(entities, new BulkConfig { SetOutputIdentity = true });
+                context.BulkInsert(entities, option => option.SetOutputIdentity = true); // example of setting BulkConfig with Action argument
             }
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {

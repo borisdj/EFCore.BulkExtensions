@@ -20,8 +20,10 @@ namespace EFCore.BulkExtensions.Tests
 
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
-                Assert.Equal(500, context.Items.LastOrDefault().ItemId);
-                Assert.Equal("Updated", context.Items.LastOrDefault().Description);
+                var lastItem = context.Items.LastOrDefault();
+                Assert.Equal(500, lastItem.ItemId);
+                Assert.Equal("Updated", lastItem.Description);
+                Assert.Equal(100, lastItem.Quantity);
             }
 
             RunBatchDeleteAll();
@@ -44,7 +46,11 @@ namespace EFCore.BulkExtensions.Tests
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 //var updateColumns = new List<string> { nameof(Item.Quantity) }; // Adding explicitly PropertyName for update to its default value
-                context.Items.Where(a => a.ItemId <= 500 && a.Price >= 0).BatchUpdate(new Item { Description = "Updated", Price = 1.5m }/*, updateColumns*/);
+
+                var query = context.Items.Where(a => a.ItemId <= 500 && a.Price >= 0);
+                query.BatchUpdate(new Item { Description = "Updated", Price = 1.5m }/*, updateColumns*/);
+
+                query.BatchUpdate(a => new Item { Quantity = a.Quantity + 100 }); // example of BatchUpdate value Increment/Decrement
             }
         }
 
