@@ -25,8 +25,6 @@ namespace EFCore.BulkExtensions.Tests
                 Assert.Equal("Updated", lastItem.Description);
                 Assert.Equal(100, lastItem.Quantity);
             }
-
-            RunBatchDeleteAll();
         }
 
         private void RunBatchDeleteAll()
