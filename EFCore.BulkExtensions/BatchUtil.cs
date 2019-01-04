@@ -5,7 +5,6 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
 using Microsoft.EntityFrameworkCore.Query;
@@ -37,11 +36,29 @@ namespace EFCore.BulkExtensions
         // UPDATE [a] SET [UpdateColumns] = N'updateValues'
         // FROM [Table] AS [a]
         // WHERE [a].[Columns] = FilterValues
-        public static string GetSqlUpdate<T>(IQueryable<T> query, DbContext context, T updateValues, List<string> updateColumns, List<SqlParameter> parameters) where T : class, new()
+        public static (string, List<SqlParameter>) GetSqlUpdate<T>(IQueryable<T> query, DbContext context, T updateValues, List<string> updateColumns) where T : class, new()
         {
             (string sql, string tableAlias) = GetBatchSql(query);
-            string sqlSET = GetSqlSetSegment(context, updateValues, updateColumns, parameters);
-            return $"UPDATE [{tableAlias}] {sqlSET}{sql}";
+            var sqlParameters = new List<SqlParameter>();
+            string sqlSET = GetSqlSetSegment(context, updateValues, updateColumns, sqlParameters);
+            return ($"UPDATE [{tableAlias}] {sqlSET}{sql}", sqlParameters);
+        }
+
+        /// <summary>
+        /// get Update Sql
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="query"></param>
+        /// <param name="expression"></param>
+        /// <returns></returns>
+        public static (string, List<SqlParameter>) GetSqlUpdate<T>(IQueryable<T> query, Expression<Func<T, T>> expression) where T : class, new()
+        {
+            (string sql, string tableAlias) = GetBatchSql(query);
+            var sqlColumns = new StringBuilder();
+            var sqlParameters = new List<SqlParameter>();
+            var columnNameValueDict = TableInfo.CreateInstance(GetDbContext(query), new List<T>(), OperationType.Read, new BulkConfig()).PropertyColumnNamesDict;
+            CreateUpdateBody(columnNameValueDict, tableAlias, expression.Body, ref sqlColumns, ref sqlParameters);
+            return ($"UPDATE [{tableAlias}] SET {sqlColumns.ToString()} {sql}", sqlParameters);
         }
 
         public static (string, string) GetBatchSql<T>(IQueryable<T> query) where T : class, new()
@@ -94,6 +111,91 @@ namespace EFCore.BulkExtensions
             return $"SET {sql}";
         }
 
+        /// <summary>
+        /// Recursive analytic expression 
+        /// </summary>
+        /// <param name="tableAlias"></param>
+        /// <param name="expression"></param>
+        /// <param name="sqlColumns"></param>
+        /// <param name="sqlParameters"></param>
+        public static void CreateUpdateBody(Dictionary<string, string> columnNameValueDict, string tableAlias, Expression expression, ref StringBuilder sqlColumns, ref List<SqlParameter> sqlParameters)
+        {
+            if (expression is MemberInitExpression memberInitExpression)
+            {
+                foreach (var item in memberInitExpression.Bindings)
+                {
+                    if (item is MemberAssignment assignment)
+                    {
+                        if (columnNameValueDict.TryGetValue(assignment.Member.Name, out string value))
+                            sqlColumns.Append($" [{tableAlias}].[{value}]");
+                        else
+                            sqlColumns.Append($" [{tableAlias}].[{assignment.Member.Name}]");
+
+                        sqlColumns.Append(" =");
+
+                        CreateUpdateBody(columnNameValueDict, tableAlias, assignment.Expression, ref sqlColumns, ref sqlParameters);
+
+                        if (memberInitExpression.Bindings.IndexOf(item) < (memberInitExpression.Bindings.Count - 1))
+                            sqlColumns.Append(" ,");
+                    }
+                }
+            }
+
+            if (expression is MemberExpression memberExpression)
+            {
+                if (columnNameValueDict.TryGetValue(memberExpression.Member.Name, out string value))
+                    sqlColumns.Append($" [{tableAlias}].[{value}]");
+                else
+                    sqlColumns.Append($" [{tableAlias}].[{memberExpression.Member.Name}]");
+            }
+
+            if (expression is ConstantExpression constantExpression)
+            {
+                var parmName = $"param_{sqlParameters.Count}";
+                sqlParameters.Add(new SqlParameter(parmName, constantExpression.Value));
+                sqlColumns.Append($" @{parmName}");
+            }
+
+            if (expression is UnaryExpression unaryExpression)
+            {
+                switch (unaryExpression.NodeType)
+                {
+                    case ExpressionType.Convert:
+                        CreateUpdateBody(columnNameValueDict,tableAlias, unaryExpression.Operand, ref sqlColumns, ref sqlParameters);
+                        break;
+                    case ExpressionType.Not:
+                        sqlColumns.Append(" ~");//this way only for SQL Server 
+                        CreateUpdateBody(columnNameValueDict,tableAlias, unaryExpression.Operand, ref sqlColumns, ref sqlParameters);
+                        break;
+                    default: break;
+                }
+            }
+
+            if (expression is BinaryExpression binaryExpression)
+            {
+                CreateUpdateBody(columnNameValueDict, tableAlias, binaryExpression.Left, ref sqlColumns, ref sqlParameters);
+
+                switch (binaryExpression.NodeType)
+                {
+                    case ExpressionType.Add:
+                        sqlColumns.Append(" +");
+                        break;
+                    case ExpressionType.Divide:
+                        sqlColumns.Append(" /");
+                        break;
+                    case ExpressionType.Multiply:
+                        sqlColumns.Append(" *");
+                        break;
+                    case ExpressionType.Subtract:
+                        sqlColumns.Append(" -");
+                        break;
+                    default: break;
+                }
+
+                CreateUpdateBody(columnNameValueDict, tableAlias, binaryExpression.Right, ref sqlColumns, ref sqlParameters);
+            }
+        }
+
         public static DbContext GetDbContext(IQueryable query)
         {
             var bindingFlags = BindingFlags.NonPublic | BindingFlags.Instance;
@@ -107,108 +209,5 @@ namespace EFCore.BulkExtensions
 
             return stateManager.Context;
         }
-
-        /// <summary>
-        /// get Update Sql
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="query"></param>
-        /// <param name="expression"></param>
-        /// <returns></returns>
-        public static (string, List<SqlParameter>) GetSqlUpdate<T>(IQueryable<T> query, Expression<Func<T, T>> expression) where T : class, new()
-        {
-            (string sql, string tableAlias) = GetBatchSql(query);
-            var sb = new StringBuilder();
-            var sp = new List<SqlParameter>();
-            var dic = TableInfo.CreateInstance(GetDbContext(query), new List<T>(), OperationType.Read, new BulkConfig()).PropertyColumnNamesDict;
-            CreateUpdateBody(dic, tableAlias, expression.Body, ref sb, ref sp);
-            return ($"UPDATE [{tableAlias}] SET {sb.ToString()} {sql}", sp);
-        }
-
-        /// <summary>
-        /// Recursive analytic expression 
-        /// </summary>
-        /// <param name="tableAlias"></param>
-        /// <param name="expression"></param>
-        /// <param name="sb"></param>
-        /// <param name="sp"></param>
-      public static void CreateUpdateBody(Dictionary<string, string> dic, string tableAlias, Expression expression, ref StringBuilder sb, ref List<SqlParameter> sp)
-        {
-            if (expression is MemberInitExpression memberInitExpression)
-            {
-                foreach (var item in memberInitExpression.Bindings)
-                {
-                    if (item is MemberAssignment assignment)
-                    {
-                        if (dic.TryGetValue(assignment.Member.Name, out string value))
-                            sb.Append($" [{tableAlias}].[{value}]");
-                        else
-                            sb.Append($" [{tableAlias}].[{assignment.Member.Name}]");
-
-                        sb.Append(" =");
-
-                        CreateUpdateBody(dic, tableAlias, assignment.Expression, ref sb, ref sp);
-
-                        if (memberInitExpression.Bindings.IndexOf(item) < (memberInitExpression.Bindings.Count - 1))
-                            sb.Append(" ,");
-                    }
-                }
-            }
-
-            if (expression is MemberExpression memberExpression)
-            {
-                if (dic.TryGetValue(memberExpression.Member.Name, out string value))
-                    sb.Append($" [{tableAlias}].[{value}]");
-                else
-                    sb.Append($" [{tableAlias}].[{memberExpression.Member.Name}]");
-            }
-
-            if (expression is ConstantExpression constantExpression)
-            {
-                var parmName = $"param_{sp.Count}";
-                sp.Add(new SqlParameter(parmName, constantExpression.Value));
-                sb.Append($" @{parmName}");
-            }
-
-            if (expression is UnaryExpression unaryExpression)
-            {
-                switch (unaryExpression.NodeType)
-                {
-                    case ExpressionType.Convert:
-                        CreateUpdateBody(dic,tableAlias, unaryExpression.Operand, ref sb, ref sp);
-                        break;
-                    case ExpressionType.Not:
-                        sb.Append(" ~");//this way only for SQL Server 
-                        CreateUpdateBody(dic,tableAlias, unaryExpression.Operand, ref sb, ref sp);
-                        break;
-                    default: break;
-                }
-            }
-
-            if (expression is BinaryExpression binaryExpression)
-            {
-                CreateUpdateBody(dic, tableAlias, binaryExpression.Left, ref sb, ref sp);
-
-                switch (binaryExpression.NodeType)
-                {
-                    case ExpressionType.Add:
-                        sb.Append(" +");
-                        break;
-                    case ExpressionType.Divide:
-                        sb.Append(" /");
-                        break;
-                    case ExpressionType.Multiply:
-                        sb.Append(" *");
-                        break;
-                    case ExpressionType.Subtract:
-                        sb.Append(" -");
-                        break;
-                    default: break;
-                }
-
-                CreateUpdateBody(dic, tableAlias, binaryExpression.Right, ref sb, ref sp);
-            }
-        }
-   
     }
 }
