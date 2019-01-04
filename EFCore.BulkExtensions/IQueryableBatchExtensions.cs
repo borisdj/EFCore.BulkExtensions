@@ -26,7 +26,7 @@ namespace EFCore.BulkExtensions
         }
 
 
-        public static int BatchUpdate<T>(this IQueryable<T> query, Expression<Func<T, bool>> updateExpression) where T : class, new()
+        public static int BatchUpdate<T>(this IQueryable<T> query, Expression<Func<T, T>> updateExpression) where T : class, new()
         {
             var context = BatchUtil.GetDbContext(query);
             var (sql, sp) = BatchUtil.GetSqlUpdate(query, updateExpression);
@@ -50,7 +50,7 @@ namespace EFCore.BulkExtensions
             return await context.Database.ExecuteSqlCommandAsync(sql, parameters.ToArray());
         }
 
-        public static async Task<int> BatchUpdateAsync<T>(this IQueryable<T> query, Expression<Func<T, bool>> updateExpression) where T : class, new()
+        public static async Task<int> BatchUpdateAsync<T>(this IQueryable<T> query, Expression<Func<T, T>> updateExpression) where T : class, new()
         {
             var context = BatchUtil.GetDbContext(query);
             var (sql, sp) = BatchUtil.GetSqlUpdate(query, updateExpression);
