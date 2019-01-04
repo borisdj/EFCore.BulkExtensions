@@ -41,6 +41,8 @@ context.Items.Where(a => a.ItemId >  500).BatchDeleteAsync();
 // Update
 context.Items.Where(a => a.ItemId <= 500).BatchUpdate(new Item { Description = "Updated" });
 context.Items.Where(a => a.ItemId <= 500).BatchUpdateAsync(new Item { Description = "Updated" });
+// Update Increment/Decrement (Expression arg.)
+context.Items.Where(a => a.ItemId <= 500).BatchUpdate(a => new Item { Quantity = a.Quantity + 100 });
 
 var updateColumns = new List<string> { nameof(Item.Quantity) }; // Update 'Quantity' to default value ('0'-zero)
 var q = context.Items.Where(a => a.ItemId <= 500);
@@ -80,6 +82,7 @@ _PreserveInsertOrder_ and _SetOutputIdentity_ have purpose only when PK has Iden
 ```C#
 context.BulkInsert(entList, new BulkConfig {PreserveInsertOrder= true, SetOutputIdentity= true, BatchSize= 4000});
 context.BulkInsertOrUpdate(entList, new BulkConfig { PreserveInsertOrder = true });
+context.BulkInsertOrUpdate(entList, b => b.SetOutputIdentity = true); // example BulkConfig set with Action arg.
 ```
 
 **PreserveInsertOrder** makes sure that entites are inserted to Db as they are ordered in entitiesList.<br>
