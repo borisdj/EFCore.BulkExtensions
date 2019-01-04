@@ -82,7 +82,7 @@ _PreserveInsertOrder_ and _SetOutputIdentity_ have purpose only when PK has Iden
 ```C#
 context.BulkInsert(entList, new BulkConfig {PreserveInsertOrder= true, SetOutputIdentity= true, BatchSize= 4000});
 context.BulkInsertOrUpdate(entList, new BulkConfig { PreserveInsertOrder = true });
-context.BulkInsertOrUpdate(entList, b => b.SetOutputIdentity = true); // example of BulkConfig set with Action arg.
+context.BulkInsertOrUpdate(entList, b => b.SetOutputIdentity = true); // example BulkConfig set with Action arg.
 ```
 
 **PreserveInsertOrder** makes sure that entites are inserted to Db as they are ordered in entitiesList.<br>
