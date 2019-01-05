@@ -58,9 +58,8 @@ namespace EFCore.BulkExtensions
             bool isExplicitTransaction = context.Database.GetDbConnection().State == ConnectionState.Open;
             if (tableInfo.BulkConfig.UseTempDB == true && !isExplicitTransaction && (operationType != OperationType.Insert || tableInfo.BulkConfig.SetOutputIdentity))
             {
-                tableInfo.BulkConfig.UseTempDB = false;
-                // If BulkOps is not in explicit transaction then tempdb[#] can only be used with Insert, other Operations done with customTemp table.
-                // Otherwise throws exception: 'Cannot access destination table' (gets Droped too early because transaction ends before operation is finished)
+                throw new InvalidOperationException("UseTempDB when set then BulkOperation has to be inside Transaction. More info in README of the library in GitHub.");
+                // Otherwise throws exception: 'Cannot access destination table' (gets Dropped too early because transaction ends before operation is finished)
             }
 
             var isDeleteOperation = operationType == OperationType.Delete;
