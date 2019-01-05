@@ -236,7 +236,6 @@ namespace EFCore.BulkExtensions.Tests
                     entities,
                     new BulkConfig
                     {
-                        UseTempDB = false,
                         UpdateByProperties = new List<string> { nameof(Item.Name) }
                     }
                 );
