@@ -4,4 +4,5 @@ dotnet: 2.1.0
 dist: trusty
 script:
  - cd EFCore.BulkExtensions
- - dotnet test
+ - dotnet restore
+ - dotnet build
