@@ -43,6 +43,7 @@ context.Items.Where(a => a.ItemId <= 500).BatchUpdate(new Item { Description = "
 context.Items.Where(a => a.ItemId <= 500).BatchUpdateAsync(new Item { Description = "Updated" });
 // Update Increment/Decrement (Expression arg.)
 context.Items.Where(a => a.ItemId <= 500).BatchUpdate(a => new Item { Quantity = a.Quantity + 100 });
+  // can be as value '+100' or as varible '+incrementStep'(int incrementStep = 100;)
 
 var updateColumns = new List<string> { nameof(Item.Quantity) }; // Update 'Quantity' to default value ('0'-zero)
 var q = context.Items.Where(a => a.ItemId <= 500);
