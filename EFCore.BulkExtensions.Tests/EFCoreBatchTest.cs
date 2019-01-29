@@ -48,7 +48,9 @@ namespace EFCore.BulkExtensions.Tests
                 var query = context.Items.Where(a => a.ItemId <= 500 && a.Price >= 0);
                 query.BatchUpdate(new Item { Description = "Updated", Price = 1.5m }/*, updateColumns*/);
 
-                query.BatchUpdate(a => new Item { Quantity = a.Quantity + 100 }); // example of BatchUpdate value Increment/Decrement
+                var incrementStep = 100;
+                query.BatchUpdate(a => new Item { Quantity = a.Quantity + incrementStep }); // example of BatchUpdate Increment/Decrement value in variable
+                //query.BatchUpdate(a => new Item { Quantity = a.Quantity + 100 }); // example direct value without variable
             }
         }
 
