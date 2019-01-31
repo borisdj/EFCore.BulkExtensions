@@ -54,6 +54,12 @@ namespace EFCore.BulkExtensions
             return q;
         }
 
+        public static string CheckTableExist(string fullTableName)
+        {
+            var q = $"IF OBJECT_ID ('{fullTableName}', 'U') IS NOT NULL SELECT 1 AS res ELSE SELECT 0 AS res;";
+            return q;
+        }
+
         public static string SelectJoinTable(TableInfo tableInfo)
         {
             string sourceTable = tableInfo.FullTableName;

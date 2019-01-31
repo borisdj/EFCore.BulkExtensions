@@ -59,7 +59,11 @@ namespace EFCore.BulkExtensions
                         }
                         if (ex.Message.Contains(ColumnMappingExceptionMessage))
                         {
-                            context.Database.ExecuteSqlCommand(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo)); // Will throw Exception specify missing db column: Invalid column name ''
+                            if (!tableInfo.CheckTableExist(context, tableInfo.FullTempTableName))
+                            {
+                                context.Database.ExecuteSqlCommand(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo)); // Will throw Exception specify missing db column: Invalid column name ''
+                                context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName));
+                            }
                         }
                         throw ex;
                     }
@@ -108,7 +112,11 @@ namespace EFCore.BulkExtensions
                         }
                         if (ex.Message.Contains(ColumnMappingExceptionMessage))
                         {
-                            await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo));
+                            if (!await tableInfo.CheckTableExistAsync(context, tableInfo.FullTempTableName))
+                            {
+                                await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo));
+                                await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName));
+                            }
                         }
                         throw ex;
                     }

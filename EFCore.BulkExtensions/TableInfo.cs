@@ -293,6 +293,80 @@ namespace EFCore.BulkExtensions
             HasIdentity = hasIdentity == 1;
         }
 
+        public bool CheckTableExist(DbContext context, string tableName)
+        {
+            bool tableExist = false;
+            var sqlConnection = context.Database.GetDbConnection();
+            var currentTransaction = context.Database.CurrentTransaction;
+            try
+            {
+                if (currentTransaction == null)
+                {
+                    if (sqlConnection.State != ConnectionState.Open)
+                        sqlConnection.Open();
+                }
+                using (var command = sqlConnection.CreateCommand())
+                {
+                    if (currentTransaction != null)
+                        command.Transaction = currentTransaction.GetDbTransaction();
+                    command.CommandText = SqlQueryBuilder.CheckTableExist(tableName);
+                    using (var reader = command.ExecuteReader())
+                    {
+                        if (reader.HasRows)
+                        {
+                            while (reader.Read())
+                            {
+                                tableExist = (int)reader[0] == 1;
+                            }
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                if (currentTransaction == null)
+                    sqlConnection.Close();
+            }
+            return tableExist;
+        }
+
+        public async Task<bool> CheckTableExistAsync(DbContext context, string tableName)
+        {
+            bool tableExist = false;
+            var sqlConnection = context.Database.GetDbConnection();
+            var currentTransaction = context.Database.CurrentTransaction;
+            try
+            {
+                if (currentTransaction == null)
+                {
+                    if (sqlConnection.State != ConnectionState.Open)
+                        await sqlConnection.OpenAsync().ConfigureAwait(false); ;
+                }
+                using (var command = sqlConnection.CreateCommand())
+                {
+                    if (currentTransaction != null)
+                        command.Transaction = currentTransaction.GetDbTransaction();
+                    command.CommandText = SqlQueryBuilder.CheckTableExist(tableName);
+                    using (var reader = await command.ExecuteReaderAsync().ConfigureAwait(false))
+                    {
+                        if (reader.HasRows)
+                        {
+                            while (await reader.ReadAsync().ConfigureAwait(false))
+                            {
+                                tableExist = (int)reader[0] == 1;
+                            }
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                if (currentTransaction == null)
+                    sqlConnection.Close();
+            }
+            return tableExist;
+        }
+
         protected int GetNumberUpdated(DbContext context)
         {
             var resultParameter = new SqlParameter("@result", SqlDbType.Int) { Direction = ParameterDirection.Output };
