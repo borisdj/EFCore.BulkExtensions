@@ -33,7 +33,9 @@ namespace EFCore.BulkExtensions
             {
                 using (var sqlBulkCopy = GetSqlBulkCopy(sqlConnection, transaction, tableInfo.BulkConfig))
                 {
-                    bool useFastMember = !tableInfo.HasOwnedTypes && tableInfo.ShadowProperties.Count == 0;
+                    bool useFastMember = tableInfo.HasOwnedTypes == false                       // With OwnedTypes DataTable is used since library FastMember can not (https://github.com/mgravell/fast-member/issues/21)
+                                         && tableInfo.ShadowProperties.Count == 0               // With Discriminator (TPH inheritance) also because FastMember is slow for Update (https://github.com/borisdj/EFCore.BulkExtensions/pull/17)
+                                         && tableInfo.ColumnNameContainsSquareBracket == false; // FastMember does not support escaped columnNames  ] -> ]]
                     bool setColumnMapping = useFastMember;
                     tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, setColumnMapping, progress);
                     try
@@ -45,8 +47,8 @@ namespace EFCore.BulkExtensions
                                 sqlBulkCopy.WriteToServer(reader);
                             }
                         }
-                        else // With OwnedTypes DataTable is used since library FastMember can not (https://github.com/mgravell/fast-member/issues/21)
-                        {    // With Discriminator (TPH inheritance) also because FastMember is slow for Update (https://github.com/borisdj/EFCore.BulkExtensions/pull/17)
+                        else
+                        {
                             var dataTable = GetDataTable<T>(context, entities, sqlBulkCopy, tableInfo);
                             sqlBulkCopy.WriteToServer(dataTable);
                         }
@@ -59,7 +61,7 @@ namespace EFCore.BulkExtensions
                         }
                         if (ex.Message.Contains(ColumnMappingExceptionMessage))
                         {
-                            if (!tableInfo.CheckTableExist(context, tableInfo.FullTempTableName))
+                            if (!tableInfo.CheckTableExist(context, tableInfo))
                             {
                                 context.Database.ExecuteSqlCommand(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo)); // Will throw Exception specify missing db column: Invalid column name ''
                                 context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName));
@@ -86,7 +88,9 @@ namespace EFCore.BulkExtensions
             {
                 using (var sqlBulkCopy = GetSqlBulkCopy(sqlConnection, transaction, tableInfo.BulkConfig))
                 {
-                    bool useFastMember = !tableInfo.HasOwnedTypes && tableInfo.ShadowProperties.Count == 0;
+                    bool useFastMember = tableInfo.HasOwnedTypes == false
+                                         && tableInfo.ShadowProperties.Count == 0
+                                         && tableInfo.ColumnNameContainsSquareBracket == false;
                     bool setColumnMapping = useFastMember;
                     tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, setColumnMapping, progress);
                     try
@@ -112,7 +116,7 @@ namespace EFCore.BulkExtensions
                         }
                         if (ex.Message.Contains(ColumnMappingExceptionMessage))
                         {
-                            if (!await tableInfo.CheckTableExistAsync(context, tableInfo.FullTempTableName))
+                            if (!await tableInfo.CheckTableExistAsync(context, tableInfo))
                             {
                                 await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo));
                                 await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName));

@@ -37,6 +37,7 @@ namespace EFCore.BulkExtensions
         public bool InsertToTempTable { get; set; }
         public bool HasIdentity { get; set; }
         public bool HasOwnedTypes { get; set; }
+        public bool ColumnNameContainsSquareBracket { get; set; }
         public int NumberOfEntities { get; set; }
 
         public BulkConfig BulkConfig { get; set; }
@@ -98,7 +99,8 @@ namespace EFCore.BulkExtensions
             var properties = allPropertiesExceptTimeStamp.Where(a => a.Relational().ComputedColumnSql == null);
 
             // TimeStamp prop. is last column in OutputTable since it is added later with varbinary(8) type in which Output can be inserted
-            OutputPropertyColumnNamesDict = allPropertiesExceptTimeStamp.Concat(timeStampProperties).ToDictionary(a => a.Name, b => b.Relational().ColumnName);
+            OutputPropertyColumnNamesDict = allPropertiesExceptTimeStamp.Concat(timeStampProperties).ToDictionary(a => a.Name, b => b.Relational().ColumnName.Replace("]", "]]")); // square brackets have to be escaped
+            ColumnNameContainsSquareBracket = allPropertiesExceptTimeStamp.Concat(timeStampProperties).Any(a => a.Relational().ColumnName.Contains("]"));
 
             bool AreSpecifiedPropertiesToInclude = BulkConfig.PropertiesToInclude?.Count() > 0;
             bool AreSpecifiedPropertiesToExclude = BulkConfig.PropertiesToExclude?.Count() > 0;
@@ -141,11 +143,11 @@ namespace EFCore.BulkExtensions
 
             if (loadOnlyPKColumn)
             {
-                PropertyColumnNamesDict = properties.Where(a => PrimaryKeys.Contains(a.Name)).ToDictionary(a => a.Name, b => b.Relational().ColumnName);
+                PropertyColumnNamesDict = properties.Where(a => PrimaryKeys.Contains(a.Name)).ToDictionary(a => a.Name, b => b.Relational().ColumnName.Replace("]", "]]"));
             }
             else
             {
-                PropertyColumnNamesDict = properties.ToDictionary(a => a.Name, b => b.Relational().ColumnName);
+                PropertyColumnNamesDict = properties.ToDictionary(a => a.Name, b => b.Relational().ColumnName.Replace("]", "]]"));
                 ShadowProperties = new HashSet<string>(properties.Where(p => p.IsShadowProperty).Select(p => p.Relational().ColumnName));
                 foreach (var property in properties.Where(p => p.GetValueConverter() != null))
                     ConvertibleProperties.Add(property.Relational().ColumnName, property.GetValueConverter());
@@ -293,7 +295,7 @@ namespace EFCore.BulkExtensions
             HasIdentity = hasIdentity == 1;
         }
 
-        public bool CheckTableExist(DbContext context, string tableName)
+        public bool CheckTableExist(DbContext context, TableInfo tableInfo)
         {
             bool tableExist = false;
             var sqlConnection = context.Database.GetDbConnection();
@@ -309,7 +311,7 @@ namespace EFCore.BulkExtensions
                 {
                     if (currentTransaction != null)
                         command.Transaction = currentTransaction.GetDbTransaction();
-                    command.CommandText = SqlQueryBuilder.CheckTableExist(tableName);
+                    command.CommandText = SqlQueryBuilder.CheckTableExist(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
                     using (var reader = command.ExecuteReader())
                     {
                         if (reader.HasRows)
@@ -330,7 +332,7 @@ namespace EFCore.BulkExtensions
             return tableExist;
         }
 
-        public async Task<bool> CheckTableExistAsync(DbContext context, string tableName)
+        public async Task<bool> CheckTableExistAsync(DbContext context, TableInfo tableInfo)
         {
             bool tableExist = false;
             var sqlConnection = context.Database.GetDbConnection();
@@ -346,7 +348,7 @@ namespace EFCore.BulkExtensions
                 {
                     if (currentTransaction != null)
                         command.Transaction = currentTransaction.GetDbTransaction();
-                    command.CommandText = SqlQueryBuilder.CheckTableExist(tableName);
+                    command.CommandText = SqlQueryBuilder.CheckTableExist(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
                     using (var reader = await command.ExecuteReaderAsync().ConfigureAwait(false))
                     {
                         if (reader.HasRows)
