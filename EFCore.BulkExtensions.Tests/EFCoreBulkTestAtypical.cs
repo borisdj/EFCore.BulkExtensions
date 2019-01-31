@@ -77,6 +77,11 @@ namespace EFCore.BulkExtensions.Tests
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
+                context.BulkDelete(context.Students.ToList());
+            }
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
                 var entities = new List<Student>();
                 for (int i = 1; i <= EntitiesNumber; i++)
                 {
@@ -87,13 +92,34 @@ namespace EFCore.BulkExtensions.Tests
                     });
                 }
                 context.Students.AddRange(entities); // adding to Context so that Shadow property 'Discriminator' gets set
+
                 context.BulkInsert(entities);
             }
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                var entities = new List<Student>();
+                for (int i = 1; i <= EntitiesNumber / 2; i += 2)
+                {
+                    entities.Add(new Student
+                    {
+                        Name = "name " + i,
+                        Subject = "Math Upd"
+                    });
+                }
+                context.Students.AddRange(entities); // adding to Context so that Shadow property 'Discriminator' gets set
+
+                context.BulkInsertOrUpdate(entities, new BulkConfig
+                {
+                    UpdateByProperties = new List<string> { nameof(Student.Name) },
+                    PropertiesToExclude = new List<string> { nameof(Student.PersonId) },
+                });
+            }
+
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 var entities = context.Students.ToList();
                 Assert.Equal(EntitiesNumber, entities.Count());
-                context.BulkDelete(entities);
             }
         }
 

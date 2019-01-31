@@ -79,7 +79,6 @@ namespace EFCore.BulkExtensions
             DbContextBulkTransaction.Execute(context, entities, OperationType.Read, bulkConfig, progress);
         }
 
-
         // Async methods
 
         public static Task BulkInsertAsync<T>(this DbContext context, IList<T> entities, BulkConfig bulkConfig = null, Action<decimal> progress = null) where T : class

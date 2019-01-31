@@ -33,11 +33,12 @@ namespace EFCore.BulkExtensions
             {
                 using (var sqlBulkCopy = GetSqlBulkCopy(sqlConnection, transaction, tableInfo.BulkConfig))
                 {
-                    bool setColumnMapping = !tableInfo.HasOwnedTypes;
+                    bool useFastMember = !tableInfo.HasOwnedTypes && tableInfo.ShadowProperties.Count == 0;
+                    bool setColumnMapping = useFastMember;
                     tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, setColumnMapping, progress);
                     try
                     {
-                        if (!tableInfo.HasOwnedTypes)
+                        if (useFastMember)
                         {
                             using (var reader = ObjectReaderEx.Create(entities, tableInfo.ShadowProperties, tableInfo.ConvertibleProperties, context, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
                             {
@@ -45,8 +46,8 @@ namespace EFCore.BulkExtensions
                             }
                         }
                         else // With OwnedTypes DataTable is used since library FastMember can not (https://github.com/mgravell/fast-member/issues/21)
-                        {
-                            var dataTable = GetDataTable<T>(context, entities, sqlBulkCopy);
+                        {    // With Discriminator (TPH inheritance) also because FastMember is slow for Update (https://github.com/borisdj/EFCore.BulkExtensions/pull/17)
+                            var dataTable = GetDataTable<T>(context, entities, sqlBulkCopy, tableInfo);
                             sqlBulkCopy.WriteToServer(dataTable);
                         }
                     }
@@ -81,11 +82,12 @@ namespace EFCore.BulkExtensions
             {
                 using (var sqlBulkCopy = GetSqlBulkCopy(sqlConnection, transaction, tableInfo.BulkConfig))
                 {
-                    bool setColumnMapping = !tableInfo.HasOwnedTypes;
+                    bool useFastMember = !tableInfo.HasOwnedTypes && tableInfo.ShadowProperties.Count == 0;
+                    bool setColumnMapping = useFastMember;
                     tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, setColumnMapping, progress);
                     try
                     {
-                        if (!tableInfo.HasOwnedTypes)
+                        if (useFastMember)
                         {
                             using (var reader = ObjectReaderEx.Create(entities, tableInfo.ShadowProperties, tableInfo.ConvertibleProperties, context, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
                             {
@@ -94,7 +96,7 @@ namespace EFCore.BulkExtensions
                         }
                         else
                         {
-                            var dataTable = GetDataTable<T>(context, entities, sqlBulkCopy);
+                            var dataTable = GetDataTable<T>(context, entities, sqlBulkCopy, tableInfo);
                             await sqlBulkCopy.WriteToServerAsync(dataTable);
                         }
                     }
@@ -306,7 +308,7 @@ namespace EFCore.BulkExtensions
         #endregion
 
         #region DataTable
-        internal static DataTable GetDataTable<T>(DbContext context, IList<T> entities, SqlBulkCopy sqlBulkCopy)
+        internal static DataTable GetDataTable<T>(DbContext context, IList<T> entities, SqlBulkCopy sqlBulkCopy, TableInfo tableInfo)
         {
             var dataTable = new DataTable();
             var columnsDict = new Dictionary<string, object>();
@@ -314,9 +316,10 @@ namespace EFCore.BulkExtensions
 
             var type = typeof(T);
             var entityType = context.Model.FindEntityType(type);
-            var entityPropertiesDict = entityType.GetProperties().ToDictionary(a => a.Name, a => a);
+            var entityPropertiesDict = entityType.GetProperties().Where(a => tableInfo.PropertyColumnNamesDict.ContainsKey(a.Name)).ToDictionary(a => a.Name, a => a);
             var entityNavigationOwnedDict = entityType.GetNavigations().Where(a => a.GetTargetType().IsOwned()).ToDictionary(a => a.Name, a => a);
             var properties = type.GetProperties();
+            var discriminatorColumn = tableInfo.ShadowProperties.Count == 0 ? null : tableInfo.ShadowProperties.ElementAt(0);
 
             foreach (var property in properties)
             {
@@ -362,6 +365,11 @@ namespace EFCore.BulkExtensions
                     }
                 }
             }
+            if (discriminatorColumn != null)
+            {
+                dataTable.Columns.Add(discriminatorColumn, typeof(string));
+                columnsDict.Add(discriminatorColumn, typeof(T).Name);
+            }
 
             foreach (var entity in entities)
             {
@@ -384,6 +392,7 @@ namespace EFCore.BulkExtensions
                 var record = columnsDict.Values.ToArray();
                 dataTable.Rows.Add(record);
             }
+
             foreach (DataColumn item in dataTable.Columns)  //Add mapping
             {
                 sqlBulkCopy.ColumnMappings.Add(item.ColumnName, item.ColumnName);

@@ -16,8 +16,8 @@ namespace EFCore.BulkExtensions.Tests
 
         public DbSet<Document> Documents { get; set; }
         public DbSet<Person> Persons { get; set; }
-        public DbSet<Instructor> Instructors { get; set; }
         public DbSet<Student> Students { get; set; }
+        public DbSet<Teacher> Teachers { get; set; }
         public DbSet<Info> Infos { get; set; }
         public DbSet<ChangeLog> ChangeLogs { get; set; }
 
@@ -118,14 +118,14 @@ namespace EFCore.BulkExtensions.Tests
         public string Name { get; set; }
     }
 
-    public class Instructor : Person
-    {
-        public string Class { get; set; }
-    }
-
     public class Student : Person
     {
         public string Subject { get; set; }
+    }
+
+    public class Teacher : Person
+    {
+        public string Class { get; set; }
     }
 
     // For testing Computed Columns
