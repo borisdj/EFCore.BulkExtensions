@@ -126,7 +126,7 @@ namespace EFCore.BulkExtensions.Tests
         [Fact]
         private void InsertWithValueConversion()
         {
-            var dateTime = new DateTime(2018, 1, 1);
+            var dateTime = DateTime.Today;
 
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
@@ -136,7 +136,8 @@ namespace EFCore.BulkExtensions.Tests
                     entities.Add(new Info
                     {
                         Message = "Msg " + i,
-                        ConvertedTime = dateTime
+                        ConvertedTime = dateTime,
+                        InfoType = InfoType.InfoTypeA
                     });
                 }
                 context.BulkInsert(entities);

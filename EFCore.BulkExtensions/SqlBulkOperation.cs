@@ -55,10 +55,6 @@ namespace EFCore.BulkExtensions
                     }
                     catch (InvalidOperationException ex)
                     {
-                        if (!tableInfo.BulkConfig.UseTempDB)
-                        {
-                            context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName));
-                        }
                         if (ex.Message.Contains(ColumnMappingExceptionMessage))
                         {
                             if (!tableInfo.CheckTableExist(context, tableInfo))
@@ -110,10 +106,6 @@ namespace EFCore.BulkExtensions
                     }
                     catch (InvalidOperationException ex)
                     {
-                        if (!tableInfo.BulkConfig.UseTempDB)
-                        {
-                            await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName));
-                        }
                         if (ex.Message.Contains(ColumnMappingExceptionMessage))
                         {
                             if (!await tableInfo.CheckTableExistAsync(context, tableInfo))
@@ -165,21 +157,19 @@ namespace EFCore.BulkExtensions
 
                 if (tableInfo.CreatedOutputTable)
                 {
-                    try
-                    {
-                        tableInfo.LoadOutputData(context, entities);
-                    }
-                    finally
-                    {
-                        if (!tableInfo.BulkConfig.UseTempDB)
-                            context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName));
-                    }
+                    tableInfo.LoadOutputData(context, entities);
                 }
             }
             finally
             {
                 if (!tableInfo.BulkConfig.UseTempDB)
+                {
+                    if (tableInfo.CreatedOutputTable)
+                    {
+                        context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName));
+                    }
                     context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName));
+                }
 
                 if (keepIdentity && tableInfo.HasIdentity)
                 {
@@ -219,22 +209,19 @@ namespace EFCore.BulkExtensions
 
                 if (tableInfo.CreatedOutputTable)
                 {
-                    try
-                    {
-
-                        await tableInfo.LoadOutputDataAsync(context, entities).ConfigureAwait(false);
-                    }
-                    finally
-                    {
-                        if (!tableInfo.BulkConfig.UseTempDB)
-                            await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName)).ConfigureAwait(false);
-                    }
+                    await tableInfo.LoadOutputDataAsync(context, entities).ConfigureAwait(false);
                 }
             }
             finally
             {
                 if (!tableInfo.BulkConfig.UseTempDB)
+                {
+                    if (tableInfo.CreatedOutputTable)
+                    {
+                        await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName)).ConfigureAwait(false);
+                    }
                     await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName)).ConfigureAwait(false);
+                }
 
                 if (keepIdentity && tableInfo.HasIdentity)
                 {
@@ -337,8 +324,15 @@ namespace EFCore.BulkExtensions
             {
                 if (entityPropertiesDict.ContainsKey(property.Name))
                 {
-                    string columnName = entityPropertiesDict[property.Name].Relational().ColumnName;
+                    var relational = entityPropertiesDict[property.Name].Relational();
+                    string columnName = relational.ColumnName;
                     var propertyType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
+
+                    if (propertyType.IsEnum && relational.ColumnType.StartsWith("nvarchar")) // temporary fix for EnumToStringConverter when DataTables are used
+                    {                                                                        // TODO replace with checking somehow for DataConverters (not found in Relational)
+                        propertyType = typeof(string);
+                    }
+
                     dataTable.Columns.Add(columnName, propertyType);
                     columnsDict.Add(property.Name, null);
                 }
