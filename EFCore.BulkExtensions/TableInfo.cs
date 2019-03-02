@@ -150,8 +150,13 @@ namespace EFCore.BulkExtensions
                 PropertyColumnNamesDict = properties.ToDictionary(a => a.Name, b => b.Relational().ColumnName.Replace("]", "]]"));
                 ShadowProperties = new HashSet<string>(properties.Where(p => p.IsShadowProperty).Select(p => p.Relational().ColumnName));
                 foreach (var property in properties.Where(p => p.GetValueConverter() != null))
-                    ConvertibleProperties.Add(property.Relational().ColumnName, property.GetValueConverter());
+                {
+                    string columnName = property.Relational().ColumnName;
+                    ValueConverter converter = property.GetValueConverter();
+                    ConvertibleProperties.Add(columnName, converter);
+                }
                 
+
                 if (HasOwnedTypes)  // Support owned entity property update. TODO: Optimize
                 {
                     var type = typeof(T);

@@ -33,10 +33,10 @@ namespace EFCore.BulkExtensions
             {
                 using (var sqlBulkCopy = GetSqlBulkCopy(sqlConnection, transaction, tableInfo.BulkConfig))
                 {
-                    bool useFastMember = tableInfo.HasOwnedTypes == false                       // With OwnedTypes DataTable is used since library FastMember can not (https://github.com/mgravell/fast-member/issues/21)
-                                         && tableInfo.ShadowProperties.Count == 0               // With Shadow prop. Discriminator (TPH inheritance) also because FastMember is slow for Update (https://github.com/borisdj/EFCore.BulkExtensions/pull/17)
-                                         && tableInfo.ColumnNameContainsSquareBracket == false //  FastMember does not support escaped columnNames  ] -> ]]
-                                         && !tableInfo.ConvertibleProperties.Any();
+                    bool useFastMember = tableInfo.HasOwnedTypes == false                      // With OwnedTypes DataTable is used since library FastMember can not (https://github.com/mgravell/fast-member/issues/21)
+                                         && tableInfo.ColumnNameContainsSquareBracket == false // FastMember does not support escaped columnNames  ] -> ]]
+                                         && tableInfo.ShadowProperties.Count == 0              // With Shadow prop. Discriminator (TPH inheritance) also not used because FastMember is slow for Update (https://github.com/borisdj/EFCore.BulkExtensions/pull/17)
+                                         && !tableInfo.ConvertibleProperties.Any();            // With ConvertibleProperties FastMember is slow as well
                     bool setColumnMapping = useFastMember;
                     tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, setColumnMapping, progress);
                     try
@@ -86,8 +86,8 @@ namespace EFCore.BulkExtensions
                 using (var sqlBulkCopy = GetSqlBulkCopy(sqlConnection, transaction, tableInfo.BulkConfig))
                 {
                     bool useFastMember = tableInfo.HasOwnedTypes == false
-                                         && tableInfo.ShadowProperties.Count == 0
                                          && tableInfo.ColumnNameContainsSquareBracket == false
+                                         && tableInfo.ShadowProperties.Count == 0
                                          && !tableInfo.ConvertibleProperties.Any();
                     bool setColumnMapping = useFastMember;
                     tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, setColumnMapping, progress);
@@ -384,6 +384,17 @@ namespace EFCore.BulkExtensions
                 foreach (var property in properties)
                 {
                     var propertyValue = property.GetValue(entity, null);
+
+                    if (entityPropertiesDict.ContainsKey(property.Name))
+                    {
+                        string columnName = entityPropertiesDict[property.Name].Relational().ColumnName;
+                        if (tableInfo.ConvertibleProperties.ContainsKey(columnName))
+                        {
+                            var expression = tableInfo.ConvertibleProperties[columnName].ConvertToProviderExpression;
+                            propertyValue = expression.Compile().DynamicInvoke(propertyValue);
+                        }
+                    }
+
                     if (entityPropertiesDict.ContainsKey(property.Name))
                     {
                         columnsDict[property.Name] = propertyValue;

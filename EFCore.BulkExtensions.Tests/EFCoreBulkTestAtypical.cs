@@ -130,6 +130,11 @@ namespace EFCore.BulkExtensions.Tests
 
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
+                context.BulkDelete(context.Infos.ToList());
+            }
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
                 var entities = new List<Info>();
                 for (int i = 1; i <= EntitiesNumber; i++)
                 {
@@ -164,8 +169,6 @@ namespace EFCore.BulkExtensions.Tests
                     };
                     Assert.Equal(row.ConvertedTime, dateTime.AddDays(1));
                 }
-
-                context.BulkDelete(entities);
             }
         }
 
