@@ -390,8 +390,7 @@ namespace EFCore.BulkExtensions
                         string columnName = entityPropertiesDict[property.Name].Relational().ColumnName;
                         if (tableInfo.ConvertibleProperties.ContainsKey(columnName))
                         {
-                            var expression = tableInfo.ConvertibleProperties[columnName].ConvertToProviderExpression;
-                            propertyValue = expression.Compile().DynamicInvoke(propertyValue);
+                            propertyValue = tableInfo.ConvertibleProperties[columnName].ConvertToProvider.Invoke(propertyValue);
                         }
                     }
 
