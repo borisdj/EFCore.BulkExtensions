@@ -38,6 +38,7 @@ namespace EFCore.BulkExtensions
         public bool HasIdentity { get; set; }
         public bool HasOwnedTypes { get; set; }
         public bool ColumnNameContainsSquareBracket { get; set; }
+        public bool LoadOnlyPKColumn { get; set; }
         public int NumberOfEntities { get; set; }
 
         public BulkConfig BulkConfig { get; set; }
@@ -71,6 +72,7 @@ namespace EFCore.BulkExtensions
         #region Main
         public void LoadData<T>(DbContext context, bool loadOnlyPKColumn)
         {
+            LoadOnlyPKColumn = loadOnlyPKColumn;
             var entityType = context.Model.FindEntityType(typeof(T));
             if (entityType == null)
                 throw new InvalidOperationException("DbContext does not contain EntitySet for Type: " + typeof(T).Name);

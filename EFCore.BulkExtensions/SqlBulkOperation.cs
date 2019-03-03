@@ -361,14 +361,17 @@ namespace EFCore.BulkExtensions
                     }
 
                     var innerProperties = property.PropertyType.GetProperties();
-                    foreach (var innerProperty in innerProperties)
+                    if (!tableInfo.LoadOnlyPKColumn)
                     {
-                        if (ownedEntityPropertyNameColumnNameDict.ContainsKey(innerProperty.Name))
+                        foreach (var innerProperty in innerProperties)
                         {
-                            string columnName = ownedEntityPropertyNameColumnNameDict[innerProperty.Name];
-                            var ownedPropertyType = Nullable.GetUnderlyingType(innerProperty.PropertyType) ?? innerProperty.PropertyType;
-                            dataTable.Columns.Add(columnName, ownedPropertyType);
-                            columnsDict.Add(property.Name + "_" + innerProperty.Name, null);
+                            if (ownedEntityPropertyNameColumnNameDict.ContainsKey(innerProperty.Name))
+                            {
+                                string columnName = ownedEntityPropertyNameColumnNameDict[innerProperty.Name];
+                                var ownedPropertyType = Nullable.GetUnderlyingType(innerProperty.PropertyType) ?? innerProperty.PropertyType;
+                                dataTable.Columns.Add(columnName, ownedPropertyType);
+                                columnsDict.Add(property.Name + "_" + innerProperty.Name, null);
+                            }
                         }
                     }
                 }
@@ -398,7 +401,7 @@ namespace EFCore.BulkExtensions
                     {
                         columnsDict[property.Name] = propertyValue;
                     }
-                    else if (entityNavigationOwnedDict.ContainsKey(property.Name))
+                    else if (entityNavigationOwnedDict.ContainsKey(property.Name) && !tableInfo.LoadOnlyPKColumn)
                     {
                         var ownedProperties = property.PropertyType.GetProperties().Where(a => ownedEntitiesMappedProperties.Contains(property.Name + "_" + a.Name));
                         foreach (var ownedProperty in ownedProperties)
