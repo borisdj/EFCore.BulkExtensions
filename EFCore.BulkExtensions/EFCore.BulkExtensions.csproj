@@ -9,7 +9,7 @@
     <PackageProjectUrl>https://github.com/borisdj/EFCore.BulkExtensions</PackageProjectUrl>
     <PackageIconUrl>https://raw.githubusercontent.com/borisdj/EFCore.BulkExtensions/master/logo.png</PackageIconUrl>
     <Company />
-    <PackageLicenseUrl>https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageTags>EntityFrameworkCore Entity Framework Core EFCore EF Core Bulk Batch Extensions Insert Update Delete Read</PackageTags>
     <PackageReleaseNotes>NuGets updated EFCore 2.2</PackageReleaseNotes>
     <AssemblyVersion>2.4.2.0</AssemblyVersion>
