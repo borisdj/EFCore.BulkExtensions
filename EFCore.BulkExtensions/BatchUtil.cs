@@ -100,6 +100,7 @@ namespace EFCore.BulkExtensions
                 if (isDifferentFromDefault || (updateColumns != null && updateColumns.Contains(propertyName)))
                 {
                     sql += $"[{columnName}] = @{columnName}, ";
+                    propertyUpdateValue = propertyUpdateValue ?? DBNull.Value;
                     parameters.Add(new SqlParameter($"@{columnName}", propertyUpdateValue));
                 }
             }
