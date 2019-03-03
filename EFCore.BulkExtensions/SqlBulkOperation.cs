@@ -330,9 +330,9 @@ namespace EFCore.BulkExtensions
                     string columnName = relational.ColumnName;
                     var propertyType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
 
-                    if (propertyType.IsEnum && relational.ColumnType.StartsWith("nvarchar")) // temporary fix for EnumToStringConverter when DataTables are used
-                    {                                                                        // TODO replace with checking somehow for DataConverters (not found in Relational)
-                        propertyType = typeof(string);
+                    if (tableInfo.ConvertibleProperties.ContainsKey(columnName))
+                    {
+                        propertyType = tableInfo.ConvertibleProperties[columnName].ProviderClrType;
                     }
 
                     dataTable.Columns.Add(columnName, propertyType);

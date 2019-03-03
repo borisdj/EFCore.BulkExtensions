@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
 	<Title>EFCore.BulkExtensions</Title>
-    <Version>2.4.1</Version>
+    <Version>2.4.2</Version>
     <Authors>borisdj</Authors>
     <Description>EntityFramework EF Core Bulk Batch Extensions for Insert Update Delete and Read (CRUD) operations on SQL Server.</Description>
     <PackageProjectUrl>https://github.com/borisdj/EFCore.BulkExtensions</PackageProjectUrl>
@@ -11,16 +11,16 @@
     <Company />
     <PackageLicenseUrl>https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE</PackageLicenseUrl>
     <PackageTags>EntityFrameworkCore Entity Framework Core EFCore EF Core Bulk Batch Extensions Insert Update Delete Read</PackageTags>
-    <PackageReleaseNotes>Fixed: BulkDelete with OwnedType, BatchUpdate property DBNull Value, ConvertibleProperties with DataTable</PackageReleaseNotes>
-    <AssemblyVersion>2.4.1.0</AssemblyVersion>
-    <FileVersion>2.4.1.0</FileVersion>
+    <PackageReleaseNotes>NuGets updated EFCore 2.2</PackageReleaseNotes>
+    <AssemblyVersion>2.4.2.0</AssemblyVersion>
+    <FileVersion>2.4.2.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="FastMember.Signed" Version="1.3.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="2.1.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="2.1.0" />
-    <PackageReference Include="System.Data.SqlClient" Version="4.5.0" />
+    <PackageReference Include="FastMember.Signed" Version="1.4.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="2.2.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="2.2.2" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.6.0" />
   </ItemGroup>
 
 </Project>
