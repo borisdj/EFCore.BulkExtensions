@@ -76,7 +76,7 @@ More info in the [Example](https://github.com/borisdj/EFCore.BulkExtensions#read
 ## BulkConfig arguments
 
 **BulkInsert_/OrUpdate/OrDelete** methods can have optional argument **BulkConfig** with properties (bool, int, object, List<string>):<br>
-*{ PreserveInsertOrder, SetOutputIdentity, BatchSize, NotifyAfter, BulkCopyTimeout, EnableStreaming, UseTempDB, TrackingEntities, WithHoldlock, CalculateStats, StatsInfo, PropertiesToInclude, PropertiesToExclude, UpdateByProperties, SqlBulkCopyOptions }*<br>
+*{ PreserveInsertOrder, SetOutputIdentity, BatchSize, NotifyAfter, BulkCopyTimeout, EnableStreaming, UseTempDB, WithHoldlock, TrackingEntities, CalculateStats, StatsInfo, PropertiesToInclude, PropertiesToExclude, UpdateByProperties, SqlBulkCopyOptions }*<br>
 Default behaviour is { false, false, 2000,  null, null, false, false, true, false, false, null, null, null, null, Default } and if we want to change it, BulkConfig should be added explicitly with one or more bool properties set to true, and/or int props like **BatchSize** to different number. Config also has DelegateFunc for setting *Underlying-Connection/Transaction*, e.g. in UnderlyingTest.<br>
 When doing update we can chose to exclude one or more properties by adding their names into **PropertiesToExclude**, or if we need to update less then half column then **PropertiesToInclude** can be used. Setting both Lists are not allowed.<br>
 Additionaly there is **UpdateByProperties** for specifying custom properties, by which we want update to be done.<br>
