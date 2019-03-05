@@ -130,7 +130,7 @@ namespace EFCore.BulkExtensions.Tests
 
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
-                context.BulkDelete(context.Infos);
+                context.BulkDelete(context.Infos.ToList());
             }
 
             using (var context = new TestContext(ContextUtil.GetOptions()))
