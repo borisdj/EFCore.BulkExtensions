@@ -120,9 +120,12 @@ var entities = new List<Item>();
 var subEntities = new List<ItemHistory>();
 for (int i = 1; i <= numberOfEntites; i++)
 {
-    var entity = new Item { ItemId = i, Name = $"Name {i}", ItemHistories = new List<ItemHistory>() }; // ItemId set by Db, here only to keep Insert order
-    entity.ItemHistories.Add(new ItemHistory { Remark = $"Info {i}.1" });
-    entity.ItemHistories.Add(new ItemHistory { Remark = $"Info {i}.2" });
+    var entity = new Item { ItemId = i, Name = $"Name {i}" }; // ItemId set by Db, here only to keep Insert order
+    entity.ItemHistories = new List<ItemHistory>()
+    {
+        new ItemHistory { Remark = $"Info {i}.1" },
+        new ItemHistory { Remark = $"Info {i}.2" }
+    };
     entities.Add(entity);
 }
 using (var transaction = context.Database.BeginTransaction())
