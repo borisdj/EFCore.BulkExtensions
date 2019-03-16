@@ -116,12 +116,14 @@ When used if *PreserveInsertOrder* is also set to *true* Id-s will be updated in
 Example of *SetOutputIdentity* with parent-child FK related tables:
 ```C#
 int numberOfEntites = 1000;
-var entities = new List<Item>(); var subEntities = new List<ItemHistory>();
+var entities = new List<Item>();
+var subEntities = new List<ItemHistory>();
 for (int i = 1; i <= numberOfEntites; i++)
 {
-    var entity = new Item { Name = $"Name {i}", ItemHistories = new List<ItemHistory>() }; // ItemId set by Db
+    var entity = new Item { ItemId = i, Name = $"Name {i}", ItemHistories = new List<ItemHistory>() }; // ItemId set by Db, here only to keep Insert order
     entity.ItemHistories.Add(new ItemHistory { Remark = $"Info {i}.1" });
     entity.ItemHistories.Add(new ItemHistory { Remark = $"Info {i}.2" });
+    entities.Add(entity);
 }
 using (var transaction = context.Database.BeginTransaction())
 {
