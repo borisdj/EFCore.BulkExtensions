@@ -355,8 +355,11 @@ namespace EFCore.BulkExtensions
                         if (!ownedEntityProperty.IsPrimaryKey())
                         {
                             string columnName = ownedEntityProperty.Relational().ColumnName;
-                            ownedEntityPropertyNameColumnNameDict.Add(ownedEntityProperty.Name, columnName);
-                            ownedEntitiesMappedProperties.Add(property.Name + "_" + ownedEntityProperty.Name);
+                            if (tableInfo.PropertyColumnNamesDict.ContainsValue(columnName))
+                            {
+                                ownedEntityPropertyNameColumnNameDict.Add(ownedEntityProperty.Name, columnName);
+                                ownedEntitiesMappedProperties.Add(property.Name + "_" + ownedEntityProperty.Name);
+                            }
                         }
                     }
 

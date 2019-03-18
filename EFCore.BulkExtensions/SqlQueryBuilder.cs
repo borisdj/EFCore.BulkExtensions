@@ -77,8 +77,7 @@ namespace EFCore.BulkExtensions
 
             var q = $"SELECT {GetCommaSeparatedColumns(columnsNames, "S")} FROM {sourceTable} AS S " +
                     $"JOIN {joinTable} AS J " +
-                    $"ON {GetANDSeparatedColumns(selectByPropertyNames, "S", "J", tableInfo.UpdateByPropertiesAreNullable)}" +
-                    $";";
+                    $"ON {GetANDSeparatedColumns(selectByPropertyNames, "S", "J", tableInfo.UpdateByPropertiesAreNullable)}";
             return q;
         }
 

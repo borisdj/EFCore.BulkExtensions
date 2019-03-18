@@ -57,7 +57,7 @@ namespace EFCore.BulkExtensions.Tests
 
             string expected = "SELECT S.[ItemId], S.[Name] FROM [dbo].[Item] AS S " +
                               "JOIN [dbo].[ItemTemp1234] AS J " +
-                              "ON S.[ItemId] = J.[ItemId];";
+                              "ON S.[ItemId] = J.[ItemId]";
 
             Assert.Equal(result, expected);
         }

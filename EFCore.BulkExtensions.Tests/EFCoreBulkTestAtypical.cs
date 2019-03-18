@@ -184,7 +184,6 @@ namespace EFCore.BulkExtensions.Tests
                 {
                     entities.Add(new ChangeLog
                     {
-                        ChangeLogId = 1,
                         Description = "Dsc " + i,
                         Audit = new Audit
                         {
@@ -206,6 +205,15 @@ namespace EFCore.BulkExtensions.Tests
                     });
                 }
                 context.BulkInsertOrUpdate(entities);
+
+                context.BulkRead(
+                    entities,
+                    new BulkConfig
+                    {
+                        UpdateByProperties = new List<string> { nameof(Item.Description) }
+                    }
+                );
+                Assert.Equal(2, entities[1].ChangeLogId);
             }
         }
     }

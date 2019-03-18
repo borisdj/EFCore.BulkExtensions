@@ -44,6 +44,7 @@ namespace EFCore.BulkExtensions
         public BulkConfig BulkConfig { get; set; }
         public Dictionary<string, string> OutputPropertyColumnNamesDict { get; set; } = new Dictionary<string, string>();
         public Dictionary<string, string> PropertyColumnNamesDict { get; set; } = new Dictionary<string, string>();
+        public Dictionary<string, INavigation> OwnedTypesDict { get; set; } = new Dictionary<string, INavigation>();
         public HashSet<string> ShadowProperties { get; set; } = new HashSet<string>();
         public Dictionary<string, ValueConverter> ConvertibleProperties { get; set; } = new Dictionary<string, ValueConverter>();
         public string TimeStampOutColumnType => "varbinary(8)";
@@ -89,8 +90,9 @@ namespace EFCore.BulkExtensions
 
             var allProperties = entityType.GetProperties().AsEnumerable();
 
-            var allNavigationProperties = entityType.GetNavigations().Where(a => a.GetTargetType().IsOwned());
-            HasOwnedTypes = allNavigationProperties.Any();
+            var ownedTypes = entityType.GetNavigations().Where(a => a.GetTargetType().IsOwned());
+            HasOwnedTypes = ownedTypes.Any();
+            OwnedTypesDict = ownedTypes.ToDictionary(a => a.Name, a => a);
 
             // timestamp/row version properties are only set by the Db, the property has a [Timestamp] Attribute or is configured in in FluentAPI with .IsRowVersion()
             // They can be identified by the columne type "timestamp" or .IsConcurrencyToken in combination with .ValueGenerated == ValueGenerated.OnAddOrUpdate
@@ -162,7 +164,7 @@ namespace EFCore.BulkExtensions
                 if (HasOwnedTypes)  // Support owned entity property update. TODO: Optimize
                 {
                     var type = typeof(T);
-                    foreach (var navgationProperty in allNavigationProperties)
+                    foreach (var navgationProperty in ownedTypes)
                     {
                         var property = navgationProperty.PropertyInfo;
                         Type navOwnedType = type.Assembly.GetType(property.PropertyType.FullName);
@@ -420,6 +422,19 @@ namespace EFCore.BulkExtensions
         public void UpdateReadEntities<T>(IList<T> entities, IList<T> existingEntities)
         {
             List<string> propertyNames = PropertyColumnNamesDict.Keys.ToList();
+            if (HasOwnedTypes)
+            {
+                foreach (string ownedTypeName in OwnedTypesDict.Keys)
+                {
+                    var ownedTypeProperties = OwnedTypesDict[ownedTypeName].ClrType.GetProperties();
+                    foreach (var ownedTypeProperty in ownedTypeProperties)
+                    {
+                        propertyNames.Remove(ownedTypeName + "." + ownedTypeProperty.Name);
+                    }
+                    propertyNames.Add(ownedTypeName);
+                }
+            }
+
             List<string> selectByPropertyNames = PropertyColumnNamesDict.Keys.Where(a => PrimaryKeys.Contains(a)).ToList();
 
             var accessor = TypeAccessor.Create(typeof(T), true);
