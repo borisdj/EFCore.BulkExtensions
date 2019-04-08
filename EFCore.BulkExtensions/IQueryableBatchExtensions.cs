@@ -24,7 +24,7 @@ namespace EFCore.BulkExtensions
         }
 
 
-        public static int BatchUpdate<T>(this IQueryable<T> query, Expression<Func<T, T>> updateExpression) where T : class, new()
+        public static int BatchUpdate<T>(this IQueryable<T> query, Expression<Func<T, T>> updateExpression) where T : class
         {
             var context = BatchUtil.GetDbContext(query);
             var (sql, sqlParameters) = BatchUtil.GetSqlUpdate(query, updateExpression);

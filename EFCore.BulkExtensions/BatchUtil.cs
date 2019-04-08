@@ -51,7 +51,7 @@ namespace EFCore.BulkExtensions
         /// <param name="query"></param>
         /// <param name="expression"></param>
         /// <returns></returns>
-        public static (string, List<SqlParameter>) GetSqlUpdate<T>(IQueryable<T> query, Expression<Func<T, T>> expression) where T : class, new()
+        public static (string, List<SqlParameter>) GetSqlUpdate<T>(IQueryable<T> query, Expression<Func<T, T>> expression) where T : class
         {
             (string sql, string tableAlias) = GetBatchSql(query);
             var sqlColumns = new StringBuilder();
@@ -61,7 +61,7 @@ namespace EFCore.BulkExtensions
             return ($"UPDATE [{tableAlias}] SET {sqlColumns.ToString()} {sql}", sqlParameters);
         }
 
-        public static (string, string) GetBatchSql<T>(IQueryable<T> query) where T : class, new()
+        public static (string, string) GetBatchSql<T>(IQueryable<T> query) where T : class
         {
             string sqlQuery = query.ToSql();
             string tableAlias = sqlQuery.Substring(8, sqlQuery.IndexOf("]") - 8);
