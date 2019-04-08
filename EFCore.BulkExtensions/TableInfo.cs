@@ -37,6 +37,7 @@ namespace EFCore.BulkExtensions
         public bool InsertToTempTable { get; set; }
         public bool HasIdentity { get; set; }
         public bool HasOwnedTypes { get; set; }
+        public bool HasAbstractList { get; set; }
         public bool ColumnNameContainsSquareBracket { get; set; }
         public bool LoadOnlyPKColumn { get; set; }
         public int NumberOfEntities { get; set; }
@@ -66,17 +67,24 @@ namespace EFCore.BulkExtensions
             }
 
             var isDeleteOperation = operationType == OperationType.Delete;
-            tableInfo.LoadData<T>(context, isDeleteOperation);
+            tableInfo.LoadData<T>(context, entities, isDeleteOperation);
             return tableInfo;
         }
 
         #region Main
-        public void LoadData<T>(DbContext context, bool loadOnlyPKColumn)
+        public void LoadData<T>(DbContext context, IList<T> entities, bool loadOnlyPKColumn)
         {
             LoadOnlyPKColumn = loadOnlyPKColumn;
-            var entityType = context.Model.FindEntityType(typeof(T));
+            var type = typeof(T);
+            var entityType = context.Model.FindEntityType(type);
             if (entityType == null)
-                throw new InvalidOperationException("DbContext does not contain EntitySet for Type: " + typeof(T).Name);
+            {
+                type = entities[0].GetType();
+                entityType = context.Model.FindEntityType(type);
+                HasAbstractList = true;
+            }
+            if (entityType == null)
+                throw new InvalidOperationException($"DbContext does not contain EntitySet for Type: { type.Name }");
 
             var relationalData = entityType.Relational();
             Schema = relationalData.Schema ?? "dbo";
@@ -163,7 +171,6 @@ namespace EFCore.BulkExtensions
 
                 if (HasOwnedTypes)  // Support owned entity property update. TODO: Optimize
                 {
-                    var type = typeof(T);
                     foreach (var navgationProperty in ownedTypes)
                     {
                         var property = navgationProperty.PropertyInfo;
