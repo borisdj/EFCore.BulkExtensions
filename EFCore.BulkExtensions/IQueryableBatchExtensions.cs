@@ -9,7 +9,7 @@ namespace EFCore.BulkExtensions
 {
     public static class IQueryableBatchExtensions
     {
-        public static int BatchDelete<T>(this IQueryable<T> query) where T : class, new()
+        public static int BatchDelete<T>(this IQueryable<T> query) where T : class
         {
             DbContext context = BatchUtil.GetDbContext(query);
             string sql = BatchUtil.GetSqlDelete(query);
@@ -33,7 +33,7 @@ namespace EFCore.BulkExtensions
 
         // Async methods
 
-        public static async Task<int> BatchDeleteAsync<T>(this IQueryable<T> query) where T : class, new()
+        public static async Task<int> BatchDeleteAsync<T>(this IQueryable<T> query) where T : class
         {
             DbContext context = BatchUtil.GetDbContext(query);
             string sql = BatchUtil.GetSqlDelete(query);
@@ -47,7 +47,7 @@ namespace EFCore.BulkExtensions
             return await context.Database.ExecuteSqlCommandAsync(sql, sqlParameters.ToArray());
         }
 
-        public static async Task<int> BatchUpdateAsync<T>(this IQueryable<T> query, Expression<Func<T, T>> updateExpression) where T : class, new()
+        public static async Task<int> BatchUpdateAsync<T>(this IQueryable<T> query, Expression<Func<T, T>> updateExpression) where T : class
         {
             var context = BatchUtil.GetDbContext(query);
             var (sql, sqlParameters) = BatchUtil.GetSqlUpdate(query, updateExpression);
