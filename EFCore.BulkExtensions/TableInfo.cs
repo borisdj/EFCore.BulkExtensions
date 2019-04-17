@@ -32,10 +32,11 @@ namespace EFCore.BulkExtensions
         public string FullTempTableName => $"{SchemaFormated}[{TempDBPrefix}{TempTableName}]";
         public string FullTempOutputTableName => $"{SchemaFormated}[{TempDBPrefix}{TempTableName}Output]";
 
-        public bool CreatedOutputTable => (BulkConfig.SetOutputIdentity && HasSinglePrimaryKey) || BulkConfig.CalculateStats;
+        public bool CreatedOutputTable => BulkConfig.SetOutputIdentity || BulkConfig.CalculateStats;
 
         public bool InsertToTempTable { get; set; }
-        public bool HasIdentity { get; set; }
+        public string IdentityColumnName { get; set; }
+        public bool HasIdentity => IdentityColumnName != null;
         public bool HasOwnedTypes { get; set; }
         public bool HasAbstractList { get; set; }
         public bool ColumnNameContainsSquareBracket { get; set; }
@@ -231,84 +232,74 @@ namespace EFCore.BulkExtensions
         #region SqlCommands
         public void CheckHasIdentity(DbContext context)
         {
-            int hasIdentity = 0;
-            if (HasSinglePrimaryKey)
+            var sqlConnection = context.Database.GetDbConnection();
+            var currentTransaction = context.Database.CurrentTransaction;
+            try
             {
-                var sqlConnection = context.Database.GetDbConnection();
-                var currentTransaction = context.Database.CurrentTransaction;
-                try
+                if (currentTransaction == null)
                 {
-                    if (currentTransaction == null)
+                    if (sqlConnection.State != ConnectionState.Open)
+                        sqlConnection.Open();
+                }
+                using (var command = sqlConnection.CreateCommand())
+                {
+                    if (currentTransaction != null)
+                        command.Transaction = currentTransaction.GetDbTransaction();
+                    command.CommandText = SqlQueryBuilder.SelectIdentityColumnName(TableName, Schema);
+                    using (var reader = command.ExecuteReader())
                     {
-                        if (sqlConnection.State != ConnectionState.Open)
-                            sqlConnection.Open();
-                    }
-                    using (var command = sqlConnection.CreateCommand())
-                    {
-                        if (currentTransaction != null)
-                            command.Transaction = currentTransaction.GetDbTransaction();
-                        command.CommandText = SqlQueryBuilder.SelectIsIdentity(FullTableName, PropertyColumnNamesDict[PrimaryKeys[0]]);
-                        using (var reader = command.ExecuteReader())
+                        if (reader.HasRows)
                         {
-                            if (reader.HasRows)
+                            while (reader.Read())
                             {
-                                while (reader.Read())
-                                {
-                                    hasIdentity = reader[0] == DBNull.Value ? 0 : (int)reader[0];
-                                }
+                                IdentityColumnName = reader.GetString(0);
                             }
                         }
                     }
                 }
-                finally
-                {
-                    if (currentTransaction == null)
-                        sqlConnection.Close();
-                }
             }
-            HasIdentity = hasIdentity == 1;
+            finally
+            {
+                if (currentTransaction == null)
+                    sqlConnection.Close();
+            }
         }
 
         public async Task CheckHasIdentityAsync(DbContext context)
         {
-            int hasIdentity = 0;
-            if (HasSinglePrimaryKey)
+            var sqlConnection = context.Database.GetDbConnection();
+            var currentTransaction = context.Database.CurrentTransaction;
+            try
             {
-                var sqlConnection = context.Database.GetDbConnection();
-                var currentTransaction = context.Database.CurrentTransaction;
-                try
+                if (currentTransaction == null)
                 {
-                    if (currentTransaction == null)
+                    if (sqlConnection.State != ConnectionState.Open)
+                        await sqlConnection.OpenAsync().ConfigureAwait(false);
+                }
+                using (var command = sqlConnection.CreateCommand())
+                {
+                    if (currentTransaction != null)
+                        command.Transaction = currentTransaction.GetDbTransaction();
+                    command.CommandText = SqlQueryBuilder.SelectIdentityColumnName(TableName, Schema);
+                    using (var reader = await command.ExecuteReaderAsync().ConfigureAwait(false))
                     {
-                        if (sqlConnection.State != ConnectionState.Open)
-                            await sqlConnection.OpenAsync().ConfigureAwait(false);
-                    }
-                    using (var command = sqlConnection.CreateCommand())
-                    {
-                        if (currentTransaction != null)
-                            command.Transaction = currentTransaction.GetDbTransaction();
-                        command.CommandText = SqlQueryBuilder.SelectIsIdentity(FullTableName, PropertyColumnNamesDict[PrimaryKeys[0]]);
-                        using (var reader = await command.ExecuteReaderAsync().ConfigureAwait(false))
+                        if (reader.HasRows)
                         {
-                            if (reader.HasRows)
+                            while (await reader.ReadAsync().ConfigureAwait(false))
                             {
-                                while (await reader.ReadAsync().ConfigureAwait(false))
-                                {
-                                    hasIdentity = (int)reader[0];
-                                }
+                                IdentityColumnName = reader.GetString(0);
                             }
                         }
                     }
                 }
-                finally
+            }
+            finally
+            {
+                if (currentTransaction == null)
                 {
-                    if (currentTransaction == null)
-                    {
-                        sqlConnection.Close();
-                    }
+                    sqlConnection.Close();
                 }
             }
-            HasIdentity = hasIdentity == 1;
         }
 
         public bool CheckTableExist(DbContext context, TableInfo tableInfo)
@@ -475,7 +466,7 @@ namespace EFCore.BulkExtensions
             {
                 var accessor = TypeAccessor.Create(typeof(T), true);
                 for (int i = 0; i < NumberOfEntities; i++)
-                    accessor[entities[i], PrimaryKeys[0]] = accessor[entitiesWithOutputIdentity[i], PrimaryKeys[0]];
+                    accessor[entities[i], IdentityColumnName] = accessor[entitiesWithOutputIdentity[i], IdentityColumnName];
             }
             else // Clears entityList and then refills it with loaded entites from Db
             {
@@ -512,7 +503,7 @@ namespace EFCore.BulkExtensions
 
         public async Task LoadOutputDataAsync<T>(DbContext context, IList<T> entities) where T : class
         {
-            if (BulkConfig.SetOutputIdentity && HasSinglePrimaryKey)
+            if (BulkConfig.SetOutputIdentity)
             {
                 string sqlQuery = SqlQueryBuilder.SelectFromOutputTable(this);
                 var entitiesWithOutputIdentity = await QueryOutputTableAsync<T>(context, sqlQuery).ToListAsync().ConfigureAwait(false);

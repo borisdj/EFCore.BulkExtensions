@@ -9,7 +9,7 @@ namespace EFCore.BulkExtensions.Tests
         public void MergeTableInsertTest()
         {
             TableInfo tableInfo = GetTestTableInfo();
-            tableInfo.HasIdentity = true;
+            tableInfo.IdentityColumnName = "ItemId";
             string result = SqlQueryBuilder.MergeTable(tableInfo, OperationType.Insert);
 
             string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING [dbo].[ItemTemp1234] AS S " +
@@ -23,7 +23,7 @@ namespace EFCore.BulkExtensions.Tests
         public void MergeTableInsertOrUpdateTest()
         {
             TableInfo tableInfo = GetTestTableInfo();
-            tableInfo.HasIdentity = true;
+            tableInfo.IdentityColumnName = "ItemId";
             string result = SqlQueryBuilder.MergeTable(tableInfo, OperationType.InsertOrUpdate);
 
             string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING [dbo].[ItemTemp1234] AS S " +
@@ -38,7 +38,7 @@ namespace EFCore.BulkExtensions.Tests
         public void MergeTableUpdateTest()
         {
             TableInfo tableInfo = GetTestTableInfo();
-            tableInfo.HasIdentity = true;
+            tableInfo.IdentityColumnName = "ItemId";
             string result = SqlQueryBuilder.MergeTable(tableInfo, OperationType.Update);
 
             string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING [dbo].[ItemTemp1234] AS S " +
