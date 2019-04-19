@@ -48,9 +48,11 @@ namespace EFCore.BulkExtensions
             return q;
         }
 
-        public static string SelectIsIdentity(string tableName, string idColumnName)
+        public static string SelectIdentityColumnName(string tableName, string schemaName)
         {
-            var q = $"SELECT columnproperty(object_id('{tableName}'),'{idColumnName}','IsIdentity');";
+            var q = $"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS " +
+                $"WHERE COLUMNPROPERTY(object_id(TABLE_SCHEMA+'.'+TABLE_NAME), COLUMN_NAME, 'IsIdentity') = 1 " +
+                    $"and TABLE_NAME = '{tableName}' and TABLE_SCHEMA = '{schemaName}'";
             return q;
         }
 
@@ -96,7 +98,7 @@ namespace EFCore.BulkExtensions
             List<string> primaryKeys = tableInfo.PrimaryKeys.Select(k => tableInfo.PropertyColumnNamesDict[k]).ToList();
             List<string> columnsNames = tableInfo.PropertyColumnNamesDict.Values.ToList();
             List<string> outputColumnsNames = tableInfo.OutputPropertyColumnNamesDict.Values.ToList();
-            List<string> nonIdentityColumnsNames = columnsNames.Where(a => !primaryKeys.Contains(a)).ToList();
+            List<string> nonIdentityColumnsNames = columnsNames.Where(a => !a.Equals(tableInfo.IdentityColumnName, StringComparison.OrdinalIgnoreCase)).ToList();
             List<string> insertColumnsNames = (tableInfo.HasIdentity && !keepIdentity) ? nonIdentityColumnsNames : columnsNames;
 
             string isUpdateStatsValue = (tableInfo.BulkConfig.CalculateStats) ? ",(CASE $action WHEN 'UPDATE' THEN 1 Else 0 END)" : "";
