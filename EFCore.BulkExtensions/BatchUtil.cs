@@ -23,7 +23,7 @@ namespace EFCore.BulkExtensions
         // DELETE [a]
         // FROM [Table] AS [a]
         // WHERE [a].[Columns] = FilterValues
-        public static string GetSqlDelete<T>(IQueryable<T> query) where T : class, new()
+        public static string GetSqlDelete<T>(IQueryable<T> query) where T : class
         {
             (string sql, string tableAlias) = GetBatchSql(query);
             return $"DELETE [{tableAlias}]{sql}";
