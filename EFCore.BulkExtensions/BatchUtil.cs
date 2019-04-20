@@ -85,23 +85,26 @@ namespace EFCore.BulkExtensions
                 var pArray = propertyName.Split(new char[] { '.' });
                 Type lastType = updateValuesType;
                 PropertyInfo property = lastType.GetProperty(pArray[0]);
-                object propertyUpdateValue = property.GetValue(updateValues);
-                object propertyDefaultValue = property.GetValue(defaultValues);
-                for (int i = 1; i < pArray.Length; i++)
+                if (property != null)
                 {
-                    lastType = property.PropertyType;
-                    property = lastType.GetProperty(pArray[i]);
-                    propertyUpdateValue = propertyUpdateValue != null ? property.GetValue(propertyUpdateValue) : propertyUpdateValue;
-                    var lastDefaultValues = lastType.Assembly.CreateInstance(lastType.FullName);
-                    propertyDefaultValue = property.GetValue(lastDefaultValues);
-                }
+                    object propertyUpdateValue = property.GetValue(updateValues);
+                    object propertyDefaultValue = property.GetValue(defaultValues);
+                    for (int i = 1; i < pArray.Length; i++)
+                    {
+                        lastType = property.PropertyType;
+                        property = lastType.GetProperty(pArray[i]);
+                        propertyUpdateValue = propertyUpdateValue != null ? property.GetValue(propertyUpdateValue) : propertyUpdateValue;
+                        var lastDefaultValues = lastType.Assembly.CreateInstance(lastType.FullName);
+                        propertyDefaultValue = property.GetValue(lastDefaultValues);
+                    }
 
-                bool isDifferentFromDefault = propertyUpdateValue != null && propertyUpdateValue?.ToString() != propertyDefaultValue?.ToString();
-                if (isDifferentFromDefault || (updateColumns != null && updateColumns.Contains(propertyName)))
-                {
-                    sql += $"[{columnName}] = @{columnName}, ";
-                    propertyUpdateValue = propertyUpdateValue ?? DBNull.Value;
-                    parameters.Add(new SqlParameter($"@{columnName}", propertyUpdateValue));
+                    bool isDifferentFromDefault = propertyUpdateValue != null && propertyUpdateValue?.ToString() != propertyDefaultValue?.ToString();
+                    if (isDifferentFromDefault || (updateColumns != null && updateColumns.Contains(propertyName)))
+                    {
+                        sql += $"[{columnName}] = @{columnName}, ";
+                        propertyUpdateValue = propertyUpdateValue ?? DBNull.Value;
+                        parameters.Add(new SqlParameter($"@{columnName}", propertyUpdateValue));
+                    }
                 }
             }
             if (String.IsNullOrEmpty(sql))
