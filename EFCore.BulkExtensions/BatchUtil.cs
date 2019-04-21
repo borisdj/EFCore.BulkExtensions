@@ -196,6 +196,12 @@ namespace EFCore.BulkExtensions
                     case ExpressionType.Subtract:
                         sqlColumns.Append(" -");
                         break;
+                    case ExpressionType.And:
+                        sqlColumns.Append(" &");
+                        break;
+                    case ExpressionType.Or:
+                        sqlColumns.Append(" |");
+                        break;
                     default: break;
                 }
 
