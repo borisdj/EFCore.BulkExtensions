@@ -28,8 +28,8 @@ It's pretty simple and straightforward.<br>
 context.BulkInsert(entitiesList);                 context.BulkInsertAsync(entitiesList);
 context.BulkUpdate(entitiesList);                 context.BulkUpdateAsync(entitiesList);
 context.BulkDelete(entitiesList);                 context.BulkDeleteAsync(entitiesList);
-context.BulkInsertOrUpdate(entitiesList);         context.BulkInsertOrUpdateAsync(entitiesList);         // Upsert
-context.BulkInsertOrUpdateOrDelete(entitiesList); context.BulkInsertOrUpdateOrDeleteAsync(entitiesList); // Sync
+context.BulkInsertOrUpdate(entitiesList);         context.BulkInsertOrUpdateAsync(entitiesList);         //Upsert
+context.BulkInsertOrUpdateOrDelete(entitiesList); context.BulkInsertOrUpdateOrDeleteAsync(entitiesList); //Sync
 context.BulkRead(entitiesList);                   context.BulkReadAsync(entitiesList);
 ```
 **Batch** Extensions are made on *IQueryable* DbSet and can be used as in the following code segment.<br>
@@ -50,7 +50,7 @@ context.Items.Where(a => a.ItemId <= 500).BatchUpdateAsync(new Item { Descriptio
 // Update (via simple object) - requires additional Argument for setting to Property default value
 var updateColumns = new List<string> { nameof(Item.Quantity) }; // Update 'Quantity' to default value ('0'-zero)
 var q = context.Items.Where(a => a.ItemId <= 500);
-int affected = q.BatchUpdate(new Item { Description = "Updated" }, updateColumns); // result assigned to variable
+int affected = q.BatchUpdate(new Item { Description = "Updated" }, updateColumns); //result assigned to variable
 ```
 ## Bulk info
 If Windows Authentication is used then in ConnectionString there should be *Trusted_Connection=True;* because Sql credentials are required to stay in connection.<br>
@@ -78,10 +78,10 @@ More info in the [Example](https://github.com/borisdj/EFCore.BulkExtensions#read
 ## BulkConfig arguments
 
 **BulkInsert_/OrUpdate/OrDelete** methods can have optional argument **BulkConfig** with properties (bool, int, object, List<string>):<br>
-*{ PreserveInsertOrder, SetOutputIdentity, BatchSize, NotifyAfter, BulkCopyTimeout, EnableStreaming, UseTempDB, WithHoldlock, TrackingEntities, CalculateStats, StatsInfo, PropertiesToInclude, PropertiesToExclude, UpdateByProperties, SqlBulkCopyOptions }*<br>
+*{ PreserveInsertOrder, SetOutputIdentity, BatchSize, NotifyAfter, BulkCopyTimeout, EnableStreaming, UseTempDB, TrackingEntities, UseOnlyDataTable, WithHoldlock, CalculateStats, StatsInfo, PropertiesToInclude, PropertiesToExclude, UpdateByProperties, SqlBulkCopyOptions }*<br>
 Default behaviour is {<br>
 *PreserveInsertOrder*: false, *SetOutputIdentity*: false, *BatchSize*: 2000, *NotifyAfter*: null, *BulkCopyTimeout*: null,<br>
-*EnableStreaming*: false, *UseTempDB*: false, *WithHoldlock*: true, *TrackingEntities*: false, *CalculateStats*: false, *StatsInfo*: null, *PropertiesToInclude*: null, *PropertiesToExclude*: null, *UpdateByProperties*: null, *SqlBulkCopyOptions*: Default }<br>
+*EnableStreaming*: false, *UseTempDB*: false, *TrackingEntities*: false, *UseOnlyDataTable*: false, *WithHoldlock*: true, *CalculateStats*: false, *StatsInfo*: null, *PropertiesToInclude*: null, *PropertiesToExclude*: null, *UpdateByProperties*: null, *SqlBulkCopyOptions*: Default }<br>
   and if we want to change it, BulkConfig should be added explicitly with one or more bool properties set to true, and/or int props like **BatchSize** to different number. Config also has DelegateFunc for setting *Underlying-Connection/Transaction*, e.g. in UnderlyingTest.<br>
 When doing update we can chose to exclude one or more properties by adding their names into **PropertiesToExclude**, or if we need to update less then half column then **PropertiesToInclude** can be used. Setting both Lists are not allowed.<br>
 Additionaly there is **UpdateByProperties** for specifying custom properties, by which we want update to be done.<br>
@@ -89,7 +89,7 @@ Using UpdateByProperties while also having Identity column requires that Id prop
 If **NotifyAfter** is not set it will have same value as _BatchSize_ while **BulkCopyTimeout** when not set has SqlBulkCopy default which is 30 seconds and if set to 0 it indicates no limit.<br>
 _PreserveInsertOrder_ and _SetOutputIdentity_ have purpose only when PK has Identity (usually *int* type with AutoIncrement), while if PK is Guid(sequential) created in Application there is no need for them. Also Tables with Composite Keys have no Identity column so no functionality for them in that case either.
 ```C#
-context.BulkInsert(entList, new BulkConfig {PreserveInsertOrder= true, SetOutputIdentity= true, BatchSize= 4000});
+context.BulkInsert(entList, new BulkConfig {PreserveInsertOrder= true, SetOutputIdentity= true, BatchSize=4000});
 context.BulkInsertOrUpdate(entList, new BulkConfig { PreserveInsertOrder = true });
 context.BulkInsertOrUpdate(entList, b => b.SetOutputIdentity = true); // example BulkConfig set with Action arg.
 ```
