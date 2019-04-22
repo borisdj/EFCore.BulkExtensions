@@ -89,7 +89,7 @@ Using UpdateByProperties while also having Identity column requires that Id prop
 If **NotifyAfter** is not set it will have same value as _BatchSize_ while **BulkCopyTimeout** when not set has SqlBulkCopy default which is 30 seconds and if set to 0 it indicates no limit.<br>
 _PreserveInsertOrder_ and _SetOutputIdentity_ have purpose only when PK has Identity (usually *int* type with AutoIncrement), while if PK is Guid(sequential) created in Application there is no need for them. Also Tables with Composite Keys have no Identity column so no functionality for them in that case either.
 ```C#
-context.BulkInsert(entList, new BulkConfig { PreserveInsertOrder=true, SetOutputIdentity=true, BatchSize=4000});
+context.BulkInsert(entList, new BulkConfig {PreserveInsertOrder=true, SetOutputIdentity=true, BatchSize=4000});
 context.BulkInsertOrUpdate(entList, new BulkConfig { PreserveInsertOrder = true });
 context.BulkInsertOrUpdate(entList, b => b.SetOutputIdentity = true); // example BulkConfig set with Action arg.
 ```
@@ -120,7 +120,7 @@ var entities = new List<Item>();
 var subEntities = new List<ItemHistory>();
 for (int i = 1; i <= numberOfEntites; i++)
 {
-    var entity = new Item { ItemId = i, Name = $"Name {i}" }; //ItemId set by Db, here only to keep Insert order
+    var entity = new Item { ItemId = i, Name = $"Name {i}" }; //ItemId set by Db,here only to keep Insert order
     entity.ItemHistories = new List<ItemHistory>()
     {
         new ItemHistory { Remark = $"Info {i}.1" },
@@ -178,7 +178,7 @@ context.BulkInsert(entities);
 When we need to Select from big List of some Unique Prop./Column use BulkRead (JOIN done in Sql) for Efficiency:<br>
 ```C#
 // instead of 
-var entities = context.Items.Where(a => itemsNames.Contains(a.Name)).AsNoTracking().ToList(); //SQL IN operator
+var entities = context.Items.Where(a => itemsNames.Contains(a.Name)).AsNoTracking().ToList(); // SQL IN operator
 // or JOIN in Memory that loads entire table
 var entities = context.Items.Join(itemsNames, a => a.Name, p => p, (a, p) => a).AsNoTracking().ToList();
 // use
