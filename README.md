@@ -120,7 +120,7 @@ var entities = new List<Item>();
 var subEntities = new List<ItemHistory>();
 for (int i = 1; i <= numberOfEntites; i++)
 {
-    var entity = new Item { ItemId = i, Name = $"Name {i}" }; // ItemId set by Db, here only to keep Insert order
+    var entity = new Item { ItemId = i, Name = $"Name {i}" }; //ItemId set by Db, here only to keep Insert order
     entity.ItemHistories = new List<ItemHistory>()
     {
         new ItemHistory { Remark = $"Info {i}.1" },
@@ -178,7 +178,7 @@ context.BulkInsert(entities);
 When we need to Select from big List of some Unique Prop./Column use BulkRead (JOIN done in Sql) for Efficiency:<br>
 ```C#
 // instead of 
-var entities = context.Items.Where(a => itemsNames.Contains(a.Name)).AsNoTracking().ToList(); // SQL IN operator
+var entities = context.Items.Where(a => itemsNames.Contains(a.Name)).AsNoTracking().ToList(); //SQL IN operator
 // or JOIN in Memory that loads entire table
 var entities = context.Items.Join(itemsNames, a => a.Name, p => p, (a, p) => a).AsNoTracking().ToList();
 // use
