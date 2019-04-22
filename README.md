@@ -28,8 +28,8 @@ It's pretty simple and straightforward.<br>
 context.BulkInsert(entitiesList);                 context.BulkInsertAsync(entitiesList);
 context.BulkUpdate(entitiesList);                 context.BulkUpdateAsync(entitiesList);
 context.BulkDelete(entitiesList);                 context.BulkDeleteAsync(entitiesList);
-context.BulkInsertOrUpdate(entitiesList);         context.BulkInsertOrUpdateAsync(entitiesList);         //Upsert
-context.BulkInsertOrUpdateOrDelete(entitiesList); context.BulkInsertOrUpdateOrDeleteAsync(entitiesList); //Sync
+context.BulkInsertOrUpdate(entitiesList);         context.BulkInsertOrUpdateAsync(entitiesList);       // Upsert
+context.BulkInsertOrUpdateOrDelete(entitiesList); context.BulkInsertOrUpdateOrDeleteAsync(entitiesList); // Sync
 context.BulkRead(entitiesList);                   context.BulkReadAsync(entitiesList);
 ```
 **Batch** Extensions are made on *IQueryable* DbSet and can be used as in the following code segment.<br>
@@ -50,7 +50,7 @@ context.Items.Where(a => a.ItemId <= 500).BatchUpdateAsync(new Item { Descriptio
 // Update (via simple object) - requires additional Argument for setting to Property default value
 var updateColumns = new List<string> { nameof(Item.Quantity) }; // Update 'Quantity' to default value ('0'-zero)
 var q = context.Items.Where(a => a.ItemId <= 500);
-int affected = q.BatchUpdate(new Item { Description = "Updated" }, updateColumns); //result assigned to variable
+int affected = q.BatchUpdate(new Item { Description = "Updated" }, updateColumns);//result assigned to variable
 ```
 ## Bulk info
 If Windows Authentication is used then in ConnectionString there should be *Trusted_Connection=True;* because Sql credentials are required to stay in connection.<br>
