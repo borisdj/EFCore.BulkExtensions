@@ -91,7 +91,7 @@ _PreserveInsertOrder_ and _SetOutputIdentity_ have purpose only when PK has Iden
 ```C#
 context.BulkInsert(entList, new BulkConfig {PreserveInsertOrder=true, SetOutputIdentity=true, BatchSize=4000});
 context.BulkInsertOrUpdate(entList, new BulkConfig { PreserveInsertOrder = true });
-context.BulkInsertOrUpdate(entList, b => b.SetOutputIdentity = true); // example BulkConfig set with Action arg.
+context.BulkInsertOrUpdate(entList, b => b.SetOutputIdentity = true); //example BulkConfig set with Action arg.
 ```
 
 **PreserveInsertOrder** makes sure that entites are inserted to Db as they are ordered in entitiesList.<br>
@@ -178,7 +178,7 @@ context.BulkInsert(entities);
 When we need to Select from big List of some Unique Prop./Column use BulkRead (JOIN done in Sql) for Efficiency:<br>
 ```C#
 // instead of 
-var entities = context.Items.Where(a => itemsNames.Contains(a.Name)).AsNoTracking().ToList(); // SQL IN operator
+var entities = context.Items.Where(a => itemsNames.Contains(a.Name)).AsNoTracking().ToList(); //SQL IN operator
 // or JOIN in Memory that loads entire table
 var entities = context.Items.Join(itemsNames, a => a.Name, p => p, (a, p) => a).AsNoTracking().ToList();
 // use
