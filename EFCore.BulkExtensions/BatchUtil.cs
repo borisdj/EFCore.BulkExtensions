@@ -202,6 +202,9 @@ namespace EFCore.BulkExtensions
                     case ExpressionType.Or:
                         sqlColumns.Append(" |");
                         break;
+                    case ExpressionType.ExclusiveOr:
+                        sqlColumns.Append(" ^");
+                        break;
                     default: break;
                 }
 
