@@ -465,8 +465,9 @@ namespace EFCore.BulkExtensions
             if (BulkConfig.PreserveInsertOrder) // Updates PK in entityList
             {
                 var accessor = TypeAccessor.Create(typeof(T), true);
+                string identityPropertyName = PropertyColumnNamesDict.SingleOrDefault(a => a.Value == IdentityColumnName).Key;
                 for (int i = 0; i < NumberOfEntities; i++)
-                    accessor[entities[i], IdentityColumnName] = accessor[entitiesWithOutputIdentity[i], IdentityColumnName];
+                    accessor[entities[i], identityPropertyName] = accessor[entitiesWithOutputIdentity[i], identityPropertyName];
             }
             else // Clears entityList and then refills it with loaded entites from Db
             {
