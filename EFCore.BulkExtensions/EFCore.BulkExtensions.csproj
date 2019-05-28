@@ -17,7 +17,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="FastMember.Signed" Version="1.4.1" />
+    <PackageReference Include="FastMember" Version="1.5.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="2.2.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="2.2.2" />
     <PackageReference Include="System.Data.SqlClient" Version="4.6.0" />
