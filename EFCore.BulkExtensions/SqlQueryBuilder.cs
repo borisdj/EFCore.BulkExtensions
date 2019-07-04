@@ -51,8 +51,8 @@ namespace EFCore.BulkExtensions
         public static string SelectIdentityColumnName(string tableName, string schemaName)
         {
             var q = $"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS " +
-                $"WHERE COLUMNPROPERTY(object_id(TABLE_SCHEMA+'.'+TABLE_NAME), COLUMN_NAME, 'IsIdentity') = 1 " +
-                    $"and TABLE_NAME = '{tableName}' and TABLE_SCHEMA = '{schemaName}'";
+                    $"WHERE COLUMNPROPERTY(OBJECT_ID(TABLE_SCHEMA + '.' + TABLE_NAME), COLUMN_NAME, 'IsIdentity') = 1 " +
+                    $"AND TABLE_NAME = '{tableName}' AND TABLE_SCHEMA = '{schemaName}'";
             return q;
         }
 
