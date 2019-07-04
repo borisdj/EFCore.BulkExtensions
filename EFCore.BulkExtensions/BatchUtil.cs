@@ -98,6 +98,11 @@ namespace EFCore.BulkExtensions
                         propertyDefaultValue = property.GetValue(lastDefaultValues);
                     }
 
+                    if (tableInfo.ConvertibleProperties.ContainsKey(columnName))
+                    {
+                        propertyUpdateValue = tableInfo.ConvertibleProperties[columnName].ConvertToProvider.Invoke(propertyUpdateValue);
+                    }
+
                     bool isDifferentFromDefault = propertyUpdateValue != null && propertyUpdateValue?.ToString() != propertyDefaultValue?.ToString();
                     if (isDifferentFromDefault || (updateColumns != null && updateColumns.Contains(propertyName)))
                     {
