@@ -48,7 +48,7 @@ namespace EFCore.BulkExtensions.Tests
             {
                 //var updateColumns = new List<string> { nameof(Item.Quantity) }; // Adding explicitly PropertyName for update to its default value
 
-                var price = 0;
+                decimal price = 0;
                 var query = context.Items.Where(a => a.ItemId <= 500 && a.Price >= price);
                 await query.BatchUpdateAsync(new Item { Description = "Updated", Price = 1.5m }/*, updateColumns*/);
 

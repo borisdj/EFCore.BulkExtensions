@@ -45,7 +45,8 @@ namespace EFCore.BulkExtensions.Tests
             {
                 //var updateColumns = new List<string> { nameof(Item.Quantity) }; // Adding explicitly PropertyName for update to its default value
 
-                var query = context.Items.Where(a => a.ItemId <= 500 && a.Price >= 0);
+                decimal price = 0;
+                var query = context.Items.Where(a => a.ItemId <= 500 && a.Price >= price);
                 query.BatchUpdate(new Item { Description = "Updated", Price = 1.5m }/*, updateColumns*/);
 
                 var incrementStep = 100;

@@ -219,7 +219,6 @@ namespace EFCore.BulkExtensions
             }
         }
 
-
         public static DbContext GetDbContext(IQueryable query)
         {
             var bindingFlags = BindingFlags.NonPublic | BindingFlags.Instance;
