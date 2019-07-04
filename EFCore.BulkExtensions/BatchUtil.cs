@@ -23,10 +23,10 @@ namespace EFCore.BulkExtensions
         // DELETE [a]
         // FROM [Table] AS [a]
         // WHERE [a].[Columns] = FilterValues
-        public static string GetSqlDelete<T>(IQueryable<T> query) where T : class
+        public static (string, List<SqlParameter>) GetSqlDelete<T>(IQueryable<T> query) where T : class
         {
-            (string sql, string tableAlias) = GetBatchSql(query);
-            return $"DELETE [{tableAlias}]{sql}";
+            (string sql, string tableAlias, IEnumerable<SqlParameter> innerParameters) = GetBatchSql(query);
+            return ($"DELETE [{tableAlias}]{sql}", new List<SqlParameter>(innerParameters));
         }
 
         // SELECT [a].[Column1], [a].[Column2], .../r/n
@@ -38,8 +38,8 @@ namespace EFCore.BulkExtensions
         // WHERE [a].[Columns] = FilterValues
         public static (string, List<SqlParameter>) GetSqlUpdate<T>(IQueryable<T> query, DbContext context, T updateValues, List<string> updateColumns) where T : class, new()
         {
-            (string sql, string tableAlias) = GetBatchSql(query);
-            var sqlParameters = new List<SqlParameter>();
+            (string sql, string tableAlias, IEnumerable<SqlParameter> innerParameters) = GetBatchSql(query);
+            var sqlParameters = new List<SqlParameter>(innerParameters);
             string sqlSET = GetSqlSetSegment(context, updateValues, updateColumns, sqlParameters);
             return ($"UPDATE [{tableAlias}] {sqlSET}{sql}", sqlParameters);
         }
@@ -53,23 +53,23 @@ namespace EFCore.BulkExtensions
         /// <returns></returns>
         public static (string, List<SqlParameter>) GetSqlUpdate<T>(IQueryable<T> query, Expression<Func<T, T>> expression) where T : class
         {
-            (string sql, string tableAlias) = GetBatchSql(query);
+            (string sql, string tableAlias, IEnumerable<SqlParameter> innerParameters) = GetBatchSql(query);
             var sqlColumns = new StringBuilder();
-            var sqlParameters = new List<SqlParameter>();
+            var sqlParameters = new List<SqlParameter>(innerParameters);
             var columnNameValueDict = TableInfo.CreateInstance(GetDbContext(query), new List<T>(), OperationType.Read, new BulkConfig()).PropertyColumnNamesDict;
             CreateUpdateBody(columnNameValueDict, tableAlias, expression.Body, ref sqlColumns, ref sqlParameters);
             return ($"UPDATE [{tableAlias}] SET {sqlColumns.ToString()} {sql}", sqlParameters);
         }
 
-        public static (string, string) GetBatchSql<T>(IQueryable<T> query) where T : class
+        public static (string, string, IEnumerable<SqlParameter>) GetBatchSql<T>(IQueryable<T> query) where T : class
         {
-            string sqlQuery = query.ToSql();
+            (string sqlQuery, IEnumerable<SqlParameter> innerParameters) = query.ToParametrizedSql();
             string tableAlias = sqlQuery.Substring(8, sqlQuery.IndexOf("]") - 8);
             int indexFROM = sqlQuery.IndexOf(Environment.NewLine);
             string sql = sqlQuery.Substring(indexFROM, sqlQuery.Length - indexFROM);
             sql = sql.Contains("{") ? sql.Replace("{", "{{") : sql; // Curly brackets have to escaped:
             sql = sql.Contains("}") ? sql.Replace("}", "}}") : sql; // https://github.com/aspnet/EntityFrameworkCore/issues/8820
-            return (sql, tableAlias);
+            return (sql, tableAlias, innerParameters);
         }
 
         public static string GetSqlSetSegment<T>(DbContext context, T updateValues, List<string> updateColumns, List<SqlParameter> parameters) where T : class, new()

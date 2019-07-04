@@ -1,8 +1,14 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Data.SqlClient;
+using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.Logging;
 
 namespace EFCore.BulkExtensions
 {
@@ -35,6 +41,28 @@ namespace EFCore.BulkExtensions
 
             string sql = modelVisitor.Queries.First().ToString();
             return sql;
+        }
+
+        internal static (string, IEnumerable<SqlParameter>) ToParametrizedSql<TEntity>(this IQueryable<TEntity> query) where TEntity : class
+        {
+            var queryCompiler = (QueryCompiler)QueryCompilerField.GetValue(query.Provider);
+            var modelGenerator = (QueryModelGenerator)QueryModelGeneratorField.GetValue(queryCompiler);
+            var parameterValues = new SimpleParameterValues();
+            var diagnosticsLogger = new DiagnosticsLogger<DbLoggerCategory.Query>(new LoggerFactory(), null, new DiagnosticListener("Temp"));
+            var parameterExpression = modelGenerator.ExtractParameters(diagnosticsLogger, query.Expression, parameterValues);
+            var queryModel = modelGenerator.ParseQuery(parameterExpression);
+            var database = (IDatabase)DataBaseField.GetValue(queryCompiler);
+            var databaseDependencies = (DatabaseDependencies)DatabaseDependenciesField.GetValue(database);
+            var queryCompilationContext = databaseDependencies.QueryCompilationContextFactory.Create(false);
+            var modelVisitor = (RelationalQueryModelVisitor)queryCompilationContext.CreateQueryModelVisitor();
+
+            modelVisitor.CreateQueryExecutor<TEntity>(queryModel);
+            //modelVisitor.CreateAsyncQueryExecutor<TEntity>(queryModel);
+            // CreateAsync not used, throws: Message: System.ArgumentException : Expression of type 'System.Collections.Generic.IEnumerable`1[EFCore.BulkExtensions.Tests.Item]'
+            // cannot be used for return type 'System.Collections.Generic.IAsyncEnumerable`1[EFCore.BulkExtensions.Tests.Item]'
+
+            string sql = modelVisitor.Queries.First().ToString();
+            return (sql, parameterValues.ParameterValues.Select(x => new SqlParameter(x.Key, x.Value)));
         }
     }
 }
