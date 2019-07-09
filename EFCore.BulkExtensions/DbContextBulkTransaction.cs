@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 
@@ -29,7 +30,7 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        public static Task ExecuteAsync<T>(DbContext context, IList<T> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress) where T : class
+        public static Task ExecuteAsync<T>(DbContext context, IList<T> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress, CancellationToken cancellationToken = default(CancellationToken)) where T : class
         {
             if (entities.Count == 0)
             {
@@ -39,11 +40,11 @@ namespace EFCore.BulkExtensions
 
             if (operationType == OperationType.Insert && !tableInfo.BulkConfig.SetOutputIdentity)
             {
-                return SqlBulkOperation.InsertAsync(context, entities, tableInfo, progress);
+                return SqlBulkOperation.InsertAsync(context, entities, tableInfo, progress, cancellationToken);
             }
             else if (operationType == OperationType.Read)
             {
-                return SqlBulkOperation.ReadAsync(context, entities, tableInfo, progress);
+                return SqlBulkOperation.ReadAsync(context, entities, tableInfo, progress, cancellationToken);
             }
             else
             {
