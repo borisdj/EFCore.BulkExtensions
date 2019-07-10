@@ -41,13 +41,13 @@ namespace EFCore.BulkExtensions.Tests
                 context.Items.BatchDelete();
 
                 if (databaseType == DbServer.SqlServer)
-                {
-                    context.Database.ExecuteSqlCommand("DBCC CHECKIDENT('[dbo].[Item]', RESEED, 0);");
-                }
+            {
+                context.Database.ExecuteSqlCommand("DBCC CHECKIDENT('[dbo].[Item]', RESEED, 0);");
+            }
                 if (databaseType == DbServer.Sqlite)
                 {
                     context.Database.ExecuteSqlCommand("DELETE FROM sqlite_sequence WHERE name = 'Item';");
-                }
+        }
             }
         }
 
@@ -65,6 +65,15 @@ namespace EFCore.BulkExtensions.Tests
                 var suffix = " Concatenated";
                 query.BatchUpdate(a => new Item { Name = a.Name + suffix, Quantity = a.Quantity + incrementStep }); // example of BatchUpdate Increment/Decrement value in variable
                 //query.BatchUpdate(a => new Item { Quantity = a.Quantity + 100 }); // example direct value without variable
+            }
+        }
+
+        private void RunContainsBatchDelete()
+        {
+            var guidsToDelete = new List<Guid> { Guid.NewGuid() };
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.Items.Where(a => guidsToDelete.Contains(a.GuidId)).BatchDelete();
             }
         }
 
@@ -97,7 +106,7 @@ namespace EFCore.BulkExtensions.Tests
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 context.Items.Where(a => a.ItemId > 500).BatchDelete();
-            }
+    }
         }
 
         private void RunContainsBatchDelete()

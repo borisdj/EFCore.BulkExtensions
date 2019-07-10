@@ -40,7 +40,7 @@ namespace EFCore.BulkExtensions.Tests
 
             if (Database.IsSqlServer())
             {
-                modelBuilder.Entity<Document>().Property(p => p.ContentLength).HasComputedColumnSql($"(CONVERT([int], len([{nameof(Document.Content)}])))");
+            modelBuilder.Entity<Document>().Property(p => p.ContentLength).HasComputedColumnSql($"(CONVERT([int], len([{nameof(Document.Content)}])))");
             }
             else if (Database.IsSqlite())
             {
@@ -65,9 +65,9 @@ namespace EFCore.BulkExtensions.Tests
 
             if (DbServer == DbServer.SqlServer)
             {
-                var connectionString = $"Server=localhost;Database={databaseName};Trusted_Connection=True;MultipleActiveResultSets=true";
+            var connectionString = $"Server=localhost;Database={databaseName};Trusted_Connection=True;MultipleActiveResultSets=true";
                 optionsBuilder.UseSqlServer(connectionString); // Can NOT Test with UseInMemoryDb (Exception: Relational-specific methods can only be used when the context is using a relational)
-            }
+        }
             else if (DbServer == DbServer.Sqlite)
             {
                 string connectionString = $"Data Source={databaseName}.db";
@@ -76,7 +76,7 @@ namespace EFCore.BulkExtensions.Tests
                 // ALTERNATIVELY:
                 //string connectionString = (new SqliteConnectionStringBuilder { DataSource = $"{databaseName}Lite.db" }).ToString();
                 //optionsBuilder.UseSqlite(new SqliteConnection(connectionString));
-            }
+    }
             else
             {
                 throw new NotSupportedException($"Database {DbServer} is not supported. Only SQL Server and SQLite are Currently supported.");
@@ -115,6 +115,8 @@ namespace EFCore.BulkExtensions.Tests
         public DateTime TimeUpdated { get; set; }
 
         public ICollection<ItemHistory> ItemHistories { get; set; }
+
+        public Guid GuidId { get; set; }
     }
 
     // ItemHistory is used to test bulk Ops to multiple tables(Item and ItemHistory), to test Guid as PK and to test other Schema(his)
