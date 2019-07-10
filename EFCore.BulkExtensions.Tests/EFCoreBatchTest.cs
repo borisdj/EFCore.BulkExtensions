@@ -17,6 +17,7 @@ namespace EFCore.BulkExtensions.Tests
             RunInsert();
             RunBatchUpdate();
             RunBatchDelete();
+            RunContainsBatchDelete();
 
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
@@ -60,6 +61,15 @@ namespace EFCore.BulkExtensions.Tests
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 context.Items.Where(a => a.ItemId > 500).BatchDelete();
+            }
+        }
+
+        private void RunContainsBatchDelete()
+        {
+            var guidsToDelete = new List<Guid> { Guid.NewGuid() };
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.Items.Where(a => guidsToDelete.Contains(a.GuidId)).BatchDelete();
             }
         }
 
