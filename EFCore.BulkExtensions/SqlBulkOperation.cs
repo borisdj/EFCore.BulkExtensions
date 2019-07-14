@@ -332,11 +332,14 @@ namespace EFCore.BulkExtensions
                 {
                     var relational = entityPropertiesDict[property.Name].Relational();
                     string columnName = relational.ColumnName;
-                    var propertyType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
 
-                    if (tableInfo.ConvertibleProperties.ContainsKey(columnName))
+                    var isConvertible = tableInfo.ConvertibleProperties.ContainsKey(columnName);
+                    var propertyType = isConvertible ? tableInfo.ConvertibleProperties[columnName].ProviderClrType : property.PropertyType;
+
+                    var underlyingType = Nullable.GetUnderlyingType(propertyType);
+                    if (underlyingType != null)
                     {
-                        propertyType = tableInfo.ConvertibleProperties[columnName].ProviderClrType;
+                        propertyType = underlyingType;
                     }
 
                     dataTable.Columns.Add(columnName, propertyType);
