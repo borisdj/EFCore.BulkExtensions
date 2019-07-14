@@ -30,7 +30,7 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        public static Task ExecuteAsync<T>(DbContext context, IList<T> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress, CancellationToken cancellationToken = default(CancellationToken)) where T : class
+        public static Task ExecuteAsync<T>(DbContext context, IList<T> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress, CancellationToken cancellationToken) where T : class
         {
             if (entities.Count == 0)
             {
@@ -48,7 +48,7 @@ namespace EFCore.BulkExtensions
             }
             else
             {
-                return SqlBulkOperation.MergeAsync(context, entities, tableInfo, operationType, progress);
+                return SqlBulkOperation.MergeAsync(context, entities, tableInfo, operationType, progress, cancellationToken);
             }
         }
     }

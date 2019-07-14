@@ -63,11 +63,17 @@ namespace EFCore.BulkExtensions
 
         public static (string, string, IEnumerable<SqlParameter>) GetBatchSql<T>(IQueryable<T> query) where T : class
         {
-            (string sqlQuery, IEnumerable<SqlParameter> innerParameters) = query.ToParametrizedSql();
+            string sqlQuery = query.ToSql();
+            IEnumerable<SqlParameter> innerParameters = new List<SqlParameter>();
+            if (!sqlQuery.Contains(" IN (")) // ToParametrizedSql does not work correctly with Contains that is translated to sql IN command
+            {
+                (sqlQuery, innerParameters) = query.ToParametrizedSql();
+            }
+
             string tableAlias = sqlQuery.Substring(8, sqlQuery.IndexOf("]") - 8);
             int indexFROM = sqlQuery.IndexOf(Environment.NewLine);
             string sql = sqlQuery.Substring(indexFROM, sqlQuery.Length - indexFROM);
-            sql = sql.Contains("{") ? sql.Replace("{", "{{") : sql; // Curly brackets have to escaped:
+            sql = sql.Contains("{") ? sql.Replace("{", "{{") : sql; // Curly brackets have to be escaped:
             sql = sql.Contains("}") ? sql.Replace("}", "}}") : sql; // https://github.com/aspnet/EntityFrameworkCore/issues/8820
             return (sql, tableAlias, innerParameters);
         }

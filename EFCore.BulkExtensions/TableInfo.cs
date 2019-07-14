@@ -170,7 +170,6 @@ namespace EFCore.BulkExtensions
                     ConvertibleProperties.Add(columnName, converter);
                 }
                 
-
                 if (HasOwnedTypes)  // Support owned entity property update. TODO: Optimize
                 {
                     foreach (var navgationProperty in ownedTypes)
@@ -200,8 +199,22 @@ namespace EFCore.BulkExtensions
                             {
                                 string columnName = ownedEntityPropertyNameColumnNameDict[ownedProperty.Name];
                                 var ownedPropertyType = Nullable.GetUnderlyingType(ownedProperty.PropertyType) ?? ownedProperty.PropertyType;
-                                PropertyColumnNamesDict.Add(property.Name + "." + ownedProperty.Name, columnName);
-                                OutputPropertyColumnNamesDict.Add(property.Name + "." + ownedProperty.Name, columnName);
+
+                                bool doAddProperty = true;
+                                if (AreSpecifiedPropertiesToInclude && !BulkConfig.PropertiesToInclude.Contains(columnName))
+                                {
+                                    doAddProperty = false;
+                                }
+                                if (AreSpecifiedPropertiesToExclude && BulkConfig.PropertiesToExclude.Contains(columnName))
+                                {
+                                    doAddProperty = false;
+                                }
+
+                                if (doAddProperty)
+                                {
+                                    PropertyColumnNamesDict.Add(property.Name + "." + ownedProperty.Name, columnName);
+                                    OutputPropertyColumnNamesDict.Add(property.Name + "." + ownedProperty.Name, columnName);
+                                }
                             }
                         }
                     }
@@ -266,7 +279,7 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        public async Task CheckHasIdentityAsync(DbContext context, CancellationToken cancellationToken = default(CancellationToken))
+        public async Task CheckHasIdentityAsync(DbContext context, CancellationToken cancellationToken)
         {
             var sqlConnection = context.Database.GetDbConnection();
             var currentTransaction = context.Database.CurrentTransaction;
@@ -340,7 +353,7 @@ namespace EFCore.BulkExtensions
             return tableExist;
         }
 
-        public async Task<bool> CheckTableExistAsync(DbContext context, TableInfo tableInfo, CancellationToken cancellationToken = default(CancellationToken))
+        public async Task<bool> CheckTableExistAsync(DbContext context, TableInfo tableInfo, CancellationToken cancellationToken)
         {
             bool tableExist = false;
             var sqlConnection = context.Database.GetDbConnection();
@@ -385,12 +398,12 @@ namespace EFCore.BulkExtensions
             return (int)resultParameter.Value;
         }
 
-        protected async Task<int> GetNumberUpdatedAsync(DbContext context, CancellationToken cancellationToken = default(CancellationToken))
+        protected async Task<int> GetNumberUpdatedAsync(DbContext context, CancellationToken cancellationToken)
         {
-            var resultParameter = new SqlParameter("@result", SqlDbType.Int) { Direction = ParameterDirection.Output };
+            var resultParameters = new List<SqlParameter> { new SqlParameter("@result", SqlDbType.Int) { Direction = ParameterDirection.Output } };
             string sqlQueryCount = SqlQueryBuilder.SelectCountIsUpdateFromOutputTable(this);
-            await context.Database.ExecuteSqlCommandAsync($"SET @result = ({sqlQueryCount});", resultParameter, cancellationToken).ConfigureAwait(false);
-            return (int)resultParameter.Value;
+            await context.Database.ExecuteSqlCommandAsync($"SET @result = ({sqlQueryCount});", resultParameters, cancellationToken).ConfigureAwait(false); // TODO cancellationToken if Not
+            return (int)resultParameters.FirstOrDefault().Value;
         }
 
         #endregion
@@ -503,7 +516,7 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        public async Task LoadOutputDataAsync<T>(DbContext context, IList<T> entities, CancellationToken cancellationToken = default(CancellationToken)) where T : class
+        public async Task LoadOutputDataAsync<T>(DbContext context, IList<T> entities, CancellationToken cancellationToken) where T : class
         {
             if (BulkConfig.SetOutputIdentity)
             {

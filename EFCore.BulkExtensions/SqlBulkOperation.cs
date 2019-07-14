@@ -80,7 +80,7 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        public static async Task InsertAsync<T>(DbContext context, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, CancellationToken cancellationToken = default(CancellationToken))
+        public static async Task InsertAsync<T>(DbContext context, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, CancellationToken cancellationToken)
         {
             var sqlConnection = await OpenAndGetSqlConnectionAsync(context, tableInfo.BulkConfig, cancellationToken).ConfigureAwait(false);
             var transaction = context.Database.CurrentTransaction;
@@ -186,7 +186,7 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        public static async Task MergeAsync<T>(DbContext context, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, CancellationToken cancellationToken = default(CancellationToken)) where T : class
+        public static async Task MergeAsync<T>(DbContext context, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, CancellationToken cancellationToken) where T : class
         {
             tableInfo.InsertToTempTable = true;
             await tableInfo.CheckHasIdentityAsync(context, cancellationToken).ConfigureAwait(false);
@@ -275,7 +275,7 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        public static async Task ReadAsync<T>(DbContext context, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, CancellationToken cancellationToken = default(CancellationToken)) where T : class
+        public static async Task ReadAsync<T>(DbContext context, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, CancellationToken cancellationToken) where T : class
         {
             Dictionary<string, string> previousPropertyColumnNamesDict = tableInfo.ConfigureBulkReadTableInfo(context);
 
@@ -440,7 +440,7 @@ namespace EFCore.BulkExtensions
             return (SqlConnection)connection;
         }
 
-        internal static async Task<SqlConnection> OpenAndGetSqlConnectionAsync(DbContext context, BulkConfig config, CancellationToken cancellationToken = default(CancellationToken))
+        internal static async Task<SqlConnection> OpenAndGetSqlConnectionAsync(DbContext context, BulkConfig config, CancellationToken cancellationToken)
         {
             var connection = context.GetUnderlyingConnection(config);
             if (connection.State != ConnectionState.Open)
