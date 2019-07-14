@@ -6,6 +6,7 @@ using System.Data.SqlClient;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using FastMember;
 using Microsoft.EntityFrameworkCore;
@@ -265,7 +266,7 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        public async Task CheckHasIdentityAsync(DbContext context)
+        public async Task CheckHasIdentityAsync(DbContext context, CancellationToken cancellationToken = default(CancellationToken))
         {
             var sqlConnection = context.Database.GetDbConnection();
             var currentTransaction = context.Database.CurrentTransaction;
@@ -274,18 +275,18 @@ namespace EFCore.BulkExtensions
                 if (currentTransaction == null)
                 {
                     if (sqlConnection.State != ConnectionState.Open)
-                        await sqlConnection.OpenAsync().ConfigureAwait(false);
+                        await sqlConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
                 }
                 using (var command = sqlConnection.CreateCommand())
                 {
                     if (currentTransaction != null)
                         command.Transaction = currentTransaction.GetDbTransaction();
                     command.CommandText = SqlQueryBuilder.SelectIdentityColumnName(TableName, Schema);
-                    using (var reader = await command.ExecuteReaderAsync().ConfigureAwait(false))
+                    using (var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false))
                     {
                         if (reader.HasRows)
                         {
-                            while (await reader.ReadAsync().ConfigureAwait(false))
+                            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                             {
                                 IdentityColumnName = reader.GetString(0);
                             }
@@ -339,7 +340,7 @@ namespace EFCore.BulkExtensions
             return tableExist;
         }
 
-        public async Task<bool> CheckTableExistAsync(DbContext context, TableInfo tableInfo)
+        public async Task<bool> CheckTableExistAsync(DbContext context, TableInfo tableInfo, CancellationToken cancellationToken = default(CancellationToken))
         {
             bool tableExist = false;
             var sqlConnection = context.Database.GetDbConnection();
@@ -349,18 +350,18 @@ namespace EFCore.BulkExtensions
                 if (currentTransaction == null)
                 {
                     if (sqlConnection.State != ConnectionState.Open)
-                        await sqlConnection.OpenAsync().ConfigureAwait(false); ;
+                        await sqlConnection.OpenAsync(cancellationToken).ConfigureAwait(false); ;
                 }
                 using (var command = sqlConnection.CreateCommand())
                 {
                     if (currentTransaction != null)
                         command.Transaction = currentTransaction.GetDbTransaction();
                     command.CommandText = SqlQueryBuilder.CheckTableExist(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
-                    using (var reader = await command.ExecuteReaderAsync().ConfigureAwait(false))
+                    using (var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false))
                     {
                         if (reader.HasRows)
                         {
-                            while (await reader.ReadAsync().ConfigureAwait(false))
+                            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                             {
                                 tableExist = (int)reader[0] == 1;
                             }
@@ -384,11 +385,11 @@ namespace EFCore.BulkExtensions
             return (int)resultParameter.Value;
         }
 
-        protected async Task<int> GetNumberUpdatedAsync(DbContext context)
+        protected async Task<int> GetNumberUpdatedAsync(DbContext context, CancellationToken cancellationToken = default(CancellationToken))
         {
             var resultParameter = new SqlParameter("@result", SqlDbType.Int) { Direction = ParameterDirection.Output };
             string sqlQueryCount = SqlQueryBuilder.SelectCountIsUpdateFromOutputTable(this);
-            await context.Database.ExecuteSqlCommandAsync($"SET @result = ({sqlQueryCount});", resultParameter);
+            await context.Database.ExecuteSqlCommandAsync($"SET @result = ({sqlQueryCount});", resultParameter, cancellationToken).ConfigureAwait(false);
             return (int)resultParameter.Value;
         }
 
@@ -502,17 +503,17 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        public async Task LoadOutputDataAsync<T>(DbContext context, IList<T> entities) where T : class
+        public async Task LoadOutputDataAsync<T>(DbContext context, IList<T> entities, CancellationToken cancellationToken = default(CancellationToken)) where T : class
         {
             if (BulkConfig.SetOutputIdentity)
             {
                 string sqlQuery = SqlQueryBuilder.SelectFromOutputTable(this);
-                var entitiesWithOutputIdentity = await QueryOutputTableAsync<T>(context, sqlQuery).ToListAsync().ConfigureAwait(false);
+                var entitiesWithOutputIdentity = await QueryOutputTableAsync<T>(context, sqlQuery).ToListAsync(cancellationToken).ConfigureAwait(false);
                 UpdateEntitiesIdentity(entities, entitiesWithOutputIdentity);
             }
             if (BulkConfig.CalculateStats)
             {
-                int numberUpdated = await GetNumberUpdatedAsync(context);
+                int numberUpdated = await GetNumberUpdatedAsync(context, cancellationToken).ConfigureAwait(false);
                 BulkConfig.StatsInfo = new StatsInfo
                 {
                     StatsNumberUpdated = numberUpdated,

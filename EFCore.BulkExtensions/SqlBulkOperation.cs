@@ -4,6 +4,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -79,9 +80,9 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        public static async Task InsertAsync<T>(DbContext context, IList<T> entities, TableInfo tableInfo, Action<decimal> progress)
+        public static async Task InsertAsync<T>(DbContext context, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, CancellationToken cancellationToken = default(CancellationToken))
         {
-            var sqlConnection = await OpenAndGetSqlConnectionAsync(context, tableInfo.BulkConfig);
+            var sqlConnection = await OpenAndGetSqlConnectionAsync(context, tableInfo.BulkConfig, cancellationToken).ConfigureAwait(false);
             var transaction = context.Database.CurrentTransaction;
             try
             {
@@ -101,23 +102,23 @@ namespace EFCore.BulkExtensions
                         {
                             using (var reader = ObjectReaderEx.Create(entities, tableInfo.ShadowProperties, tableInfo.ConvertibleProperties, context, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
                             {
-                                await sqlBulkCopy.WriteToServerAsync(reader).ConfigureAwait(false);
+                                await sqlBulkCopy.WriteToServerAsync(reader, cancellationToken).ConfigureAwait(false);
                             }
                         }
                         else
                         {
                             var dataTable = GetDataTable<T>(context, entities, sqlBulkCopy, tableInfo);
-                            await sqlBulkCopy.WriteToServerAsync(dataTable);
+                            await sqlBulkCopy.WriteToServerAsync(dataTable, cancellationToken).ConfigureAwait(false);
                         }
                     }
                     catch (InvalidOperationException ex)
                     {
                         if (ex.Message.Contains(ColumnMappingExceptionMessage))
                         {
-                            if (!await tableInfo.CheckTableExistAsync(context, tableInfo))
+                            if (!await tableInfo.CheckTableExistAsync(context, tableInfo, cancellationToken).ConfigureAwait(false))
                             {
-                                await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo));
-                                await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName));
+                                await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo), cancellationToken).ConfigureAwait(false);
+                                await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName), cancellationToken).ConfigureAwait(false);
                             }
                         }
                         throw ex;
@@ -185,37 +186,37 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        public static async Task MergeAsync<T>(DbContext context, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress) where T : class
+        public static async Task MergeAsync<T>(DbContext context, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, CancellationToken cancellationToken = default(CancellationToken)) where T : class
         {
             tableInfo.InsertToTempTable = true;
-            await tableInfo.CheckHasIdentityAsync(context).ConfigureAwait(false);
+            await tableInfo.CheckHasIdentityAsync(context, cancellationToken).ConfigureAwait(false);
 
-            await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo)).ConfigureAwait(false);
+            await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo), cancellationToken).ConfigureAwait(false);
             if (tableInfo.CreatedOutputTable)
             {
-                await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempOutputTableName, tableInfo, true)).ConfigureAwait(false);
+                await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempOutputTableName, tableInfo, true), cancellationToken).ConfigureAwait(false);
                 if (tableInfo.TimeStampColumnName != null)
                 {
-                    context.Database.ExecuteSqlCommand(SqlQueryBuilder.AddColumn(tableInfo.FullTempOutputTableName, tableInfo.TimeStampColumnName, tableInfo.TimeStampOutColumnType));
+                    await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.AddColumn(tableInfo.FullTempOutputTableName, tableInfo.TimeStampColumnName, tableInfo.TimeStampOutColumnType), cancellationToken).ConfigureAwait(false);
                 }
             }
 
             bool keepIdentity = tableInfo.BulkConfig.SqlBulkCopyOptions.HasFlag(SqlBulkCopyOptions.KeepIdentity);
             try
             {
-                await InsertAsync(context, entities, tableInfo, progress).ConfigureAwait(false);
+                await InsertAsync(context, entities, tableInfo, progress, cancellationToken).ConfigureAwait(false);
 
                 if (keepIdentity && tableInfo.HasIdentity)
                 {
-                    context.Database.OpenConnection();
-                    context.Database.ExecuteSqlCommand(SqlQueryBuilder.SetIdentityInsert(tableInfo.FullTableName, true));
+                    await context.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+                    await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.SetIdentityInsert(tableInfo.FullTableName, true), cancellationToken).ConfigureAwait(false);
                 }
 
-                await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.MergeTable(tableInfo, operationType)).ConfigureAwait(false);
+                await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.MergeTable(tableInfo, operationType), cancellationToken).ConfigureAwait(false);
 
                 if (tableInfo.CreatedOutputTable)
                 {
-                    await tableInfo.LoadOutputDataAsync(context, entities).ConfigureAwait(false);
+                    await tableInfo.LoadOutputDataAsync(context, entities, cancellationToken).ConfigureAwait(false);
                 }
             }
             finally
@@ -224,16 +225,15 @@ namespace EFCore.BulkExtensions
                 {
                     if (tableInfo.CreatedOutputTable)
                     {
-                        await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName)).ConfigureAwait(false);
+                        await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName), cancellationToken).ConfigureAwait(false);
                     }
-                    await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName)).ConfigureAwait(false);
+                    await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName), cancellationToken).ConfigureAwait(false);
                 }
 
                 if (keepIdentity && tableInfo.HasIdentity)
                 {
-                    context.Database.ExecuteSqlCommand(SqlQueryBuilder.SetIdentityInsert(tableInfo.FullTableName, false));
+                    await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.SetIdentityInsert(tableInfo.FullTableName, false), cancellationToken).ConfigureAwait(false);
                     context.Database.CloseConnection();
-
                 }
             }
         }
@@ -275,21 +275,21 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        public static async Task ReadAsync<T>(DbContext context, IList<T> entities, TableInfo tableInfo, Action<decimal> progress) where T : class
+        public static async Task ReadAsync<T>(DbContext context, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, CancellationToken cancellationToken = default(CancellationToken)) where T : class
         {
             Dictionary<string, string> previousPropertyColumnNamesDict = tableInfo.ConfigureBulkReadTableInfo(context);
 
-            await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo));
+            await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo), cancellationToken).ConfigureAwait(false);
 
             try
             {
-                await InsertAsync(context, entities, tableInfo, progress);
+                await InsertAsync(context, entities, tableInfo, progress, cancellationToken).ConfigureAwait(false);
 
                 tableInfo.PropertyColumnNamesDict = previousPropertyColumnNamesDict;
 
                 var sqlQuery = SqlQueryBuilder.SelectJoinTable(tableInfo);
 
-                //var existingEntities = await context.Set<T>().FromSql(sqlQuery).ToListAsync();
+                //var existingEntities = await context.Set<T>().FromSql(sqlQuery).ToListAsync(cancellationToken);
                 Expression<Func<DbContext, IQueryable<T>>> expression = null;
                 if (tableInfo.BulkConfig.TrackingEntities)
                 {
@@ -300,14 +300,14 @@ namespace EFCore.BulkExtensions
                     expression = (ctx) => ctx.Set<T>().FromSql(sqlQuery).AsNoTracking();
                 }
                 var compiled = EF.CompileAsyncQuery(expression);
-                var existingEntities = (await compiled(context).ToListAsync().ConfigureAwait(false));
+                var existingEntities = (await compiled(context).ToListAsync(cancellationToken).ConfigureAwait(false));
 
                 tableInfo.UpdateReadEntities(entities, existingEntities);
             }
             finally
             {
                 if (!tableInfo.BulkConfig.UseTempDB)
-                    await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName));
+                    await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName), cancellationToken).ConfigureAwait(false);
             }
         }
         #endregion
@@ -440,12 +440,12 @@ namespace EFCore.BulkExtensions
             return (SqlConnection)connection;
         }
 
-        internal static async Task<SqlConnection> OpenAndGetSqlConnectionAsync(DbContext context, BulkConfig config)
+        internal static async Task<SqlConnection> OpenAndGetSqlConnectionAsync(DbContext context, BulkConfig config, CancellationToken cancellationToken = default(CancellationToken))
         {
             var connection = context.GetUnderlyingConnection(config);
             if (connection.State != ConnectionState.Open)
             {
-                await connection.OpenAsync().ConfigureAwait(false);
+                await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
             }
             return (SqlConnection)connection;
         }
