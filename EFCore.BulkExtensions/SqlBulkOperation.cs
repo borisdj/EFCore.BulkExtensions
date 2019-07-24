@@ -1,16 +1,27 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
+using FastMember;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace EFCore.BulkExtensions
 {
+    public enum DbServer
+    {
+        SqlServer,
+        MySql,
+        PostrgeSql,
+        Sqlite,
+    }
+
     public enum OperationType
     {
         Insert,
@@ -21,6 +32,11 @@ namespace EFCore.BulkExtensions
         Read
     }
 
+    public class SqlProviderNotSupportedException : NotSupportedException
+    {
+        public SqlProviderNotSupportedException(string providerName, string message = null) : base($"Provider {providerName} not supported. Only SQL Server and SQLite are Currently supported. {message}") { }
+    }
+
     internal static class SqlBulkOperation
     {
         internal static string ColumnMappingExceptionMessage => "The given ColumnMapping does not match up with any column in the source or destination";
@@ -28,213 +44,385 @@ namespace EFCore.BulkExtensions
         #region MainOps
         public static void Insert<T>(DbContext context, IList<T> entities, TableInfo tableInfo, Action<decimal> progress)
         {
-            var sqlConnection = OpenAndGetSqlConnection(context, tableInfo.BulkConfig);
-            var transaction = context.Database.CurrentTransaction;
-            try
+            string providerName = context.Database.ProviderName; // "Microsoft.EntityFrameworkCore.*****"
+            // -- SQL Server --
+            if (providerName.EndsWith(DbServer.SqlServer.ToString()))
             {
-                using (var sqlBulkCopy = GetSqlBulkCopy(sqlConnection, transaction, tableInfo.BulkConfig))
+                var connection = OpenAndGetSqlConnection(context, tableInfo.BulkConfig);
+                var transaction = context.Database.CurrentTransaction;
+                try
                 {
-                    bool useFastMember = tableInfo.HasOwnedTypes == false                      // With OwnedTypes DataTable is used since library FastMember can not (https://github.com/mgravell/fast-member/issues/21)
-                                         && tableInfo.ColumnNameContainsSquareBracket == false // FastMember does not support escaped columnNames  ] -> ]]
-                                         && tableInfo.ShadowProperties.Count == 0              // With Shadow prop. Discriminator (TPH inheritance) also not used because FastMember is slow for Update (https://github.com/borisdj/EFCore.BulkExtensions/pull/17)
-                                         && !tableInfo.ConvertibleProperties.Any()             // With ConvertibleProperties FastMember is slow as well
-                                         && !tableInfo.HasAbstractList                         // AbstractList not working with FastMember
-                                         && !tableInfo.BulkConfig.UseOnlyDataTable;
-                    bool setColumnMapping = useFastMember;
-                    tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, setColumnMapping, progress);
-                    try
+                    using (var sqlBulkCopy = GetSqlBulkCopy((SqlConnection)connection, transaction, tableInfo.BulkConfig))
                     {
-                        if (useFastMember)
+                        bool useFastMember = tableInfo.HasOwnedTypes == false                      // With OwnedTypes DataTable is used since library FastMember can not (https://github.com/mgravell/fast-member/issues/21)
+                                             && tableInfo.ColumnNameContainsSquareBracket == false // FastMember does not support escaped columnNames  ] -> ]]
+                                             && tableInfo.ShadowProperties.Count == 0              // With Shadow prop. Discriminator (TPH inheritance) also not used because FastMember is slow for Update (https://github.com/borisdj/EFCore.BulkExtensions/pull/17)
+                                             && !tableInfo.ConvertibleProperties.Any()             // With ConvertibleProperties FastMember is slow as well
+                                             && !tableInfo.HasAbstractList                         // AbstractList not working with FastMember
+                                             && !tableInfo.BulkConfig.UseOnlyDataTable;
+                        bool setColumnMapping = useFastMember;
+                        tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, setColumnMapping, progress);
+                        try
                         {
-                            using (var reader = ObjectReaderEx.Create(entities, tableInfo.ShadowProperties, tableInfo.ConvertibleProperties, context, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
+                            if (useFastMember)
                             {
-                                sqlBulkCopy.WriteToServer(reader);
+                                using (var reader = ObjectReaderEx.Create(entities, tableInfo.ShadowProperties, tableInfo.ConvertibleProperties, context, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
+                                {
+                                    sqlBulkCopy.WriteToServer(reader);
+                                }
+                            }
+                            else
+                            {
+                                var dataTable = GetDataTable<T>(context, entities, sqlBulkCopy, tableInfo);
+                                sqlBulkCopy.WriteToServer(dataTable);
                             }
                         }
-                        else
+                        catch (InvalidOperationException ex)
                         {
-                            var dataTable = GetDataTable<T>(context, entities, sqlBulkCopy, tableInfo);
-                            sqlBulkCopy.WriteToServer(dataTable);
+                            if (ex.Message.Contains(ColumnMappingExceptionMessage))
+                            {
+                                if (!tableInfo.CheckTableExist(context, tableInfo))
+                                {
+                                    context.Database.ExecuteSqlCommand(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo)); // Will throw Exception specify missing db column: Invalid column name ''
+                                    context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName));
+                                }
+                            }
+                            throw ex;
                         }
                     }
-                    catch (InvalidOperationException ex)
+                }
+                finally
+                {
+                    if (transaction == null)
                     {
-                        if (ex.Message.Contains(ColumnMappingExceptionMessage))
-                        {
-                            if (!tableInfo.CheckTableExist(context, tableInfo))
-                            {
-                                context.Database.ExecuteSqlCommand(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo)); // Will throw Exception specify missing db column: Invalid column name ''
-                                context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName));
-                            }
-                        }
-                        throw ex;
+                        connection.Close();
                     }
                 }
             }
-            finally
+            // -- SQLite --
+            else if (providerName.EndsWith(DbServer.Sqlite.ToString()))
             {
-                if (transaction == null)
+                var connection = OpenAndGetSqliteConnection(context, tableInfo.BulkConfig);
+                var transaction = tableInfo.BulkConfig.SqliteTransaction ?? connection.BeginTransaction();
+                try
                 {
-                    sqlConnection.Close();
+                    var command = GetSqliteCommand(context, entities, tableInfo, connection, transaction);
+
+                    var typeAccessor = TypeAccessor.Create(typeof(T), true);
+                    foreach (var item in entities)
+                    {
+                        LoadSqliteValues(tableInfo, typeAccessor, item, command);
+                        command.ExecuteNonQuery();
+                    }
                 }
+                finally
+                {
+                    if (tableInfo.BulkConfig.SqliteTransaction == null)
+                    {
+                        transaction.Commit();
+                        transaction.Dispose();
+                    }
+                    if (tableInfo.BulkConfig.SqliteConnection == null)
+                        connection.Close();
+                }
+            }
+            else
+            {
+                throw new SqlProviderNotSupportedException(providerName);
             }
         }
 
         public static async Task InsertAsync<T>(DbContext context, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, CancellationToken cancellationToken)
         {
-            var sqlConnection = await OpenAndGetSqlConnectionAsync(context, tableInfo.BulkConfig, cancellationToken).ConfigureAwait(false);
-            var transaction = context.Database.CurrentTransaction;
-            try
+            string providerName = context.Database.ProviderName; // "Microsoft.EntityFrameworkCore.*****"
+            // -- SQL Server --
+            if (providerName.EndsWith(DbServer.SqlServer.ToString()))
             {
-                using (var sqlBulkCopy = GetSqlBulkCopy(sqlConnection, transaction, tableInfo.BulkConfig))
+                var connection = await OpenAndGetSqlConnectionAsync(context, tableInfo.BulkConfig, cancellationToken).ConfigureAwait(false);
+                var transaction = context.Database.CurrentTransaction;
+                try
                 {
-                    bool useFastMember = tableInfo.HasOwnedTypes == false
-                                         && tableInfo.ColumnNameContainsSquareBracket == false
-                                         && tableInfo.ShadowProperties.Count == 0
-                                         && !tableInfo.ConvertibleProperties.Any()
-                                         && !tableInfo.HasAbstractList
-                                         && !tableInfo.BulkConfig.UseOnlyDataTable;
-                    bool setColumnMapping = useFastMember;
-                    tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, setColumnMapping, progress);
-                    try
+                    using (var sqlBulkCopy = GetSqlBulkCopy((SqlConnection)connection, transaction, tableInfo.BulkConfig))
                     {
-                        if (useFastMember)
+                        bool useFastMember = tableInfo.HasOwnedTypes == false
+                                             && tableInfo.ColumnNameContainsSquareBracket == false
+                                             && tableInfo.ShadowProperties.Count == 0
+                                             && !tableInfo.ConvertibleProperties.Any()
+                                             && !tableInfo.HasAbstractList
+                                             && !tableInfo.BulkConfig.UseOnlyDataTable;
+                        bool setColumnMapping = useFastMember;
+                        tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, setColumnMapping, progress);
+                        try
                         {
-                            using (var reader = ObjectReaderEx.Create(entities, tableInfo.ShadowProperties, tableInfo.ConvertibleProperties, context, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
+                            if (useFastMember)
                             {
-                                await sqlBulkCopy.WriteToServerAsync(reader, cancellationToken).ConfigureAwait(false);
+                                using (var reader = ObjectReaderEx.Create(entities, tableInfo.ShadowProperties, tableInfo.ConvertibleProperties, context, tableInfo.PropertyColumnNamesDict.Keys.ToArray()))
+                                {
+                                    await sqlBulkCopy.WriteToServerAsync(reader, cancellationToken).ConfigureAwait(false);
+                                }
+                            }
+                            else
+                            {
+                                var dataTable = GetDataTable<T>(context, entities, sqlBulkCopy, tableInfo);
+                                await sqlBulkCopy.WriteToServerAsync(dataTable, cancellationToken).ConfigureAwait(false);
                             }
                         }
-                        else
+                        catch (InvalidOperationException ex)
                         {
-                            var dataTable = GetDataTable<T>(context, entities, sqlBulkCopy, tableInfo);
-                            await sqlBulkCopy.WriteToServerAsync(dataTable, cancellationToken).ConfigureAwait(false);
+                            if (ex.Message.Contains(ColumnMappingExceptionMessage))
+                            {
+                                if (!await tableInfo.CheckTableExistAsync(context, tableInfo, cancellationToken).ConfigureAwait(false))
+                                {
+                                    await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo), cancellationToken).ConfigureAwait(false);
+                                    await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName), cancellationToken).ConfigureAwait(false);
+                                }
+                            }
+                            throw ex;
                         }
                     }
-                    catch (InvalidOperationException ex)
+                }
+                finally
+                {
+                    if (transaction == null)
                     {
-                        if (ex.Message.Contains(ColumnMappingExceptionMessage))
-                        {
-                            if (!await tableInfo.CheckTableExistAsync(context, tableInfo, cancellationToken).ConfigureAwait(false))
-                            {
-                                await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo), cancellationToken).ConfigureAwait(false);
-                                await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName), cancellationToken).ConfigureAwait(false);
-                            }
-                        }
-                        throw ex;
+                        connection.Close();
                     }
                 }
             }
-            finally
+            // -- SQLite --
+            else if (providerName.EndsWith(DbServer.Sqlite.ToString()))
             {
-                if (transaction == null)
+                var connection = await OpenAndGetSqliteConnectionAsync(context, tableInfo.BulkConfig, cancellationToken).ConfigureAwait(false);
+                var transaction = tableInfo.BulkConfig.SqliteTransaction ?? connection.BeginTransaction();
+                try
                 {
-                    sqlConnection.Close();
+                    var command = GetSqliteCommand(context, entities, tableInfo, connection, transaction);
+
+                    var typeAccessor = TypeAccessor.Create(typeof(T), true);
+                    foreach (var item in entities)
+                    {
+                        LoadSqliteValues(tableInfo, typeAccessor, item, command);
+                        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                    }
                 }
+                finally
+                {
+                    if (tableInfo.BulkConfig.SqliteTransaction == null)
+                    {
+                        transaction.Commit();
+                        transaction.Dispose();
+                    }
+                    if (tableInfo.BulkConfig.SqliteConnection == null)
+                        connection.Close();
+                }
+            }
+            else
+            {
+                throw new SqlProviderNotSupportedException(providerName);
             }
         }
 
         public static void Merge<T>(DbContext context, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress) where T : class
         {
-            tableInfo.InsertToTempTable = true;
-            tableInfo.CheckHasIdentity(context);
-
-            context.Database.ExecuteSqlCommand(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo));
-            if (tableInfo.CreatedOutputTable)
+            string providerName = context.Database.ProviderName;
+            // -- SQL Server --
+            if (providerName.EndsWith(DbServer.SqlServer.ToString()))
             {
-                context.Database.ExecuteSqlCommand(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempOutputTableName, tableInfo, true));
-                if (tableInfo.TimeStampColumnName != null)
-                {
-                    context.Database.ExecuteSqlCommand(SqlQueryBuilder.AddColumn(tableInfo.FullTempOutputTableName, tableInfo.TimeStampColumnName, tableInfo.TimeStampOutColumnType));
-                }
-            }
+                tableInfo.InsertToTempTable = true;
+                tableInfo.CheckHasIdentity(context);
 
-            bool keepIdentity = tableInfo.BulkConfig.SqlBulkCopyOptions.HasFlag(SqlBulkCopyOptions.KeepIdentity);
-            try
-            {
-                Insert(context, entities, tableInfo, progress);
-
-                if (keepIdentity && tableInfo.HasIdentity)
-                {
-                    context.Database.OpenConnection();
-                    context.Database.ExecuteSqlCommand(SqlQueryBuilder.SetIdentityInsert(tableInfo.FullTableName, true));
-                }
-
-                context.Database.ExecuteSqlCommand(SqlQueryBuilder.MergeTable(tableInfo, operationType));
-
+                context.Database.ExecuteSqlCommand(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo));
                 if (tableInfo.CreatedOutputTable)
                 {
-                    tableInfo.LoadOutputData(context, entities);
-                }
-            }
-            finally
-            {
-                if (!tableInfo.BulkConfig.UseTempDB)
-                {
-                    if (tableInfo.CreatedOutputTable)
+                    context.Database.ExecuteSqlCommand(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempOutputTableName, tableInfo, true));
+                    if (tableInfo.TimeStampColumnName != null)
                     {
-                        context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName));
+                        context.Database.ExecuteSqlCommand(SqlQueryBuilder.AddColumn(tableInfo.FullTempOutputTableName, tableInfo.TimeStampColumnName, tableInfo.TimeStampOutColumnType));
                     }
-                    context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName));
                 }
 
-                if (keepIdentity && tableInfo.HasIdentity)
+                bool keepIdentity = tableInfo.BulkConfig.SqlBulkCopyOptions.HasFlag(SqlBulkCopyOptions.KeepIdentity);
+                try
                 {
-                    context.Database.ExecuteSqlCommand(SqlQueryBuilder.SetIdentityInsert(tableInfo.FullTableName, false));
-                    context.Database.CloseConnection();
+                    Insert(context, entities, tableInfo, progress);
+
+                    if (keepIdentity && tableInfo.HasIdentity)
+                    {
+                        context.Database.OpenConnection();
+                        context.Database.ExecuteSqlCommand(SqlQueryBuilder.SetIdentityInsert(tableInfo.FullTableName, true));
+                    }
+
+                    context.Database.ExecuteSqlCommand(SqlQueryBuilder.MergeTable(tableInfo, operationType));
+
+                    if (tableInfo.CreatedOutputTable)
+                    {
+                        tableInfo.LoadOutputData(context, entities);
+                    }
                 }
+                finally
+                {
+                    if (!tableInfo.BulkConfig.UseTempDB)
+                    {
+                        if (tableInfo.CreatedOutputTable)
+                        {
+                            context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName));
+                        }
+                        context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName));
+                    }
+
+                    if (keepIdentity && tableInfo.HasIdentity)
+                    {
+                        context.Database.ExecuteSqlCommand(SqlQueryBuilder.SetIdentityInsert(tableInfo.FullTableName, false));
+                        context.Database.CloseConnection();
+                    }
+                }
+            }
+            // -- SQLite --
+            else if (providerName.EndsWith(DbServer.Sqlite.ToString()))
+            {
+                var connection = OpenAndGetSqliteConnection(context, tableInfo.BulkConfig);
+                var transaction = tableInfo.BulkConfig.SqliteTransaction ?? connection.BeginTransaction();
+                try
+                {
+                    var command = GetSqliteCommand(context, entities, tableInfo, connection, transaction);
+
+                    var typeAccessor = TypeAccessor.Create(typeof(T), true);
+                    foreach (var item in entities)
+                    {
+                        LoadSqliteValues(tableInfo, typeAccessor, item, command);
+                        command.ExecuteNonQuery();
+                    }
+
+                    if (operationType != OperationType.Delete && tableInfo.BulkConfig.SetOutputIdentity && tableInfo.IdentityColumnName != null)
+                    {
+                        command.CommandText = SqlQueryBuilderSqlite.SelectLastInsertRowId();
+                        long lastRowIdScalar = (long)command.ExecuteScalar();
+                        int lastRowId = (int)lastRowIdScalar;
+                        var accessor = TypeAccessor.Create(typeof(T), true);
+                        string identityPropertyName = tableInfo.PropertyColumnNamesDict.SingleOrDefault(a => a.Value == tableInfo.IdentityColumnName).Key;
+                        for (int i = entities.Count -1; i >= 0; i--)
+                        {
+                            accessor[entities[i], identityPropertyName] = lastRowId;
+                            lastRowId--;
+                        }
+                    }
+                }
+                finally
+                {
+                    if (tableInfo.BulkConfig.SqliteTransaction == null)
+                    {
+                        transaction.Commit();
+                        transaction.Dispose();
+                    }
+                    if (tableInfo.BulkConfig.SqliteConnection == null)
+                        connection.Close();
+                }
+            }
+            else
+            {
+                throw new SqlProviderNotSupportedException(providerName);
             }
         }
 
         public static async Task MergeAsync<T>(DbContext context, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, CancellationToken cancellationToken) where T : class
         {
-            tableInfo.InsertToTempTable = true;
-            await tableInfo.CheckHasIdentityAsync(context, cancellationToken).ConfigureAwait(false);
-
-            await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo), cancellationToken).ConfigureAwait(false);
-            if (tableInfo.CreatedOutputTable)
+            string providerName = context.Database.ProviderName;
+            // -- SQL Server --
+            if (providerName.EndsWith(DbServer.SqlServer.ToString()))
             {
-                await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempOutputTableName, tableInfo, true), cancellationToken).ConfigureAwait(false);
-                if (tableInfo.TimeStampColumnName != null)
-                {
-                    await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.AddColumn(tableInfo.FullTempOutputTableName, tableInfo.TimeStampColumnName, tableInfo.TimeStampOutColumnType), cancellationToken).ConfigureAwait(false);
-                }
-            }
+                tableInfo.InsertToTempTable = true;
+                await tableInfo.CheckHasIdentityAsync(context, cancellationToken).ConfigureAwait(false);
 
-            bool keepIdentity = tableInfo.BulkConfig.SqlBulkCopyOptions.HasFlag(SqlBulkCopyOptions.KeepIdentity);
-            try
-            {
-                await InsertAsync(context, entities, tableInfo, progress, cancellationToken).ConfigureAwait(false);
-
-                if (keepIdentity && tableInfo.HasIdentity)
-                {
-                    await context.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
-                    await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.SetIdentityInsert(tableInfo.FullTableName, true), cancellationToken).ConfigureAwait(false);
-                }
-
-                await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.MergeTable(tableInfo, operationType), cancellationToken).ConfigureAwait(false);
-
+                await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo), cancellationToken).ConfigureAwait(false);
                 if (tableInfo.CreatedOutputTable)
                 {
-                    await tableInfo.LoadOutputDataAsync(context, entities, cancellationToken).ConfigureAwait(false);
-                }
-            }
-            finally
-            {
-                if (!tableInfo.BulkConfig.UseTempDB)
-                {
-                    if (tableInfo.CreatedOutputTable)
+                    await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempOutputTableName, tableInfo, true), cancellationToken).ConfigureAwait(false);
+                    if (tableInfo.TimeStampColumnName != null)
                     {
-                        await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName), cancellationToken).ConfigureAwait(false);
+                        await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.AddColumn(tableInfo.FullTempOutputTableName, tableInfo.TimeStampColumnName, tableInfo.TimeStampOutColumnType), cancellationToken).ConfigureAwait(false);
                     }
-                    await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName), cancellationToken).ConfigureAwait(false);
                 }
 
-                if (keepIdentity && tableInfo.HasIdentity)
+                bool keepIdentity = tableInfo.BulkConfig.SqlBulkCopyOptions.HasFlag(SqlBulkCopyOptions.KeepIdentity);
+                try
                 {
-                    await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.SetIdentityInsert(tableInfo.FullTableName, false), cancellationToken).ConfigureAwait(false);
-                    context.Database.CloseConnection();
+                    await InsertAsync(context, entities, tableInfo, progress, cancellationToken).ConfigureAwait(false);
+
+                    if (keepIdentity && tableInfo.HasIdentity)
+                    {
+                        await context.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+                        await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.SetIdentityInsert(tableInfo.FullTableName, true), cancellationToken).ConfigureAwait(false);
+                    }
+
+                    await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.MergeTable(tableInfo, operationType), cancellationToken).ConfigureAwait(false);
+
+                    if (tableInfo.CreatedOutputTable)
+                    {
+                        await tableInfo.LoadOutputDataAsync(context, entities, cancellationToken).ConfigureAwait(false);
+                    }
                 }
+                finally
+                {
+                    if (!tableInfo.BulkConfig.UseTempDB)
+                    {
+                        if (tableInfo.CreatedOutputTable)
+                        {
+                            await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName), cancellationToken).ConfigureAwait(false);
+                        }
+                        await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName), cancellationToken).ConfigureAwait(false);
+                    }
+
+                    if (keepIdentity && tableInfo.HasIdentity)
+                    {
+                        await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.SetIdentityInsert(tableInfo.FullTableName, false), cancellationToken).ConfigureAwait(false);
+                        context.Database.CloseConnection();
+                    }
+                }
+            }
+            // -- SQLite --
+            else if (providerName.EndsWith(DbServer.Sqlite.ToString()))
+            {
+                var connection = await OpenAndGetSqliteConnectionAsync(context, tableInfo.BulkConfig, cancellationToken).ConfigureAwait(false);
+                var transaction = tableInfo.BulkConfig.SqliteTransaction ?? connection.BeginTransaction();
+                try
+                {
+                    var command = GetSqliteCommand(context, entities, tableInfo, connection, transaction);
+
+                    var typeAccessor = TypeAccessor.Create(typeof(T), true);
+                    foreach (var item in entities)
+                    {
+                        LoadSqliteValues(tableInfo, typeAccessor, item, command);
+                        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                    }
+
+                    if (operationType != OperationType.Delete && tableInfo.BulkConfig.SetOutputIdentity && tableInfo.IdentityColumnName != null)
+                    {
+                        command.CommandText = SqlQueryBuilderSqlite.SelectLastInsertRowId();
+                        long lastRowIdScalar = (long) await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+                        int lastRowId = (int)lastRowIdScalar;
+                        var accessor = TypeAccessor.Create(typeof(T), true);
+                        string identityPropertyName = tableInfo.PropertyColumnNamesDict.SingleOrDefault(a => a.Value == tableInfo.IdentityColumnName).Key;
+                        for (int i = entities.Count - 1; i >= 0; i--)
+                        {
+                            accessor[entities[i], identityPropertyName] = lastRowId;
+                            lastRowId--;
+                        }
+                    }
+                }
+                finally
+                {
+                    if (tableInfo.BulkConfig.SqliteTransaction == null)
+                    {
+                        transaction.Commit();
+                        transaction.Dispose();
+                    }
+                    if (tableInfo.BulkConfig.SqliteConnection == null)
+                        connection.Close();
+                }
+            }
+            else
+            {
+                throw new SqlProviderNotSupportedException(providerName);
             }
         }
 
@@ -242,36 +430,49 @@ namespace EFCore.BulkExtensions
         {
             Dictionary<string, string> previousPropertyColumnNamesDict = tableInfo.ConfigureBulkReadTableInfo(context);
 
-            context.Database.ExecuteSqlCommand(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo));
-
-            try
+            string providerName = context.Database.ProviderName;
+            // -- SQL Server --
+            if (providerName.EndsWith(DbServer.SqlServer.ToString()))
             {
-                Insert(context, entities, tableInfo, progress);
-
-                tableInfo.PropertyColumnNamesDict = previousPropertyColumnNamesDict;
-
-                var sqlQuery = SqlQueryBuilder.SelectJoinTable(tableInfo);
-
-                //var existingEntities = context.Set<T>().FromSql(q).AsNoTracking().ToList(); // Not used because of EF Memory leak bug
-                Expression<Func<DbContext, IQueryable<T>>> expression = null;
-                if (tableInfo.BulkConfig.TrackingEntities)
+                context.Database.ExecuteSqlCommand(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo));
+                try
                 {
-                    expression = (ctx) => ctx.Set<T>().FromSql(sqlQuery);
+                    Insert(context, entities, tableInfo, progress);
+
+                    tableInfo.PropertyColumnNamesDict = previousPropertyColumnNamesDict;
+
+                    var sqlQuery = SqlQueryBuilder.SelectJoinTable(tableInfo);
+
+                    //var existingEntities = context.Set<T>().FromSql(q).AsNoTracking().ToList(); // Not used because of EF Memory leak bug
+                    Expression<Func<DbContext, IQueryable<T>>> expression = null;
+                    if (tableInfo.BulkConfig.TrackingEntities)
+                    {
+                        expression = (ctx) => ctx.Set<T>().FromSql(sqlQuery);
+                    }
+                    else
+                    {
+                        expression = (ctx) => ctx.Set<T>().FromSql(sqlQuery).AsNoTracking();
+                    }
+
+                    var compiled = EF.CompileQuery(expression); // instead using Compiled queries
+                    var existingEntities = compiled(context).ToList();
+
+                    tableInfo.UpdateReadEntities(entities, existingEntities);
                 }
-                else
+                finally
                 {
-                    expression = (ctx) => ctx.Set<T>().FromSql(sqlQuery).AsNoTracking();
+                    if (!tableInfo.BulkConfig.UseTempDB)
+                        context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName));
                 }
-
-                var compiled = EF.CompileQuery(expression); // instead using Compiled queries
-                var existingEntities = compiled(context).ToList();
-
-                tableInfo.UpdateReadEntities(entities, existingEntities);
             }
-            finally
+            // -- Sqlite --
+            else if (providerName.EndsWith(DbServer.Sqlite.ToString()))
             {
-                if (!tableInfo.BulkConfig.UseTempDB)
-                    context.Database.ExecuteSqlCommand(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName));
+                throw new NotImplementedException();
+            }
+            else
+            {
+                throw new SqlProviderNotSupportedException(providerName);
             }
         }
 
@@ -279,35 +480,48 @@ namespace EFCore.BulkExtensions
         {
             Dictionary<string, string> previousPropertyColumnNamesDict = tableInfo.ConfigureBulkReadTableInfo(context);
 
-            await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo), cancellationToken).ConfigureAwait(false);
-
-            try
+            string providerName = context.Database.ProviderName;
+            // -- SQL Server --
+            if (providerName.EndsWith(DbServer.SqlServer.ToString()))
             {
-                await InsertAsync(context, entities, tableInfo, progress, cancellationToken).ConfigureAwait(false);
-
-                tableInfo.PropertyColumnNamesDict = previousPropertyColumnNamesDict;
-
-                var sqlQuery = SqlQueryBuilder.SelectJoinTable(tableInfo);
-
-                //var existingEntities = await context.Set<T>().FromSql(sqlQuery).ToListAsync(cancellationToken);
-                Expression<Func<DbContext, IQueryable<T>>> expression = null;
-                if (tableInfo.BulkConfig.TrackingEntities)
+                await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo), cancellationToken).ConfigureAwait(false);
+                try
                 {
-                    expression = (ctx) => ctx.Set<T>().FromSql(sqlQuery);
-                }
-                else
-                {
-                    expression = (ctx) => ctx.Set<T>().FromSql(sqlQuery).AsNoTracking();
-                }
-                var compiled = EF.CompileAsyncQuery(expression);
-                var existingEntities = (await compiled(context).ToListAsync(cancellationToken).ConfigureAwait(false));
+                    await InsertAsync(context, entities, tableInfo, progress, cancellationToken).ConfigureAwait(false);
 
-                tableInfo.UpdateReadEntities(entities, existingEntities);
+                    tableInfo.PropertyColumnNamesDict = previousPropertyColumnNamesDict;
+
+                    var sqlQuery = SqlQueryBuilder.SelectJoinTable(tableInfo);
+
+                    //var existingEntities = await context.Set<T>().FromSql(sqlQuery).ToListAsync(cancellationToken);
+                    Expression<Func<DbContext, IQueryable<T>>> expression = null;
+                    if (tableInfo.BulkConfig.TrackingEntities)
+                    {
+                        expression = (ctx) => ctx.Set<T>().FromSql(sqlQuery);
+                    }
+                    else
+                    {
+                        expression = (ctx) => ctx.Set<T>().FromSql(sqlQuery).AsNoTracking();
+                    }
+                    var compiled = EF.CompileAsyncQuery(expression);
+                    var existingEntities = (await compiled(context).ToListAsync(cancellationToken).ConfigureAwait(false));
+
+                    tableInfo.UpdateReadEntities(entities, existingEntities);
+                }
+                finally
+                {
+                    if (!tableInfo.BulkConfig.UseTempDB)
+                        await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName), cancellationToken).ConfigureAwait(false);
+                }
             }
-            finally
+            // -- Sqlite --
+            else if (providerName.EndsWith(DbServer.Sqlite.ToString()))
             {
-                if (!tableInfo.BulkConfig.UseTempDB)
-                    await context.Database.ExecuteSqlCommandAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName), cancellationToken).ConfigureAwait(false);
+                throw new NotImplementedException();
+            }
+            else
+            {
+                throw new SqlProviderNotSupportedException(providerName);
             }
         }
         #endregion
@@ -432,25 +646,115 @@ namespace EFCore.BulkExtensions
         }
         #endregion
 
+        #region SqliteData
+        internal static SqliteCommand GetSqliteCommand<T>(DbContext context, IList<T> entities, TableInfo tableInfo, SqliteConnection connection, SqliteTransaction transaction)
+        {
+            SqliteCommand command = connection.CreateCommand();
+            command.Transaction = transaction;
+
+            OperationType operationType = tableInfo.BulkConfig.OperationType;
+
+            if (operationType == OperationType.Insert)
+            {
+                command.CommandText = SqlQueryBuilderSqlite.InsertIntoTable(tableInfo, OperationType.Insert);
+            }
+            else if (operationType == OperationType.InsertOrUpdate)
+            {
+                command.CommandText = SqlQueryBuilderSqlite.InsertIntoTable(tableInfo, OperationType.InsertOrUpdate);
+            }
+            else if (operationType == OperationType.InsertOrUpdateDelete)
+            {
+                throw new NotSupportedException("Sqlite supports only UPSERT(analog for MERGE WHEN MATCHED) but does have funcionality to do: 'WHEN NOT MATCHED BY SOURCE THEN DELETE'" +
+                                                "What can be done is to read all Data, find rows that are not is input List, then with those do the BulkDelete.");
+            }
+            else if(operationType == OperationType.Update)
+            {
+                command.CommandText = SqlQueryBuilderSqlite.UpdateSetTable(tableInfo);
+            }
+            else if (operationType == OperationType.Delete)
+            {
+                command.CommandText = SqlQueryBuilderSqlite.DeleteFromTable(tableInfo);
+            }
+
+            var type = tableInfo.HasAbstractList ? entities[0].GetType() : typeof(T);
+            var entityType = context.Model.FindEntityType(type);
+            var entityPropertiesDict = entityType.GetProperties().Where(a => tableInfo.PropertyColumnNamesDict.ContainsKey(a.Name)).ToDictionary(a => a.Name, a => a);
+            var properties = type.GetProperties();
+
+            foreach (var property in properties)
+            {
+                if (entityPropertiesDict.ContainsKey(property.Name))
+                {
+                    var relational = entityPropertiesDict[property.Name].Relational();
+                    string columnName = relational.ColumnName;
+                    var propertyType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
+
+                    /*var sqliteType = SqliteType.Text; // "String" || "Decimal" || "DateTime"
+                    if (propertyType.Name == "Int16" || propertyType.Name == "Int32" || propertyType.Name == "Int64")
+                        sqliteType = SqliteType.Integer;
+                    if (propertyType.Name == "Float" || propertyType.Name == "Double")
+                        sqliteType = SqliteType.Real;
+                    if (propertyType.Name == "Guid" )
+                        sqliteType = SqliteType.Blob; */
+
+                    var parameter = new SqliteParameter($"@{columnName}", propertyType); // ,sqliteType // ,null
+                    command.Parameters.Add(parameter);
+                }
+            }
+            command.Prepare(); // Not Required (check if same efficiency when removed)
+            return command;
+        }
+
+        internal static void LoadSqliteValues<T>(TableInfo tableInfo, TypeAccessor typeAccessor, T item, SqliteCommand command)
+        {
+            List<string> columnsList = tableInfo.PropertyColumnNamesDict.Values.ToList();
+            foreach (var column in columnsList)
+            {
+                var value = typeAccessor[item, column] ?? DBNull.Value;
+                command.Parameters[$"@{column}"].Value = value;
+            }
+        }
+        #endregion
+
         #region Connection
-        internal static SqlConnection OpenAndGetSqlConnection(DbContext context, BulkConfig config)
+        internal static DbConnection OpenAndGetSqlConnection(DbContext context, BulkConfig config)
         {
             var connection = context.GetUnderlyingConnection(config);
             if (connection.State != ConnectionState.Open)
             {
                 connection.Open();
             }
-            return (SqlConnection)connection;
+            return connection;
         }
 
-        internal static async Task<SqlConnection> OpenAndGetSqlConnectionAsync(DbContext context, BulkConfig config, CancellationToken cancellationToken)
+        internal static async Task<DbConnection> OpenAndGetSqlConnectionAsync(DbContext context, BulkConfig config, CancellationToken cancellationToken)
         {
             var connection = context.GetUnderlyingConnection(config);
             if (connection.State != ConnectionState.Open)
             {
                 await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
             }
-            return (SqlConnection)connection;
+            return connection;
+        }
+
+        internal static SqliteConnection OpenAndGetSqliteConnection(DbContext context, BulkConfig bulkConfig)
+        {
+            var connection = bulkConfig.SqliteConnection ?? (SqliteConnection)context.Database.GetDbConnection();
+            if (connection.State != ConnectionState.Open)
+            {
+                connection.Open();
+            }
+            return connection;
+        }
+
+        internal static async Task<SqliteConnection> OpenAndGetSqliteConnectionAsync(DbContext context, BulkConfig bulkConfig, CancellationToken cancellationToken)
+        {
+            var connection = bulkConfig.SqliteConnection ?? (SqliteConnection)context.Database.GetDbConnection();
+            if (connection.State != ConnectionState.Open)
+            {
+                await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+            }
+            return connection;
         }
 
         private static SqlBulkCopy GetSqlBulkCopy(SqlConnection sqlConnection, IDbContextTransaction transaction, BulkConfig config)

@@ -58,8 +58,9 @@ namespace EFCore.BulkExtensions
             var tableInfo = new TableInfo
             {
                 NumberOfEntities = entities.Count,
-                BulkConfig = bulkConfig ?? new BulkConfig()
+                BulkConfig = bulkConfig ?? new BulkConfig() { }
             };
+            tableInfo.BulkConfig.OperationType = operationType;
 
             bool isExplicitTransaction = context.Database.GetDbConnection().State == ConnectionState.Open;
             if (tableInfo.BulkConfig.UseTempDB == true && !isExplicitTransaction && (operationType != OperationType.Insert || tableInfo.BulkConfig.SetOutputIdentity))
@@ -103,6 +104,8 @@ namespace EFCore.BulkExtensions
             var ownedTypes = entityType.GetNavigations().Where(a => a.GetTargetType().IsOwned());
             HasOwnedTypes = ownedTypes.Any();
             OwnedTypesDict = ownedTypes.ToDictionary(a => a.Name, a => a);
+
+            IdentityColumnName = allProperties.SingleOrDefault(a => a.IsPrimaryKey() && a.ClrType.Name.StartsWith("Int") && a.ValueGenerated == ValueGenerated.OnAdd)?.Name; // ValueGenerated equals OnAdd even for nonIdentity column like Guid so we only type int as second condition
 
             // timestamp/row version properties are only set by the Db, the property has a [Timestamp] Attribute or is configured in in FluentAPI with .IsRowVersion()
             // They can be identified by the columne type "timestamp" or .IsConcurrencyToken in combination with .ValueGenerated == ValueGenerated.OnAddOrUpdate

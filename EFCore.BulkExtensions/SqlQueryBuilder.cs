@@ -140,11 +140,14 @@ namespace EFCore.BulkExtensions
 
         public static string GetCommaSeparatedColumns(List<string> columnsNames, string prefixTable = null, string equalsTable = null)
         {
+            prefixTable += (prefixTable != null && prefixTable != "@") ? "." : "";
+            equalsTable += (equalsTable != null && equalsTable != "@") ? "." : "";
+
             string commaSeparatedColumns = "";
             foreach (var columnName in columnsNames)
             {
-                commaSeparatedColumns += prefixTable != null ? $"{prefixTable}.[{columnName}]" : $"[{columnName}]";
-                commaSeparatedColumns += equalsTable != null ? $" = {equalsTable}.[{columnName}]" : "";
+                commaSeparatedColumns += prefixTable != "" ? $"{prefixTable}[{columnName}]" : $"[{columnName}]";
+                commaSeparatedColumns += equalsTable != "" ? $" = {equalsTable}[{columnName}]" : "";
                 commaSeparatedColumns += ", ";
             }
             if (commaSeparatedColumns != "")

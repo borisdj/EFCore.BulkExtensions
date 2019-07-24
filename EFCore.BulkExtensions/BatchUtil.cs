@@ -5,6 +5,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
 using Microsoft.EntityFrameworkCore.Query;
@@ -23,10 +24,15 @@ namespace EFCore.BulkExtensions
         // DELETE [a]
         // FROM [Table] AS [a]
         // WHERE [a].[Columns] = FilterValues
-        public static (string, List<SqlParameter>) GetSqlDelete<T>(IQueryable<T> query) where T : class
+        public static (string, List<object>) GetSqlDelete<T>(IQueryable<T> query, DbContext context) where T : class
         {
-            (string sql, string tableAlias, IEnumerable<SqlParameter> innerParameters) = GetBatchSql(query);
-            return ($"DELETE [{tableAlias}]{sql}", new List<SqlParameter>(innerParameters));
+            (string sql, string tableAlias, string tableAliasSufixAs, IEnumerable<object> innerParameters) = GetBatchSql(query, context, isUpdate: false);
+
+            innerParameters = ReloadSqlParameters(context, innerParameters.ToList()); // Sqlite requires SqliteParameters
+            tableAlias = (GetDatabaseType(context) == DbServer.SqlServer) ? $"[{tableAlias}]" : tableAlias;
+
+            var resultQuery = $"DELETE {tableAlias}{sql}";
+            return (resultQuery, new List<object>(innerParameters));
         }
 
         // SELECT [a].[Column1], [a].[Column2], .../r/n
@@ -36,12 +42,17 @@ namespace EFCore.BulkExtensions
         // UPDATE [a] SET [UpdateColumns] = N'updateValues'
         // FROM [Table] AS [a]
         // WHERE [a].[Columns] = FilterValues
-        public static (string, List<SqlParameter>) GetSqlUpdate<T>(IQueryable<T> query, DbContext context, T updateValues, List<string> updateColumns) where T : class, new()
+        public static (string, List<object>) GetSqlUpdate<T>(IQueryable<T> query, DbContext context, T updateValues, List<string> updateColumns) where T : class, new()
         {
-            (string sql, string tableAlias, IEnumerable<SqlParameter> innerParameters) = GetBatchSql(query);
-            var sqlParameters = new List<SqlParameter>(innerParameters);
+            (string sql, string tableAlias, string tableAliasSufixAs, IEnumerable<object> innerParameters) = GetBatchSql(query, context, isUpdate: true);
+            var sqlParameters = new List<object>(innerParameters);
+
             string sqlSET = GetSqlSetSegment(context, updateValues, updateColumns, sqlParameters);
-            return ($"UPDATE [{tableAlias}] {sqlSET}{sql}", sqlParameters);
+
+            sqlParameters = ReloadSqlParameters(context, sqlParameters); // Sqlite requires SqliteParameters
+
+            var resultQuery = $"UPDATE {tableAlias}{tableAliasSufixAs} {sqlSET}{sql}";
+            return (resultQuery, sqlParameters);
         }
 
         /// <summary>
@@ -51,34 +62,76 @@ namespace EFCore.BulkExtensions
         /// <param name="query"></param>
         /// <param name="expression"></param>
         /// <returns></returns>
-        public static (string, List<SqlParameter>) GetSqlUpdate<T>(IQueryable<T> query, Expression<Func<T, T>> expression) where T : class
+        public static (string, List<object>) GetSqlUpdate<T>(IQueryable<T> query, Expression<Func<T, T>> expression) where T : class
         {
-            (string sql, string tableAlias, IEnumerable<SqlParameter> innerParameters) = GetBatchSql(query);
+            DbContext context = BatchUtil.GetDbContext(query);
+            (string sql, string tableAlias, string tableAliasSufixAs, IEnumerable<object> innerParameters) = GetBatchSql(query, context, isUpdate: true);
             var sqlColumns = new StringBuilder();
-            var sqlParameters = new List<SqlParameter>(innerParameters);
+            var sqlParameters = new List<object>(innerParameters);
             var columnNameValueDict = TableInfo.CreateInstance(GetDbContext(query), new List<T>(), OperationType.Read, new BulkConfig()).PropertyColumnNamesDict;
             CreateUpdateBody(columnNameValueDict, tableAlias, expression.Body, ref sqlColumns, ref sqlParameters);
-            return ($"UPDATE [{tableAlias}] SET {sqlColumns.ToString()} {sql}", sqlParameters);
+
+            sqlParameters = ReloadSqlParameters(context, sqlParameters); // Sqlite requires SqliteParameters
+            sqlColumns = (GetDatabaseType(context) == DbServer.SqlServer) ? sqlColumns : sqlColumns.Replace($"[{tableAlias}].", "");
+
+            var resultQuery = $"UPDATE {tableAlias}{tableAliasSufixAs} SET {sqlColumns} {sql}";
+            return (resultQuery, sqlParameters);
         }
 
-        public static (string, string, IEnumerable<SqlParameter>) GetBatchSql<T>(IQueryable<T> query) where T : class
+        public static List<object> ReloadSqlParameters(DbContext context, List<object> sqlParameters)
+        {
+            DbServer databaseType = GetDatabaseType(context);
+            if (databaseType == DbServer.Sqlite)
+            {
+                var sqlParametersReloaded = new List<object>();
+                foreach(var parameter in sqlParameters)
+                {
+                    var sqlParameter = (SqlParameter)parameter;
+                    sqlParametersReloaded.Add(new SqliteParameter(sqlParameter.ParameterName, sqlParameter.Value));
+                }
+                return sqlParametersReloaded;
+            }
+            else // for SqlServer return original
+            {
+                return sqlParameters;
+            }
+        }
+
+        public static (string, string, string, IEnumerable<object>) GetBatchSql<T>(IQueryable<T> query, DbContext context, bool isUpdate) where T : class
         {
             string sqlQuery = query.ToSql();
-            IEnumerable<SqlParameter> innerParameters = new List<SqlParameter>();
+            IEnumerable<object> innerParameters = new List<object>();
             if (!sqlQuery.Contains(" IN (")) // ToParametrizedSql does not work correctly with Contains that is translated to sql IN command
             {
                 (sqlQuery, innerParameters) = query.ToParametrizedSql();
             }
 
-            string tableAlias = sqlQuery.Substring(8, sqlQuery.IndexOf("]") - 8);
+            DbServer databaseType = GetDatabaseType(context);
+            string tableAlias = "";
+            string tableAliasSufixAs = "";
+            if (databaseType != DbServer.Sqlite) // when Sqlite and Deleted metod tableAlias is Empty: ""
+            {
+                string escapeSymbol = (databaseType == DbServer.SqlServer) ? "]" : "."; // SqlServer : PostrgeSql
+                tableAlias = sqlQuery.Substring(8, sqlQuery.IndexOf(escapeSymbol) - 8);
+            }
+
             int indexFROM = sqlQuery.IndexOf(Environment.NewLine);
             string sql = sqlQuery.Substring(indexFROM, sqlQuery.Length - indexFROM);
             sql = sql.Contains("{") ? sql.Replace("{", "{{") : sql; // Curly brackets have to be escaped:
             sql = sql.Contains("}") ? sql.Replace("}", "}}") : sql; // https://github.com/aspnet/EntityFrameworkCore/issues/8820
-            return (sql, tableAlias, innerParameters);
+
+            if (isUpdate && databaseType == DbServer.Sqlite)
+            {
+                int indexPrefixFROM = sql.IndexOf(Environment.NewLine, 1); // skip NewLine from start of string 
+                tableAlias = sql.Substring(7, indexPrefixFROM - 14); // get name of table: "TableName"
+                sql = sql.Substring(indexPrefixFROM, sql.Length - indexPrefixFROM); // remove segment: FROM "TableName" AS "a"
+                tableAliasSufixAs = " AS " + sql.Substring(8 , 3) + " ";
+            }
+
+            return (sql, tableAlias, tableAliasSufixAs, innerParameters);
         }
 
-        public static string GetSqlSetSegment<T>(DbContext context, T updateValues, List<string> updateColumns, List<SqlParameter> parameters) where T : class, new()
+        public static string GetSqlSetSegment<T>(DbContext context, T updateValues, List<string> updateColumns, List<object> parameters) where T : class, new()
         {
             var tableInfo = TableInfo.CreateInstance<T>(context, new List<T>(), OperationType.Read, new BulkConfig());
             string sql = string.Empty;
@@ -140,7 +193,7 @@ namespace EFCore.BulkExtensions
         /// <param name="expression"></param>
         /// <param name="sqlColumns"></param>
         /// <param name="sqlParameters"></param>
-        public static void CreateUpdateBody(Dictionary<string, string> columnNameValueDict, string tableAlias, Expression expression, ref StringBuilder sqlColumns, ref List<SqlParameter> sqlParameters)
+        public static void CreateUpdateBody(Dictionary<string, string> columnNameValueDict, string tableAlias, Expression expression, ref StringBuilder sqlColumns, ref List<object> sqlParameters)
         {
             if (expression is MemberInitExpression memberInitExpression)
             {
@@ -242,6 +295,11 @@ namespace EFCore.BulkExtensions
             var stateManager = (IStateManager)stateManagerProperty;
 
             return stateManager.Context;
+        }
+
+        public static DbServer GetDatabaseType(DbContext context)
+        {
+            return context.Database.ProviderName.EndsWith(DbServer.Sqlite.ToString()) ? DbServer.Sqlite : DbServer.SqlServer;
         }
     }
 }

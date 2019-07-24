@@ -4,6 +4,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
 namespace EFCore.BulkExtensions
@@ -13,7 +14,7 @@ namespace EFCore.BulkExtensions
         public static int BatchDelete<T>(this IQueryable<T> query) where T : class
         {
             DbContext context = BatchUtil.GetDbContext(query);
-            (string sql, var sqlParameters) = BatchUtil.GetSqlDelete(query);
+            (string sql, var sqlParameters) = BatchUtil.GetSqlDelete(query, context);
             return context.Database.ExecuteSqlCommand(sql, sqlParameters);
         }
 
@@ -29,7 +30,7 @@ namespace EFCore.BulkExtensions
         {
             var context = BatchUtil.GetDbContext(query);
             var (sql, sqlParameters) = BatchUtil.GetSqlUpdate(query, updateExpression);
-            return  context.Database.ExecuteSqlCommand(sql, sqlParameters);
+            return context.Database.ExecuteSqlCommand(sql, sqlParameters);
         }
 
         // Async methods
@@ -37,7 +38,8 @@ namespace EFCore.BulkExtensions
         public static async Task<int> BatchDeleteAsync<T>(this IQueryable<T> query, CancellationToken cancellationToken = default(CancellationToken)) where T : class
         {
             DbContext context = BatchUtil.GetDbContext(query);
-						(string sql, var sqlParameters) = BatchUtil.GetSqlDelete(query);
+            DbServer databaseType = context.Database.ProviderName.EndsWith(DbServer.Sqlite.ToString()) ? DbServer.Sqlite : DbServer.SqlServer;
+            (string sql, var sqlParameters) = BatchUtil.GetSqlDelete(query, context);
             return await context.Database.ExecuteSqlCommandAsync(sql, sqlParameters, cancellationToken).ConfigureAwait(false);
         }
 
