@@ -1,0 +1,57 @@
+﻿-- Clear Tables
+DELETE FROM [ItemHistory];
+DELETE FROM [Item];
+
+-- INSERT
+INSERT INTO [Item]
+([ItemId], [Description], [Name], [Price], [Quantity], [TimeUpdated])
+VALUES
+(1, 'Desc1', 'SomeName1', 22.11, 34, '2019-01-01'),
+(2, 'Desc2', 'SomeName2', 12.66, 45, '2019-01-01'),
+(3, 'Desc3', 'SomeName3', 14.35, 46, '2019-01-01');
+
+
+INSERT INTO [Item]
+([ItemId], [Description], [Name], [Price], [Quantity], [TimeUpdated])
+VALUES (@ItemId, @Name, @Description, @Price, @Quantity, @TimeUpdated);
+
+-- UPDATE
+UPDATE [Item]
+SET [Description] = @Description, [Name] = @Name
+WHERE [Name] = @Name;
+
+-- INSERT OR UPDATE 
+-- UPSERT: https://www.sqlite.org/lang_UPSERT.html
+INSERT INTO [Item]
+([ItemId], [Description], [Name], [Price], [Quantity], [TimeUpdated])
+VALUES (3, 'Desc1', 'SomeName3', 22.11, 34, '2019-01-01')
+ON CONFLICT([ItemId]) DO UPDATE
+SET [Description] = 'Desc1', [Name] = 'Name3 UPDATED', [Price] = 22.11, [Quantity] = 34, [TimeUpdated] = '2019-01-01';
+
+
+-- INSERT GUID AS TEXT
+INSERT INTO [ItemHistory]
+([ItemHistoryId], [ItemId], [Remark])
+VALUES
+('00000000-0000-0000-0000-000000000000', 1, 'Desc1')
+
+-- SELECT GUID FROM BLOB AX HEX, TODO: Check How to Select AS TEXT https://neosmart.net/blog/2018/converting-a-binary-blob-guid-to-text-in-sql/
+SELECT
+  substr(hex(ItemHistoryId), 1, 8) || '-' || substr(hex(ItemHistoryId), 9, 4) || '-' ||
+  substr(hex(ItemHistoryId), 13, 4) || '-' || substr(hex(ItemHistoryId), 17, 4) || '-' ||
+  substr(hex(ItemHistoryId), 21, 12)
+  AS ItemHistoryId,
+ItemId, Remark
+FROM [ItemHistory]
+
+
+-- BatchDelete
+DELETE
+FROM [Item] AS [a]
+
+-- BatchUpdate Where
+UPDATE [Item] AS [a] SET [Description] = N'Updated', [Price] = '1.5'
+WHERE ([a].[ItemId] <= 500) AND ([a].[Price] >= 0.0)
+
+UPDATE [Item] AS [a] SET [Description] = 'Updated', [Price] = '1.5'
+WHERE ([ItemId] <= 500) AND ([Price] >= 0.0)

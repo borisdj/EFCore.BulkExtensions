@@ -10,10 +10,14 @@ namespace EFCore.BulkExtensions.Tests
     {
         protected int EntitiesNumber => 1000;
 
-        [Fact]
-        public void BatchTest()
+        [Theory]
+        [InlineData(DbServer.SqlServer)]
+        [InlineData(DbServer.Sqlite)]
+        public void BatchTest(DbServer databaseType)
         {
-            RunBatchDeleteAll();
+            ContextUtil.DbServer = databaseType;
+
+            RunBatchDeleteAll(databaseType);
             RunInsert();
             RunBatchUpdate();
             RunBatchDelete();
@@ -28,15 +32,20 @@ namespace EFCore.BulkExtensions.Tests
             }
         }
 
-        private void RunBatchDeleteAll()
+        public void RunBatchDeleteAll(DbServer databaseType)
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 context.Items.BatchDelete();
-            }
-            using (var context = new TestContext(ContextUtil.GetOptions()))
-            {
-                context.Database.ExecuteSqlCommand("DBCC CHECKIDENT('[dbo].[Item]', RESEED, 0);");
+
+                if (databaseType == DbServer.SqlServer)
+                {
+                    context.Database.ExecuteSqlCommand("DBCC CHECKIDENT('[dbo].[Item]', RESEED, 0);");
+                }
+                if (databaseType == DbServer.Sqlite)
+                {
+                    context.Database.ExecuteSqlCommand("DELETE FROM sqlite_sequence WHERE name = 'Item';");
+                }
             }
         }
 
@@ -92,7 +101,7 @@ namespace EFCore.BulkExtensions.Tests
                     entities.Add(entity);
                 }
 
-                context.Items.AddRange(entities); // does not guarantee insert order
+                context.Items.AddRange(entities); // does not guarantee insert order for SqlServer
                 context.SaveChanges();
             }
         }

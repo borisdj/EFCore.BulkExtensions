@@ -47,13 +47,33 @@ namespace EFCore.BulkExtensions.Tests
 
     public static class ContextUtil
     {
+        public static DbServer DbServer { get; set; }
+
         public static DbContextOptions GetOptions()
         {
-            var builder = new DbContextOptionsBuilder<TestContext>();
             var databaseName = nameof(EFCoreBulkTest);
-            var connectionString = $"Server=localhost;Database={databaseName};Trusted_Connection=True;MultipleActiveResultSets=true";
-            builder.UseSqlServer(connectionString); // Can NOT Test with UseInMemoryDb (Exception: Relational-specific methods can only be used when the context is using a relational)
-            return builder.Options;
+            var optionsBuilder = new DbContextOptionsBuilder<TestContext>();
+
+            if (DbServer == DbServer.SqlServer)
+            {
+                var connectionString = $"Server=localhost;Database={databaseName};Trusted_Connection=True;MultipleActiveResultSets=true";
+                optionsBuilder.UseSqlServer(connectionString); // Can NOT Test with UseInMemoryDb (Exception: Relational-specific methods can only be used when the context is using a relational)
+            }
+            else if (DbServer == DbServer.Sqlite)
+            {
+                string connectionString = $"Data Source={databaseName}.db";
+                optionsBuilder.UseSqlite(connectionString);
+
+                // ALTERNATIVELY:
+                //string connectionString = (new SqliteConnectionStringBuilder { DataSource = $"{databaseName}Lite.db" }).ToString();
+                //optionsBuilder.UseSqlite(new SqliteConnection(connectionString));
+            }
+            else
+            {
+                throw new NotSupportedException($"Database {DbServer} is not supported. Only SQL Server and SQLite are Currently supported.");
+            }
+
+            return optionsBuilder.Options;
         }
     }
 

@@ -11,13 +11,17 @@ namespace EFCore.BulkExtensions.Tests
     {
         protected int EntitiesNumber => 1000;
 
-        [Fact]
-        public async Task BatchTestAsync()
+        [Theory]
+        [InlineData(DbServer.SqlServer)]
+        [InlineData(DbServer.Sqlite)]
+        public async Task BatchTestAsync(DbServer databaseType)
         {
-            await RunBatchDeleteAll();
-            await RunInsert();
-            await RunBatchUpdate();
-            await RunBatchDelete();
+            ContextUtil.DbServer = databaseType;
+
+            await RunBatchDeleteAllAsync(databaseType);
+            await RunInsertAsync();
+            await RunBatchUpdateAsync();
+            await RunBatchDeleteAsync();
 
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
@@ -26,23 +30,26 @@ namespace EFCore.BulkExtensions.Tests
                 Assert.Equal("Updated", lastItem.Description);
                 Assert.Equal(100, lastItem.Quantity);
             }
-
-            await RunBatchDeleteAll();
         }
 
-        private async Task RunBatchDeleteAll()
+        public async Task RunBatchDeleteAllAsync(DbServer databaseType)
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 await context.Items.BatchDeleteAsync();
-            }
-            using (var context = new TestContext(ContextUtil.GetOptions()))
-            {
-                await context.Database.ExecuteSqlCommandAsync("DBCC CHECKIDENT('[dbo].[Item]', RESEED, 0);");
+
+                if (databaseType == DbServer.SqlServer)
+                {
+                    await context.Database.ExecuteSqlCommandAsync("DBCC CHECKIDENT('[dbo].[Item]', RESEED, 0);").ConfigureAwait(false);
+                }
+                if (databaseType == DbServer.Sqlite)
+                {
+                    await context.Database.ExecuteSqlCommandAsync("DELETE FROM sqlite_sequence WHERE name = 'Item';").ConfigureAwait(false);
+                }
             }
         }
 
-        private async Task RunBatchUpdate()
+        private async Task RunBatchUpdateAsync()
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
@@ -56,7 +63,7 @@ namespace EFCore.BulkExtensions.Tests
             }
         }
 
-        private async Task RunBatchDelete()
+        private async Task RunBatchDeleteAsync()
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
@@ -64,7 +71,7 @@ namespace EFCore.BulkExtensions.Tests
             }
         }
 
-        private async Task RunInsert()
+        private async Task RunInsertAsync()
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
