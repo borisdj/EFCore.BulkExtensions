@@ -439,9 +439,11 @@ namespace EFCore.BulkExtensions
                 {
                     Insert(context, entities, tableInfo, progress);
 
-                    tableInfo.PropertyColumnNamesDict = previousPropertyColumnNamesDict;
+                    tableInfo.PropertyColumnNamesDict = tableInfo.OutputPropertyColumnNamesDict;
 
                     var sqlQuery = SqlQueryBuilder.SelectJoinTable(tableInfo);
+
+                    tableInfo.PropertyColumnNamesDict = previousPropertyColumnNamesDict;
 
                     //var existingEntities = context.Set<T>().FromSql(q).AsNoTracking().ToList(); // Not used because of EF Memory leak bug
                     Expression<Func<DbContext, IQueryable<T>>> expression = null;
@@ -492,6 +494,8 @@ namespace EFCore.BulkExtensions
                     tableInfo.PropertyColumnNamesDict = previousPropertyColumnNamesDict;
 
                     var sqlQuery = SqlQueryBuilder.SelectJoinTable(tableInfo);
+
+                    tableInfo.PropertyColumnNamesDict = previousPropertyColumnNamesDict;
 
                     //var existingEntities = await context.Set<T>().FromSql(sqlQuery).ToListAsync(cancellationToken);
                     Expression<Func<DbContext, IQueryable<T>>> expression = null;

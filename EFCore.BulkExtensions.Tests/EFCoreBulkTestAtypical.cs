@@ -29,6 +29,8 @@ namespace EFCore.BulkExtensions.Tests
 
                 //context.BulkInsert(entities, new BulkConfig { SetOutputIdentity = true });
                 context.BulkInsert(entities, bulkAction => bulkAction.SetOutputIdentity = true); // example of setting BulkConfig with Action argument
+
+                context.BulkRead(entities, new BulkConfig() { SetOutputIdentity = true }); // To Test BulkRead with ComputedColumns
             }
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
