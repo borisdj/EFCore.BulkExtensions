@@ -709,13 +709,13 @@ namespace EFCore.BulkExtensions
             return command;
         }
 
-        internal static void LoadSqliteValues<T>(TableInfo tableInfo, TypeAccessor typeAccessor, T item, SqliteCommand command)
+        internal static void LoadSqliteValues<T>(TableInfo tableInfo, TypeAccessor typeAccessor, T entity, SqliteCommand command)
         {
-            List<string> columnsList = tableInfo.PropertyColumnNamesDict.Values.ToList();
-            foreach (var column in columnsList)
+            var PropertyColumnsDict = tableInfo.PropertyColumnNamesDict;
+            foreach (var propertyColumn in PropertyColumnsDict)
             {
-                var value = typeAccessor[item, column] ?? DBNull.Value;
-                command.Parameters[$"@{column}"].Value = value;
+                var value = typeAccessor[entity, propertyColumn.Key] ?? DBNull.Value;
+                command.Parameters[$"@{propertyColumn.Value}"].Value = value;
             }
         }
         #endregion
