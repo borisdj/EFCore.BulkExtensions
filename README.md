@@ -201,7 +201,7 @@ context.Items.BulkRead(items, new BulkConfig { UpdateByProperties = new List<str
 
 ## Performances
 
-Following are performances (in seconds):
+Following are performances (in seconds for SQL Server):
 
 | Operations\Rows | 100,000 EF | 100,000 EFBulk | 1,000,000 EFBulk |
 | --------------- | ---------: | -------------: | ---------------: |
