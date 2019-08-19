@@ -705,6 +705,14 @@ namespace EFCore.BulkExtensions
                     command.Parameters.Add(parameter);
                 }
             }
+
+            var shadowProperties = tableInfo.ShadowProperties;
+            foreach (var shadowProperty in shadowProperties)
+            {
+                var parameter = new SqliteParameter($"@{shadowProperty}", typeof(string));
+                command.Parameters.Add(parameter);
+            }
+
             command.Prepare(); // Not Required (check if same efficiency when removed)
             return command;
         }
@@ -714,7 +722,41 @@ namespace EFCore.BulkExtensions
             var PropertyColumnsDict = tableInfo.PropertyColumnNamesDict;
             foreach (var propertyColumn in PropertyColumnsDict)
             {
-                var value = typeAccessor[entity, propertyColumn.Key] ?? DBNull.Value;
+                object value = null;
+                if (!tableInfo.ShadowProperties.Contains(propertyColumn.Key))
+                {
+                    if (propertyColumn.Key.Contains(".")) // ToDo: change IF clause to check for NavigationProperties, optimise, integrate with same code segment from LoadData method
+                    {
+                        var subProperties = propertyColumn.Key.Split('.');
+                        var subPropertiesLevel1 = typeAccessor[entity, subProperties[0]];
+
+                        var propertyType = Nullable.GetUnderlyingType(subPropertiesLevel1.GetType()) ?? subPropertiesLevel1.GetType();
+                        if (!command.Parameters.Contains("@" + propertyColumn.Value))
+                        {
+                            var parameter = new SqliteParameter($"@{propertyColumn.Value}", propertyType);
+                            command.Parameters.Add(parameter);
+                        }
+
+                        if (subPropertiesLevel1 == null)
+                            value = DBNull.Value;
+                        else
+                            value = subPropertiesLevel1.GetType().GetProperty(subProperties[1]).GetValue(subPropertiesLevel1) ?? DBNull.Value;
+                    }
+                    else
+                    {
+                        value = typeAccessor[entity, propertyColumn.Key] ?? DBNull.Value;
+                    }
+                }
+                else // IsShadowProperty
+                {
+                    value = entity.GetType().Name;
+                }
+
+                if (tableInfo.ConvertibleProperties.ContainsKey(propertyColumn.Key))
+                {
+                    value = tableInfo.ConvertibleProperties[propertyColumn.Key].ConvertToProvider.Invoke(value);
+                }
+
                 command.Parameters[$"@{propertyColumn.Value}"].Value = value;
             }
         }

@@ -26,7 +26,7 @@ namespace EFCore.BulkExtensions.Tests
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 var lastItem = context.Items.LastOrDefault();
-                Assert.Equal(400, lastItem.ItemId);
+                Assert.Equal(500, lastItem.ItemId);
                 Assert.Equal("Updated", lastItem.Description);
                 Assert.Equal(1.5m, lastItem.Price);
             }
@@ -56,29 +56,12 @@ namespace EFCore.BulkExtensions.Tests
                 //var updateColumns = new List<string> { nameof(Item.Quantity) }; // Adding explicitly PropertyName for update to its default value
 
                 decimal price = 0;
-                var query = context.Items.Where(a => a.ItemId <= 400 && a.Price >= price);
+                var query = context.Items.Where(a => a.ItemId <= 500 && a.Price >= price);
                 query.BatchUpdate(new Item { Description = "Updated", Price = 1.5m }/*, updateColumns*/);
 
                 var incrementStep = 100;
                 query.BatchUpdate(a => new Item { Quantity = a.Quantity + incrementStep }); // example of BatchUpdate Increment/Decrement value in variable
                 //query.BatchUpdate(a => new Item { Quantity = a.Quantity + 100 }); // example direct value without variable
-            }
-        }
-
-        private void RunBatchDelete()
-        {
-            using (var context = new TestContext(ContextUtil.GetOptions()))
-            {
-                context.Items.Where(a => a.ItemId > 500).BatchDelete();
-            }
-        }
-
-        private void RunContainsBatchDelete()
-        {
-            var descriptionsToDelete = new List<string> { "info" };
-            using (var context = new TestContext(ContextUtil.GetOptions()))
-            {
-                context.Items.Where(a => descriptionsToDelete.Contains(a.Description)).BatchDelete();
             }
         }
 
@@ -103,6 +86,23 @@ namespace EFCore.BulkExtensions.Tests
 
                 context.Items.AddRange(entities); // does not guarantee insert order for SqlServer
                 context.SaveChanges();
+            }
+        }
+
+        private void RunBatchDelete()
+        {
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.Items.Where(a => a.ItemId > 500).BatchDelete();
+            }
+        }
+
+        private void RunContainsBatchDelete()
+        {
+            var descriptionsToDelete = new List<string> { "info" };
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.Items.Where(a => descriptionsToDelete.Contains(a.Description)).BatchDelete();
             }
         }
     }

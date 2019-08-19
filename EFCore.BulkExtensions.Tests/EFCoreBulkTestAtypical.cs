@@ -11,9 +11,12 @@ namespace EFCore.BulkExtensions.Tests
     {
         protected int EntitiesNumber => 1000;
 
-        [Fact]
-        private void InsertWithDbComputedColumnsAndOutput()
+        [Theory]
+        [InlineData(DbServer.SqlServer)]
+        [InlineData(DbServer.Sqlite)] // Does NOT have Computed Columns and TimeStamp can be set with DefaultValueSql: "CURRENT_TIMESTAMP" as it is in OnModelCreating() method.
+        private void InsertWithDbComputedColumnsAndOutput(DbServer databaseType)
         {
+            ContextUtil.DbServer = databaseType;
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 context.BulkDelete(context.Documents.ToList());
@@ -21,16 +24,24 @@ namespace EFCore.BulkExtensions.Tests
                 var entities = new List<Document>();
                 for (int i = 0; i < EntitiesNumber; i++)
                 {
-                    entities.Add(new Document
+                    var entity = new Document
                     {
-                        Content = "Some data " + i,
-                    });
+                        Content = "Some data " + i
+                    };
+                    if (databaseType == DbServer.Sqlite)
+                    {
+                        entity.ContentLength = entity.Content.Length;
+                    }
+                    entities.Add(entity);
                 }
 
                 //context.BulkInsert(entities, new BulkConfig { SetOutputIdentity = true });
                 context.BulkInsert(entities, bulkAction => bulkAction.SetOutputIdentity = true); // example of setting BulkConfig with Action argument
 
-                context.BulkRead(entities, new BulkConfig() { SetOutputIdentity = true }); // To Test BulkRead with ComputedColumns
+                if (databaseType == DbServer.SqlServer)
+                {
+                    context.BulkRead(entities, new BulkConfig() { SetOutputIdentity = true }); //  Not Yet supported for Sqlite (To Test BulkRead with ComputedColumns)
+                }
             }
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
@@ -39,9 +50,12 @@ namespace EFCore.BulkExtensions.Tests
             }
         }
 
-        [Fact]
-        private void InsertAndUpdateWithCompositeKey()
+        [Theory]
+        [InlineData(DbServer.SqlServer)]
+        [InlineData(DbServer.Sqlite)]
+        private void InsertAndUpdateWithCompositeKey(DbServer databaseType)
         {
+            ContextUtil.DbServer = databaseType;
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 var entities = new List<UserRole>();
@@ -74,9 +88,12 @@ namespace EFCore.BulkExtensions.Tests
             }
         }
 
-        [Fact]
-        private void InsertWithDiscriminatorShadow()
+        [Theory]
+        [InlineData(DbServer.SqlServer)]
+        [InlineData(DbServer.Sqlite)]
+        private void InsertWithDiscriminatorShadow(DbServer databaseType)
         {
+            ContextUtil.DbServer = databaseType;
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 context.BulkDelete(context.Students.ToList());
@@ -125,9 +142,12 @@ namespace EFCore.BulkExtensions.Tests
             }
         }
 
-        [Fact]
-        private void InsertWithValueConversion()
+        [Theory]
+        [InlineData(DbServer.SqlServer)]
+        [InlineData(DbServer.Sqlite)]
+        private void InsertWithValueConversion(DbServer databaseType)
         {
+            ContextUtil.DbServer = databaseType;
             var dateTime = DateTime.Today;
 
             using (var context = new TestContext(ContextUtil.GetOptions()))
@@ -150,36 +170,49 @@ namespace EFCore.BulkExtensions.Tests
                 context.BulkInsert(entities);
             }
 
-            using (var context = new TestContext(ContextUtil.GetOptions()))
+            if (databaseType == DbServer.SqlServer)
             {
-                var entities = context.Infos.ToList();
-                var entity = entities.FirstOrDefault();
-
-                Assert.Equal(entity.ConvertedTime, dateTime);
-
-                var conn = context.Database.GetDbConnection();
-                if (conn.State != ConnectionState.Open)
-                    conn.Open();
-                using (var command = conn.CreateCommand())
+                using (var context = new TestContext(ContextUtil.GetOptions()))
                 {
-                    command.CommandText = $"SELECT TOP 1 * FROM {nameof(Info)} ORDER BY {nameof(Info.InfoId)} DESC";
-                    var reader = command.ExecuteReader();
-                    reader.Read();
-                    var row = new Info()
+                    var entities = context.Infos.ToList();
+                    var entity = entities.FirstOrDefault();
+
+                    Assert.Equal(entity.ConvertedTime, dateTime);
+
+                    var conn = context.Database.GetDbConnection();
+                    if (conn.State != ConnectionState.Open)
+                        conn.Open();
+                    using (var command = conn.CreateCommand())
                     {
-                        ConvertedTime = reader.Field<DateTime>(nameof(Info.ConvertedTime))
-                    };
-                    Assert.Equal(row.ConvertedTime, dateTime.AddDays(1));
+                        command.CommandText = $"SELECT TOP 1 * FROM {nameof(Info)} ORDER BY {nameof(Info.InfoId)} DESC";
+                        var reader = command.ExecuteReader();
+                        reader.Read();
+                        var row = new Info()
+                        {
+                            ConvertedTime = reader.Field<DateTime>(nameof(Info.ConvertedTime))
+                        };
+                        Assert.Equal(row.ConvertedTime, dateTime.AddDays(1));
+                    }
                 }
             }
         }
 
-        [Fact]
-        private void InsertWithOwnedTypes()
+        [Theory]
+        [InlineData(DbServer.SqlServer)]
+        [InlineData(DbServer.Sqlite)]
+        private void InsertWithOwnedTypes(DbServer databaseType)
         {
+            ContextUtil.DbServer = databaseType;
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
-                context.Database.ExecuteSqlCommand("TRUNCATE TABLE [" + nameof(ChangeLog) + "]");
+                if (databaseType == DbServer.SqlServer)
+                {
+                    context.Database.ExecuteSqlCommand("TRUNCATE TABLE [" + nameof(ChangeLog) + "]");
+                }
+                else
+                {
+                    context.ChangeLogs.BatchDelete();
+                }
 
                 var entities = new List<ChangeLog>();
                 for (int i = 1; i <= EntitiesNumber; i++)
@@ -206,16 +239,19 @@ namespace EFCore.BulkExtensions.Tests
                         }*/
                     });
                 }
-                context.BulkInsertOrUpdate(entities);
+                context.BulkInsert(entities);
 
-                context.BulkRead(
-                    entities,
-                    new BulkConfig
-                    {
-                        UpdateByProperties = new List<string> { nameof(Item.Description) }
-                    }
-                );
-                Assert.Equal(2, entities[1].ChangeLogId);
+                if (databaseType == DbServer.SqlServer)
+                {
+                    context.BulkRead(
+                        entities,
+                        new BulkConfig
+                        {
+                            UpdateByProperties = new List<string> { nameof(Item.Description) }
+                        }
+                    );
+                    Assert.Equal(2, entities[1].ChangeLogId);
+                }
             }
         }
     }

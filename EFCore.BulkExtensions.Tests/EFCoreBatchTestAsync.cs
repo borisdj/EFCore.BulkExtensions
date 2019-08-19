@@ -28,7 +28,7 @@ namespace EFCore.BulkExtensions.Tests
                 var lastItem = context.Items.LastOrDefaultAsync().Result;
                 Assert.Equal(500, lastItem.ItemId);
                 Assert.Equal("Updated", lastItem.Description);
-                Assert.Equal(100, lastItem.Quantity);
+                Assert.Equal(1.5m, lastItem.Price);
             }
         }
 
@@ -46,28 +46,6 @@ namespace EFCore.BulkExtensions.Tests
                 {
                     await context.Database.ExecuteSqlCommandAsync("DELETE FROM sqlite_sequence WHERE name = 'Item';").ConfigureAwait(false);
                 }
-            }
-        }
-
-        private async Task RunBatchUpdateAsync()
-        {
-            using (var context = new TestContext(ContextUtil.GetOptions()))
-            {
-                //var updateColumns = new List<string> { nameof(Item.Quantity) }; // Adding explicitly PropertyName for update to its default value
-
-                decimal price = 0;
-                var query = context.Items.Where(a => a.ItemId <= 500 && a.Price >= price);
-                await query.BatchUpdateAsync(new Item { Description = "Updated", Price = 1.5m }/*, updateColumns*/);
-
-                await query.BatchUpdateAsync(a => new Item { Quantity = a.Quantity + 100 }); // example of BatchUpdate value Increment/Decrement
-            }
-        }
-
-        private async Task RunBatchDeleteAsync()
-        {
-            using (var context = new TestContext(ContextUtil.GetOptions()))
-            {
-                await context.Items.Where(a => a.ItemId > 500).BatchDeleteAsync();
             }
         }
 
@@ -92,6 +70,28 @@ namespace EFCore.BulkExtensions.Tests
 
                 await context.Items.AddRangeAsync(entities);
                 await context.SaveChangesAsync();
+            }
+        }
+
+        private async Task RunBatchUpdateAsync()
+        {
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                //var updateColumns = new List<string> { nameof(Item.Quantity) }; // Adding explicitly PropertyName for update to its default value
+
+                decimal price = 0;
+                var query = context.Items.Where(a => a.ItemId <= 500 && a.Price >= price);
+                await query.BatchUpdateAsync(new Item { Description = "Updated", Price = 1.5m }/*, updateColumns*/);
+
+                await query.BatchUpdateAsync(a => new Item { Quantity = a.Quantity + 100 }); // example of BatchUpdate value Increment/Decrement
+            }
+        }
+
+        private async Task RunBatchDeleteAsync()
+        {
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                await context.Items.Where(a => a.ItemId > 500).BatchDeleteAsync();
             }
         }
     }
