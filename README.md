@@ -6,6 +6,7 @@ It is targeting NetStandard 2.0 so it can be used on project targeting NetCore(2
 Current version is using EF Core 2.2 and at the moment supports Microsoft SQL Server(2008+) and SQLite.<br>
 EFCore/v.Nuget: EFCore2.1/v2.4.1 EFCore2.0/v2.0.8, and for EF Core 1.x use 1.1.0 (targeting NetStandard 1.4)<br>
 Under the hood uses [SqlBulkCopy](https://msdn.microsoft.com/en-us/library/system.data.sqlclient.sqlbulkcopy.aspx) for Insert, for Update/Delete combines BulkInsert with raw Sql [MERGE](https://docs.microsoft.com/en-us/sql/t-sql/statements/merge-transact-sql).<br>
+For SQLite there is no BulkCopy, instead library uses plain SQL combined with [UPSERT](https://www.sqlite.org/lang_UPSERT.html).<br>
 Bulk Tests can not have UseInMemoryDb because InMemoryProvider does not support Relational-specific methods.
 
 Available on [![NuGet](https://img.shields.io/nuget/v/EFCore.BulkExtensions.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/) latest version.<br>
