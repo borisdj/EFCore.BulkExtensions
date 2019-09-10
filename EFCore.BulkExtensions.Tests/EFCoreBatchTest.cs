@@ -29,6 +29,8 @@ namespace EFCore.BulkExtensions.Tests
                 Assert.Equal(500, lastItem.ItemId);
                 Assert.Equal("Updated", lastItem.Description);
                 Assert.Equal(1.5m, lastItem.Price);
+                Assert.StartsWith("name ", lastItem.Name);
+                Assert.EndsWith(" Concatenated", lastItem.Name);
             }
         }
 
@@ -60,7 +62,8 @@ namespace EFCore.BulkExtensions.Tests
                 query.BatchUpdate(new Item { Description = "Updated", Price = 1.5m }/*, updateColumns*/);
 
                 var incrementStep = 100;
-                query.BatchUpdate(a => new Item { Quantity = a.Quantity + incrementStep }); // example of BatchUpdate Increment/Decrement value in variable
+                var suffix = " Concatenated";
+                query.BatchUpdate(a => new Item { Name = a.Name + suffix, Quantity = a.Quantity + incrementStep }); // example of BatchUpdate Increment/Decrement value in variable
                 //query.BatchUpdate(a => new Item { Quantity = a.Quantity + 100 }); // example direct value without variable
             }
         }

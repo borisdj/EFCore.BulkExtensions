@@ -28,7 +28,8 @@ namespace EFCore.BulkExtensions.Tests
                 var lastItem = context.Items.LastOrDefaultAsync().Result;
                 Assert.Equal(500, lastItem.ItemId);
                 Assert.Equal("Updated", lastItem.Description);
-                Assert.Equal(1.5m, lastItem.Price);
+                Assert.StartsWith("name ", lastItem.Name);
+                Assert.EndsWith(" Concatenated", lastItem.Name);
             }
         }
 
@@ -83,7 +84,7 @@ namespace EFCore.BulkExtensions.Tests
                 var query = context.Items.Where(a => a.ItemId <= 500 && a.Price >= price);
                 await query.BatchUpdateAsync(new Item { Description = "Updated", Price = 1.5m }/*, updateColumns*/);
 
-                await query.BatchUpdateAsync(a => new Item { Quantity = a.Quantity + 100 }); // example of BatchUpdate value Increment/Decrement
+                await query.BatchUpdateAsync(a => new Item { Name = a.Name + " Concatenated", Quantity = a.Quantity + 100 }); // example of BatchUpdate value Increment/Decrement
             }
         }
 
