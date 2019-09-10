@@ -226,7 +226,7 @@ namespace EFCore.BulkExtensions
             else if (expression is ConstantExpression constantExpression)
             {
                 var parmName = $"param_{sqlParameters.Count}";
-                sqlParameters.Add(new SqlParameter(parmName, constantExpression.Value));
+                sqlParameters.Add(new SqlParameter(parmName, constantExpression.Value ?? DBNull.Value));
                 sqlColumns.Append($" @{parmName}");
             }
             else if (expression is UnaryExpression unaryExpression)
@@ -279,7 +279,7 @@ namespace EFCore.BulkExtensions
             {
                 var value = Expression.Lambda(expression).Compile().DynamicInvoke();
                 var parmName = $"param_{sqlParameters.Count}";
-                sqlParameters.Add(new SqlParameter(parmName, value));
+                sqlParameters.Add(new SqlParameter(parmName, value ?? DBNull.Value));
                 sqlColumns.Append($" @{parmName}");
             }
         }
