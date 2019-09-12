@@ -103,7 +103,8 @@ Using UpdateByProperties while also having Identity column requires that Id prop
 If **NotifyAfter** is not set it will have same value as _BatchSize_ while **BulkCopyTimeout** when not set has SqlBulkCopy default which is 30 seconds and if set to 0 it indicates no limit.<br>
 _PreserveInsertOrder_ and _SetOutputIdentity_ have purpose only when PK has Identity (usually *int* type with AutoIncrement), while if PK is Guid(sequential) created in Application there is no need for them. Also Tables with Composite Keys have no Identity column so no functionality for them in that case either.
 ```C#
-context.BulkInsert(entList, new BulkConfig {PreserveInsertOrder=true, SetOutputIdentity=true, BatchSize=4000});
+var bulkConfig = new BulkConfig {PreserveInsertOrder = true, SetOutputIdentity = true, BatchSize = 4000 };
+context.BulkInsert(entList, bulkConfig);
 context.BulkInsertOrUpdate(entList, new BulkConfig { PreserveInsertOrder = true });
 context.BulkInsertOrUpdate(entList, b => b.SetOutputIdentity = true); //example BulkConfig set with Action arg.
 ```
@@ -144,7 +145,8 @@ for (int i = 1; i <= numberOfEntites; i++)
 }
 using (var transaction = context.Database.BeginTransaction())
 {
-    context.BulkInsert(entities, new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true });
+    var bulkConfig = new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true };
+    context.BulkInsert(entities, bulkConfig);
     foreach (var entity in entities) {
         foreach (var subEntity in entity.ItemHistories) {
             subEntity.ItemId = entity.ItemId; // setting FK to match its linked PK that was generated in DB
@@ -197,7 +199,8 @@ var entities = context.Items.Where(a => itemsNames.Contains(a.Name)).AsNoTrackin
 var entities = context.Items.Join(itemsNames, a => a.Name, p => p, (a, p) => a).AsNoTracking().ToList();
 // use
 var items = itemsNames.Select(a => new Item { Name = a }); // items list will be loaded with data
-context.Items.BulkRead(items, new BulkConfig { UpdateByProperties = new List<string> { nameof(Item.Name) });
+var bulkConfig = new BulkConfig { UpdateByProperties = new List<string> { nameof(Item.Name) };
+context.Items.BulkRead(items, bulkConfig);
 ```
 
 ## Performances
