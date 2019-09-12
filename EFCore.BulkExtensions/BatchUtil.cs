@@ -69,7 +69,8 @@ namespace EFCore.BulkExtensions
             var sqlColumns = new StringBuilder();
             var sqlParameters = new List<object>(innerParameters);
             var columnNameValueDict = TableInfo.CreateInstance(GetDbContext(query), new List<T>(), OperationType.Read, new BulkConfig()).PropertyColumnNamesDict;
-            CreateUpdateBody(columnNameValueDict, tableAlias, expression.Body, ref sqlColumns, ref sqlParameters);
+            var dbType = GetDatabaseType(context);
+            CreateUpdateBody(columnNameValueDict, tableAlias, expression.Body, dbType, ref sqlColumns, ref sqlParameters);
 
             sqlParameters = ReloadSqlParameters(context, sqlParameters); // Sqlite requires SqliteParameters
             sqlColumns = (GetDatabaseType(context) == DbServer.SqlServer) ? sqlColumns : sqlColumns.Replace($"[{tableAlias}].", "");
@@ -193,7 +194,7 @@ namespace EFCore.BulkExtensions
         /// <param name="expression"></param>
         /// <param name="sqlColumns"></param>
         /// <param name="sqlParameters"></param>
-        public static void CreateUpdateBody(Dictionary<string, string> columnNameValueDict, string tableAlias, Expression expression, ref StringBuilder sqlColumns, ref List<object> sqlParameters)
+        public static void CreateUpdateBody(Dictionary<string, string> columnNameValueDict, string tableAlias, Expression expression, DbServer dbType, ref StringBuilder sqlColumns, ref List<object> sqlParameters)
         {
             if (expression is MemberInitExpression memberInitExpression)
             {
@@ -208,7 +209,7 @@ namespace EFCore.BulkExtensions
 
                         sqlColumns.Append(" =");
 
-                        CreateUpdateBody(columnNameValueDict, tableAlias, assignment.Expression, ref sqlColumns, ref sqlParameters);
+                        CreateUpdateBody(columnNameValueDict, tableAlias, assignment.Expression, dbType, ref sqlColumns, ref sqlParameters);
 
                         if (memberInitExpression.Bindings.IndexOf(item) < (memberInitExpression.Bindings.Count - 1))
                             sqlColumns.Append(" ,");
@@ -225,7 +226,7 @@ namespace EFCore.BulkExtensions
             else if (expression is ConstantExpression constantExpression)
             {
                 var parmName = $"param_{sqlParameters.Count}";
-                sqlParameters.Add(new SqlParameter(parmName, constantExpression.Value));
+                sqlParameters.Add(new SqlParameter(parmName, constantExpression.Value ?? DBNull.Value));
                 sqlColumns.Append($" @{parmName}");
             }
             else if (expression is UnaryExpression unaryExpression)
@@ -233,23 +234,23 @@ namespace EFCore.BulkExtensions
                 switch (unaryExpression.NodeType)
                 {
                     case ExpressionType.Convert:
-                        CreateUpdateBody(columnNameValueDict, tableAlias, unaryExpression.Operand, ref sqlColumns, ref sqlParameters);
+                        CreateUpdateBody(columnNameValueDict, tableAlias, unaryExpression.Operand, dbType, ref sqlColumns, ref sqlParameters);
                         break;
                     case ExpressionType.Not:
                         sqlColumns.Append(" ~");//this way only for SQL Server 
-                        CreateUpdateBody(columnNameValueDict, tableAlias, unaryExpression.Operand, ref sqlColumns, ref sqlParameters);
+                        CreateUpdateBody(columnNameValueDict, tableAlias, unaryExpression.Operand, dbType, ref sqlColumns, ref sqlParameters);
                         break;
                     default: break;
                 }
             }
             else if (expression is BinaryExpression binaryExpression)
             {
-                CreateUpdateBody(columnNameValueDict, tableAlias, binaryExpression.Left, ref sqlColumns, ref sqlParameters);
+                CreateUpdateBody(columnNameValueDict, tableAlias, binaryExpression.Left, dbType, ref sqlColumns, ref sqlParameters);
 
                 switch (binaryExpression.NodeType)
                 {
                     case ExpressionType.Add:
-                        sqlColumns.Append(" +");
+                        sqlColumns.Append(dbType == DbServer.Sqlite && IsStringConcat(binaryExpression) ? " ||" : " +");
                         break;
                     case ExpressionType.Divide:
                         sqlColumns.Append(" /");
@@ -272,13 +273,13 @@ namespace EFCore.BulkExtensions
                     default: break;
                 }
 
-                CreateUpdateBody(columnNameValueDict, tableAlias, binaryExpression.Right, ref sqlColumns, ref sqlParameters);
+                CreateUpdateBody(columnNameValueDict, tableAlias, binaryExpression.Right, dbType, ref sqlColumns, ref sqlParameters);
             }
             else
             {
                 var value = Expression.Lambda(expression).Compile().DynamicInvoke();
                 var parmName = $"param_{sqlParameters.Count}";
-                sqlParameters.Add(new SqlParameter(parmName, value));
+                sqlParameters.Add(new SqlParameter(parmName, value ?? DBNull.Value));
                 sqlColumns.Append($" @{parmName}");
             }
         }
@@ -300,6 +301,19 @@ namespace EFCore.BulkExtensions
         public static DbServer GetDatabaseType(DbContext context)
         {
             return context.Database.ProviderName.EndsWith(DbServer.Sqlite.ToString()) ? DbServer.Sqlite : DbServer.SqlServer;
+        }
+
+        internal static bool IsStringConcat(BinaryExpression binaryExpression) {
+            var methodProperty = binaryExpression.GetType().GetProperty("Method");
+            if (methodProperty == null) {
+                return false;
+            }
+            var method = methodProperty.GetValue(binaryExpression) as MethodInfo;
+            if (method == null) {
+                return false;
+            }
+            return method.DeclaringType == typeof(string) && method.Name == nameof(string.Concat);
+
         }
     }
 }
