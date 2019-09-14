@@ -109,10 +109,12 @@ namespace EFCore.BulkExtensions
                     var command = GetSqliteCommand(context, entities, tableInfo, connection, transaction);
 
                     var typeAccessor = TypeAccessor.Create(typeof(T), true);
+                    int rowsCopied = 0;
                     foreach (var item in entities)
                     {
                         LoadSqliteValues(tableInfo, typeAccessor, item, command);
                         command.ExecuteNonQuery();
+                        SetProgress(ref rowsCopied, entities.Count, tableInfo.BulkConfig, progress);
                     }
                 }
                 finally
@@ -199,10 +201,12 @@ namespace EFCore.BulkExtensions
                     var command = GetSqliteCommand(context, entities, tableInfo, connection, transaction);
 
                     var typeAccessor = TypeAccessor.Create(typeof(T), true);
+                    int rowsCopied = 0;
                     foreach (var item in entities)
                     {
                         LoadSqliteValues(tableInfo, typeAccessor, item, command);
                         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                        SetProgress(ref rowsCopied, entities.Count, tableInfo.BulkConfig, progress);
                     }
                 }
                 finally
@@ -287,10 +291,12 @@ namespace EFCore.BulkExtensions
                     var command = GetSqliteCommand(context, entities, tableInfo, connection, transaction);
 
                     var typeAccessor = TypeAccessor.Create(typeof(T), true);
+                    int rowsCopied = 0;
                     foreach (var item in entities)
                     {
                         LoadSqliteValues(tableInfo, typeAccessor, item, command);
                         command.ExecuteNonQuery();
+                        SetProgress(ref rowsCopied, entities.Count, tableInfo.BulkConfig, progress);
                     }
 
                     if (operationType != OperationType.Delete && tableInfo.BulkConfig.SetOutputIdentity && tableInfo.IdentityColumnName != null)
@@ -389,10 +395,12 @@ namespace EFCore.BulkExtensions
                     var command = GetSqliteCommand(context, entities, tableInfo, connection, transaction);
 
                     var typeAccessor = TypeAccessor.Create(typeof(T), true);
+                    int rowsCopied = 0;
                     foreach (var item in entities)
                     {
                         LoadSqliteValues(tableInfo, typeAccessor, item, command);
                         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                        SetProgress(ref rowsCopied, entities.Count, tableInfo.BulkConfig, progress);
                     }
 
                     if (operationType != OperationType.Delete && tableInfo.BulkConfig.SetOutputIdentity && tableInfo.IdentityColumnName != null)
@@ -527,6 +535,24 @@ namespace EFCore.BulkExtensions
             {
                 throw new SqlProviderNotSupportedException(providerName);
             }
+        }
+
+        private static void SetProgress(ref int rowsCopied, int entitiesCount, BulkConfig bulkConfig, Action<decimal> progress)
+        {
+            if (progress != null && bulkConfig.NotifyAfter != null && bulkConfig.NotifyAfter != 0)
+            {
+                rowsCopied++;
+
+                if (rowsCopied == entitiesCount || rowsCopied % bulkConfig.NotifyAfter == 0)
+                {
+                    progress.Invoke(GetProgress(entitiesCount, rowsCopied));
+                }
+            }
+        }
+
+        internal static decimal GetProgress(int entitiesCount, long rowsCopied)
+        {
+            return (decimal)(Math.Floor(rowsCopied * 10000D / entitiesCount) / 10000);
         }
         #endregion
 
