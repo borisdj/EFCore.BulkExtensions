@@ -66,7 +66,7 @@ using (var transaction = context.Database.BeginTransaction())
     transaction.Commit();
 }
 ```
-For **SQLite** there are additional properties in BulkConfig: *{ PreserveInsertOrder, SetOutputIdentity }* that for explicit transaction are used in the following way:
+For **SQLite** there are additional properties in BulkConfig: *{ SqliteConnection, SqliteTransaction }* that for explicit transaction are used in the following way:
 ```C#
 using (var connection = (SqliteConnection)context.Database.GetDbConnection())
 {
