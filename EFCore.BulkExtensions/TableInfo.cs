@@ -500,7 +500,8 @@ namespace EFCore.BulkExtensions
         #region CompiledQuery
         public void LoadOutputData<T>(DbContext context, IList<T> entities) where T : class
         {
-            if (BulkConfig.SetOutputIdentity && HasSinglePrimaryKey)
+            bool hasIdentity = PropertyColumnNamesDict.Any(a => a.Value == IdentityColumnName);
+            if (BulkConfig.SetOutputIdentity && hasIdentity)
             {
                 string sqlQuery = SqlQueryBuilder.SelectFromOutputTable(this);
                 var entitiesWithOutputIdentity = QueryOutputTable<T>(context, sqlQuery).ToList();
