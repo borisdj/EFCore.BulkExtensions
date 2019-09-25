@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Text;
+using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.Internal;
 
 namespace EFCore.BulkExtensions

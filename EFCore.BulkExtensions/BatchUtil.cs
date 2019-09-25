@@ -1,15 +1,15 @@
-using System;
-using System.Collections.Generic;
-using System.Data.SqlClient;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Reflection;
-using System.Text;
+using Microsoft.Data.SqlClient;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.Internal;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Reflection;
+using System.Text;
 
 namespace EFCore.BulkExtensions
 {

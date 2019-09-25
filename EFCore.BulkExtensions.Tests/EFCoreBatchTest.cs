@@ -17,7 +17,7 @@ namespace EFCore.BulkExtensions.Tests
         {
             ContextUtil.DbServer = databaseType;
 
-            RunBatchDeleteAll(databaseType);
+            RunDeleteAll(databaseType);
             RunInsert();
             RunBatchUpdate();
             RunBatchDelete();
@@ -34,19 +34,23 @@ namespace EFCore.BulkExtensions.Tests
             }
         }
 
-        public void RunBatchDeleteAll(DbServer databaseType)
+        internal void RunDeleteAll(DbServer databaseType)
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
-                context.Items.BatchDelete();
+                context.Items.Add(new Item { }); // used for initial add so that after RESEED it starts from 1, not 0
+                context.SaveChanges();
+
+                //context.Items.BatchDelete(); // TODO: Use after BatchDelete gets implemented for v3.0
+                context.BulkDelete(context.Items.ToList());
 
                 if (databaseType == DbServer.SqlServer)
                 {
-                    context.Database.ExecuteSqlCommand("DBCC CHECKIDENT('[dbo].[Item]', RESEED, 0);");
+                    context.Database.ExecuteSqlRaw("DBCC CHECKIDENT('[dbo].[Item]', RESEED, 0);");
                 }
                 if (databaseType == DbServer.Sqlite)
                 {
-                    context.Database.ExecuteSqlCommand("DELETE FROM sqlite_sequence WHERE name = 'Item';");
+                    context.Database.ExecuteSqlRaw("DELETE FROM sqlite_sequence WHERE name = 'Item';");
                 }
             }
         }

@@ -24,7 +24,7 @@ namespace EFCore.BulkExtensions.Tests
         {
             ContextUtil.DbServer = databaseType;
 
-            await new EFCoreBatchTestAsync().RunBatchDeleteAllAsync(databaseType);
+            await new EFCoreBatchTestAsync().RunDeleteAllAsync(databaseType); // TODO
 
             // Test can be run individually by commenting others and running each separately in order one after another
             await RunInsertAsync(isBulkOperation);
@@ -131,8 +131,10 @@ namespace EFCore.BulkExtensions.Tests
             }
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
-                int entitiesCount = ItemsCountQuery(context);
-                Item lastEntity = LastItemQuery(context);
+                //int entitiesCount = ItemsCountQuery(context);
+                int entitiesCount = await context.Items.CountAsync();
+                //Item lastEntity = LastItemQuery(context);
+                Item lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
 
                 Assert.Equal(EntitiesNumber - 1, entitiesCount);
                 Assert.NotNull(lastEntity);
@@ -171,8 +173,10 @@ namespace EFCore.BulkExtensions.Tests
             }
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
-                int entitiesCount = ItemsCountQuery(context);
-                Item lastEntity = LastItemQuery(context);
+                //int entitiesCount = ItemsCountQuery(context);
+                int entitiesCount = await context.Items.CountAsync();
+                //Item lastEntity = LastItemQuery(context);
+                Item lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
 
                 Assert.Equal(EntitiesNumber, entitiesCount);
                 Assert.NotNull(lastEntity);
@@ -203,8 +207,10 @@ namespace EFCore.BulkExtensions.Tests
             }
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
-                int entitiesCount = ItemsCountQuery(context);
-                Item lastEntity = LastItemQuery(context);
+                //int entitiesCount = ItemsCountQuery(context);
+                int entitiesCount = await context.Items.CountAsync();
+                //Item lastEntity = LastItemQuery(context);
+                Item lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
 
                 Assert.Equal(EntitiesNumber, entitiesCount);
                 Assert.NotNull(lastEntity);
@@ -260,8 +266,10 @@ namespace EFCore.BulkExtensions.Tests
             }
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
-                int entitiesCount = ItemsCountQuery(context);
-                Item lastEntity = LastItemQuery(context);
+                //int entitiesCount = ItemsCountQuery(context);
+                int entitiesCount = await context.Items.CountAsync();
+                //Item lastEntity = LastItemQuery(context);
+                Item lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
 
                 Assert.Equal(0, entitiesCount);
                 Assert.Null(lastEntity);
@@ -271,11 +279,11 @@ namespace EFCore.BulkExtensions.Tests
             {
                 if (databaseType == DbServer.SqlServer)
                 {
-                    await context.Database.ExecuteSqlCommandAsync("DBCC CHECKIDENT('[dbo].[Item]', RESEED, 0);").ConfigureAwait(false);
+                    await context.Database.ExecuteSqlRawAsync("DBCC CHECKIDENT('[dbo].[Item]', RESEED, 0);").ConfigureAwait(false);
                 }
                 if (databaseType == DbServer.Sqlite)
                 {
-                    await context.Database.ExecuteSqlCommandAsync("DELETE FROM sqlite_sequence WHERE name = 'Item';").ConfigureAwait(false);
+                    await context.Database.ExecuteSqlRawAsync("DELETE FROM sqlite_sequence WHERE name = 'Item';").ConfigureAwait(false);
                 }
             }
         }

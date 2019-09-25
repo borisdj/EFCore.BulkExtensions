@@ -18,7 +18,7 @@ namespace EFCore.BulkExtensions.Tests
         {
             ContextUtil.DbServer = databaseType;
 
-            await RunBatchDeleteAllAsync(databaseType);
+            await RunDeleteAllAsync(databaseType);
             await RunInsertAsync();
             await RunBatchUpdateAsync();
             await RunBatchDeleteAsync();
@@ -34,19 +34,23 @@ namespace EFCore.BulkExtensions.Tests
             }
         }
 
-        public async Task RunBatchDeleteAllAsync(DbServer databaseType)
+        internal async Task RunDeleteAllAsync(DbServer databaseType)
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
-                await context.Items.BatchDeleteAsync();
+                await context.Items.AddAsync(new Item { }); // used for initial add so that after RESEED it starts from 1, not 0
+                await context.SaveChangesAsync();
+
+                //await context.Items.BatchDeleteAsync(); // TODO: Use after BatchDelete gets implemented for v3.0 
+                await context.BulkDeleteAsync(context.Items.ToList());
 
                 if (databaseType == DbServer.SqlServer)
                 {
-                    await context.Database.ExecuteSqlCommandAsync("DBCC CHECKIDENT('[dbo].[Item]', RESEED, 0);").ConfigureAwait(false);
+                    await context.Database.ExecuteSqlRawAsync("DBCC CHECKIDENT('[dbo].[Item]', RESEED, 0);").ConfigureAwait(false);
                 }
                 if (databaseType == DbServer.Sqlite)
                 {
-                    await context.Database.ExecuteSqlCommandAsync("DELETE FROM sqlite_sequence WHERE name = 'Item';").ConfigureAwait(false);
+                    await context.Database.ExecuteSqlRawAsync("DELETE FROM sqlite_sequence WHERE name = 'Item';").ConfigureAwait(false);
                 }
             }
         }

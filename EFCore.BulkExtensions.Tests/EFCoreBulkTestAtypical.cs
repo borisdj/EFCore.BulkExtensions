@@ -207,11 +207,12 @@ namespace EFCore.BulkExtensions.Tests
             {
                 if (databaseType == DbServer.SqlServer)
                 {
-                    context.Database.ExecuteSqlCommand("TRUNCATE TABLE [" + nameof(ChangeLog) + "]");
+                    context.Database.ExecuteSqlRaw("TRUNCATE TABLE [" + nameof(ChangeLog) + "]");
                 }
                 else
                 {
-                    context.ChangeLogs.BatchDelete();
+                    //context.ChangeLogs.BatchDelete(); // TODO
+                    context.BulkDelete(context.ChangeLogs.ToList());
                 }
 
                 var entities = new List<ChangeLog>();

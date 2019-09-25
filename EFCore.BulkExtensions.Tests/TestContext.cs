@@ -1,10 +1,10 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace EFCore.BulkExtensions.Tests
 {
@@ -92,9 +92,9 @@ namespace EFCore.BulkExtensions.Tests
         {
             foreach (IMutableEntityType entity in modelBuilder.Model.GetEntityTypes())
             {
-                if (!entity.IsOwned()) // without this exclusion OwnedType would not be by default in Owner Table
+                if (!entity.IsOwned() && entity.BaseType == null) // without this exclusion OwnedType would not be by default in Owner Table
                 {
-                    entity.Relational().TableName = entity.ClrType.Name;
+                    entity.SetTableName(entity.ClrType.Name);
                 }
             }
         }

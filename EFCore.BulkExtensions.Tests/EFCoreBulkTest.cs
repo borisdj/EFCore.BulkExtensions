@@ -1,11 +1,11 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Caching.Memory;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using Xunit;
 
 namespace EFCore.BulkExtensions.Tests
@@ -27,7 +27,7 @@ namespace EFCore.BulkExtensions.Tests
             ContextUtil.DbServer = databaseType;
 
             //DeletePreviousDatabase();
-            new EFCoreBatchTest().RunBatchDeleteAll(databaseType);
+            new EFCoreBatchTest().RunDeleteAll(databaseType);
 
             RunInsert(isBulkOperation);
             RunInsertOrUpdate(isBulkOperation);
@@ -173,7 +173,8 @@ namespace EFCore.BulkExtensions.Tests
                 var temp = context.ItemHistories.FirstOrDefault();
 
                 int entitiesCount = ItemsCountQuery(context);
-                Item lastEntity = LastItemQuery(context);
+                //Item lastEntity = LastItemQuery(context);
+                Item lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
 
                 Assert.Equal(EntitiesNumber - 1, entitiesCount);
                 Assert.NotNull(lastEntity);
@@ -212,8 +213,10 @@ namespace EFCore.BulkExtensions.Tests
             }
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
-                int entitiesCount = ItemsCountQuery(context);
-                Item lastEntity = LastItemQuery(context);
+                //int entitiesCount = ItemsCountQuery(context);
+                int entitiesCount = context.Items.Count();
+                //Item lastEntity = LastItemQuery(context);
+                Item lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
 
                 Assert.Equal(EntitiesNumber, entitiesCount);
                 Assert.NotNull(lastEntity);
@@ -251,8 +254,10 @@ namespace EFCore.BulkExtensions.Tests
             }
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
-                int entitiesCount = ItemsCountQuery(context);
-                Item lastEntity = LastItemQuery(context);
+                //int entitiesCount = ItemsCountQuery(context);
+                int entitiesCount = context.Items.Count();
+                //Item lastEntity = LastItemQuery(context);
+                Item lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
 
                 Assert.Equal(EntitiesNumber, entitiesCount);
                 Assert.NotNull(lastEntity);
@@ -308,8 +313,10 @@ namespace EFCore.BulkExtensions.Tests
             }
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
-                int entitiesCount = ItemsCountQuery(context);
-                Item lastEntity = LastItemQuery(context);
+                //int entitiesCount = ItemsCountQuery(context);
+                int entitiesCount = context.Items.Count();
+                //Item lastEntity = LastItemQuery(context);
+                Item lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
 
                 Assert.Equal(0, entitiesCount);
                 Assert.Null(lastEntity);
@@ -320,11 +327,11 @@ namespace EFCore.BulkExtensions.Tests
             {
                 if (databaseType == DbServer.SqlServer)
                 {
-                    context.Database.ExecuteSqlCommand("DBCC CHECKIDENT ('dbo.[" + nameof(Item) + "]', RESEED, 0);"); // can NOT use $"...{nameof(Item)..." because it gets parameterized
+                    context.Database.ExecuteSqlRaw("DBCC CHECKIDENT ('dbo.[" + nameof(Item) + "]', RESEED, 0);"); // can NOT use $"...{nameof(Item)..." because it gets parameterized
                 }
                 else if (databaseType == DbServer.Sqlite)
                 {
-                    context.Database.ExecuteSqlCommand("DELETE FROM sqlite_sequence WHERE name = 'Item';");
+                    context.Database.ExecuteSqlRaw("DELETE FROM sqlite_sequence WHERE name = 'Item';");
                 }
             }
         }

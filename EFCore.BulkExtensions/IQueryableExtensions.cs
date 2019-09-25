@@ -1,8 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Query;
@@ -26,6 +28,9 @@ namespace EFCore.BulkExtensions
 
         internal static string ToSql<TEntity>(this IQueryable<TEntity> query) where TEntity : class
         {
+            // ! IMPORTANT TODO:
+            throw new NotSupportedException("Currently not supported for .NET Core 3.0, because in v3.0 there are no classes 'QueryModelGenerator' and 'RelationalQueryModelVisitor'. Will be supported after finding alternative for implementing .ToSql();");
+            /*
             var queryCompiler = (QueryCompiler)QueryCompilerField.GetValue(query.Provider);
             var modelGenerator = (QueryModelGenerator)QueryModelGeneratorField.GetValue(queryCompiler);
             var queryModel = modelGenerator.ParseQuery(query.Expression);
@@ -41,10 +46,13 @@ namespace EFCore.BulkExtensions
 
             string sql = modelVisitor.Queries.First().ToString();
             return sql;
+            */
         }
 
         internal static (string, IEnumerable<SqlParameter>) ToParametrizedSql<TEntity>(this IQueryable<TEntity> query) where TEntity : class
         {
+            throw new NotSupportedException("Currently not supported for .NET Core 3.0, because in v3.0 there are no classes 'QueryModelGenerator' and 'RelationalQueryModelVisitor'. Will be supported after finding alternative for implementing .ToSql();");
+            /*
             var queryCompiler = (QueryCompiler)QueryCompilerField.GetValue(query.Provider);
             var modelGenerator = (QueryModelGenerator)QueryModelGeneratorField.GetValue(queryCompiler);
             var parameterValues = new SimpleParameterValues();
@@ -63,6 +71,7 @@ namespace EFCore.BulkExtensions
 
             string sql = modelVisitor.Queries.First().ToString();
             return (sql, parameterValues.ParameterValues.Select(x => new SqlParameter(x.Key, x.Value)));
+            */
         }
     }
 }

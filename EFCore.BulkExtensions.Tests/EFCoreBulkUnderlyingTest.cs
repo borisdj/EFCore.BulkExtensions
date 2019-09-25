@@ -1,13 +1,10 @@
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
-using System.Data.SqlClient;
-using System.Diagnostics;
 using System.Linq;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.Extensions.Caching.Memory;
 using Xunit;
 
 namespace EFCore.BulkExtensions.Tests
@@ -157,7 +154,7 @@ namespace EFCore.BulkExtensions.Tests
             using (var context = new TestContext(GetOptions()))
             {
                 // Resets AutoIncrement
-                context.Database.ExecuteSqlCommand("DBCC CHECKIDENT ('dbo.[" + nameof(Item) + "]', RESEED, 0);");
+                context.Database.ExecuteSqlRaw("DBCC CHECKIDENT ('dbo.[" + nameof(Item) + "]', RESEED, 0);");
             }
         }
 
