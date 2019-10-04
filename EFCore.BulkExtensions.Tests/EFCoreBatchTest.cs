@@ -21,11 +21,11 @@ namespace EFCore.BulkExtensions.Tests
             RunInsert();
             RunBatchUpdate();
             RunBatchDelete();
-            RunContainsBatchDelete();
+            //RunContainsBatchDelete(); // currently not supported for EFCore 3.0
 
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
-                var lastItem = context.Items.LastOrDefault();
+                var lastItem = context.Items.ToList().LastOrDefault();
                 Assert.Equal(500, lastItem.ItemId);
                 Assert.Equal("Updated", lastItem.Description);
                 Assert.Equal(1.5m, lastItem.Price);
@@ -41,7 +41,7 @@ namespace EFCore.BulkExtensions.Tests
                 context.Items.Add(new Item { }); // used for initial add so that after RESEED it starts from 1, not 0
                 context.SaveChanges();
 
-                //context.Items.BatchDelete(); // TODO: Use after BatchDelete gets implemented for v3.0
+                context.Items.BatchDelete();
                 context.BulkDelete(context.Items.ToList());
 
                 if (databaseType == DbServer.SqlServer)
@@ -63,11 +63,17 @@ namespace EFCore.BulkExtensions.Tests
 
                 decimal price = 0;
                 var query = context.Items.Where(a => a.ItemId <= 500 && a.Price >= price);
-                query.BatchUpdate(new Item { Description = "Updated", Price = 1.5m }/*, updateColumns*/);
+
+                var parametersDict = new Dictionary<string, object> // is used to fix issue of getting Query Parameters in .NetCore 3.0
+                {
+                    { nameof(price), price }
+                };
+
+                query.BatchUpdate(new Item { Description = "Updated", Price = 1.5m }/*, updateColumns*/, parametersDict: parametersDict);
 
                 var incrementStep = 100;
                 var suffix = " Concatenated";
-                query.BatchUpdate(a => new Item { Name = a.Name + suffix, Quantity = a.Quantity + incrementStep }); // example of BatchUpdate Increment/Decrement value in variable
+                query.BatchUpdate(a => new Item { Name = a.Name + suffix, Quantity = a.Quantity + incrementStep }, parametersDict); // example of BatchUpdate Increment/Decrement value in variable
                 //query.BatchUpdate(a => new Item { Quantity = a.Quantity + 100 }); // example direct value without variable
             }
         }
@@ -104,7 +110,7 @@ namespace EFCore.BulkExtensions.Tests
             }
         }
 
-        private void RunContainsBatchDelete()
+        private void RunContainsBatchDelete() // currently not supported for EFCore 3.0
         {
             var descriptionsToDelete = new List<string> { "info" };
             using (var context = new TestContext(ContextUtil.GetOptions()))

@@ -10,10 +10,12 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace EFCore.BulkExtensions
 {
-    static class BatchUtil
+    public static class BatchUtil
     {
         // In comment are Examples of how SqlQuery is changed for Sql Batch
 
@@ -24,9 +26,12 @@ namespace EFCore.BulkExtensions
         // DELETE [a]
         // FROM [Table] AS [a]
         // WHERE [a].[Columns] = FilterValues
-        public static (string, List<object>) GetSqlDelete<T>(IQueryable<T> query, DbContext context) where T : class
+        public static (string, List<object>) GetSqlDelete<T>(IQueryable<T> query, DbContext context, Dictionary<string, object> parametersDict) where T : class
         {
             (string sql, string tableAlias, string tableAliasSufixAs, IEnumerable<object> innerParameters) = GetBatchSql(query, context, isUpdate: false);
+            int paramsIndex = 0;
+            if (parametersDict != null)
+                innerParameters = parametersDict.Select(a => new SqlParameter($"@__{a.Key}_{paramsIndex++}", a.Value));
 
             innerParameters = ReloadSqlParameters(context, innerParameters.ToList()); // Sqlite requires SqliteParameters
             tableAlias = (GetDatabaseType(context) == DbServer.SqlServer) ? $"[{tableAlias}]" : tableAlias;
@@ -42,9 +47,12 @@ namespace EFCore.BulkExtensions
         // UPDATE [a] SET [UpdateColumns] = N'updateValues'
         // FROM [Table] AS [a]
         // WHERE [a].[Columns] = FilterValues
-        public static (string, List<object>) GetSqlUpdate<T>(IQueryable<T> query, DbContext context, T updateValues, List<string> updateColumns) where T : class, new()
+        public static (string, List<object>) GetSqlUpdate<T>(IQueryable<T> query, DbContext context, T updateValues, List<string> updateColumns, Dictionary<string, object> parametersDict) where T : class, new()
         {
             (string sql, string tableAlias, string tableAliasSufixAs, IEnumerable<object> innerParameters) = GetBatchSql(query, context, isUpdate: true);
+            int paramsIndex = 0;
+            if (parametersDict != null)
+                innerParameters = parametersDict.Select(a => new SqlParameter($"@__{a.Key}_{paramsIndex++}", a.Value));
             var sqlParameters = new List<object>(innerParameters);
 
             string sqlSET = GetSqlSetSegment(context, updateValues, updateColumns, sqlParameters);
@@ -62,13 +70,15 @@ namespace EFCore.BulkExtensions
         /// <param name="query"></param>
         /// <param name="expression"></param>
         /// <returns></returns>
-        public static (string, List<object>) GetSqlUpdate<T>(IQueryable<T> query, Expression<Func<T, T>> expression) where T : class
+        public static (string, List<object>) GetSqlUpdate<T>(IQueryable<T> query, DbContext context, Expression<Func<T, T>> expression, Dictionary<string, object> parametersDict) where T : class
         {
-            DbContext context = BatchUtil.GetDbContext(query);
             (string sql, string tableAlias, string tableAliasSufixAs, IEnumerable<object> innerParameters) = GetBatchSql(query, context, isUpdate: true);
             var sqlColumns = new StringBuilder();
+            int paramsIndex = 0;
+            if (parametersDict != null)
+                innerParameters = parametersDict.Select(a => new SqlParameter($"@__{a.Key}_{paramsIndex++}", a.Value));
             var sqlParameters = new List<object>(innerParameters);
-            var columnNameValueDict = TableInfo.CreateInstance(GetDbContext(query), new List<T>(), OperationType.Read, new BulkConfig()).PropertyColumnNamesDict;
+            var columnNameValueDict = TableInfo.CreateInstance(context, new List<T>(), OperationType.Read, new BulkConfig()).PropertyColumnNamesDict;
             var dbType = GetDatabaseType(context);
             CreateUpdateBody(columnNameValueDict, tableAlias, expression.Body, dbType, ref sqlColumns, ref sqlParameters);
 
@@ -85,7 +95,7 @@ namespace EFCore.BulkExtensions
             if (databaseType == DbServer.Sqlite)
             {
                 var sqlParametersReloaded = new List<object>();
-                foreach(var parameter in sqlParameters)
+                foreach (var parameter in sqlParameters)
                 {
                     var sqlParameter = (SqlParameter)parameter;
                     sqlParametersReloaded.Add(new SqliteParameter(sqlParameter.ParameterName, sqlParameter.Value));
@@ -100,12 +110,26 @@ namespace EFCore.BulkExtensions
 
         public static (string, string, string, IEnumerable<object>) GetBatchSql<T>(IQueryable<T> query, DbContext context, bool isUpdate) where T : class
         {
-            string sqlQuery = query.ToSql();
-            IEnumerable<object> innerParameters = new List<object>();
-            if (!sqlQuery.Contains(" IN (")) // ToParametrizedSql does not work correctly with Contains that is translated to sql IN command
+            string sqlQuery;
+            try
             {
-                (sqlQuery, innerParameters) = query.ToParametrizedSql();
+                sqlQuery = query.ToSql();
             }
+            catch (Exception ex)
+            {
+                if (ex.Message.StartsWith("Unable to cast object"))
+                    throw new NotSupportedException($"Query with 'Contains' not currently supported on .NetCore 3. ({ex.Message})");
+                else
+                    throw ex;
+                // Unable to cast object of type 'Microsoft.EntityFrameworkCore.Query.SqlExpressions.SqlParameterExpression'
+                //                       to type 'Microsoft.EntityFrameworkCore.Query.SqlExpressions.SqlConstantExpression'.
+            }
+
+            IEnumerable<object> innerParameters = new List<object>();
+            /*if (!sqlQuery.Contains(" IN (")) // DEPRECATED (EFCore 2) ToParametrizedSql does not work correctly with Contains that is translated to sql IN command
+            {
+                //(sqlQuery, innerParameters) = query.ToParametrizedSql();
+            }*/
 
             DbServer databaseType = GetDatabaseType(context);
             string tableAlias = "";
@@ -126,7 +150,7 @@ namespace EFCore.BulkExtensions
                 int indexPrefixFROM = sql.IndexOf(Environment.NewLine, 1); // skip NewLine from start of string 
                 tableAlias = sql.Substring(7, indexPrefixFROM - 14); // get name of table: "TableName"
                 sql = sql.Substring(indexPrefixFROM, sql.Length - indexPrefixFROM); // remove segment: FROM "TableName" AS "a"
-                tableAliasSufixAs = " AS " + sql.Substring(8 , 3) + " ";
+                tableAliasSufixAs = " AS " + sql.Substring(8, 3) + " ";
             }
 
             return (sql, tableAlias, tableAliasSufixAs, innerParameters);
@@ -290,7 +314,7 @@ namespace EFCore.BulkExtensions
             var queryCompiler = typeof(EntityQueryProvider).GetField("_queryCompiler", bindingFlags).GetValue(query.Provider);
             var queryContextFactory = queryCompiler.GetType().GetField("_queryContextFactory", bindingFlags).GetValue(queryCompiler);
 
-            var dependencies = typeof(RelationalQueryContextFactory).GetProperty("Dependencies", bindingFlags).GetValue(queryContextFactory);
+            var dependencies = typeof(RelationalQueryContextFactory).GetField("_dependencies", bindingFlags).GetValue(queryContextFactory);
             var queryContextDependencies = typeof(DbContext).Assembly.GetType(typeof(QueryContextDependencies).FullName);
             var stateManagerProperty = queryContextDependencies.GetProperty("StateManager", bindingFlags | BindingFlags.Public).GetValue(dependencies);
             var stateManager = (IStateManager)stateManagerProperty;
@@ -315,5 +339,37 @@ namespace EFCore.BulkExtensions
             return method.DeclaringType == typeof(string) && method.Name == nameof(string.Concat);
 
         }
+
+        internal static int ExecuteSql(DbContext dbContext, string sql, List<object> sqlParameters)
+        {
+            try
+            {
+                return dbContext.Database.ExecuteSqlRaw(sql, sqlParameters);
+            }
+            catch (Exception ex)
+            {
+                if (ex.Message.Contains("Must declare the scalar variable"))
+                    throw new InvalidOperationException($"{ParametersDictNotFoundMessage} SourceMessage: {ex.Message})");
+                else
+                    throw ex;
+            }
+        }
+
+        internal static async Task<int> ExecuteSqlAsync(DbContext dbContext, string sql, List<object> sqlParameters, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return await dbContext.Database.ExecuteSqlRawAsync(sql, sqlParameters, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                if (ex.Message.Contains("Must declare the scalar variable"))
+                    throw new InvalidOperationException($"{ParametersDictNotFoundMessage} SourceMessage: {ex.Message})");
+                else
+                    throw ex;
+            }
+        }
+
+        internal static string ParametersDictNotFoundMessage => "For Query with parameterized variable BatchOperation requires argument 'parametersDict' (Name and Value). Example in library ReadMe.";
     }
 }

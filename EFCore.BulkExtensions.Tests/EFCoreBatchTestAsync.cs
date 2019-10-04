@@ -25,7 +25,7 @@ namespace EFCore.BulkExtensions.Tests
 
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
-                var lastItem = context.Items.LastOrDefaultAsync().Result;
+                var lastItem = (await context.Items.ToListAsync()).Last();
                 Assert.Equal(500, lastItem.ItemId);
                 Assert.Equal("Updated", lastItem.Description);
                 Assert.Null(lastItem.Price);
@@ -87,9 +87,15 @@ namespace EFCore.BulkExtensions.Tests
 
                 decimal price = 0;
                 var query = context.Items.Where(a => a.ItemId <= 500 && a.Price >= price);
-                await query.BatchUpdateAsync(new Item { Description = "Updated" }/*, updateColumns*/);
 
-                await query.BatchUpdateAsync(a => new Item { Name = a.Name + " Concatenated", Quantity = a.Quantity + 100, Price = null }); // example of BatchUpdate value Increment/Decrement
+                var parametersDict = new Dictionary<string, object> // is used to fix issue of getting Query Parameters in .NetCore 3.0
+                {
+                    { nameof(price), price }
+                };
+
+                await query.BatchUpdateAsync(new Item { Description = "Updated" }/*, updateColumns*/, parametersDict: parametersDict);
+
+                await query.BatchUpdateAsync(a => new Item { Name = a.Name + " Concatenated", Quantity = a.Quantity + 100, Price = null }, parametersDict); // example of BatchUpdate value Increment/Decrement
             }
         }
 

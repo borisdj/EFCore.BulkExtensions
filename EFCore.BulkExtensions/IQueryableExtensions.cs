@@ -6,9 +6,11 @@ using System.Linq;
 using System.Reflection;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.Internal;
+using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 
@@ -28,8 +30,28 @@ namespace EFCore.BulkExtensions
 
         internal static string ToSql<TEntity>(this IQueryable<TEntity> query) where TEntity : class
         {
-            // ! IMPORTANT TODO:
-            throw new NotSupportedException("Currently not supported for .NET Core 3.0, because in v3.0 there are no classes 'QueryModelGenerator' and 'RelationalQueryModelVisitor'. Will be supported after finding alternative for implementing .ToSql();");
+            var enumerator = query.Provider.Execute<IEnumerable<TEntity>>(query.Expression).GetEnumerator();
+            var enumeratorType = enumerator.GetType();
+
+            var bindingFlags = BindingFlags.NonPublic | BindingFlags.Instance;
+            var selectExpressionFieldName = "_selectExpression";
+            var querySqlGeneratorFactoryFieldName = "_querySqlGeneratorFactory";
+            var selectFieldInfo = enumeratorType.GetField(selectExpressionFieldName, bindingFlags);
+            var sqlGeneratorFieldInfo = enumeratorType.GetField(querySqlGeneratorFactoryFieldName, bindingFlags);
+            if (selectFieldInfo == null || sqlGeneratorFieldInfo == null)
+                throw new InvalidOperationException($"Cannot find field {(selectFieldInfo == null ? selectExpressionFieldName : querySqlGeneratorFactoryFieldName) } on type {enumeratorType.Name}");
+
+            var selectExpression = selectFieldInfo.GetValue(enumerator) as SelectExpression;
+            var factory = sqlGeneratorFieldInfo.GetValue(enumerator) as IQuerySqlGeneratorFactory;
+            if (selectExpression == null || factory == null)
+                throw new InvalidOperationException($"Could not get {(selectFieldInfo == null ? nameof(SelectExpression) : nameof(IQuerySqlGeneratorFactory)) }");
+
+            var sqlGenerator = factory.Create();
+            var command = sqlGenerator.GetCommand(selectExpression);
+            var sql = command.CommandText;
+            return sql;
+
+            //DEPRECATED: Used for .NetCore 2 on NetStandard 2.0
             /*
             var queryCompiler = (QueryCompiler)QueryCompilerField.GetValue(query.Provider);
             var modelGenerator = (QueryModelGenerator)QueryModelGeneratorField.GetValue(queryCompiler);
@@ -49,9 +71,12 @@ namespace EFCore.BulkExtensions
             */
         }
 
+        // currently not used
         internal static (string, IEnumerable<SqlParameter>) ToParametrizedSql<TEntity>(this IQueryable<TEntity> query) where TEntity : class
         {
-            throw new NotSupportedException("Currently not supported for .NET Core 3.0, because in v3.0 there are no classes 'QueryModelGenerator' and 'RelationalQueryModelVisitor'. Will be supported after finding alternative for implementing .ToSql();");
+            throw new NotSupportedException("ToParametrizedSql does not work on EFCore 3.");
+            
+            //DEPRECATED: Used for .NetCore 2 on NetStandard 2.0
             /*
             var queryCompiler = (QueryCompiler)QueryCompilerField.GetValue(query.Provider);
             var modelGenerator = (QueryModelGenerator)QueryModelGeneratorField.GetValue(queryCompiler);
