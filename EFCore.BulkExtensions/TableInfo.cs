@@ -483,7 +483,6 @@ namespace EFCore.BulkExtensions
             {
                 var accessor = TypeAccessor.Create(typeof(T), true);
                 string identityPropertyName = PropertyColumnNamesDict.SingleOrDefault(a => a.Value == IdentityColumnName).Key;
-
                 for (int i = 0; i < NumberOfEntities; i++)
                 {
                     accessor[entities[i], identityPropertyName] = accessor[entitiesWithOutputIdentity[i], identityPropertyName];
@@ -509,14 +508,12 @@ namespace EFCore.BulkExtensions
         public void LoadOutputData<T>(DbContext context, IList<T> entities) where T : class
         {
             bool hasIdentity = PropertyColumnNamesDict.Any(a => a.Value == IdentityColumnName);
-
             if (BulkConfig.SetOutputIdentity && hasIdentity)
             {
                 string sqlQuery = SqlQueryBuilder.SelectFromOutputTable(this);
                 var entitiesWithOutputIdentity = QueryOutputTable<T>(context, sqlQuery).ToList();
                 UpdateEntitiesIdentity(entities, entitiesWithOutputIdentity);
             }
-
             if (BulkConfig.CalculateStats)
             {
                 string sqlQueryCount =  SqlQueryBuilder.SelectCountIsUpdateFromOutputTable(this);
