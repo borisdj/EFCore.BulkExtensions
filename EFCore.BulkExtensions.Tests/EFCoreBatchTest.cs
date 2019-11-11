@@ -64,16 +64,11 @@ namespace EFCore.BulkExtensions.Tests
                 decimal price = 0;
                 var query = context.Items.Where(a => a.ItemId <= 500 && a.Price >= price);
 
-                var parametersDict = new Dictionary<string, object> // is used to fix issue of getting Query Parameters in .NetCore 3.0
-                {
-                    { nameof(price), price }
-                };
-
-                query.BatchUpdate(new Item { Description = "Updated", Price = 1.5m }/*, updateColumns*/, parametersDict: parametersDict);
+                query.BatchUpdate(new Item { Description = "Updated", Price = 1.5m }/*, updateColumns*/);
 
                 var incrementStep = 100;
                 var suffix = " Concatenated";
-                query.BatchUpdate(a => new Item { Name = a.Name + suffix, Quantity = a.Quantity + incrementStep }, parametersDict); // example of BatchUpdate Increment/Decrement value in variable
+                query.BatchUpdate(a => new Item { Name = a.Name + suffix, Quantity = a.Quantity + incrementStep }); // example of BatchUpdate Increment/Decrement value in variable
                 //query.BatchUpdate(a => new Item { Quantity = a.Quantity + 100 }); // example direct value without variable
             }
         }

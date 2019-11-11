@@ -50,33 +50,41 @@ namespace EFCore.BulkExtensions
             var command = sqlGenerator.GetCommand(selectExpression);
             var sql = command.CommandText;
             return sql;
-
-            //DEPRECATED: Used for .NetCore 2 on NetStandard 2.0
-            /*
-            var queryCompiler = (QueryCompiler)QueryCompilerField.GetValue(query.Provider);
-            var modelGenerator = (QueryModelGenerator)QueryModelGeneratorField.GetValue(queryCompiler);
-            var queryModel = modelGenerator.ParseQuery(query.Expression);
-            var database = (IDatabase)DataBaseField.GetValue(queryCompiler);
-            var databaseDependencies = (DatabaseDependencies)DatabaseDependenciesField.GetValue(database);
-            var queryCompilationContext = databaseDependencies.QueryCompilationContextFactory.Create(false);
-            var modelVisitor = (RelationalQueryModelVisitor)queryCompilationContext.CreateQueryModelVisitor();
-
-            modelVisitor.CreateQueryExecutor<TEntity>(queryModel);
-            //modelVisitor.CreateAsyncQueryExecutor<TEntity>(queryModel);
-            // CreateAsync not used, throws: Message: System.ArgumentException : Expression of type 'System.Collections.Generic.IEnumerable`1[EFCore.BulkExtensions.Tests.Item]'
-            // cannot be used for return type 'System.Collections.Generic.IAsyncEnumerable`1[EFCore.BulkExtensions.Tests.Item]'
-
-            string sql = modelVisitor.Queries.First().ToString();
-            return sql;
-            */
         }
 
-        // currently not used
-        internal static (string, IEnumerable<SqlParameter>) ToParametrizedSql<TEntity>(this IQueryable<TEntity> query) where TEntity : class
+        public static (string, IEnumerable<SqlParameter>) ToParametrizedSql<TEntity>(this IQueryable<TEntity> query)
+        {
+            var enumerator = query.Provider
+                .Execute<IEnumerable<TEntity>>(query.Expression)
+                .GetEnumerator();
+            const BindingFlags bindingFlags = BindingFlags.NonPublic | BindingFlags.Instance;
+            var enumeratorType = enumerator.GetType();
+            var selectFieldInfo = enumeratorType.GetField("_selectExpression", bindingFlags) ?? throw new InvalidOperationException($"cannot find field _selectExpression on type {enumeratorType.Name}");
+            var sqlGeneratorFieldInfo = enumeratorType.GetField("_querySqlGeneratorFactory", bindingFlags) ?? throw new InvalidOperationException($"cannot find field _querySqlGeneratorFactory on type {enumeratorType.Name}");
+            var queryContextFieldInfo = enumeratorType.GetField("_relationalQueryContext", bindingFlags) ?? throw new InvalidOperationException($"cannot find field _relationalQueryContext on type {enumeratorType.Name}");
+
+            var selectExpression = selectFieldInfo.GetValue(enumerator) as SelectExpression ?? throw new InvalidOperationException($"could not get SelectExpression");
+            var factory = sqlGeneratorFieldInfo.GetValue(enumerator) as IQuerySqlGeneratorFactory ?? throw new InvalidOperationException($"could not get SqlServerQuerySqlGeneratorFactory");
+            var queryContext = queryContextFieldInfo.GetValue(enumerator) as RelationalQueryContext ?? throw new InvalidOperationException($"could not get RelationalQueryContext");
+
+            var sqlGenerator = factory.Create();
+            var command = sqlGenerator.GetCommand(selectExpression);
+
+            //var parametersNameDict = command.Parameters.ToDictionary(a => a.InvariantName, a => a.Name);
+
+            var parameters = new List<SqlParameter>();
+            if (queryContext.ParameterValues.Count > 0)
+                parameters = queryContext.ParameterValues.Select(a => new SqlParameter("@" + a.Key, a.Value)).ToList();
+
+            var sql = command.CommandText;
+            return (sql, parameters);
+        }
+
+        /*internal static (string, IEnumerable<SqlParameter>) ToParametrizedSql<TEntity>(this IQueryable<TEntity> query) where TEntity : class
         {
             throw new NotSupportedException("ToParametrizedSql does not work on EFCore 3.");
             
-            //DEPRECATED: Used for .NetCore 2 on NetStandard 2.0
+            DEPRECATED: Used for .NetCore 2 on NetStandard 2.0
             /*
             var queryCompiler = (QueryCompiler)QueryCompilerField.GetValue(query.Provider);
             var modelGenerator = (QueryModelGenerator)QueryModelGeneratorField.GetValue(queryCompiler);
@@ -96,7 +104,6 @@ namespace EFCore.BulkExtensions
 
             string sql = modelVisitor.Queries.First().ToString();
             return (sql, parameterValues.ParameterValues.Select(x => new SqlParameter(x.Key, x.Value)));
-            */
-        }
+        }*/
     }
 }

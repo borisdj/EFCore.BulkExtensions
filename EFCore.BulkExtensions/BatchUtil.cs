@@ -26,13 +26,10 @@ namespace EFCore.BulkExtensions
         // DELETE [a]
         // FROM [Table] AS [a]
         // WHERE [a].[Columns] = FilterValues
-        public static (string, List<object>) GetSqlDelete<T>(IQueryable<T> query, DbContext context, Dictionary<string, object> parametersDict) where T : class
+        public static (string, List<object>) GetSqlDelete<T>(IQueryable<T> query, DbContext context) where T : class
         {
             (string sql, string tableAlias, string tableAliasSufixAs, IEnumerable<object> innerParameters) = GetBatchSql(query, context, isUpdate: false);
-            int paramsIndex = 0;
-            if (parametersDict != null)
-                innerParameters = parametersDict.Select(a => new SqlParameter($"@__{a.Key}_{paramsIndex++}", a.Value));
-
+            
             innerParameters = ReloadSqlParameters(context, innerParameters.ToList()); // Sqlite requires SqliteParameters
             tableAlias = (GetDatabaseType(context) == DbServer.SqlServer) ? $"[{tableAlias}]" : tableAlias;
 
@@ -47,12 +44,9 @@ namespace EFCore.BulkExtensions
         // UPDATE [a] SET [UpdateColumns] = N'updateValues'
         // FROM [Table] AS [a]
         // WHERE [a].[Columns] = FilterValues
-        public static (string, List<object>) GetSqlUpdate<T>(IQueryable<T> query, DbContext context, T updateValues, List<string> updateColumns, Dictionary<string, object> parametersDict) where T : class, new()
+        public static (string, List<object>) GetSqlUpdate<T>(IQueryable<T> query, DbContext context, T updateValues, List<string> updateColumns) where T : class, new()
         {
             (string sql, string tableAlias, string tableAliasSufixAs, IEnumerable<object> innerParameters) = GetBatchSql(query, context, isUpdate: true);
-            int paramsIndex = 0;
-            if (parametersDict != null)
-                innerParameters = parametersDict.Select(a => new SqlParameter($"@__{a.Key}_{paramsIndex++}", a.Value));
             var sqlParameters = new List<object>(innerParameters);
 
             string sqlSET = GetSqlSetSegment(context, updateValues, updateColumns, sqlParameters);
@@ -70,15 +64,12 @@ namespace EFCore.BulkExtensions
         /// <param name="query"></param>
         /// <param name="expression"></param>
         /// <returns></returns>
-        public static (string, List<object>) GetSqlUpdate<T>(IQueryable<T> query, DbContext context, Expression<Func<T, T>> expression, Dictionary<string, object> parametersDict) where T : class
+        public static (string, List<object>) GetSqlUpdate<T>(IQueryable<T> query, DbContext context, Expression<Func<T, T>> expression) where T : class
         {
             (string sql, string tableAlias, string tableAliasSufixAs, IEnumerable<object> innerParameters) = GetBatchSql(query, context, isUpdate: true);
             var sqlColumns = new StringBuilder();
-            int paramsIndex = 0;
-            if (parametersDict != null)
-                innerParameters = parametersDict.Select(a => new SqlParameter($"@__{a.Key}_{paramsIndex++}", a.Value));
             var sqlParameters = new List<object>(innerParameters);
-            var columnNameValueDict = TableInfo.CreateInstance(context, new List<T>(), OperationType.Read, new BulkConfig()).PropertyColumnNamesDict;
+            var columnNameValueDict = TableInfo.CreateInstance(GetDbContext(query), new List<T>(), OperationType.Read, new BulkConfig()).PropertyColumnNamesDict;
             var dbType = GetDatabaseType(context);
             CreateUpdateBody(columnNameValueDict, tableAlias, expression.Body, dbType, ref sqlColumns, ref sqlParameters);
 
@@ -128,7 +119,7 @@ namespace EFCore.BulkExtensions
             IEnumerable<object> innerParameters = new List<object>();
             /*if (!sqlQuery.Contains(" IN (")) // DEPRECATED (EFCore 2) ToParametrizedSql does not work correctly with Contains that is translated to sql IN command
             {
-                //(sqlQuery, innerParameters) = query.ToParametrizedSql();
+                (sqlQuery, innerParameters) = query.ToParametrizedSql();
             }*/
 
             DbServer databaseType = GetDatabaseType(context);
