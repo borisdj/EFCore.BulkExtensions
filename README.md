@@ -45,11 +45,6 @@ context.Items.Where(a => a.ItemId >  500).BatchDeleteAsync();
 // Update (using Expression arg.) supports Increment/Decrement 
 context.Items.Where(a => a.ItemId <= 500).BatchUpdate(a => new Item { Quantity = a.Quantity + 100 });
   // can be as value '+100' or as variable '+incrementStep' (int incrementStep = 100;)
-// IMPORTANT: When using parameterized Query BatchOperation currently requires argument 'parametersDict'
-int itemId = 500;
-var parametersDict = new Dictionary<string, object> { { nameof(itemId), itemId } };
-var query = context.Items.Where(a => a.ItemId <= itemId);
-query.BatchUpdate(a => new Item { Quantity = a.Quantity + 100 }, parametersDict);
   
 // Update (via simple object)
 context.Items.Where(a => a.ItemId <= 500).BatchUpdate(new Item { Description = "Updated" });
