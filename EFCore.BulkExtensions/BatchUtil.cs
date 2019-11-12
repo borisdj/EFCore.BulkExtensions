@@ -101,26 +101,12 @@ namespace EFCore.BulkExtensions
 
         public static (string, string, string, IEnumerable<object>) GetBatchSql<T>(IQueryable<T> query, DbContext context, bool isUpdate) where T : class
         {
-            string sqlQuery;
-            try
-            {
-                sqlQuery = query.ToSql();
-            }
-            catch (Exception ex)
-            {
-                if (ex.Message.StartsWith("Unable to cast object"))
-                    throw new NotSupportedException($"Query with 'Contains' not currently supported on .NetCore 3. ({ex.Message})");
-                else
-                    throw ex;
-                // Unable to cast object of type 'Microsoft.EntityFrameworkCore.Query.SqlExpressions.SqlParameterExpression'
-                //                       to type 'Microsoft.EntityFrameworkCore.Query.SqlExpressions.SqlConstantExpression'.
-            }
-
+            string sqlQuery = query.ToSql();
             IEnumerable<object> innerParameters = new List<object>();
-            /*if (!sqlQuery.Contains(" IN (")) // DEPRECATED (EFCore 2) ToParametrizedSql does not work correctly with Contains that is translated to sql IN command
+            if (!sqlQuery.Contains(" IN (")) // ToParametrizedSql does not work correctly with Contains that is translated to sql IN command
             {
                 (sqlQuery, innerParameters) = query.ToParametrizedSql();
-            }*/
+            }
 
             DbServer databaseType = GetDatabaseType(context);
             string tableAlias = "";
@@ -328,39 +314,6 @@ namespace EFCore.BulkExtensions
                 return false;
             }
             return method.DeclaringType == typeof(string) && method.Name == nameof(string.Concat);
-
         }
-
-        internal static int ExecuteSql(DbContext dbContext, string sql, List<object> sqlParameters)
-        {
-            try
-            {
-                return dbContext.Database.ExecuteSqlRaw(sql, sqlParameters);
-            }
-            catch (Exception ex)
-            {
-                if (ex.Message.Contains("Must declare the scalar variable"))
-                    throw new InvalidOperationException($"{ParametersDictNotFoundMessage} SourceMessage: {ex.Message})");
-                else
-                    throw ex;
-            }
-        }
-
-        internal static async Task<int> ExecuteSqlAsync(DbContext dbContext, string sql, List<object> sqlParameters, CancellationToken cancellationToken = default)
-        {
-            try
-            {
-                return await dbContext.Database.ExecuteSqlRawAsync(sql, sqlParameters, cancellationToken).ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                if (ex.Message.Contains("Must declare the scalar variable"))
-                    throw new InvalidOperationException($"{ParametersDictNotFoundMessage} SourceMessage: {ex.Message})");
-                else
-                    throw ex;
-            }
-        }
-
-        internal static string ParametersDictNotFoundMessage => "For Query with parameterized variable BatchOperation requires argument 'parametersDict' (Name and Value). Example in library ReadMe.";
     }
 }
