@@ -150,7 +150,7 @@ namespace EFCore.BulkExtensions
             if (AreSpecifiedPropertiesToInclude || AreSpecifiedPropertiesToExclude)
             {
                 if (AreSpecifiedPropertiesToInclude && AreSpecifiedPropertiesToExclude)
-                    throw new InvalidOperationException("Only one group of properties, either PropertiesToInclude or PropertiesToExclude can be specifed, specifying both not allowed.");
+                    throw new InvalidOperationException("Only one group of properties, either PropertiesToInclude or PropertiesToExclude can be specified, specifying both not allowed.");
                 if (AreSpecifiedPropertiesToInclude)
                     properties = properties.Where(a => BulkConfig.PropertiesToInclude.Contains(a.Name));
                 if (AreSpecifiedPropertiesToExclude)
