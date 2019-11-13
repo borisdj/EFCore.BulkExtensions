@@ -17,6 +17,9 @@ namespace EFCore.BulkExtensions
 {
     public static class BatchUtil
     {
+        static readonly int SelectStatementLength = "SELECT".Length;
+        static readonly int UpdateStatementLength = "UPDATE".Length;
+
         // In comment are Examples of how SqlQuery is changed for Sql Batch
 
         // SELECT [a].[Column1], [a].[Column2], .../r/n
@@ -29,7 +32,7 @@ namespace EFCore.BulkExtensions
         public static (string, List<object>) GetSqlDelete<T>(IQueryable<T> query, DbContext context) where T : class
         {
             (string sql, string tableAlias, string tableAliasSufixAs, IEnumerable<object> innerParameters) = GetBatchSql(query, context, isUpdate: false);
-            
+
             innerParameters = ReloadSqlParameters(context, innerParameters.ToList()); // Sqlite requires SqliteParameters
             tableAlias = (GetDatabaseType(context) == DbServer.SqlServer) ? $"[{tableAlias}]" : tableAlias;
 
@@ -123,12 +126,17 @@ namespace EFCore.BulkExtensions
             }*/
 
             DbServer databaseType = GetDatabaseType(context);
-            string tableAlias = "";
-            string tableAliasSufixAs = "";
+            string tableAlias = string.Empty;
+            string tableAliasSufixAs = string.Empty;
+            string topStatement = string.Empty;
             if (databaseType != DbServer.Sqlite) // when Sqlite and Deleted metod tableAlias is Empty: ""
             {
-                string escapeSymbol = (databaseType == DbServer.SqlServer) ? "]" : "."; // SqlServer : PostrgeSql
-                tableAlias = sqlQuery.Substring(8, sqlQuery.IndexOf(escapeSymbol) - 8);
+                string escapeSymbolEnd = (databaseType == DbServer.SqlServer) ? "]" : "."; // SqlServer : PostrgeSql;
+                string escapeSymbolStart = (databaseType == DbServer.SqlServer) ? "[" : " "; // SqlServer : PostrgeSql;
+                string tableAliasEnd = sqlQuery.Substring(SelectStatementLength, sqlQuery.IndexOf(escapeSymbolEnd) - SelectStatementLength); // " TOP(10) [table_alias" / " [table_alias" : " table_alias"
+                int tableAliasStartIndex = tableAliasEnd.IndexOf(escapeSymbolStart);
+                tableAlias = tableAliasEnd.Substring(tableAliasStartIndex + escapeSymbolStart.Length); // "table_alias"
+                topStatement = tableAliasEnd.Substring(0, tableAliasStartIndex).TrimStart(); // "TOP(10) " / if TOP not present in query this will be a Substring(0,0) == ""
             }
 
             int indexFROM = sqlQuery.IndexOf(Environment.NewLine);
@@ -318,13 +326,16 @@ namespace EFCore.BulkExtensions
             return context.Database.ProviderName.EndsWith(DbServer.Sqlite.ToString()) ? DbServer.Sqlite : DbServer.SqlServer;
         }
 
-        internal static bool IsStringConcat(BinaryExpression binaryExpression) {
+        internal static bool IsStringConcat(BinaryExpression binaryExpression)
+        {
             var methodProperty = binaryExpression.GetType().GetProperty("Method");
-            if (methodProperty == null) {
+            if (methodProperty == null)
+            {
                 return false;
             }
             var method = methodProperty.GetValue(binaryExpression) as MethodInfo;
-            if (method == null) {
+            if (method == null)
+            {
                 return false;
             }
             return method.DeclaringType == typeof(string) && method.Name == nameof(string.Concat);
