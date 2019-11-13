@@ -18,7 +18,6 @@ namespace EFCore.BulkExtensions
     public static class BatchUtil
     {
         static readonly int SelectStatementLength = "SELECT".Length;
-        static readonly int UpdateStatementLength = "UPDATE".Length;
 
         // In comment are Examples of how SqlQuery is changed for Sql Batch
 
