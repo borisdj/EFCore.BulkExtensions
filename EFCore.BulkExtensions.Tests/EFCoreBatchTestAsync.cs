@@ -21,16 +21,20 @@ namespace EFCore.BulkExtensions.Tests
             await RunBatchDeleteAllAsync(databaseType);
             await RunInsertAsync();
             await RunBatchUpdateAsync();
+            int deletedEntities = await RunTopBatchDeleteAsync();
             await RunBatchDeleteAsync();
 
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
-                var lastItem = context.Items.LastOrDefaultAsync().Result;
+                var firstItem = await context.Items.FirstOrDefaultAsync();
+                var lastItem = await context.Items.LastOrDefaultAsync();
+                Assert.Equal(1, deletedEntities);
                 Assert.Equal(500, lastItem.ItemId);
                 Assert.Equal("Updated", lastItem.Description);
                 Assert.Null(lastItem.Price);
                 Assert.StartsWith("name ", lastItem.Name);
                 Assert.EndsWith(" Concatenated", lastItem.Name);
+                Assert.EndsWith(" TOP(1)", firstItem.Name);
             }
         }
 
@@ -86,6 +90,17 @@ namespace EFCore.BulkExtensions.Tests
                 await query.BatchUpdateAsync(new Item { Description = "Updated" }/*, updateColumns*/);
 
                 await query.BatchUpdateAsync(a => new Item { Name = a.Name + " Concatenated", Quantity = a.Quantity + 100, Price = null }); // example of BatchUpdate value Increment/Decrement
+
+                query = context.Items.Where(a => a.ItemId <= 500 && a.Price == null);
+                await query.Take(1).BatchUpdateAsync(a => new Item { Name = a.Name + " TOP(1)", Quantity = a.Quantity + 100 }); // example of BatchUpdate with TOP(1)
+            }
+        }
+
+        private async Task<int> RunTopBatchDeleteAsync()
+        {
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                return await context.Items.Where(a => a.ItemId > 500).Take(1).BatchDeleteAsync();
             }
         }
 
