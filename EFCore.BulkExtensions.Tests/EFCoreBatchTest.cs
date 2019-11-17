@@ -20,17 +20,21 @@ namespace EFCore.BulkExtensions.Tests
             RunDeleteAll(databaseType);
             RunInsert();
             RunBatchUpdate();
+            int deletedEntities = RunTopBatchDelete();
             RunBatchDelete();
             //RunContainsBatchDelete(); // currently not supported for EFCore 3.0
 
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
+                var firstItem = context.Items.ToList().FirstOrDefault();
                 var lastItem = context.Items.ToList().LastOrDefault();
+                Assert.Equal(1, deletedEntities);
                 Assert.Equal(500, lastItem.ItemId);
                 Assert.Equal("Updated", lastItem.Description);
                 Assert.Equal(1.5m, lastItem.Price);
                 Assert.StartsWith("name ", lastItem.Name);
                 Assert.EndsWith(" Concatenated", lastItem.Name);
+                Assert.EndsWith(" TOP(1)", firstItem.Name);
             }
         }
 
@@ -70,6 +74,8 @@ namespace EFCore.BulkExtensions.Tests
                 var suffix = " Concatenated";
                 query.BatchUpdate(a => new Item { Name = a.Name + suffix, Quantity = a.Quantity + incrementStep }); // example of BatchUpdate Increment/Decrement value in variable
                 //query.BatchUpdate(a => new Item { Quantity = a.Quantity + 100 }); // example direct value without variable
+
+                query.Take(1).BatchUpdate(a => new Item { Name = a.Name + " TOP(1)", Quantity = a.Quantity + incrementStep }); // example of BatchUpdate with TOP(1)
             }
         }
 
@@ -94,6 +100,14 @@ namespace EFCore.BulkExtensions.Tests
 
                 context.Items.AddRange(entities); // does not guarantee insert order for SqlServer
                 context.SaveChanges();
+            }
+        }
+
+        private int RunTopBatchDelete()
+        {
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                return context.Items.Where(a => a.ItemId > 500).Take(1).BatchDelete();
             }
         }
 
