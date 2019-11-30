@@ -42,7 +42,11 @@ namespace EFCore.BulkExtensions.Tests
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
+                context.Items.Add(new Item { }); // used for initial add so that after RESEED it starts from 1, not 0
+                context.SaveChanges();
+
                 context.Items.BatchDelete();
+                context.BulkDelete(context.Items.ToList());
 
                 if (databaseType == DbServer.SqlServer)
                 {
