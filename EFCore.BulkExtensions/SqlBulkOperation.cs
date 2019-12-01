@@ -29,7 +29,8 @@ namespace EFCore.BulkExtensions
         InsertOrUpdateDelete,
         Update,
         Delete,
-        Read
+        Read,
+        Truncate
     }
 
     public class SqlProviderNotSupportedException : NotSupportedException
@@ -486,6 +487,26 @@ namespace EFCore.BulkExtensions
             }
         }
 
+        public static void Truncate(DbContext context, TableInfo tableInfo)
+        {
+            string providerName = context.Database.ProviderName;
+            // -- SQL Server --
+            if (providerName.EndsWith(DbServer.SqlServer.ToString()))
+            {
+                context.Database.ExecuteSqlRaw(SqlQueryBuilder.TruncateTable(tableInfo.FullTableName));
+
+            }
+            // -- Sqlite --
+            else if (providerName.EndsWith(DbServer.Sqlite.ToString()))
+            {
+                context.Database.ExecuteSqlRaw(SqlQueryBuilder.DeleteTable(tableInfo.FullTableName));
+            }
+            else
+            {
+                throw new SqlProviderNotSupportedException(providerName);
+            }
+        }
+
         public static async Task ReadAsync<T>(DbContext context, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, CancellationToken cancellationToken) where T : class
         {
             Dictionary<string, string> previousPropertyColumnNamesDict = tableInfo.ConfigureBulkReadTableInfo(context);
@@ -532,6 +553,26 @@ namespace EFCore.BulkExtensions
             else if (providerName.EndsWith(DbServer.Sqlite.ToString()))
             {
                 throw new NotImplementedException();
+            }
+            else
+            {
+                throw new SqlProviderNotSupportedException(providerName);
+            }
+        }
+
+        public static async Task TruncateAsync(DbContext context, TableInfo tableInfo)
+        {
+            string providerName = context.Database.ProviderName;
+            // -- SQL Server --
+            if (providerName.EndsWith(DbServer.SqlServer.ToString()))
+            {
+                await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.TruncateTable(tableInfo.FullTableName));
+
+            }
+            // -- Sqlite --
+            else if (providerName.EndsWith(DbServer.Sqlite.ToString()))
+            {
+                context.Database.ExecuteSqlRaw(SqlQueryBuilder.DeleteTable(tableInfo.FullTableName));
             }
             else
             {

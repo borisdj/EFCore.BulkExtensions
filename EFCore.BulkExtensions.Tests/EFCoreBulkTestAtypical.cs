@@ -207,6 +207,7 @@ namespace EFCore.BulkExtensions.Tests
             {
                 if (databaseType == DbServer.SqlServer)
                 {
+                    context.Truncate<ChangeLog>();
                     context.Database.ExecuteSqlRaw("TRUNCATE TABLE [" + nameof(ChangeLog) + "]");
                 }
                 else

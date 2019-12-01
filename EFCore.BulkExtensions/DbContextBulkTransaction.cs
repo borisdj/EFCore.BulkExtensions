@@ -10,7 +10,7 @@ namespace EFCore.BulkExtensions
     {
         public static void Execute<T>(DbContext context, IList<T> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress) where T : class
         {
-            if (entities.Count == 0)
+            if (operationType != OperationType.Truncate && entities.Count == 0)
             {
                 return;
             }
@@ -24,6 +24,10 @@ namespace EFCore.BulkExtensions
             {
                 SqlBulkOperation.Read(context, entities, tableInfo, progress);
             }
+            else if (operationType == OperationType.Truncate)
+            {
+                SqlBulkOperation.Truncate(context, tableInfo);
+            }
             else
             {
                 SqlBulkOperation.Merge(context, entities, tableInfo, operationType, progress);
@@ -32,7 +36,7 @@ namespace EFCore.BulkExtensions
 
         public static Task ExecuteAsync<T>(DbContext context, IList<T> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress, CancellationToken cancellationToken) where T : class
         {
-            if (entities.Count == 0)
+            if (operationType != OperationType.Truncate && entities.Count == 0)
             {
                 return Task.CompletedTask;
             }
@@ -45,6 +49,10 @@ namespace EFCore.BulkExtensions
             else if (operationType == OperationType.Read)
             {
                 return SqlBulkOperation.ReadAsync(context, entities, tableInfo, progress, cancellationToken);
+            }
+            else if (operationType == OperationType.Truncate)
+            {
+                return SqlBulkOperation.TruncateAsync(context, tableInfo);
             }
             else
             {

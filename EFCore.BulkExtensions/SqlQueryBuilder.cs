@@ -138,6 +138,23 @@ namespace EFCore.BulkExtensions
             return q;
         }
 
+        public static string TruncateTable(string tableName)
+        {
+            var q = $"TRUNCATE TABLE {tableName};";
+            return q;
+        }
+
+
+        /// <summary>
+        /// Used for Sqlite, Truncate table 
+        /// </summary>
+        public static string DeleteTable(string tableName)
+        {
+            var q = $"DELETE FROM {tableName};" +
+                    $"VACUUM;";
+            return q;
+        }
+
         public static string GetCommaSeparatedColumns(List<string> columnsNames, string prefixTable = null, string equalsTable = null)
         {
             prefixTable += (prefixTable != null && prefixTable != "@") ? "." : "";

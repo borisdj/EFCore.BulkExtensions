@@ -81,6 +81,11 @@ namespace EFCore.BulkExtensions
             DbContextBulkTransaction.Execute(context, entities, OperationType.Read, bulkConfig, progress);
         }
 
+        public static void Truncate<T>(this DbContext context) where T : class
+        {
+            DbContextBulkTransaction.Execute<T>(context, new List<T>(), OperationType.Truncate, null, null);
+        }
+
         // Async methods
 
         public static Task BulkInsertAsync<T>(this DbContext context, IList<T> entities, BulkConfig bulkConfig = null, Action<decimal> progress = null, CancellationToken cancellationToken = default) where T : class
@@ -153,6 +158,11 @@ namespace EFCore.BulkExtensions
             BulkConfig bulkConfig = new BulkConfig();
             bulkAction?.Invoke(bulkConfig);
             return DbContextBulkTransaction.ExecuteAsync(context, entities, OperationType.Read, bulkConfig, progress, cancellationToken);
+        }
+
+        public static Task TruncateAsync<T>(this DbContext context, CancellationToken cancellationToken = default) where T : class
+        {
+            return DbContextBulkTransaction.ExecuteAsync<T>(context, new List<T>(), OperationType.Truncate, null, null, cancellationToken);
         }
     }
 }
