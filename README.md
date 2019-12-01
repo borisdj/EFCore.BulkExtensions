@@ -33,6 +33,7 @@ context.BulkDelete(entitiesList);                 context.BulkDeleteAsync(entiti
 context.BulkInsertOrUpdate(entitiesList);         context.BulkInsertOrUpdateAsync(entitiesList);       //Upsert
 context.BulkInsertOrUpdateOrDelete(entitiesList); context.BulkInsertOrUpdateOrDeleteAsync(entitiesList); //Sync
 context.BulkRead(entitiesList);                   context.BulkReadAsync(entitiesList);
+context.Truncate<Entity>();                       context<Entity>.TruncateAsync();
 ```
 **Batch** Extensions are made on *IQueryable* DbSet and can be used as in the following code segment.<br>
 They are done as pure sql and no check is done whether some are prior loaded in memory and are being Tracked.
