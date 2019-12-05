@@ -481,7 +481,7 @@ namespace EFCore.BulkExtensions
             if (BulkConfig.PreserveInsertOrder) // Updates PK in entityList
             {
                 var accessor = TypeAccessor.Create(typeof(T), true);
-                string identityPropertyName = PropertyColumnNamesDict.SingleOrDefault(a => a.Value == IdentityColumnName).Key;
+                string identityPropertyName = OutputPropertyColumnNamesDict.SingleOrDefault(a => a.Value == IdentityColumnName).Key;
 
                 for (int i = 0; i < NumberOfEntities; i++)
                 {
@@ -506,7 +506,7 @@ namespace EFCore.BulkExtensions
         #region CompiledQuery
         public void LoadOutputData<T>(DbContext context, IList<T> entities) where T : class
         {
-            bool hasIdentity = PropertyColumnNamesDict.Any(a => a.Value == IdentityColumnName);
+            bool hasIdentity = OutputPropertyColumnNamesDict.Any(a => a.Value == IdentityColumnName);
             if (BulkConfig.SetOutputIdentity && hasIdentity)
             {
                 string sqlQuery = SqlQueryBuilder.SelectFromOutputTable(this);
@@ -528,7 +528,7 @@ namespace EFCore.BulkExtensions
 
         public async Task LoadOutputDataAsync<T>(DbContext context, IList<T> entities, CancellationToken cancellationToken) where T : class
         {
-            bool hasIdentity = PropertyColumnNamesDict.Any(a => a.Value == IdentityColumnName);
+            bool hasIdentity = OutputPropertyColumnNamesDict.Any(a => a.Value == IdentityColumnName);
             if (BulkConfig.SetOutputIdentity && hasIdentity)
             {
                 string sqlQuery = SqlQueryBuilder.SelectFromOutputTable(this);
