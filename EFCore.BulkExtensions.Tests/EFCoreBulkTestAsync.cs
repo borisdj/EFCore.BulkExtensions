@@ -10,7 +10,7 @@ namespace EFCore.BulkExtensions.Tests
 {
     public class EFCoreBulkTestAsync
     {
-        protected int EntitiesNumber => 1000;
+        protected int EntitiesNumber => 100000;
 
         private static Func<TestContext, int> ItemsCountQuery = EF.CompileQuery<TestContext, int>(ctx => ctx.Items.Count());
         private static Func<TestContext, Item> LastItemQuery = EF.CompileQuery<TestContext, Item>(ctx => ctx.Items.LastOrDefault());
@@ -197,7 +197,8 @@ namespace EFCore.BulkExtensions.Tests
                 }
                 if (isBulkOperation)
                 {
-                    await context.BulkUpdateAsync(entities);
+                    var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
+                    await context.BulkUpdateAsync(entities, bulkConfig);
                 }
                 else
                 {
