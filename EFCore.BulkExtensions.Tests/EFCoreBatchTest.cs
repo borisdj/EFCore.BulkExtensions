@@ -22,6 +22,7 @@ namespace EFCore.BulkExtensions.Tests
             RunBatchUpdate();
             int deletedEntities = RunTopBatchDelete();
             RunBatchDelete();
+            RunBatchDelete2();
             //RunContainsBatchDelete(); // currently not supported for EFCore 3.0
 
             using (var context = new TestContext(ContextUtil.GetOptions()))
@@ -73,7 +74,7 @@ namespace EFCore.BulkExtensions.Tests
                 var incrementStep = 100;
                 var suffix = " Concatenated";
                 query.BatchUpdate(a => new Item { Name = a.Name + suffix, Quantity = a.Quantity + incrementStep }); // example of BatchUpdate Increment/Decrement value in variable
-                //query.BatchUpdate(a => new Item { Quantity = a.Quantity + 100 }); // example direct value without variable
+                                                                                                                    //query.BatchUpdate(a => new Item { Quantity = a.Quantity + 100 }); // example direct value without variable
 
                 query.Take(1).BatchUpdate(a => new Item { Name = a.Name + " TOP(1)", Quantity = a.Quantity + incrementStep }); // example of BatchUpdate with TOP(1)
             }
@@ -116,6 +117,15 @@ namespace EFCore.BulkExtensions.Tests
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 context.Items.Where(a => a.ItemId > 500).BatchDelete();
+            }
+        }
+
+        private void RunBatchDelete2()
+        {
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                var nameToDelete = "N4";
+                context.Items.Where(a => a.Name == nameToDelete).BatchDelete();
             }
         }
 
