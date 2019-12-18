@@ -2,8 +2,9 @@
 EntityFrameworkCore extensions: Bulk operations (**Insert, Update, Delete, Read, Upsert, Sync**) and Batch (**Delete, Update**).<br>
 Library is Lightweight and very Efficient, having all mostly used CRUD operation.<br>
 Was selected in top 20 [EF Core Extensions](https://docs.microsoft.com/en-us/ef/core/extensions/) recommended by Microsoft.<br>
-It is targeting NetStandard 2.1 so it can be used on project targeting NetCore(3.0+).<br>
-Current version is using EF Core 3 and at the moment supports Microsoft SQL Server(2008+) and SQLite.<br>
+It is targeting NetStandard 2.0 so it can be used on project targeting NetCore(2.0+) or NetFramework(4.6.1+).<br>
+Current version is using EF Core 3.1 and at the moment supports Microsoft SQL Server(2008+) and SQLite.<br>
+Versions between 3.1.0 and 3.0.0 are using EF Core 3.0 and targeting NetStandard 2.1 so could only be on NetCore(3.0+).<br>
 Versions before 3.0, last 2.6.4, are targeting NetStandard 2.0 and can be used with NetCore(2.2) or NetFramework(4.6.1+).<br>
 EFCore/v.Nuget: EFCore2.1/v2.4.1 EFCore2.0/v2.0.8, and for EF Core 1.x use 1.1.0 (targeting NetStandard 1.4)<br>
 Under the hood uses [SqlBulkCopy](https://msdn.microsoft.com/en-us/library/system.data.sqlclient.sqlbulkcopy.aspx) for Insert, for Update/Delete combines BulkInsert with raw Sql [MERGE](https://docs.microsoft.com/en-us/sql/t-sql/statements/merge-transact-sql).<br>
