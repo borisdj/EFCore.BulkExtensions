@@ -10,8 +10,6 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace EFCore.BulkExtensions
 {
@@ -103,12 +101,7 @@ namespace EFCore.BulkExtensions
 
         public static (string, string, string, string, IEnumerable<object>) GetBatchSql<T>(IQueryable<T> query, DbContext context, bool isUpdate) where T : class
         {
-            string sqlQuery = query.ToSql();
-            IEnumerable<object> innerParameters = new List<object>();
-            if (!sqlQuery.Contains(" IN (")) // ToParametrizedSql does not work correctly with Contains that is translated to sql IN command
-            {
-                (sqlQuery, innerParameters) = query.ToParametrizedSql();
-            }
+            var (sqlQuery, innerParameters) = query.ToParametrizedSql();
 
             DbServer databaseType = GetDatabaseType(context);
             string tableAlias = string.Empty;
