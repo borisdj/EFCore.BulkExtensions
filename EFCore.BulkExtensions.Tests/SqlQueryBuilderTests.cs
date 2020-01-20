@@ -29,7 +29,8 @@ namespace EFCore.BulkExtensions.Tests
             string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING [dbo].[ItemTemp1234] AS S " +
                               "ON T.[ItemId] = S.[ItemId] " +
                               "WHEN NOT MATCHED BY TARGET THEN INSERT ([Name]) VALUES (S.[Name]) " +
-                              "WHEN MATCHED THEN UPDATE SET T.[Name] = S.[Name];";
+                              "WHEN MATCHED AND EXISTS (SELECT S.[Name] EXCEPT SELECT T.[Name]) " +
+                              "THEN UPDATE SET T.[Name] = S.[Name];";
 
             Assert.Equal(result, expected);
         }
@@ -43,7 +44,8 @@ namespace EFCore.BulkExtensions.Tests
 
             string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING [dbo].[ItemTemp1234] AS S " +
                               "ON T.[ItemId] = S.[ItemId] " +
-                              "WHEN MATCHED THEN UPDATE SET T.[Name] = S.[Name];";
+                              "WHEN MATCHED AND EXISTS (SELECT S.[Name] EXCEPT SELECT T.[Name]) " +
+                              "THEN UPDATE SET T.[Name] = S.[Name];";
 
             Assert.Equal(result, expected);
         }
@@ -83,7 +85,8 @@ namespace EFCore.BulkExtensions.Tests
                 TableName = "Item",
                 PrimaryKeys = new List<string> { "ItemId" },
                 TempTableSufix = "Temp1234",
-                BulkConfig = new BulkConfig()
+                BulkConfig = new BulkConfig(),
+                UpdateWithExcept = true
             };
             var nameText = "Name";
 

@@ -85,6 +85,7 @@ namespace EFCore.BulkExtensions.Tests
                                 UseTempDB = true,
                                 UnderlyingConnection = GetUnderlyingConnection,
                                 UnderlyingTransaction = GetUnderlyingTransaction
+                                
                             }
                         );
 

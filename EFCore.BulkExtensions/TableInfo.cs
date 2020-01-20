@@ -25,6 +25,7 @@ namespace EFCore.BulkExtensions
         public List<string> PrimaryKeys { get; set; }
         public bool HasSinglePrimaryKey { get; set; }
         public bool UpdateByPropertiesAreNullable { get; set; }
+        public bool UpdateWithExcept { get; set; }
 
         protected string TempDBPrefix => BulkConfig.UseTempDB ? "#" : "";
         public string TempTableSufix { get; set; }

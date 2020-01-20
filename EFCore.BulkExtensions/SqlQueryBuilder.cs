@@ -119,7 +119,16 @@ namespace EFCore.BulkExtensions
             }
             if ((operationType == OperationType.Update || operationType == OperationType.InsertOrUpdate || operationType == OperationType.InsertOrUpdateDelete) & nonIdentityColumnsNames.Count() > 0)
             {
-                q += $" WHEN MATCHED THEN UPDATE SET {GetCommaSeparatedColumns(nonIdentityColumnsNames, "T", "S")}";
+                q += $" WHEN MATCHED ";
+
+                if (tableInfo.UpdateWithExcept)
+                {
+                    q += $"AND EXISTS (";
+                    q += $"SELECT {GetCommaSeparatedColumns(nonIdentityColumnsNames, "S")} ";
+                    q += $"EXCEPT ";
+                    q += $"SELECT {GetCommaSeparatedColumns(nonIdentityColumnsNames, "T")}) ";
+                }
+                q += $"THEN UPDATE SET {GetCommaSeparatedColumns(nonIdentityColumnsNames, "T", "S")}";
             }
             if (operationType == OperationType.InsertOrUpdateDelete)
             {
