@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -10,13 +11,13 @@ namespace EFCore.BulkExtensions
 {
     public static class IQueryableExtensions
     {
-        public static string ToSql<TEntity>(this IQueryable<TEntity> query) where TEntity : class
+        public static string ToSql(this IQueryable query)
         {
             var (sql, parameters) = ToParametrizedSql(query);
             return sql;
         }
 
-        public static (string, IEnumerable<SqlParameter>) ToParametrizedSql<TEntity>(this IQueryable<TEntity> query) where TEntity : class
+        public static (string, IEnumerable<SqlParameter>) ToParametrizedSql(this IQueryable query)
         {
             string relationalCommandCacheText = "_relationalCommandCache";
             string selectExpressionText = "_selectExpression";
@@ -25,10 +26,8 @@ namespace EFCore.BulkExtensions
 
             string cannotGetText = "Cannot get";
 
-            var enumerator = query.Provider.Execute<IEnumerable<TEntity>>(query.Expression).GetEnumerator();
+            var enumerator = query.Provider.Execute<IEnumerable>(query.Expression).GetEnumerator();
             var relationalCommandCache = enumerator.Private(relationalCommandCacheText);
-
-
 
             SelectExpression selectExpression;
             IQuerySqlGeneratorFactory factory;
