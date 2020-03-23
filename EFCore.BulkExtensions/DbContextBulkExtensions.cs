@@ -26,9 +26,9 @@ namespace EFCore.BulkExtensions
             DbContextBulkTransaction.Execute(context, entities, OperationType.InsertOrUpdate, bulkConfig, progress);
         }
 
-        public static void BulkInsertOrUpdate<T>(this DbContext context, IList<T> entities, Dictionary<string, object> sqlParameter, BulkConfig bulkConfig = null) where T : class
+        public static int BulkInsertOrUpdate<T>(this DbContext context, IList<T> entities, Dictionary<string, object> sqlParameter, BulkConfig bulkConfig = null) where T : class
         {
-            DbContextBulkTransaction.Execute(context, entities, OperationType.InsertOrUpdate, bulkConfig, null, sqlParameter);
+            return DbContextBulkTransaction.Execute(context, entities, OperationType.InsertOrUpdate, bulkConfig, null, sqlParameter);
         }
 
         public static void BulkInsertOrUpdate<T>(this DbContext context, IList<T> entities, Action<BulkConfig> bulkAction, Action<decimal> progress = null) where T : class
@@ -43,9 +43,9 @@ namespace EFCore.BulkExtensions
             DbContextBulkTransaction.Execute(context, entities, OperationType.InsertOrUpdateDelete, bulkConfig, progress);
         }
 
-        public static void BulkInsertOrUpdateOrDelete<T>(this DbContext context, IList<T> entities, Dictionary<string, object> sqlParameter, BulkConfig bulkConfig = null) where T : class
+        public static int BulkInsertOrUpdateOrDelete<T>(this DbContext context, IList<T> entities, Dictionary<string, object> sqlParameter, BulkConfig bulkConfig = null) where T : class
         {
-            DbContextBulkTransaction.Execute(context, entities, OperationType.InsertOrUpdateDelete, bulkConfig, null, sqlParameter);
+            return DbContextBulkTransaction.Execute(context, entities, OperationType.InsertOrUpdateDelete, bulkConfig, null, sqlParameter);
         }
 
         public static void BulkInsertOrUpdateOrDelete<T>(this DbContext context, IList<T> entities, Action<BulkConfig> bulkAction, Action<decimal> progress = null) where T : class

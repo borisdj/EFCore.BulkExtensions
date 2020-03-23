@@ -8,11 +8,12 @@ namespace EFCore.BulkExtensions
 {
     internal static class DbContextBulkTransaction
     {
-        public static void Execute<T>(DbContext context, IList<T> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress, Dictionary<string, object> sqlParameter = null) where T : class
+        public static int Execute<T>(DbContext context, IList<T> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress, Dictionary<string, object> sqlParameter = null) where T : class
         {
+            var affectedRows = 0;
             if (operationType != OperationType.Truncate && entities.Count == 0)
             {
-                return;
+                return 0;
             }
 
             if (sqlParameter != null && sqlParameter.Count > 1)
@@ -36,8 +37,10 @@ namespace EFCore.BulkExtensions
             }
             else
             {
-                SqlBulkOperation.Merge(context, entities, tableInfo, operationType, progress, sqlParameter);
+                affectedRows = SqlBulkOperation.Merge(context, entities, tableInfo, operationType, progress, sqlParameter);
             }
+
+            return affectedRows;
         }
 
         public static Task ExecuteAsync<T>(DbContext context, IList<T> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress, CancellationToken cancellationToken, Dictionary<string, object> sqlParameter = null) where T : class

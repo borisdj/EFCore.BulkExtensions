@@ -30,7 +30,7 @@ namespace EFCore.BulkExtensions.Tests
             new EFCoreBatchTest().RunDeleteAll(databaseType);
 
             RunInsert(isBulkOperation);
-            RunInsertOrUpdateSqlParameter(isBulkOperation, new Dictionary<string, object> { { "Name", "TEST" } });
+            RunInsertOrUpdateSqlParameter(isBulkOperation, new Dictionary<string, object> {{"Name", "TEST"}}, databaseType);
             RunInsertOrUpdate(isBulkOperation);
 
             RunUpdate(isBulkOperation, databaseType);
@@ -226,46 +226,64 @@ namespace EFCore.BulkExtensions.Tests
             }
         }
 
-        private void RunInsertOrUpdateSqlParameter(bool isBulkOperation, Dictionary<string, object> sqlParameter)
+        private void RunInsertOrUpdateSqlParameter(bool isBulkOperation, Dictionary<string, object> sqlParameter, DbServer databaseType)
         {
-            using (var context = new TestContext(ContextUtil.GetOptions()))
+            var errorMEssage = "EMPTY";
+            try
             {
-                var entities = new List<Item>();
-                var dateTimeNow = DateTime.Now;
-                for (int i = 2; i <= EntitiesNumber; i += 2)
+                using (var context = new TestContext(ContextUtil.GetOptions()))
                 {
-                    entities.Add(new Item
+                    var entities = new List<Item>();
+                    var dateTimeNow = DateTime.Now;
+                    for (int i = 2; i <= EntitiesNumber; i += 2)
                     {
-                        ItemId = isBulkOperation ? i : 0,
-                        Name = "name InsertOrUpdate " + i,
-                        Description = "info",
-                        Quantity = i + 100,
-                        Price = i / (i % 5 + 1),
-                        TimeUpdated = dateTimeNow
-                    });
+                        entities.Add(new Item
+                        {
+                            ItemId = isBulkOperation ? i : 0,
+                            Name = "name InsertOrUpdate " + i,
+                            Description = "info",
+                            Quantity = i + 100,
+                            Price = i / (i % 5 + 1),
+                            TimeUpdated = dateTimeNow
+                        });
+                    }
+                    if (isBulkOperation)
+                    {
+                        var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
+                        context.BulkInsertOrUpdate(entities, sqlParameter, bulkConfig);
+                    }
+                    else
+                    {
+                        context.Items.Add(entities[entities.Count - 1]);
+                        context.SaveChanges();
+                    }
                 }
-                if (isBulkOperation)
+                using (var context = new TestContext(ContextUtil.GetOptions()))
                 {
-                    var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
-                    context.BulkInsertOrUpdate(entities,   sqlParameter, bulkConfig);
-                }
-                else
-                {
-                    context.Items.Add(entities[entities.Count - 1]);
-                    context.SaveChanges();
-                }
-            }
-            using (var context = new TestContext(ContextUtil.GetOptions()))
-            {
-                //int entitiesCount = ItemsCountQuery(context);
-                int entitiesCount = context.Items.Count();
-                //Item lastEntity = LastItemQuery(context);
-                Item lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
+                    //int entitiesCount = ItemsCountQuery(context);
+                    int entitiesCount = context.Items.Count();
+                    //Item lastEntity = LastItemQuery(context);
+                    Item lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
 
-                Assert.Equal(EntitiesNumber - 1, entitiesCount);
-                Assert.NotNull(lastEntity);
-                Assert.Equal("name " + (EntitiesNumber - 1), lastEntity.Name);
+                    Assert.Equal(EntitiesNumber - 1, entitiesCount);
+                    Assert.NotNull(lastEntity);
+                    Assert.Equal("name " + (EntitiesNumber - 1), lastEntity.Name);
+                }
             }
+            catch (Exception ex)
+            {
+                errorMEssage = ex.Message;
+            }
+
+            if (databaseType == DbServer.SqlServer)
+            {
+                Assert.Equal("EMPTY", errorMEssage);
+            }
+            else
+            {
+                Assert.Contains("Provider sql parameter - only by sql server not supported", errorMEssage);
+            }
+           
         }
 
         private void RunUpdate(bool isBulkOperation, DbServer databaseType)

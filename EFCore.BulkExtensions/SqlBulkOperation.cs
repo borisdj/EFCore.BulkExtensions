@@ -227,9 +227,16 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        public static void Merge<T>(DbContext context, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, Dictionary<string, object> sqlParameter = null) where T : class
+        public static int Merge<T>(DbContext context, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, Dictionary<string, object> sqlParameter = null) where T : class
         {
+            var affectedRows = 0;
             string providerName = context.Database.ProviderName;
+
+            if (sqlParameter != null && !providerName.EndsWith(DbServer.SqlServer.ToString()))
+            {
+                throw new SqlProviderNotSupportedException("sql parameter - only by sql server");
+            }
+           
             // -- SQL Server --
             if (providerName.EndsWith(DbServer.SqlServer.ToString()))
             {
@@ -265,11 +272,11 @@ namespace EFCore.BulkExtensions
                         {
                             throw new SqlProviderNotSupportedException("sql parameter - only one allowed");
                         }
-                        context.Database.ExecuteSqlRaw(SqlQueryBuilder.MergeTable(tableInfo, operationType, sqlParameterKey), firstParameter.Value);
+                        affectedRows = context.Database.ExecuteSqlRaw(SqlQueryBuilder.MergeTable(tableInfo, operationType, sqlParameterKey), firstParameter.Value);
                     }
                     else
                     {
-                        context.Database.ExecuteSqlRaw(SqlQueryBuilder.MergeTable(tableInfo, operationType));
+                        affectedRows = context.Database.ExecuteSqlRaw(SqlQueryBuilder.MergeTable(tableInfo, operationType));
                     }
                     
 
@@ -343,11 +350,17 @@ namespace EFCore.BulkExtensions
             {
                 throw new SqlProviderNotSupportedException(providerName);
             }
+
+            return affectedRows;
         }
 
         public static async Task MergeAsync<T>(DbContext context, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, CancellationToken cancellationToken, Dictionary<string, object> sqlParameter = null) where T : class
         {
             string providerName = context.Database.ProviderName;
+            if (sqlParameter != null && !providerName.EndsWith(DbServer.SqlServer.ToString()))
+            {
+                throw new SqlProviderNotSupportedException("sql parameter - only by sql server");
+            }
             // -- SQL Server --
             if (providerName.EndsWith(DbServer.SqlServer.ToString()))
             {
