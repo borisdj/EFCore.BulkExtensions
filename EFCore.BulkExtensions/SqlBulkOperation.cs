@@ -227,7 +227,7 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        public static void Merge<T>(DbContext context, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress) where T : class
+        public static void Merge<T>(DbContext context, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, Dictionary<string, object> sqlParameter = null) where T : class
         {
             string providerName = context.Database.ProviderName;
             // -- SQL Server --
@@ -257,7 +257,21 @@ namespace EFCore.BulkExtensions
                         context.Database.ExecuteSqlRaw(SqlQueryBuilder.SetIdentityInsert(tableInfo.FullTableName, true));
                     }
 
-                    context.Database.ExecuteSqlRaw(SqlQueryBuilder.MergeTable(tableInfo, operationType));
+                    if (sqlParameter != null && sqlParameter.Count > 0)
+                    {
+                        var firstParameter = sqlParameter.First();
+                        var sqlParameterKey = CheckSqlParameterColumn(context, tableInfo, firstParameter.Key);
+                        if (string.IsNullOrEmpty(sqlParameterKey))
+                        {
+                            throw new SqlProviderNotSupportedException("sql parameter - only one allowed");
+                        }
+                        context.Database.ExecuteSqlRaw(SqlQueryBuilder.MergeTable(tableInfo, operationType, sqlParameterKey), firstParameter.Value);
+                    }
+                    else
+                    {
+                        context.Database.ExecuteSqlRaw(SqlQueryBuilder.MergeTable(tableInfo, operationType));
+                    }
+                    
 
                     if (tableInfo.CreatedOutputTable)
                     {
@@ -331,7 +345,7 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        public static async Task MergeAsync<T>(DbContext context, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, CancellationToken cancellationToken) where T : class
+        public static async Task MergeAsync<T>(DbContext context, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, CancellationToken cancellationToken, Dictionary<string, object> sqlParameter = null) where T : class
         {
             string providerName = context.Database.ProviderName;
             // -- SQL Server --
@@ -361,7 +375,21 @@ namespace EFCore.BulkExtensions
                         await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.SetIdentityInsert(tableInfo.FullTableName, true), cancellationToken).ConfigureAwait(false);
                     }
 
-                    await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.MergeTable(tableInfo, operationType), cancellationToken).ConfigureAwait(false);
+                    if (sqlParameter != null && sqlParameter.Count > 0)
+                    {
+                        var firstParameter = sqlParameter.First();
+                        var sqlParameterKey = CheckSqlParameterColumn(context, tableInfo, firstParameter.Key);
+                        if (string.IsNullOrEmpty(sqlParameterKey))
+                        {
+                            throw new SqlProviderNotSupportedException("sql parameter - only one allowed");
+                        }
+                        await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.MergeTable(tableInfo, operationType, sqlParameterKey), firstParameter.Value, cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.MergeTable(tableInfo, operationType), cancellationToken).ConfigureAwait(false);
+                    }
+                    
 
                     if (tableInfo.CreatedOutputTable)
                     {
@@ -597,6 +625,48 @@ namespace EFCore.BulkExtensions
         {
             return (decimal)(Math.Floor(rowsCopied * 10000D / entitiesCount) / 10000);
         }
+        #endregion
+
+        #region SqlParameter
+
+        private static string CheckSqlParameterColumn(DbContext context, TableInfo tableInfo , string columnName)
+        {
+            string sqlParameterColumn = null;
+            var sqlConnection = context.Database.GetDbConnection();
+            var currentTransaction = context.Database.CurrentTransaction;
+            try
+            {
+                if (currentTransaction == null)
+                {
+                    if (sqlConnection.State != ConnectionState.Open)
+                        sqlConnection.Open();
+                }
+                using (var command = sqlConnection.CreateCommand())
+                {
+                    if (currentTransaction != null)
+                        command.Transaction = currentTransaction.GetDbTransaction();
+                    command.CommandText = SqlQueryBuilder.SelectSqlParameterColumnName(tableInfo.TableName, tableInfo.Schema, columnName);
+                    using (var reader = command.ExecuteReader())
+                    {
+                        if (reader.HasRows)
+                        {
+                            while (reader.Read())
+                            {
+                                sqlParameterColumn = reader.GetString(0);
+                            }
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                if (currentTransaction == null)
+                    sqlConnection.Close();
+            }
+
+            return sqlParameterColumn;
+        }
+
         #endregion
 
         #region DataTable

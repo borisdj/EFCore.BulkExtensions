@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Xunit;
 
 namespace EFCore.BulkExtensions.Tests
@@ -30,6 +31,47 @@ namespace EFCore.BulkExtensions.Tests
                               "ON T.[ItemId] = S.[ItemId] " +
                               "WHEN NOT MATCHED BY TARGET THEN INSERT ([Name]) VALUES (S.[Name]) " +
                               "WHEN MATCHED THEN UPDATE SET T.[Name] = S.[Name];";
+
+            Assert.Equal(result, expected);
+        }
+
+        [Fact]
+        public void MergeTableInsertOrUpdateWithParamterTest()
+        {
+            TableInfo tableInfo = GetTestTableInfo();
+            tableInfo.IdentityColumnName = "ItemId";
+            var sqlParameter = new Dictionary<string, object>
+            {
+                {"TESTCOLUMN" , "TESTVALUE" }
+            };
+            string result = SqlQueryBuilder.MergeTable(tableInfo, OperationType.InsertOrUpdate, sqlParameter.First().Key);
+
+            string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING [dbo].[ItemTemp1234] AS S " +
+                              "ON T.[ItemId] = S.[ItemId] and T.TESTCOLUMN = {0} " +
+                              "WHEN NOT MATCHED BY TARGET AND S.TESTCOLUMN = {0} THEN INSERT ([Name]) VALUES (S.[Name]) " +
+                              "WHEN MATCHED THEN UPDATE SET T.[Name] = S.[Name];";
+
+            Assert.Equal(result, expected);
+        }
+
+        [Fact]
+        public void MergeTableInsertOrUpdateDeleteWithParamterTest()
+        {
+            TableInfo tableInfo = GetTestTableInfo();
+            tableInfo.IdentityColumnName = "ItemId";
+            var sqlParameter = new Dictionary<string, object>
+            {
+                {"TESTCOLUMN" , "TESTVALUE" }
+            };
+            string result = SqlQueryBuilder.MergeTable(tableInfo, OperationType.InsertOrUpdateDelete, sqlParameter.First().Key);
+
+            string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING [dbo].[ItemTemp1234] AS S " +
+                              "ON T.[ItemId] = S.[ItemId] and T.TESTCOLUMN = {0} " +
+                              "WHEN NOT MATCHED BY TARGET AND S.TESTCOLUMN = {0} THEN INSERT ([Name]) VALUES (S.[Name]) " +
+                              "WHEN MATCHED THEN UPDATE SET T.[Name] = S.[Name] " +
+                              "WHEN NOT MATCHED BY SOURCE AND T.TESTCOLUMN = {0} THEN DELETE;";
+
+           
 
             Assert.Equal(result, expected);
         }

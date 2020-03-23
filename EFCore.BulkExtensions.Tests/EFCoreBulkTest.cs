@@ -30,7 +30,9 @@ namespace EFCore.BulkExtensions.Tests
             new EFCoreBatchTest().RunDeleteAll(databaseType);
 
             RunInsert(isBulkOperation);
+            RunInsertOrUpdateSqlParameter(isBulkOperation, new Dictionary<string, object> { { "Name", "TEST" } });
             RunInsertOrUpdate(isBulkOperation);
+
             RunUpdate(isBulkOperation, databaseType);
             if (databaseType == DbServer.SqlServer)
             {
@@ -221,6 +223,48 @@ namespace EFCore.BulkExtensions.Tests
                 Assert.Equal(EntitiesNumber, entitiesCount);
                 Assert.NotNull(lastEntity);
                 Assert.Equal("name InsertOrUpdate " + EntitiesNumber, lastEntity.Name);
+            }
+        }
+
+        private void RunInsertOrUpdateSqlParameter(bool isBulkOperation, Dictionary<string, object> sqlParameter)
+        {
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                var entities = new List<Item>();
+                var dateTimeNow = DateTime.Now;
+                for (int i = 2; i <= EntitiesNumber; i += 2)
+                {
+                    entities.Add(new Item
+                    {
+                        ItemId = isBulkOperation ? i : 0,
+                        Name = "name InsertOrUpdate " + i,
+                        Description = "info",
+                        Quantity = i + 100,
+                        Price = i / (i % 5 + 1),
+                        TimeUpdated = dateTimeNow
+                    });
+                }
+                if (isBulkOperation)
+                {
+                    var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
+                    context.BulkInsertOrUpdate(entities,   sqlParameter, bulkConfig);
+                }
+                else
+                {
+                    context.Items.Add(entities[entities.Count - 1]);
+                    context.SaveChanges();
+                }
+            }
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                //int entitiesCount = ItemsCountQuery(context);
+                int entitiesCount = context.Items.Count();
+                //Item lastEntity = LastItemQuery(context);
+                Item lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
+
+                Assert.Equal(EntitiesNumber - 1, entitiesCount);
+                Assert.NotNull(lastEntity);
+                Assert.Equal("name " + (EntitiesNumber - 1), lastEntity.Name);
             }
         }
 

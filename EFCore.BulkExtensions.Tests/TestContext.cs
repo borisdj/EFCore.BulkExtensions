@@ -65,7 +65,7 @@ namespace EFCore.BulkExtensions.Tests
 
             if (DbServer == DbServer.SqlServer)
             {
-                var connectionString = $"Server=localhost;Database={databaseName};Trusted_Connection=True;MultipleActiveResultSets=true";
+                var connectionString = $"Server=(localdb)\\MSSQLLocalDB;Database={databaseName};Trusted_Connection=True;MultipleActiveResultSets=true";
                 optionsBuilder.UseSqlServer(connectionString); // Can NOT Test with UseInMemoryDb (Exception: Relational-specific methods can only be used when the context is using a relational)
             }
             else if (DbServer == DbServer.Sqlite)

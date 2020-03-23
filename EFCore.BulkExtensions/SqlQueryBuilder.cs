@@ -48,6 +48,13 @@ namespace EFCore.BulkExtensions
             return q;
         }
 
+        public static string SelectSqlParameterColumnName(string tableName, string schemaName, string columnName)
+        {
+            var q = $"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS " +
+                    $"WHERE TABLE_NAME = '{tableName}' AND TABLE_SCHEMA = '{schemaName}' AND COLUMN_NAME = '{columnName}'";
+            return q;
+        }
+
         public static string SelectIdentityColumnName(string tableName, string schemaName)
         {
             var q = $"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS " +
@@ -90,7 +97,7 @@ namespace EFCore.BulkExtensions
             return q;
         }
 
-        public static string MergeTable(TableInfo tableInfo, OperationType operationType)
+        public static string MergeTable(TableInfo tableInfo, OperationType operationType, string sqlParameterKey = null)
         {
             string targetTable = tableInfo.FullTableName;
             string sourceTable = tableInfo.FullTempTableName;
@@ -111,11 +118,23 @@ namespace EFCore.BulkExtensions
             var q = $"MERGE {targetTable}{textWITH_HOLDLOCK} AS T " +
                     $"USING {sourceTable} AS S " +
                     $"ON {GetANDSeparatedColumns(primaryKeys, "T", "S", tableInfo.UpdateByPropertiesAreNullable)}";
+            if (sqlParameterKey != null)
+            {
+                q += $" and T.{sqlParameterKey} = {{0}}";
+            }
 
             if (operationType == OperationType.Insert || operationType == OperationType.InsertOrUpdate || operationType == OperationType.InsertOrUpdateDelete)
             {
-                q += $" WHEN NOT MATCHED BY TARGET THEN INSERT ({GetCommaSeparatedColumns(insertColumnsNames)})" +
-                     $" VALUES ({GetCommaSeparatedColumns(insertColumnsNames, "S")})";
+                if (sqlParameterKey != null)
+                {
+                    q += $" WHEN NOT MATCHED BY TARGET AND S.{sqlParameterKey} = {{0}} THEN INSERT ({GetCommaSeparatedColumns(insertColumnsNames)})" +
+                         $" VALUES ({GetCommaSeparatedColumns(insertColumnsNames, "S")})";
+                }
+                else
+                {
+                    q += $" WHEN NOT MATCHED BY TARGET THEN INSERT ({GetCommaSeparatedColumns(insertColumnsNames)})" +
+                         $" VALUES ({GetCommaSeparatedColumns(insertColumnsNames, "S")})";
+                }
             }
             if ((operationType == OperationType.Update || operationType == OperationType.InsertOrUpdate || operationType == OperationType.InsertOrUpdateDelete) & nonIdentityColumnsNames.Count() > 0)
             {
@@ -123,7 +142,14 @@ namespace EFCore.BulkExtensions
             }
             if (operationType == OperationType.InsertOrUpdateDelete)
             {
-                q += $" WHEN NOT MATCHED BY SOURCE THEN DELETE";
+                if (sqlParameterKey != null)
+                {
+                    q += $" WHEN NOT MATCHED BY SOURCE AND T.{sqlParameterKey} = {{0}} THEN DELETE";
+                }
+                else
+                {
+                    q += $" WHEN NOT MATCHED BY SOURCE THEN DELETE";
+                }
             }
             if (operationType == OperationType.Delete)
             {

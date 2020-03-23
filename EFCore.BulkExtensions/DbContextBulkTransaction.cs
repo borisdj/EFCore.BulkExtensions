@@ -8,12 +8,18 @@ namespace EFCore.BulkExtensions
 {
     internal static class DbContextBulkTransaction
     {
-        public static void Execute<T>(DbContext context, IList<T> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress) where T : class
+        public static void Execute<T>(DbContext context, IList<T> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress, Dictionary<string, object> sqlParameter = null) where T : class
         {
             if (operationType != OperationType.Truncate && entities.Count == 0)
             {
                 return;
             }
+
+            if (sqlParameter != null && sqlParameter.Count > 1)
+            {
+                throw new  SqlProviderNotSupportedException("sql parameter - only one allowed");
+            }
+
             TableInfo tableInfo = TableInfo.CreateInstance(context, entities, operationType, bulkConfig);
 
             if (operationType == OperationType.Insert && !tableInfo.BulkConfig.SetOutputIdentity)
@@ -30,15 +36,19 @@ namespace EFCore.BulkExtensions
             }
             else
             {
-                SqlBulkOperation.Merge(context, entities, tableInfo, operationType, progress);
+                SqlBulkOperation.Merge(context, entities, tableInfo, operationType, progress, sqlParameter);
             }
         }
 
-        public static Task ExecuteAsync<T>(DbContext context, IList<T> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress, CancellationToken cancellationToken) where T : class
+        public static Task ExecuteAsync<T>(DbContext context, IList<T> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress, CancellationToken cancellationToken, Dictionary<string, object> sqlParameter = null) where T : class
         {
             if (operationType != OperationType.Truncate && entities.Count == 0)
             {
                 return Task.CompletedTask;
+            }
+            if (sqlParameter != null && sqlParameter.Count > 1)
+            {
+                throw new SqlProviderNotSupportedException("sql parameter - only one allowed");
             }
             TableInfo tableInfo = TableInfo.CreateInstance(context, entities, operationType, bulkConfig);
 
@@ -56,7 +66,7 @@ namespace EFCore.BulkExtensions
             }
             else
             {
-                return SqlBulkOperation.MergeAsync(context, entities, tableInfo, operationType, progress, cancellationToken);
+                return SqlBulkOperation.MergeAsync(context, entities, tableInfo, operationType, progress, cancellationToken, sqlParameter);
             }
         }
     }
