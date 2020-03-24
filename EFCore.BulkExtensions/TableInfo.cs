@@ -100,6 +100,18 @@ namespace EFCore.BulkExtensions
 
             var allProperties = entityType.GetProperties().AsEnumerable();
 
+            // load all derived type properties
+            if (entityType.IsAbstract())
+            {
+                var extendedAllProperties = allProperties.ToList();
+                foreach (var dervied in entityType.GetDirectlyDerivedTypes())
+                {
+                    extendedAllProperties.AddRange(dervied.GetProperties());
+                }
+
+                allProperties = extendedAllProperties.Distinct();
+            }
+
             var ownedTypes = entityType.GetNavigations().Where(a => a.GetTargetType().IsOwned());
             HasOwnedTypes = ownedTypes.Any();
             OwnedTypesDict = ownedTypes.ToDictionary(a => a.Name, a => a);
@@ -171,7 +183,7 @@ namespace EFCore.BulkExtensions
                     ValueConverter converter = property.GetValueConverter();
                     ConvertibleProperties.Add(columnName, converter);
                 }
-                
+
                 if (HasOwnedTypes)  // Support owned entity property update. TODO: Optimize
                 {
                     foreach (var navgationProperty in ownedTypes)
@@ -220,7 +232,7 @@ namespace EFCore.BulkExtensions
                             }
                         }
                     }
-                 }
+                }
             }
         }
 
@@ -516,7 +528,7 @@ namespace EFCore.BulkExtensions
             }
             if (BulkConfig.CalculateStats)
             {
-                string sqlQueryCount =  SqlQueryBuilder.SelectCountIsUpdateFromOutputTable(this);
+                string sqlQueryCount = SqlQueryBuilder.SelectCountIsUpdateFromOutputTable(this);
 
                 int numberUpdated = GetNumberUpdated(context);
                 BulkConfig.StatsInfo = new StatsInfo
@@ -547,7 +559,7 @@ namespace EFCore.BulkExtensions
                 };
             }
         }
-        
+
         protected IEnumerable<T> QueryOutputTable<T>(DbContext context, string sqlQuery) where T : class
         {
             var compiled = EF.CompileQuery(GetQueryExpression<T>(sqlQuery));
