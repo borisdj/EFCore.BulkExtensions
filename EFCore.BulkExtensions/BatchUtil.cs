@@ -10,6 +10,9 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace EFCore.BulkExtensions
 {
@@ -124,10 +127,10 @@ namespace EFCore.BulkExtensions
 
             if (isUpdate && databaseType == DbServer.Sqlite)
             {
-                int indexPrefixFROM = sql.IndexOf(Environment.NewLine, 1); // skip NewLine from start of string 
-                tableAlias = sql.Substring(7, indexPrefixFROM - 14); // get name of table: "TableName"
-                sql = sql.Substring(indexPrefixFROM, sql.Length - indexPrefixFROM); // remove segment: FROM "TableName" AS "a"
-                tableAliasSufixAs = " AS " + sql.Substring(8, 3) + " ";
+                var match = Regex.Match(sql, @"FROM (""[^""]+"")( AS ""[^""]+"")");
+                tableAlias = match.Groups[1].Value;
+                tableAliasSufixAs = match.Groups[2].Value;
+                sql = sql.Substring(match.Index + match.Length);
             }
 
             return (sql, tableAlias, tableAliasSufixAs, topStatement, innerParameters);
