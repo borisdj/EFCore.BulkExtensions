@@ -116,7 +116,7 @@ context.BulkInsertOrUpdate(entList, b => b.SetOutputIdentity = true); //example 
 However for this to work Id column needs to be set for the proper order.<br>
 For example if table already has rows, let's say it has 1000 rows with Id-s (1:1000), and we now want to add 300 more.<br>
 Since Id-s are generated in Db we could not set them, they would all be 0 (int default) in list.<br>
-But if we want to keep the order as they are ordered in list then those Id-s should be set say 1 to 300.<br>
+But if we want to keep the order as they are ordered in list then those Id-s should be set say 1 to 300 (for BulkInsert).<br>
 Here single Id value itself doesn't matter, db will change it to (1001:1300), what matters is their mutual relationship for sorting.<br>
 Insertion order is implemented with [TOP](https://docs.microsoft.com/en-us/sql/t-sql/queries/top-transact-sql) in conjuction with ORDER BY. [stackoverflow:merge-into-insertion-order](https://stackoverflow.com/questions/884187/merge-into-insertion-order).<br>
 This config should also be used when we have set *SetOutputIdentity* on Entity containing NotMapped Property. [issues/76](https://github.com/borisdj/EFCore.BulkExtensions/issues/76)
