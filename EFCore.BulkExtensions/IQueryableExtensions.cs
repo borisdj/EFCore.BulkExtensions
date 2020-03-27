@@ -40,6 +40,7 @@ namespace EFCore.BulkExtensions
             {
                 SelectExpression selectExpression = enumerator.Private<SelectExpression>(selectExpressionText) ?? throw new InvalidOperationException($"{cannotGetText} {selectExpressionText}");
                 IQuerySqlGeneratorFactory factory = enumerator.Private<IQuerySqlGeneratorFactory>(querySqlGeneratorFactoryText) ?? throw new InvalidOperationException($"{cannotGetText} {querySqlGeneratorFactoryText}");
+
                 var sqlGenerator = factory.Create();
                 var command = sqlGenerator.GetCommand(selectExpression);
                 sql = command.CommandText;

@@ -23,7 +23,10 @@ namespace EFCore.BulkExtensions.Tests
             int deletedEntities = RunTopBatchDelete();
             RunBatchDelete();
             RunBatchDelete2();
-            //RunContainsBatchDelete(); // currently not supported for EFCore 3.0
+            RunContainsBatchDelete();
+            RunContainsBatchDelete2();
+            RunContainsBatchDelete3();
+            RunAnyBatchDelete();
 
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
@@ -129,12 +132,40 @@ namespace EFCore.BulkExtensions.Tests
             }
         }
 
-        private void RunContainsBatchDelete() // currently not supported for EFCore 3.0
+        private void RunContainsBatchDelete()
         {
             var descriptionsToDelete = new List<string> { "info" };
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 context.Items.Where(a => descriptionsToDelete.Contains(a.Description)).BatchDelete();
+            }
+        }
+
+        private void RunContainsBatchDelete2()
+        {
+            var descriptionsToDelete = new List<string> { "info" };
+            var nameToDelete = "N4";
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.Items.Where(a => descriptionsToDelete.Contains(a.Description) || a.Name == nameToDelete).BatchDelete();
+            }
+        }
+
+        private void RunContainsBatchDelete3()
+        {
+            var descriptionsToDelete = new List<string>();
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.Items.Where(a => descriptionsToDelete.Contains(a.Description)).BatchDelete();
+            }
+        }
+
+        private void RunAnyBatchDelete()
+        {
+            var descriptionsToDelete = new List<string> { "info" };
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.Items.Where(a => descriptionsToDelete.Any(toDelete => toDelete == a.Description)).BatchDelete();
             }
         }
     }

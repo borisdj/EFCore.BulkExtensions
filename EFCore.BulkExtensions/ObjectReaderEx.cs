@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using FastMember;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace EFCore.BulkExtensions
@@ -15,6 +17,7 @@ namespace EFCore.BulkExtensions
         private readonly DbContext context;
         private readonly string[] members;
         private readonly FieldInfo current;
+        private readonly IEnumerable<IProperty> allProperties;
 
         public ObjectReaderEx(Type type, IEnumerable source, HashSet<string> shadowProperties, Dictionary<string, ValueConverter> convertibleProperties, DbContext context, params string[] members) : base(type, source, members)
         {
@@ -22,6 +25,15 @@ namespace EFCore.BulkExtensions
             this.convertibleProperties = convertibleProperties;
             this.context = context;
             this.members = members;
+
+            if (type.IsAbstract)
+            {
+                allProperties = context.Model.FindEntityType(type)
+                    .GetDerivedTypes()
+                    .SelectMany(m => m.GetProperties())
+                    .Distinct();
+            }
+
             current = typeof(ObjectReader).GetField("current", BindingFlags.Instance | BindingFlags.NonPublic);
         }
 
@@ -29,7 +41,8 @@ namespace EFCore.BulkExtensions
         {
             bool hasShadowProp = shadowProperties.Count > 0;
             bool hasConvertibleProperties = convertibleProperties.Keys.Count > 0;
-            return (hasShadowProp || hasConvertibleProperties) ? (ObjectReader)new ObjectReaderEx(typeof(T), source, shadowProperties, convertibleProperties, context, members) : ObjectReader.Create(source, members);
+            bool isAbstractType = typeof(T).IsAbstract;
+            return (hasShadowProp || hasConvertibleProperties || isAbstractType) ? new ObjectReaderEx(typeof(T), source, shadowProperties, convertibleProperties, context, members) : Create(source, members);
         }
 
         public static ObjectReader Create(Type type, IEnumerable source, HashSet<string> shadowProperties, Dictionary<string, ValueConverter> convertibleProperties, DbContext context, params string[] members)
@@ -53,6 +66,24 @@ namespace EFCore.BulkExtensions
                     var current = this.current.GetValue(this);
                     var currentValue = context.Entry(current).Property(name).CurrentValue;
                     return converter.ConvertToProvider(currentValue);
+                }
+                else if (allProperties != null)
+                {
+                    var match = allProperties.SingleOrDefault(m => m.Name == name);
+                    if (match != null)
+                    {
+                        var current = this.current.GetValue(this);
+                        var entry = context.Entry(current);
+
+                        if (entry.Properties.Any(m => m.Metadata.Name == name))
+                        {
+                            return entry.Property(name).CurrentValue;
+                        }
+                        else
+                        {
+                            return null;
+                        }
+                    }
                 }
                 return base[name];
             }
