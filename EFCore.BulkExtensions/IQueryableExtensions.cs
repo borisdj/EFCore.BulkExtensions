@@ -31,7 +31,9 @@ namespace EFCore.BulkExtensions
             IList<SqlParameter> parameters;
             if (relationalCommandCache != null)
             {
+#pragma warning disable EF1001 // Internal EF Core API usage.
                 var command = relationalCommandCache.GetRelationalCommand(parameterValues);
+#pragma warning restore EF1001 // Internal EF Core API usage.
                 var parameterNames = new HashSet<string>(command.Parameters.Select(p => p.InvariantName));
                 sql = command.CommandText;
                 parameters = parameterValues.Where(pv => parameterNames.Contains(pv.Key)).Select(pv => new SqlParameter("@" + pv.Key, pv.Value)).ToList();
