@@ -113,6 +113,7 @@ namespace EFCore.BulkExtensions
         public static (string, string, string, string, IEnumerable<object>) GetBatchSql(IQueryable query, DbContext context, bool isUpdate)
         {
             var (sqlQuery, innerParameters) = query.ToParametrizedSql();
+            
             DbServer databaseType = GetDatabaseType(context);
             string tableAlias = string.Empty;
             string tableAliasSufixAs = string.Empty;
