@@ -336,13 +336,13 @@ namespace EFCore.BulkExtensions
                         command.CommandText = SqlQueryBuilderSqlite.SelectLastInsertRowId();
                         long lastRowIdScalar = (long)command.ExecuteScalar();
                         var identityPropertyInteger = false;
-                        var accessor = TypeAccessor.Create(type, true);
+                        var accessor = TypeAccessor.Create(typeof(T), true);
                         string identityPropertyName = tableInfo.PropertyColumnNamesDict.SingleOrDefault(a => a.Value == tableInfo.IdentityColumnName).Key;
                         if (accessor.GetMembers().FirstOrDefault(x => x.Name == identityPropertyName)?.Type == typeof(int))
                         {
                             identityPropertyInteger = true;
                         }
-                        for (int i = entities.Count - 1; i >= 0; i--)
+                        for (int i = entities.Count -1; i >= 0; i--)
                         {
                             if (identityPropertyInteger)
                             {
