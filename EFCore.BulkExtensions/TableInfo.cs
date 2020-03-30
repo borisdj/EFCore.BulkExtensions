@@ -288,15 +288,12 @@ namespace EFCore.BulkExtensions
         #region SqlCommands
         public void CheckHasIdentity(DbContext context)
         {
-            var sqlConnection = context.Database.GetDbConnection();
-            var currentTransaction = context.Database.CurrentTransaction;
+            context.Database.OpenConnection();
             try
             {
-                if (currentTransaction == null)
-                {
-                    if (sqlConnection.State != ConnectionState.Open)
-                        sqlConnection.Open();
-                }
+                var sqlConnection = context.Database.GetDbConnection();
+                var currentTransaction = context.Database.CurrentTransaction;
+
                 using (var command = sqlConnection.CreateCommand())
                 {
                     if (currentTransaction != null)
@@ -316,8 +313,7 @@ namespace EFCore.BulkExtensions
             }
             finally
             {
-                if (currentTransaction == null)
-                    sqlConnection.Close();
+                context.Database.CloseConnection();
             }
         }
 

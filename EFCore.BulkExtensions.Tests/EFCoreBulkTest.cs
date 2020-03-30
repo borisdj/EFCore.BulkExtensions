@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using Microsoft.EntityFrameworkCore.Storage;
 using Xunit;
 
 namespace EFCore.BulkExtensions.Tests
@@ -39,6 +40,60 @@ namespace EFCore.BulkExtensions.Tests
             RunDelete(isBulkOperation, databaseType);
 
             //CheckQueryCache();
+        }
+
+        [Theory]
+        [InlineData(DbServer.SqlServer)]
+        [InlineData(DbServer.Sqlite)]
+        public void SideEffectsTest(DbServer databaseType)
+        {
+            BulkOperationShouldNotCloseOpenConnection(databaseType, context => context.BulkInsert(new[] { new Item() }));
+            BulkOperationShouldNotCloseOpenConnection(databaseType, context => context.BulkUpdate(new[] { new Item() }));
+        }
+
+        private static void BulkOperationShouldNotCloseOpenConnection(
+            DbServer databaseType,
+            Action<TestContext> bulkOperation)
+        {
+            ContextUtil.DbServer = databaseType;
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                var sqlHelper = context.GetService<ISqlGenerationHelper>();
+                context.Database.OpenConnection();
+
+                try
+                {
+                    // we use a temp table to verify whether the connection has been closed (and re-opened) inside BulkUpdate(Async)
+                    var columnName = sqlHelper.DelimitIdentifier("Id");
+                    var tableName = sqlHelper.DelimitIdentifier("#MyTempTable");
+                    var createTableSql = $" TABLE {tableName} ({columnName} INTEGER);";
+
+                    switch (databaseType)
+                    {
+                        case DbServer.Sqlite:
+                            createTableSql = $"CREATE TEMPORARY {createTableSql}";
+                            break;
+
+                        case DbServer.SqlServer:
+                            createTableSql = $"CREATE {createTableSql}";
+                            break;
+
+                        default:
+                            throw new ArgumentException($"Unknown database type: '{databaseType}'.", nameof(databaseType));
+                    }
+
+                    context.Database.ExecuteSqlRaw(createTableSql);
+
+                    bulkOperation(context);
+
+                    context.Database.ExecuteSqlRaw($"SELECT {columnName} FROM {tableName}");
+                }
+                finally
+                {
+                    context.Database.CloseConnection();
+                }
+            }
         }
 
         private void DeletePreviousDatabase()
