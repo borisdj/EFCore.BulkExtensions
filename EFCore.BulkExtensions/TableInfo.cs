@@ -323,15 +323,12 @@ namespace EFCore.BulkExtensions
 
         public async Task CheckHasIdentityAsync(DbContext context, CancellationToken cancellationToken)
         {
+            await context.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+
             var sqlConnection = context.Database.GetDbConnection();
             var currentTransaction = context.Database.CurrentTransaction;
             try
             {
-                if (currentTransaction == null)
-                {
-                    if (sqlConnection.State != ConnectionState.Open)
-                        await sqlConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
-                }
                 using (var command = sqlConnection.CreateCommand())
                 {
                     if (currentTransaction != null)
@@ -351,10 +348,7 @@ namespace EFCore.BulkExtensions
             }
             finally
             {
-                if (currentTransaction == null)
-                {
-                    sqlConnection.Close();
-                }
+                await context.Database.CloseConnectionAsync().ConfigureAwait(false);
             }
         }
 
@@ -398,15 +392,13 @@ namespace EFCore.BulkExtensions
         public async Task<bool> CheckTableExistAsync(DbContext context, TableInfo tableInfo, CancellationToken cancellationToken)
         {
             bool tableExist = false;
-            var sqlConnection = context.Database.GetDbConnection();
-            var currentTransaction = context.Database.CurrentTransaction;
+            await context.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+
             try
             {
-                if (currentTransaction == null)
-                {
-                    if (sqlConnection.State != ConnectionState.Open)
-                        await sqlConnection.OpenAsync(cancellationToken).ConfigureAwait(false); ;
-                }
+                var sqlConnection = context.Database.GetDbConnection();
+                var currentTransaction = context.Database.CurrentTransaction;
+
                 using (var command = sqlConnection.CreateCommand())
                 {
                     if (currentTransaction != null)
@@ -426,8 +418,7 @@ namespace EFCore.BulkExtensions
             }
             finally
             {
-                if (currentTransaction == null)
-                    sqlConnection.Close();
+                await context.Database.CloseConnectionAsync().ConfigureAwait(false);
             }
             return tableExist;
         }

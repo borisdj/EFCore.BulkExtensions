@@ -163,9 +163,10 @@ namespace EFCore.BulkExtensions
             if (providerName.EndsWith(DbServer.SqlServer.ToString()))
             {
                 var connection = await OpenAndGetSqlConnectionAsync(context, tableInfo.BulkConfig, cancellationToken).ConfigureAwait(false);
-                var transaction = context.Database.CurrentTransaction;
                 try
                 {
+                    var transaction = context.Database.CurrentTransaction;
+
                     using (var sqlBulkCopy = GetSqlBulkCopy((SqlConnection)connection, transaction, tableInfo.BulkConfig))
                     {
                         bool useFastMember = tableInfo.HasOwnedTypes == false
@@ -207,39 +208,44 @@ namespace EFCore.BulkExtensions
                 }
                 finally
                 {
-                    if (transaction == null)
-                    {
-                        connection.Close();
-                    }
+                    await context.Database.CloseConnectionAsync().ConfigureAwait(false);
                 }
             }
             // -- SQLite --
             else if (providerName.EndsWith(DbServer.Sqlite.ToString()))
             {
                 var connection = await OpenAndGetSqliteConnectionAsync(context, tableInfo.BulkConfig, cancellationToken).ConfigureAwait(false);
-                var transaction = tableInfo.BulkConfig.SqliteTransaction ?? connection.BeginTransaction();
+
                 try
                 {
-                    var command = GetSqliteCommand(context, type, entities, tableInfo, connection, transaction);
+                    var transaction = tableInfo.BulkConfig.SqliteTransaction ?? connection.BeginTransaction();
 
-                    var typeAccessor = TypeAccessor.Create(type, true);
-                    int rowsCopied = 0;
-                    foreach (var item in entities)
+                    try
                     {
-                        LoadSqliteValues(tableInfo, typeAccessor, item, command);
-                        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-                        SetProgress(ref rowsCopied, entities.Count, tableInfo.BulkConfig, progress);
+                        var command = GetSqliteCommand(context, type, entities, tableInfo, connection, transaction);
+
+                        var typeAccessor = TypeAccessor.Create(type, true);
+                        int rowsCopied = 0;
+
+                        foreach (var item in entities)
+                        {
+                            LoadSqliteValues(tableInfo, typeAccessor, item, command);
+                            await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                            SetProgress(ref rowsCopied, entities.Count, tableInfo.BulkConfig, progress);
+                        }
+                    }
+                    finally
+                    {
+                        if (tableInfo.BulkConfig.SqliteTransaction == null)
+                        {
+                            transaction.Commit();
+                            transaction.Dispose();
+                        }
                     }
                 }
                 finally
                 {
-                    if (tableInfo.BulkConfig.SqliteTransaction == null)
-                    {
-                        transaction.Commit();
-                        transaction.Dispose();
-                    }
-                    if (tableInfo.BulkConfig.SqliteConnection == null)
-                        connection.Close();
+                    await context.Database.CloseConnectionAsync().ConfigureAwait(false);
                 }
             }
             else
@@ -458,55 +464,63 @@ namespace EFCore.BulkExtensions
             else if (providerName.EndsWith(DbServer.Sqlite.ToString()))
             {
                 var connection = await OpenAndGetSqliteConnectionAsync(context, tableInfo.BulkConfig, cancellationToken).ConfigureAwait(false);
-                var transaction = tableInfo.BulkConfig.SqliteTransaction ?? connection.BeginTransaction();
+
                 try
                 {
-                    var command = GetSqliteCommand(context, type, entities, tableInfo, connection, transaction);
+                    var transaction = tableInfo.BulkConfig.SqliteTransaction ?? connection.BeginTransaction();
 
-                    var typeAccessor = TypeAccessor.Create(type, true);
-                    int rowsCopied = 0;
-                    foreach (var item in entities)
+                    try
                     {
-                        LoadSqliteValues(tableInfo, typeAccessor, item, command);
-                        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-                        SetProgress(ref rowsCopied, entities.Count, tableInfo.BulkConfig, progress);
-                    }
+                        var command = GetSqliteCommand(context, type, entities, tableInfo, connection, transaction);
 
-                    if (operationType != OperationType.Delete && tableInfo.BulkConfig.SetOutputIdentity && tableInfo.IdentityColumnName != null)
-                    {
-                        command.CommandText = SqlQueryBuilderSqlite.SelectLastInsertRowId();
-                        long lastRowIdScalar = (long)await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
-                        var identityPropertyInteger = false;
-                        var accessor = TypeAccessor.Create(type, true);
-                        string identityPropertyName = tableInfo.PropertyColumnNamesDict.SingleOrDefault(a => a.Value == tableInfo.IdentityColumnName).Key;
-                        if (accessor.GetMembers().FirstOrDefault(x => x.Name == identityPropertyName)?.Type == typeof(int))
+                        var typeAccessor = TypeAccessor.Create(type, true);
+                        int rowsCopied = 0;
+
+                        foreach (var item in entities)
                         {
-                            identityPropertyInteger = true;
+                            LoadSqliteValues(tableInfo, typeAccessor, item, command);
+                            await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                            SetProgress(ref rowsCopied, entities.Count, tableInfo.BulkConfig, progress);
                         }
-                        for (int i = entities.Count - 1; i >= 0; i--)
-                        {
-                            if (identityPropertyInteger)
-                            {
-                                accessor[entities[i], identityPropertyName] = (int)lastRowIdScalar;
-                            }
-                            else
-                            {
-                                accessor[entities[i], identityPropertyName] = lastRowIdScalar;
-                            }
 
-                            lastRowIdScalar--;
+                        if (operationType != OperationType.Delete && tableInfo.BulkConfig.SetOutputIdentity && tableInfo.IdentityColumnName != null)
+                        {
+                            command.CommandText = SqlQueryBuilderSqlite.SelectLastInsertRowId();
+                            long lastRowIdScalar = (long)await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+                            var identityPropertyInteger = false;
+                            var accessor = TypeAccessor.Create(type, true);
+                            string identityPropertyName = tableInfo.PropertyColumnNamesDict.SingleOrDefault(a => a.Value == tableInfo.IdentityColumnName).Key;
+                            if (accessor.GetMembers().FirstOrDefault(x => x.Name == identityPropertyName)?.Type == typeof(int))
+                            {
+                                identityPropertyInteger = true;
+                            }
+                            for (int i = entities.Count - 1; i >= 0; i--)                            
+                            {
+                                if (identityPropertyInteger)
+                                {
+                                    accessor[entities[i], identityPropertyName] = (int)lastRowIdScalar;
+                                }
+                                else
+                                {
+                                    accessor[entities[i], identityPropertyName] = lastRowIdScalar;
+                                }
+
+                                lastRowIdScalar--;
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        if (tableInfo.BulkConfig.SqliteTransaction == null)
+                        {
+                            transaction.Commit();
+                            transaction.Dispose();
                         }
                     }
                 }
                 finally
                 {
-                    if (tableInfo.BulkConfig.SqliteTransaction == null)
-                    {
-                        transaction.Commit();
-                        transaction.Dispose();
-                    }
-                    if (tableInfo.BulkConfig.SqliteConnection == null)
-                        connection.Close();
+                    await context.Database.CloseConnectionAsync().ConfigureAwait(false);
                 }
             }
             else
@@ -957,12 +971,9 @@ namespace EFCore.BulkExtensions
 
         internal static async Task<DbConnection> OpenAndGetSqlConnectionAsync(DbContext context, BulkConfig config, CancellationToken cancellationToken)
         {
-            var connection = context.GetUnderlyingConnection(config);
-            if (connection.State != ConnectionState.Open)
-            {
-                await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
-            }
-            return connection;
+            await context.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+
+            return context.GetUnderlyingConnection(config);
         }
 
         internal static SqliteConnection OpenAndGetSqliteConnection(DbContext context, BulkConfig bulkConfig)
@@ -977,12 +988,8 @@ namespace EFCore.BulkExtensions
 
         internal static async Task<SqliteConnection> OpenAndGetSqliteConnectionAsync(DbContext context, BulkConfig bulkConfig, CancellationToken cancellationToken)
         {
-            var connection = bulkConfig.SqliteConnection ?? (SqliteConnection)context.Database.GetDbConnection();
-            if (connection.State != ConnectionState.Open)
-            {
-                await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
-            }
-            return connection;
+            await context.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+            return bulkConfig.SqliteConnection ?? (SqliteConnection)context.Database.GetDbConnection();
         }
 
         private static SqlBulkCopy GetSqlBulkCopy(SqlConnection sqlConnection, IDbContextTransaction transaction, BulkConfig config)
