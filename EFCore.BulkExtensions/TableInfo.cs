@@ -91,7 +91,13 @@ namespace EFCore.BulkExtensions
             //var relationalData = entityType.Relational(); relationalData.Schema relationalData.TableName // DEPRECATED in Core3.0
             Schema = entityType.GetSchema() ?? "dbo";
             TableName = entityType.GetTableName();
-            TempTableSufix = "Temp" + Guid.NewGuid().ToString().Substring(0, 8); // 8 chars of Guid as tableNameSufix to avoid same name collision with other tables
+
+            TempTableSufix = "Temp";
+
+            if (!BulkConfig.UseTempDB || BulkConfig.TempDBSettings == null || BulkConfig.TempDBSettings.UniqueTableName)
+            {
+                TempTableSufix += Guid.NewGuid().ToString().Substring(0, 8); // 8 chars of Guid as tableNameSufix to avoid same name collision with other tables
+            }
 
             bool AreSpecifiedUpdateByProperties = BulkConfig.UpdateByProperties?.Count() > 0;
             var primaryKeys = entityType.FindPrimaryKey().Properties.Select(a => a.Name).ToList();
@@ -241,7 +247,8 @@ namespace EFCore.BulkExtensions
             sqlBulkCopy.DestinationTableName = InsertToTempTable ? FullTempTableName : FullTableName;
             sqlBulkCopy.BatchSize = BulkConfig.BatchSize;
             sqlBulkCopy.NotifyAfter = BulkConfig.NotifyAfter ?? BulkConfig.BatchSize;
-            sqlBulkCopy.SqlRowsCopied += (sender, e) => {
+            sqlBulkCopy.SqlRowsCopied += (sender, e) =>
+            {
                 progress?.Invoke(SqlBulkOperation.GetProgress(entities.Count, e.RowsCopied)); // round to 4 decimal places
             };
             sqlBulkCopy.BulkCopyTimeout = BulkConfig.BulkCopyTimeout ?? sqlBulkCopy.BulkCopyTimeout;
