@@ -94,7 +94,9 @@ namespace EFCore.BulkExtensions
             TempTableSufix = "Temp" + Guid.NewGuid().ToString().Substring(0, 8); // 8 chars of Guid as tableNameSufix to avoid same name collision with other tables
 
             bool AreSpecifiedUpdateByProperties = BulkConfig.UpdateByProperties?.Count() > 0;
-            var primaryKeys = entityType.FindPrimaryKey().Properties.Select(a => a.Name).ToList();
+            var primaryKeys = entityType.FindPrimaryKey()?.Properties.Select(a => a.Name).ToList();
+            if (primaryKeys == null)
+                throw new InvalidOperationException($"EntitySet for Type: { type.Name } must contain a Primary Key");
             HasSinglePrimaryKey = primaryKeys.Count == 1;
             PrimaryKeys = AreSpecifiedUpdateByProperties ? BulkConfig.UpdateByProperties : primaryKeys;
 
