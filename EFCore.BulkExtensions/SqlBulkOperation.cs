@@ -836,7 +836,7 @@ namespace EFCore.BulkExtensions
 
                 if (tableInfo.ConvertibleProperties.ContainsKey(propertyColumn.Key))
                 {
-                    value = tableInfo.ConvertibleProperties[propertyColumn.Key].ConvertToProvider.Invoke(value);
+                    value = tableInfo.ConvertibleProperties[propertyColumn.Key].ConvertToProvider.Invoke(value) ?? DBNull.Value;
                 }
 
                 command.Parameters[$"@{propertyColumn.Value}"].Value = value;
