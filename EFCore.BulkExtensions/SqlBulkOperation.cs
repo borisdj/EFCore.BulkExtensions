@@ -820,13 +820,13 @@ namespace EFCore.BulkExtensions
                         }
 
                         if (subPropertiesLevel1 == null)
-                            value = DBNull.Value;
+                            value = null;
                         else
-                            value = subPropertiesLevel1.GetType().GetProperty(subProperties[1]).GetValue(subPropertiesLevel1) ?? DBNull.Value;
+                            value = subPropertiesLevel1.GetType().GetProperty(subProperties[1]).GetValue(subPropertiesLevel1);
                     }
                     else
                     {
-                        value = typeAccessor[entity, propertyColumn.Key] ?? DBNull.Value;
+                        value = typeAccessor[entity, propertyColumn.Key];
                     }
                 }
                 else // IsShadowProperty
@@ -836,10 +836,10 @@ namespace EFCore.BulkExtensions
 
                 if (tableInfo.ConvertibleProperties.ContainsKey(propertyColumn.Key))
                 {
-                    value = tableInfo.ConvertibleProperties[propertyColumn.Key].ConvertToProvider.Invoke(value) ?? DBNull.Value;
+                    value = tableInfo.ConvertibleProperties[propertyColumn.Key].ConvertToProvider.Invoke(value);
                 }
 
-                command.Parameters[$"@{propertyColumn.Value}"].Value = value;
+                command.Parameters[$"@{propertyColumn.Value}"].Value = value ?? DBNull.Value;
             }
         }
         #endregion
