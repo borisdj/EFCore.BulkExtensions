@@ -344,7 +344,7 @@ namespace EFCore.BulkExtensions
                         long lastRowIdScalar = (long)command.ExecuteScalar();
                         var identityPropertyInteger = false;
                         var accessor = TypeAccessor.Create(type, true);
-                        string identityPropertyName = tableInfo.PropertyColumnNamesDict.SingleOrDefault(a => a.Value == tableInfo.IdentityColumnName).Key;
+                        string identityPropertyName = tableInfo.IdentityColumnName;
                         if (accessor.GetMembers().FirstOrDefault(x => x.Name == identityPropertyName)?.Type == typeof(int))
                         {
                             identityPropertyInteger = true;
