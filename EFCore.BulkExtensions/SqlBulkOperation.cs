@@ -96,7 +96,7 @@ namespace EFCore.BulkExtensions
                                 if (!tableInfo.CheckTableExist(context, tableInfo))
                                 {
                                     context.Database.ExecuteSqlRaw(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo)); // Will throw Exception specify missing db column: Invalid column name ''
-                                    context.Database.ExecuteSqlRaw(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName));
+                                    context.Database.ExecuteSqlRaw(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB));
                                 }
                             }
                             throw ex;
@@ -198,7 +198,7 @@ namespace EFCore.BulkExtensions
                                 if (!await tableInfo.CheckTableExistAsync(context, tableInfo, cancellationToken).ConfigureAwait(false))
                                 {
                                     await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo), cancellationToken).ConfigureAwait(false);
-                                    await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName), cancellationToken).ConfigureAwait(false);
+                                    await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB), cancellationToken).ConfigureAwait(false);
                                 }
                             }
                             throw ex;
@@ -267,6 +267,13 @@ namespace EFCore.BulkExtensions
                 tableInfo.InsertToTempTable = true;
                 tableInfo.CheckHasIdentity(context);
 
+                var dropTempTableIfExists = tableInfo.BulkConfig.UseTempDB && tableInfo.BulkConfig.TempDBSettings != null && !tableInfo.BulkConfig.TempDBSettings.UniqueTableName;
+
+                if (dropTempTableIfExists)
+                {
+                    context.Database.ExecuteSqlRaw(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB));
+                }
+
                 context.Database.ExecuteSqlRaw(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo));
                 if (tableInfo.CreatedOutputTable)
                 {
@@ -301,9 +308,9 @@ namespace EFCore.BulkExtensions
                     {
                         if (tableInfo.CreatedOutputTable)
                         {
-                            context.Database.ExecuteSqlRaw(SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName));
+                            context.Database.ExecuteSqlRaw(SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName, tableInfo.BulkConfig.UseTempDB));
                         }
-                        context.Database.ExecuteSqlRaw(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName));
+                        context.Database.ExecuteSqlRaw(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB));
                     }
 
                     if (keepIdentity && tableInfo.HasIdentity)
@@ -342,11 +349,11 @@ namespace EFCore.BulkExtensions
                         {
                             identityPropertyInteger = true;
                         }
-                        for (int i = entities.Count -1; i >= 0; i--)
+                        for (int i = entities.Count - 1; i >= 0; i--)
                         {
                             if (identityPropertyInteger)
                             {
-                                accessor[entities[i], identityPropertyName] = (int) lastRowIdScalar;
+                                accessor[entities[i], identityPropertyName] = (int)lastRowIdScalar;
 
                             }
                             else
@@ -394,6 +401,13 @@ namespace EFCore.BulkExtensions
                 tableInfo.InsertToTempTable = true;
                 await tableInfo.CheckHasIdentityAsync(context, cancellationToken).ConfigureAwait(false);
 
+                var dropTempTableIfExists = tableInfo.BulkConfig.UseTempDB && tableInfo.BulkConfig.TempDBSettings != null && !tableInfo.BulkConfig.TempDBSettings.UniqueTableName;
+
+                if (dropTempTableIfExists)
+                {
+                    await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB)).ConfigureAwait(false);
+                }
+
                 await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo), cancellationToken).ConfigureAwait(false);
                 if (tableInfo.CreatedOutputTable)
                 {
@@ -428,9 +442,9 @@ namespace EFCore.BulkExtensions
                     {
                         if (tableInfo.CreatedOutputTable)
                         {
-                            await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName), cancellationToken).ConfigureAwait(false);
+                            await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName, tableInfo.BulkConfig.UseTempDB), cancellationToken).ConfigureAwait(false);
                         }
-                        await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName), cancellationToken).ConfigureAwait(false);
+                        await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB), cancellationToken).ConfigureAwait(false);
                     }
 
                     if (keepIdentity && tableInfo.HasIdentity)
@@ -503,6 +517,13 @@ namespace EFCore.BulkExtensions
         {
             Dictionary<string, string> previousPropertyColumnNamesDict = tableInfo.ConfigureBulkReadTableInfo(context);
 
+            var dropTempTableIfExists = tableInfo.BulkConfig.UseTempDB && tableInfo.BulkConfig.TempDBSettings != null && !tableInfo.BulkConfig.TempDBSettings.UniqueTableName;
+
+            if (dropTempTableIfExists)
+            {
+                context.Database.ExecuteSqlRaw(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB));
+            }
+
             string providerName = context.Database.ProviderName;
             // -- SQL Server --
             if (providerName.EndsWith(DbServer.SqlServer.ToString()))
@@ -537,7 +558,7 @@ namespace EFCore.BulkExtensions
                 finally
                 {
                     if (!tableInfo.BulkConfig.UseTempDB)
-                        context.Database.ExecuteSqlRaw(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName));
+                        context.Database.ExecuteSqlRaw(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB));
                 }
             }
             // -- Sqlite --
@@ -564,6 +585,13 @@ namespace EFCore.BulkExtensions
         private static async Task ReadAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, CancellationToken cancellationToken) where T : class
         {
             Dictionary<string, string> previousPropertyColumnNamesDict = tableInfo.ConfigureBulkReadTableInfo(context);
+
+            var dropTempTableIfExists = tableInfo.BulkConfig.UseTempDB && tableInfo.BulkConfig.TempDBSettings != null && !tableInfo.BulkConfig.TempDBSettings.UniqueTableName;
+
+            if (dropTempTableIfExists)
+            {
+                await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB)).ConfigureAwait(false);
+            }
 
             string providerName = context.Database.ProviderName;
             // -- SQL Server --
@@ -599,7 +627,7 @@ namespace EFCore.BulkExtensions
                 finally
                 {
                     if (!tableInfo.BulkConfig.UseTempDB)
-                        await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName), cancellationToken).ConfigureAwait(false);
+                        await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB), cancellationToken).ConfigureAwait(false);
                 }
             }
             // -- Sqlite --
