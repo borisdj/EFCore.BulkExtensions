@@ -22,7 +22,7 @@ namespace EFCore.BulkExtensions
 
         public bool UseTempDB { get; set; }
 
-        public TempDBSettings TempDBSettings { get; set; }
+        public bool UniqueTableNameTempDb { get; set; } = true;
 
         public bool TrackingEntities { get; set; }
 
@@ -55,10 +55,5 @@ namespace EFCore.BulkExtensions
         public int StatsNumberInserted { get; set; }
 
         public int StatsNumberUpdated { get; set; }
-    }
-
-    public class TempDBSettings
-    {
-        public bool UniqueTableName { get; set; } = true;
     }
 }

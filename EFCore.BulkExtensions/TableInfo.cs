@@ -115,7 +115,7 @@ namespace EFCore.BulkExtensions
 
             TempTableSufix = "Temp";
 
-            if (!BulkConfig.UseTempDB || BulkConfig.TempDBSettings == null || BulkConfig.TempDBSettings.UniqueTableName)
+            if (!BulkConfig.UseTempDB || BulkConfig.UniqueTableNameTempDb)
             {
                 TempTableSufix += Guid.NewGuid().ToString().Substring(0, 8); // 8 chars of Guid as tableNameSufix to avoid same name collision with other tables
             }

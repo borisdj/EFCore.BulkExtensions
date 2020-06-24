@@ -267,7 +267,7 @@ namespace EFCore.BulkExtensions
                 tableInfo.InsertToTempTable = true;
                 tableInfo.CheckHasIdentity(context);
 
-                var dropTempTableIfExists = tableInfo.BulkConfig.UseTempDB && tableInfo.BulkConfig.TempDBSettings != null && !tableInfo.BulkConfig.TempDBSettings.UniqueTableName;
+                var dropTempTableIfExists = tableInfo.BulkConfig.UseTempDB;
 
                 if (dropTempTableIfExists)
                 {
@@ -401,7 +401,7 @@ namespace EFCore.BulkExtensions
                 tableInfo.InsertToTempTable = true;
                 await tableInfo.CheckHasIdentityAsync(context, cancellationToken).ConfigureAwait(false);
 
-                var dropTempTableIfExists = tableInfo.BulkConfig.UseTempDB && tableInfo.BulkConfig.TempDBSettings != null && !tableInfo.BulkConfig.TempDBSettings.UniqueTableName;
+                var dropTempTableIfExists = tableInfo.BulkConfig.UseTempDB;
 
                 if (dropTempTableIfExists)
                 {
@@ -517,7 +517,7 @@ namespace EFCore.BulkExtensions
         {
             Dictionary<string, string> previousPropertyColumnNamesDict = tableInfo.ConfigureBulkReadTableInfo(context);
 
-            var dropTempTableIfExists = tableInfo.BulkConfig.UseTempDB && tableInfo.BulkConfig.TempDBSettings != null && !tableInfo.BulkConfig.TempDBSettings.UniqueTableName;
+            var dropTempTableIfExists = tableInfo.BulkConfig.UseTempDB;
 
             if (dropTempTableIfExists)
             {
@@ -586,7 +586,7 @@ namespace EFCore.BulkExtensions
         {
             Dictionary<string, string> previousPropertyColumnNamesDict = tableInfo.ConfigureBulkReadTableInfo(context);
 
-            var dropTempTableIfExists = tableInfo.BulkConfig.UseTempDB && tableInfo.BulkConfig.TempDBSettings != null && !tableInfo.BulkConfig.TempDBSettings.UniqueTableName;
+            var dropTempTableIfExists = tableInfo.BulkConfig.UseTempDB;
 
             if (dropTempTableIfExists)
             {
