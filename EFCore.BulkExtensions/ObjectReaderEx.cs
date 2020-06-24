@@ -45,6 +45,13 @@ namespace EFCore.BulkExtensions
             return (hasShadowProp || hasConvertibleProperties || isAbstractType) ? new ObjectReaderEx(typeof(T), source, shadowProperties, convertibleProperties, context, members) : Create(source, members);
         }
 
+        public static ObjectReader Create(Type type, IEnumerable source, HashSet<string> shadowProperties, Dictionary<string, ValueConverter> convertibleProperties, DbContext context, params string[] members)
+        {
+            bool hasShadowProp = shadowProperties.Count > 0;
+            bool hasConvertibleProperties = convertibleProperties.Keys.Count > 0;
+            return (hasShadowProp || hasConvertibleProperties) ? (ObjectReader)new ObjectReaderEx(type, source, shadowProperties, convertibleProperties, context, members) : new ObjectReader(type, source, members);
+        }
+
         public override object this[string name]
         {
             get

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -6,13 +7,12 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.Internal;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
-using Microsoft.EntityFrameworkCore.Storage;
 
 namespace EFCore.BulkExtensions
 {
     public static class IQueryableExtensions
     {
-        public static (string, IEnumerable<SqlParameter>) ToParametrizedSql<TEntity>(this IQueryable<TEntity> query) where TEntity : class
+        public static (string, IEnumerable<SqlParameter>) ToParametrizedSql(this IQueryable query)
         {
             string relationalCommandCacheText = "_relationalCommandCache";
             string selectExpressionText = "_selectExpression";
@@ -21,7 +21,7 @@ namespace EFCore.BulkExtensions
 
             string cannotGetText = "Cannot get";
 
-            var enumerator = query.Provider.Execute<IEnumerable<TEntity>>(query.Expression).GetEnumerator();
+            var enumerator = query.Provider.Execute<IEnumerable>(query.Expression).GetEnumerator();
             var relationalCommandCache = enumerator.Private(relationalCommandCacheText) as RelationalCommandCache;
             var queryContext = enumerator.Private<RelationalQueryContext>(relationalQueryContextText) ?? throw new InvalidOperationException($"{cannotGetText} {relationalQueryContextText}");
             var parameterValues = queryContext.ParameterValues;
@@ -30,7 +30,9 @@ namespace EFCore.BulkExtensions
             IList<SqlParameter> parameters;
             if (relationalCommandCache != null)
             {
+#pragma warning disable EF1001 // Internal EF Core API usage.
                 var command = relationalCommandCache.GetRelationalCommand(parameterValues);
+#pragma warning restore EF1001 // Internal EF Core API usage.
                 var parameterNames = new HashSet<string>(command.Parameters.Select(p => p.InvariantName));
                 sql = command.CommandText;
                 parameters = parameterValues.Where(pv => parameterNames.Contains(pv.Key)).Select(pv => new SqlParameter("@" + pv.Key, pv.Value)).ToList();
