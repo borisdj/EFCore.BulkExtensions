@@ -19,7 +19,8 @@ namespace EFCore.BulkExtensions
             bool keepIdentity = tableInfo.BulkConfig.SqlBulkCopyOptions.HasFlag(SqlBulkCopyOptions.KeepIdentity);
             if(operationType == OperationType.Insert && !keepIdentity)
             {
-                columnsList = columnsList.Where(a => a != tableInfo.IdentityColumnName).ToList();
+                var identityColumnName = tableInfo.PropertyColumnNamesDict[tableInfo.IdentityColumnName];
+                columnsList = columnsList.Where(a => a != identityColumnName).ToList();
             }
 
             var commaSeparatedColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsList);
