@@ -123,7 +123,7 @@ namespace EFCore.BulkExtensions
             bool AreSpecifiedUpdateByProperties = BulkConfig.UpdateByProperties?.Count() > 0;
             var primaryKeys = entityType.FindPrimaryKey()?.Properties?.Select(a => a.Name)?.ToList();
 
-            HasSinglePrimaryKey = primaryKeys.Count == 1;
+            HasSinglePrimaryKey = primaryKeys?.Count == 1;
             PrimaryKeys = AreSpecifiedUpdateByProperties ? BulkConfig.UpdateByProperties : primaryKeys;
 
             var allProperties = entityType.GetProperties().AsEnumerable();
