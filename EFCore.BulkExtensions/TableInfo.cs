@@ -122,8 +122,7 @@ namespace EFCore.BulkExtensions
 
             bool AreSpecifiedUpdateByProperties = BulkConfig.UpdateByProperties?.Count() > 0;
             var primaryKeys = entityType.FindPrimaryKey()?.Properties?.Select(a => a.Name)?.ToList();
-            if (primaryKeys == null)
-                throw new InvalidOperationException($"EntitySet for Type: { type.Name } must contain a Primary Key");
+
             HasSinglePrimaryKey = primaryKeys.Count == 1;
             PrimaryKeys = AreSpecifiedUpdateByProperties ? BulkConfig.UpdateByProperties : primaryKeys;
 
