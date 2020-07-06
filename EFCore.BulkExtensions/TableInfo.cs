@@ -132,9 +132,9 @@ namespace EFCore.BulkExtensions
             if (entityType.IsAbstract())
             {
                 var extendedAllProperties = allProperties.ToList();
-                foreach (var dervied in entityType.GetDirectlyDerivedTypes())
+                foreach (var derived in entityType.GetDirectlyDerivedTypes())
                 {
-                    extendedAllProperties.AddRange(dervied.GetProperties());
+                    extendedAllProperties.AddRange(derived.GetProperties());
                 }
 
                 allProperties = extendedAllProperties.Distinct();
