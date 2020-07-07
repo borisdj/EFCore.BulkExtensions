@@ -121,6 +121,7 @@ namespace EFCore.BulkExtensions
                     {
                         var command = GetSqliteCommand(context, type, entities, tableInfo, connection, transaction);
 
+                        type = tableInfo.HasAbstractList ? entities[0].GetType() : type;
                         var typeAccessor = TypeAccessor.Create(type, true);
                         int rowsCopied = 0;
                         foreach (var item in entities)
@@ -228,6 +229,7 @@ namespace EFCore.BulkExtensions
                     {
                         var command = GetSqliteCommand(context, type, entities, tableInfo, connection, transaction);
 
+                        type = tableInfo.HasAbstractList ? entities[0].GetType() : type;
                         var typeAccessor = TypeAccessor.Create(type, true);
                         int rowsCopied = 0;
 
@@ -342,6 +344,7 @@ namespace EFCore.BulkExtensions
                     {
                         var command = GetSqliteCommand(context, type, entities, tableInfo, connection, transaction);
 
+                        type = tableInfo.HasAbstractList ? entities[0].GetType() : type;
                         var typeAccessor = TypeAccessor.Create(type, true);
                         int rowsCopied = 0;
                         foreach (var item in entities)
@@ -483,6 +486,7 @@ namespace EFCore.BulkExtensions
                     {
                         var command = GetSqliteCommand(context, type, entities, tableInfo, connection, transaction);
 
+                        type = tableInfo.HasAbstractList ? entities[0].GetType() : type;
                         var typeAccessor = TypeAccessor.Create(type, true);
                         int rowsCopied = 0;
 
