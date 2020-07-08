@@ -22,6 +22,8 @@ namespace EFCore.BulkExtensions
 
         public bool UseTempDB { get; set; }
 
+        public bool UniqueTableNameTempDb { get; set; } = true;
+
         public bool TrackingEntities { get; set; }
 
         public bool UseOnlyDataTable { get; set; }

@@ -17,9 +17,10 @@ namespace EFCore.BulkExtensions
             List<string> columnsList = tableInfo.PropertyColumnNamesDict.Values.ToList();
 
             bool keepIdentity = tableInfo.BulkConfig.SqlBulkCopyOptions.HasFlag(SqlBulkCopyOptions.KeepIdentity);
-            if(operationType == OperationType.Insert && !keepIdentity)
+            if(operationType == OperationType.Insert && !keepIdentity && tableInfo.HasIdentity)
             {
-                columnsList = columnsList.Where(a => a != tableInfo.IdentityColumnName).ToList();
+                var identityColumnName = tableInfo.PropertyColumnNamesDict[tableInfo.IdentityColumnName];
+                columnsList = columnsList.Where(a => a != identityColumnName).ToList();
             }
 
             var commaSeparatedColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsList);

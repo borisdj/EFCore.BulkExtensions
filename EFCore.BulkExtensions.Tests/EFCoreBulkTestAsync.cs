@@ -4,6 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 using Xunit;
 
 namespace EFCore.BulkExtensions.Tests
@@ -35,6 +37,60 @@ namespace EFCore.BulkExtensions.Tests
                 await RunReadAsync(isBulkOperation); // Not Yet supported for Sqlite
             }
             await RunDeleteAsync(isBulkOperation, databaseType);
+        }
+
+        [Theory]
+        [InlineData(DbServer.SqlServer)]
+        [InlineData(DbServer.Sqlite)]
+        public async Task SideEffectsTestAsync(DbServer databaseType)
+        {
+            await BulkOperationShouldNotCloseOpenConnectionAsync(databaseType, context => context.BulkInsertAsync(new[] { new Item() }));
+            await BulkOperationShouldNotCloseOpenConnectionAsync(databaseType, context => context.BulkUpdateAsync(new[] { new Item() }));
+        }
+
+        private static async Task BulkOperationShouldNotCloseOpenConnectionAsync(
+            DbServer databaseType,
+            Func<TestContext, Task> bulkOperation)
+        {
+            ContextUtil.DbServer = databaseType;
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                var sqlHelper = context.GetService<ISqlGenerationHelper>();
+                await context.Database.OpenConnectionAsync();
+
+                try
+                {
+                    // we use a temp table to verify whether the connection has been closed (and re-opened) inside BulkUpdate(Async)
+                    var columnName = sqlHelper.DelimitIdentifier("Id");
+                    var tableName = sqlHelper.DelimitIdentifier("#MyTempTable");
+                    var createTableSql = $" TABLE {tableName} ({columnName} INTEGER);";
+
+                    switch (databaseType)
+                    {
+                        case DbServer.Sqlite:
+                            createTableSql = $"CREATE TEMPORARY {createTableSql}";
+                            break;
+
+                        case DbServer.SqlServer:
+                            createTableSql = $"CREATE {createTableSql}";
+                            break;
+
+                        default:
+                            throw new ArgumentException($"Unknown database type: '{databaseType}'.", nameof(databaseType));
+                    }
+
+                    await context.Database.ExecuteSqlRawAsync(createTableSql);
+
+                    await bulkOperation(context);
+
+                    await context.Database.ExecuteSqlRawAsync($"SELECT {columnName} FROM {tableName}");
+                }
+                finally
+                {
+                    await context.Database.CloseConnectionAsync();
+                }
+            }
         }
 
         private async Task RunInsertAsync(bool isBulkOperation)
