@@ -98,6 +98,13 @@ namespace EFCore.BulkExtensions.Tests
 
                 query = context.Items.Where(a => a.ItemId <= 500 && a.Price == null);
                 await query.Take(1).BatchUpdateAsync(a => new Item { Name = a.Name + " TOP(1)", Quantity = a.Quantity + 100 }); // example of BatchUpdate with TOP(1)
+
+                var list = new List<string>() { "Updated" };
+                var updatedCount = await context.Set<Item>()
+                                                .TagWith("From: someCallSite in someClassName") // To test parsing Sql with Tag leading comment
+                                                .Where(a => list.Contains(a.Description))
+                                                .BatchUpdateAsync(a => new Item() { TimeUpdated = DateTime.Now })
+                                                .ConfigureAwait(false);
             }
         }
 
