@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-	<Title>EFCore.BulkExtensions</Title>
+    <Title>EFCore.BulkExtensions</Title>
     <Version>3.1.3</Version>
     <Authors>borisdj</Authors>
     <Description>EntityFramework EF Core Bulk Batch Extensions for Insert Update Delete and Read (CRUD) operations on SQL Server and SQLite</Description>
