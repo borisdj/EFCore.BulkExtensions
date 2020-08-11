@@ -52,13 +52,14 @@ namespace EFCore.BulkExtensions.Tests
                 context.Items.BatchDelete();
                 context.BulkDelete(context.Items.ToList());
 
-                if (databaseType == DbServer.SqlServer)
+                switch (databaseType)
                 {
-                    context.Database.ExecuteSqlRaw("DBCC CHECKIDENT('[dbo].[Item]', RESEED, 0);");
-                }
-                if (databaseType == DbServer.Sqlite)
-                {
-                    context.Database.ExecuteSqlRaw("DELETE FROM sqlite_sequence WHERE name = 'Item';");
+                    case DbServer.SqlServer:
+                        context.Database.ExecuteSqlRaw("DBCC CHECKIDENT('[dbo].[Item]', RESEED, 0);");
+                        break;
+                    case DbServer.Sqlite:
+                        context.Database.ExecuteSqlRaw("DELETE FROM sqlite_sequence WHERE name = 'Item';");
+                        break;
                 }
             }
         }

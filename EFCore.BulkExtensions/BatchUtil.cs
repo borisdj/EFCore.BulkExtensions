@@ -16,9 +16,19 @@ using System.Threading.Tasks;
 
 namespace EFCore.BulkExtensions
 {
+    // public class BatchSql
+    // {
+    //     public string Sql;
+    //     public string TableAlias;
+    //     public string TableAliasSufixAs;
+    //     public string TopStatement;
+    //     public string LeadingComments;
+    //     public IEnumerable<object> InnerParameters;
+    // }
+    
     public static class BatchUtil
     {
-        static readonly int SelectStatementLength = "SELECT".Length;
+        private static readonly int SelectStatementLength = "SELECT".Length;
 
         // In comment are Examples of how SqlQuery is changed for Sql Batch
 
@@ -31,10 +41,10 @@ namespace EFCore.BulkExtensions
         // WHERE [a].[Columns] = FilterValues
         public static (string, List<object>) GetSqlDelete(IQueryable query, DbContext context)
         {
-            (string sql, string tableAlias, string tableAliasSufixAs, string topStatement, string leadingComments, IEnumerable<object> innerParameters) = GetBatchSql(query, context, isUpdate: false);
+            var (sql, tableAlias, _, topStatement, leadingComments, innerParameters) = GetBatchSql(query, context, false);
 
             innerParameters = ReloadSqlParameters(context, innerParameters.ToList()); // Sqlite requires SqliteParameters
-            tableAlias = (GetDatabaseType(context) == DbServer.SqlServer) ? $"[{tableAlias}]" : tableAlias;
+            tableAlias = GetDatabaseType(context) == DbServer.SqlServer ? $"[{tableAlias}]" : tableAlias;
 
             var resultQuery = $"{leadingComments}DELETE {topStatement}{tableAlias}{sql}";
             return (resultQuery, new List<object>(innerParameters));
@@ -78,7 +88,7 @@ namespace EFCore.BulkExtensions
 
         private static (string, List<object>) GetSqlUpdate<T>(IQueryable query, DbContext context, Type type, Expression<Func<T, T>> expression) where T : class
         {
-            (string sql, string tableAlias, string tableAliasSufixAs, string topStatement, string leadingComments, IEnumerable<object> innerParameters) = GetBatchSql(query, context, isUpdate: true);
+            var (sql, tableAlias, tableAliasSufixAs, topStatement, leadingComments, innerParameters) = GetBatchSql(query, context, true);
             var sqlColumns = new StringBuilder();
             var sqlParameters = new List<object>(innerParameters);
             var columnNameValueDict = TableInfo.CreateInstance(GetDbContext(query), type, new List<object>(), OperationType.Read, new BulkConfig()).PropertyColumnNamesDict;
@@ -123,16 +133,18 @@ namespace EFCore.BulkExtensions
             string topStatement = string.Empty;
             if (databaseType != DbServer.Sqlite) // when Sqlite and Deleted metod tableAlias is Empty: ""
             {
-                string escapeSymbolEnd = (databaseType == DbServer.SqlServer) ? "]" : "."; // SqlServer : PostrgeSql;
-                string escapeSymbolStart = (databaseType == DbServer.SqlServer) ? "[" : " "; // SqlServer : PostrgeSql;
-                string tableAliasEnd = sqlQuery.Substring(SelectStatementLength, sqlQuery.IndexOf(escapeSymbolEnd) - SelectStatementLength); // " TOP(10) [table_alias" / " [table_alias" : " table_alias"
-                int tableAliasStartIndex = tableAliasEnd.IndexOf(escapeSymbolStart);
+                var isSqlServer = databaseType == DbServer.SqlServer;
+                string escapeSymbolEnd = isSqlServer ? "]" : "."; // SqlServer : PostrgeSql;
+                string escapeSymbolStart = isSqlServer ? "[" : " "; // SqlServer : PostrgeSql;
+                string tableAliasEnd = sqlQuery.Substring(SelectStatementLength,
+                    sqlQuery.IndexOf(escapeSymbolEnd, StringComparison.Ordinal) - SelectStatementLength); // " TOP(10) [table_alias" / " [table_alias" : " table_alias"
+                int tableAliasStartIndex = tableAliasEnd.IndexOf(escapeSymbolStart, StringComparison.Ordinal);
                 tableAlias = tableAliasEnd.Substring(tableAliasStartIndex + escapeSymbolStart.Length); // "table_alias"
                 topStatement = tableAliasEnd.Substring(0, tableAliasStartIndex).TrimStart(); // "TOP(10) " / if TOP not present in query this will be a Substring(0,0) == ""
             }
 
-            int indexFROM = sqlQuery.IndexOf(Environment.NewLine);
-            string sql = sqlQuery.Substring(indexFROM, sqlQuery.Length - indexFROM);
+            int indexFrom = sqlQuery.IndexOf(Environment.NewLine, StringComparison.Ordinal);
+            string sql = sqlQuery.Substring(indexFrom, sqlQuery.Length - indexFrom);
             sql = sql.Contains("{") ? sql.Replace("{", "{{") : sql; // Curly brackets have to be escaped:
             sql = sql.Contains("}") ? sql.Replace("}", "}}") : sql; // https://github.com/aspnet/EntityFrameworkCore/issues/8820
 
@@ -196,7 +208,7 @@ namespace EFCore.BulkExtensions
                     }
                 }
             }
-            if (String.IsNullOrEmpty(sql))
+            if (string.IsNullOrEmpty(sql))
             {
                 throw new InvalidOperationException("SET Columns not defined. If one or more columns should be updated to theirs default value use 'updateColumns' argument.");
             }
@@ -204,13 +216,6 @@ namespace EFCore.BulkExtensions
             return $"SET {sql}";
         }
 
-        /// <summary>
-        /// Recursive analytic expression 
-        /// </summary>
-        /// <param name="tableAlias"></param>
-        /// <param name="expression"></param>
-        /// <param name="sqlColumns"></param>
-        /// <param name="sqlParameters"></param>
         /// <summary>
         /// Recursive analytic expression 
         /// </summary>
@@ -310,7 +315,7 @@ namespace EFCore.BulkExtensions
 
         public static DbContext GetDbContext(IQueryable query)
         {
-            var bindingFlags = BindingFlags.NonPublic | BindingFlags.Instance;
+            const BindingFlags bindingFlags = BindingFlags.NonPublic | BindingFlags.Instance;
             var queryCompiler = typeof(EntityQueryProvider).GetField("_queryCompiler", bindingFlags).GetValue(query.Provider);
             var queryContextFactory = queryCompiler.GetType().GetField("_queryContextFactory", bindingFlags).GetValue(queryCompiler);
 
@@ -354,7 +359,7 @@ namespace EFCore.BulkExtensions
                 if (mainSqlQuery.StartsWith("--"))
                 {
                     // pull off line comment
-                    var indexOfNextNewLine = mainSqlQuery.IndexOf(Environment.NewLine);
+                    var indexOfNextNewLine = mainSqlQuery.IndexOf(Environment.NewLine, StringComparison.Ordinal);
                     if (indexOfNextNewLine > -1)
                     {
                         leadingCommentsBuilder.Append(mainSqlQuery.Substring(0, indexOfNextNewLine + Environment.NewLine.Length));
@@ -365,7 +370,7 @@ namespace EFCore.BulkExtensions
 
                 if (mainSqlQuery.StartsWith("/*"))
                 {
-                    var nextBlockCommentEndIndex = mainSqlQuery.IndexOf("*/");
+                    var nextBlockCommentEndIndex = mainSqlQuery.IndexOf("*/", StringComparison.Ordinal);
                     if (nextBlockCommentEndIndex > -1)
                     {
                         leadingCommentsBuilder.Append(mainSqlQuery.Substring(0, nextBlockCommentEndIndex + 2));
