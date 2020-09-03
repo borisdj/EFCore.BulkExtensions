@@ -233,6 +233,12 @@ namespace EFCore.BulkExtensions
                                 string columnName = ownedEntityProperty.GetColumnName();
                                 ownedEntityPropertyNameColumnNameDict.Add(ownedEntityProperty.Name, columnName);
                             }
+
+                            var converter = ownedEntityProperty.GetValueConverter();
+                            if (converter != null)
+                            {
+                                ConvertibleProperties.Add($"{navgationProperty.Name}_{ownedEntityProperty.Name}", converter);
+                            }
                         }
                         var ownedProperties = property.PropertyType.GetProperties();
                         foreach (var ownedProperty in ownedProperties)
