@@ -359,22 +359,74 @@ namespace EFCore.BulkExtensions
                             command.CommandText = SqlQueryBuilderSqlite.SelectLastInsertRowId();
                             long lastRowIdScalar = (long)command.ExecuteScalar();
                             var identityPropertyInteger = false;
+                            var identityPropertyUnsigned = false;
+                            var identityPropertyByte = false;
+                            var identityPropertyShort = false;
+
                             var accessor = TypeAccessor.Create(type, true);
                             string identityPropertyName = tableInfo.IdentityColumnName;
-                            if (accessor.GetMembers().FirstOrDefault(x => x.Name == identityPropertyName)?.Type == typeof(int))
+
+                            if (accessor.GetMembers().FirstOrDefault(x => x.Name == identityPropertyName)?.Type == typeof(ulong))
+                            {
+                                identityPropertyUnsigned = true;
+                            }
+                            else if (accessor.GetMembers().FirstOrDefault(x => x.Name == identityPropertyName)?.Type == typeof(uint))
+                            {
+                                identityPropertyInteger = true;
+                                identityPropertyUnsigned = true;
+                            }
+                            else if (accessor.GetMembers().FirstOrDefault(x => x.Name == identityPropertyName)?.Type == typeof(int))
                             {
                                 identityPropertyInteger = true;
                             }
+                            else if (accessor.GetMembers().FirstOrDefault(x => x.Name == identityPropertyName)?.Type == typeof(ushort))
+                            {
+                                identityPropertyShort = true;
+                                identityPropertyUnsigned = true;
+                            }
+                            else if (accessor.GetMembers().FirstOrDefault(x => x.Name == identityPropertyName)?.Type == typeof(short))
+                            {
+                                identityPropertyShort = true;
+                            }
+                            else if (accessor.GetMembers().FirstOrDefault(x => x.Name == identityPropertyName)?.Type == typeof(byte))
+                            {
+                                identityPropertyByte = true;
+                                identityPropertyUnsigned = true;
+                            }
+                            else if (accessor.GetMembers().FirstOrDefault(x => x.Name == identityPropertyName)?.Type == typeof(sbyte))
+                            {
+                                identityPropertyByte = true;
+                            }
+                            
                             for (int i = entities.Count - 1; i >= 0; i--)
                             {
-                                if (identityPropertyInteger)
+                                if (identityPropertyByte)
                                 {
-                                    accessor[entities[i], identityPropertyName] = (int)lastRowIdScalar;
-
+                                    if(identityPropertyUnsigned)
+                                        accessor[entities[i], identityPropertyName] = (byte)lastRowIdScalar;
+                                    else
+                                        accessor[entities[i], identityPropertyName] = (sbyte)lastRowIdScalar;
+                                }
+                                else if (identityPropertyShort)
+                                {
+                                    if(identityPropertyUnsigned)
+                                        accessor[entities[i], identityPropertyName] = (ushort)lastRowIdScalar;
+                                    else
+                                        accessor[entities[i], identityPropertyName] = (short)lastRowIdScalar;
+                                }
+                                else if (identityPropertyInteger)
+                                {
+                                    if(identityPropertyUnsigned)
+                                        accessor[entities[i], identityPropertyName] = (uint)lastRowIdScalar;
+                                    else
+                                        accessor[entities[i], identityPropertyName] = (int)lastRowIdScalar;
                                 }
                                 else
                                 {
-                                    accessor[entities[i], identityPropertyName] = lastRowIdScalar;
+                                    if(identityPropertyUnsigned)
+                                        accessor[entities[i], identityPropertyName] = (ulong)lastRowIdScalar;
+                                    else
+                                        accessor[entities[i], identityPropertyName] = lastRowIdScalar;
                                 }
 
                                 lastRowIdScalar--;
@@ -502,21 +554,71 @@ namespace EFCore.BulkExtensions
                             command.CommandText = SqlQueryBuilderSqlite.SelectLastInsertRowId();
                             long lastRowIdScalar = (long)await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
                             var identityPropertyInteger = false;
+                            var identityPropertyUnsigned = false;
+                            var identityPropertyByte = false;
+                            var identityPropertyShort = false;
                             var accessor = TypeAccessor.Create(type, true);
                             string identityPropertyName = tableInfo.PropertyColumnNamesDict.SingleOrDefault(a => a.Value == tableInfo.IdentityColumnName).Key;
-                            if (accessor.GetMembers().FirstOrDefault(x => x.Name == identityPropertyName)?.Type == typeof(int))
+                            if (accessor.GetMembers().FirstOrDefault(x => x.Name == identityPropertyName)?.Type == typeof(ulong))
+                            {
+                                identityPropertyUnsigned = true;
+                            }
+                            else if (accessor.GetMembers().FirstOrDefault(x => x.Name == identityPropertyName)?.Type == typeof(uint))
+                            {
+                                identityPropertyInteger = true;
+                                identityPropertyUnsigned = true;
+                            }
+                            else if (accessor.GetMembers().FirstOrDefault(x => x.Name == identityPropertyName)?.Type == typeof(int))
                             {
                                 identityPropertyInteger = true;
                             }
+                            else if (accessor.GetMembers().FirstOrDefault(x => x.Name == identityPropertyName)?.Type == typeof(ushort))
+                            {
+                                identityPropertyShort = true;
+                                identityPropertyUnsigned = true;
+                            }
+                            else if (accessor.GetMembers().FirstOrDefault(x => x.Name == identityPropertyName)?.Type == typeof(short))
+                            {
+                                identityPropertyShort = true;
+                            }
+                            else if (accessor.GetMembers().FirstOrDefault(x => x.Name == identityPropertyName)?.Type == typeof(byte))
+                            {
+                                identityPropertyByte = true;
+                                identityPropertyUnsigned = true;
+                            }
+                            else if (accessor.GetMembers().FirstOrDefault(x => x.Name == identityPropertyName)?.Type == typeof(sbyte))
+                            {
+                                identityPropertyByte = true;
+                            }
                             for (int i = entities.Count - 1; i >= 0; i--)                            
                             {
-                                if (identityPropertyInteger)
+                                if (identityPropertyByte)
                                 {
-                                    accessor[entities[i], identityPropertyName] = (int)lastRowIdScalar;
+                                    if(identityPropertyUnsigned)
+                                        accessor[entities[i], identityPropertyName] = (byte)lastRowIdScalar;
+                                    else
+                                        accessor[entities[i], identityPropertyName] = (sbyte)lastRowIdScalar;
+                                }
+                                else if (identityPropertyShort)
+                                {
+                                    if(identityPropertyUnsigned)
+                                        accessor[entities[i], identityPropertyName] = (ushort)lastRowIdScalar;
+                                    else
+                                        accessor[entities[i], identityPropertyName] = (short)lastRowIdScalar;
+                                }
+                                else if (identityPropertyInteger)
+                                {
+                                    if(identityPropertyUnsigned)
+                                        accessor[entities[i], identityPropertyName] = (uint)lastRowIdScalar;
+                                    else
+                                        accessor[entities[i], identityPropertyName] = (int)lastRowIdScalar;
                                 }
                                 else
                                 {
-                                    accessor[entities[i], identityPropertyName] = lastRowIdScalar;
+                                    if(identityPropertyUnsigned)
+                                        accessor[entities[i], identityPropertyName] = (ulong)lastRowIdScalar;
+                                    else
+                                        accessor[entities[i], identityPropertyName] = lastRowIdScalar;
                                 }
 
                                 lastRowIdScalar--;
