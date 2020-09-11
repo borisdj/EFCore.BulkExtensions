@@ -811,7 +811,8 @@ namespace EFCore.BulkExtensions
                                 if (tableInfo.ConvertibleProperties.ContainsKey(propertyName))
                                 {
                                     var convertor = tableInfo.ConvertibleProperties[propertyName];
-                                    dataTable.Columns.Add(columnName, convertor.ProviderClrType);
+                                    var type = Nullable.GetUnderlyingType(convertor.ProviderClrType) ?? convertor.ProviderClrType;
+                                    dataTable.Columns.Add(columnName, type);
                                 }
                                 else
                                 {
