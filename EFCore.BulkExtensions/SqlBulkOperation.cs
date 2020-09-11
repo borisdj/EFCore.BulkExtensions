@@ -116,7 +116,7 @@ namespace EFCore.BulkExtensions
 
                 try
                 {
-                    var transaction = tableInfo.BulkConfig.SqliteTransaction ?? (SqliteTransaction)context.Database.CurrentTransaction.GetUnderlyingTransaction(tableInfo.BulkConfig);
+                    var transaction = (SqliteTransaction)context.Database.CurrentTransaction.GetUnderlyingTransaction(tableInfo.BulkConfig);
 
                     var command = GetSqliteCommand(context, type, entities, tableInfo, connection, transaction);
 
@@ -213,7 +213,7 @@ namespace EFCore.BulkExtensions
 
                 try
                 {
-                    var transaction = tableInfo.BulkConfig.SqliteTransaction ?? (SqliteTransaction)context.Database.CurrentTransaction.GetUnderlyingTransaction(tableInfo.BulkConfig);
+                    var transaction = (SqliteTransaction)context.Database.CurrentTransaction.GetUnderlyingTransaction(tableInfo.BulkConfig);
 
                     var command = GetSqliteCommand(context, type, entities, tableInfo, connection, transaction);
 
@@ -315,10 +315,18 @@ namespace EFCore.BulkExtensions
             else if (providerName.EndsWith(DbServer.Sqlite.ToString()))
             {
                 var connection = OpenAndGetSqliteConnection(context, tableInfo.BulkConfig);
+                bool doExplicitCommit = false;
 
                 try
                 {
-                    var transaction = tableInfo.BulkConfig.SqliteTransaction ?? (SqliteTransaction)context.Database.CurrentTransaction.GetUnderlyingTransaction(tableInfo.BulkConfig);
+                    if (context.Database.CurrentTransaction == null)
+                    {
+                        //context.Database.UseTransaction(connection.BeginTransaction());
+                        doExplicitCommit = true;
+                    }
+                    var transaction = context.Database.CurrentTransaction == null ?
+                                      (SqliteTransaction)connection.BeginTransaction() :
+                                      (SqliteTransaction)context.Database.CurrentTransaction.GetUnderlyingTransaction(tableInfo.BulkConfig);
 
                     var command = GetSqliteCommand(context, type, entities, tableInfo, connection, transaction);
 
@@ -357,6 +365,10 @@ namespace EFCore.BulkExtensions
 
                             lastRowIdScalar--;
                         }
+                    }
+                    if (doExplicitCommit)
+                    {
+                        transaction.Commit();
                     }
                 }
                 finally
@@ -446,10 +458,18 @@ namespace EFCore.BulkExtensions
             else if (providerName.EndsWith(DbServer.Sqlite.ToString()))
             {
                 var connection = await OpenAndGetSqliteConnectionAsync(context, tableInfo.BulkConfig, cancellationToken).ConfigureAwait(false);
+                bool doExplicitCommit = false;
 
                 try
                 {
-                    var transaction = tableInfo.BulkConfig.SqliteTransaction ?? (SqliteTransaction)context.Database.CurrentTransaction.GetUnderlyingTransaction(tableInfo.BulkConfig);
+                    if (context.Database.CurrentTransaction == null)
+                    {
+                        //context.Database.UseTransaction(connection.BeginTransaction());
+                        doExplicitCommit = true;
+                    }
+                    var transaction = context.Database.CurrentTransaction == null ?
+                                      (SqliteTransaction)connection.BeginTransaction() :
+                                      (SqliteTransaction)context.Database.CurrentTransaction.GetUnderlyingTransaction(tableInfo.BulkConfig);
 
                     var command = GetSqliteCommand(context, type, entities, tableInfo, connection, transaction);
 
@@ -488,6 +508,10 @@ namespace EFCore.BulkExtensions
 
                             lastRowIdScalar--;
                         }
+                    }
+                    if (doExplicitCommit)
+                    {
+                        transaction.Commit();
                     }
                 }
                 finally
@@ -949,13 +973,13 @@ namespace EFCore.BulkExtensions
         {
             context.Database.OpenConnection();
 
-            return bulkConfig.SqliteConnection ?? (SqliteConnection)context.Database.GetDbConnection();
+            return (SqliteConnection)context.Database.GetDbConnection();
         }
 
         internal static async Task<SqliteConnection> OpenAndGetSqliteConnectionAsync(DbContext context, BulkConfig bulkConfig, CancellationToken cancellationToken)
         {
             await context.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
-            return bulkConfig.SqliteConnection ?? (SqliteConnection)context.Database.GetDbConnection();
+            return (SqliteConnection)context.Database.GetDbConnection();
         }
 
         private static SqlBulkCopy GetSqlBulkCopy(SqlConnection sqlConnection, IDbContextTransaction transaction, BulkConfig config)

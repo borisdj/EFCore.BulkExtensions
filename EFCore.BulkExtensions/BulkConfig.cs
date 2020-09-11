@@ -41,9 +41,6 @@ namespace EFCore.BulkExtensions
 
         public SqlBulkCopyOptions SqlBulkCopyOptions { get; set; }
 
-        public SqliteConnection SqliteConnection { get; set; }
-        public SqliteTransaction SqliteTransaction { get; set; }
-
         public Func<DbConnection, DbConnection> UnderlyingConnection { get; set; }
         public Func<DbTransaction, DbTransaction> UnderlyingTransaction { get; set; }
 

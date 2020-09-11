@@ -187,32 +187,26 @@ namespace EFCore.BulkExtensions.Tests
                     }
                     else if (ContextUtil.DbServer == DbServer.Sqlite)
                     {
-                        using (var connection = (SqliteConnection)context.Database.GetDbConnection())
+                        using (var transaction = context.Database.BeginTransaction())
                         {
-                            connection.Open();
-                            using (var transaction = connection.BeginTransaction())
+                            var bulkConfig = new BulkConfig()
                             {
-                                var bulkConfig = new BulkConfig()
-                                {
-                                    SqliteConnection = connection,
-                                    SqliteTransaction = transaction,
-                                    SetOutputIdentity = true,
-                                };
-                                context.BulkInsert(entities, bulkConfig);
+                                SetOutputIdentity = true,
+                            };
+                            context.BulkInsert(entities, bulkConfig);
 
-                                foreach (var entity in entities)
+                            foreach (var entity in entities)
+                            {
+                                foreach (var subEntity in entity.ItemHistories)
                                 {
-                                    foreach (var subEntity in entity.ItemHistories)
-                                    {
-                                        subEntity.ItemId = entity.ItemId; // setting FK to match its linked PK that was generated in DB
-                                    }
-                                    subEntities.AddRange(entity.ItemHistories);
+                                    subEntity.ItemId = entity.ItemId; // setting FK to match its linked PK that was generated in DB
                                 }
-                                bulkConfig.SetOutputIdentity = false;
-                                context.BulkInsert(subEntities, bulkConfig);
-
-                                transaction.Commit();
+                                subEntities.AddRange(entity.ItemHistories);
                             }
+                            bulkConfig.SetOutputIdentity = false;
+                            context.BulkInsert(subEntities, bulkConfig);
+
+                            transaction.Commit();
                         }
                     }
                 }

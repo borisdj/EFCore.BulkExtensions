@@ -152,30 +152,25 @@ namespace EFCore.BulkExtensions.Tests
                     }
                     else if (ContextUtil.DbServer == DbServer.Sqlite)
                     {
-                        using (var connection = (SqliteConnection)context.Database.GetDbConnection())
+                        using (var transaction = context.Database.BeginTransaction())
                         {
-                            connection.Open();
-                            using (var transaction = connection.BeginTransaction())
+                            var bulkConfig = new BulkConfig()
                             {
-                                var bulkConfig = new BulkConfig()
-                                {
-                                    SqliteConnection = connection,
-                                    SqliteTransaction = transaction
-                                };
-                                await context.BulkInsertAsync(entities, bulkConfig);
+                                SetOutputIdentity = true,
+                            };
+                            await context.BulkInsertAsync(entities, bulkConfig);
 
-                                foreach (var entity in entities)
+                            foreach (var entity in entities)
+                            {
+                                foreach (var subEntity in entity.ItemHistories)
                                 {
-                                    foreach (var subEntity in entity.ItemHistories)
-                                    {
-                                        subEntity.ItemId = entity.ItemId; // setting FK to match its linked PK that was generated in DB
-                                    }
-                                    subEntities.AddRange(entity.ItemHistories);
+                                    subEntity.ItemId = entity.ItemId; // setting FK to match its linked PK that was generated in DB
                                 }
-                                await context.BulkInsertAsync(subEntities, bulkConfig);
-
-                                transaction.Commit();
+                                subEntities.AddRange(entity.ItemHistories);
                             }
+                            await context.BulkInsertAsync(subEntities, bulkConfig);
+
+                            transaction.Commit();
                         }
                     }
                 }
