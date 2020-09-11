@@ -69,20 +69,6 @@ using (var transaction = context.Database.BeginTransaction())
     transaction.Commit();
 }
 ```
-For **SQLite** there are additional properties in BulkConfig: *{ SqliteConnection, SqliteTransaction }* that for explicit transaction are used in the following way:
-```C#
-using (var connection = (SqliteConnection)context.Database.GetDbConnection())
-{
-    connection.Open();
-    using (var transaction = connection.BeginTransaction())
-    {
-        var bulkConfig = new BulkConfig() { SqliteConnection = connection, SqliteTransaction = transaction };
-        context.BulkInsert(entities, bulkConfig);
-        context.BulkInsert(subEntities, bulkConfig);
-        transaction.Commit();
-    }
-}
-```
 
 **BulkInsertOrUpdate** method can be used when there is need for both operations but in one connection to database.<br>
 It makes Update when PK(PrimaryKey) is matched, otherwise does Insert.<br>
