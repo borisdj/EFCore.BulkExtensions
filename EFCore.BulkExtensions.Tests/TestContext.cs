@@ -35,6 +35,7 @@ namespace EFCore.BulkExtensions.Tests
 
             modelBuilder.Entity<Info>(e => { e.Property(p => p.ConvertedTime).HasConversion((value) => value.AddDays(1), (value) => value.AddDays(-1)); });
             modelBuilder.Entity<Info>().Property(e => e.InfoType).HasConversion(new EnumToStringConverter<InfoType>());
+            modelBuilder.Entity<ChangeLog>().OwnsOne(e => e.Audit, b => b.Property(e => e.InfoType).HasConversion(new EnumToStringConverter<InfoType>()));
 
             modelBuilder.Entity<Person>().HasIndex(a => a.Name).IsUnique(); // In SQLite UpdateByColumn(nonPK) requires it has UniqueIndex
 
@@ -217,6 +218,8 @@ namespace EFCore.BulkExtensions.Tests
 
         [NotMapped] // alternatively in OnModelCreating(): modelBuilder.Entity<Audit>().Ignore(a => a.ChangedTime);
         public DateTime? ChangedTime { get; set; }
+        
+        public InfoType InfoType { get; set; }
     }
 
     [Owned]

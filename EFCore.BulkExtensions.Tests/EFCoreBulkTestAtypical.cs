@@ -225,7 +225,8 @@ namespace EFCore.BulkExtensions.Tests
                         Audit = new Audit
                         {
                             ChangedBy = "User" + 1,
-                            ChangedTime = DateTime.Now
+                            ChangedTime = DateTime.Now,
+                            InfoType = InfoType.InfoTypeA
                         }/*,
                         AuditExtended = new AuditExtended
                         {

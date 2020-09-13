@@ -787,9 +787,21 @@ namespace EFCore.BulkExtensions
                         {
                             if (ownedEntityPropertyNameColumnNameDict.ContainsKey(innerProperty.Name))
                             {
-                                string columnName = ownedEntityPropertyNameColumnNameDict[innerProperty.Name];
-                                var ownedPropertyType = Nullable.GetUnderlyingType(innerProperty.PropertyType) ?? innerProperty.PropertyType;
-                                dataTable.Columns.Add(columnName, ownedPropertyType);
+                                var columnName = ownedEntityPropertyNameColumnNameDict[innerProperty.Name];
+                                var propertyName = $"{property.Name}_{innerProperty.Name}";
+                                
+                                if (tableInfo.ConvertibleProperties.ContainsKey(propertyName))
+                                {
+                                    var convertor = tableInfo.ConvertibleProperties[propertyName];
+                                    var type = Nullable.GetUnderlyingType(convertor.ProviderClrType) ?? convertor.ProviderClrType;
+                                    dataTable.Columns.Add(columnName, type);
+                                }
+                                else
+                                {
+                                    var ownedPropertyType = Nullable.GetUnderlyingType(innerProperty.PropertyType) ?? innerProperty.PropertyType;
+                                    dataTable.Columns.Add(columnName, ownedPropertyType);
+                                }
+                                
                                 columnsDict.Add(property.Name + "_" + innerProperty.Name, null);
                             }
                         }
@@ -826,7 +838,17 @@ namespace EFCore.BulkExtensions
                         var ownedProperties = property.PropertyType.GetProperties().Where(a => ownedEntitiesMappedProperties.Contains(property.Name + "_" + a.Name));
                         foreach (var ownedProperty in ownedProperties)
                         {
-                            columnsDict[property.Name + "_" + ownedProperty.Name] = propertyValue == null ? null : ownedProperty.GetValue(propertyValue, null);
+                            var columnName = $"{property.Name}_{ownedProperty.Name}";
+
+                            if (tableInfo.ConvertibleProperties.ContainsKey(columnName))
+                            {
+                                var converter = tableInfo.ConvertibleProperties[columnName];
+                                columnsDict[columnName] = propertyValue == null ? null : converter.ConvertToProvider.Invoke(ownedProperty.GetValue(propertyValue, null));
+                            }
+                            else
+                            {
+                                columnsDict[columnName] = propertyValue == null ? null : ownedProperty.GetValue(propertyValue, null);
+                            }
                         }
                     }
                 }
