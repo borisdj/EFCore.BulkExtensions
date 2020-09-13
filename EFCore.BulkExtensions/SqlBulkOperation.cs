@@ -624,7 +624,7 @@ namespace EFCore.BulkExtensions
                 {
                     await InsertAsync(context, type, entities, tableInfo, progress, cancellationToken).ConfigureAwait(false);
 
-                    tableInfo.PropertyColumnNamesDict = previousPropertyColumnNamesDict;
+                    tableInfo.PropertyColumnNamesDict = tableInfo.OutputPropertyColumnNamesDict;
 
                     var sqlQuery = SqlQueryBuilder.SelectJoinTable(tableInfo);
 
