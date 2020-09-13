@@ -883,7 +883,7 @@ namespace EFCore.BulkExtensions
             else if (operationType == OperationType.InsertOrUpdateDelete)
             {
                 throw new NotSupportedException("Sqlite supports only UPSERT(analog for MERGE WHEN MATCHED) but does not have functionality to do: 'WHEN NOT MATCHED BY SOURCE THEN DELETE'" +
-                                                "What can be done is to read all Data, find rows that are not is input List, then with those do the BulkDelete.");
+                                                "What can be done is to read all Data, find rows that are not in input List, then with those do the BulkDelete.");
             }
             else if (operationType == OperationType.Update)
             {
