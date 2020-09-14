@@ -183,7 +183,7 @@ context.BulkInsert(entities);
 
 When we need to Select from big List of some Unique Prop./Column use BulkRead (JOIN done in Sql) for Efficiency:<br>
 ```C#
-// instead of
+// instead of WhereIN which will TimeOut for List of several thousand
 var entities = context.Items.Where(a => itemsNames.Contains(a.Name)).AsNoTracking().ToList(); //SQL IN operator
 // or JOIN in Memory that loads entire table
 var entities = context.Items.Join(itemsNames, a => a.Name, p => p, (a, p) => a).AsNoTracking().ToList();
