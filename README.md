@@ -89,8 +89,8 @@ Default behaviour is {<br>
 When doing update we can chose to exclude one or more properties by adding their names into **PropertiesToExclude**, or if we need to update less then half column then **PropertiesToInclude** can be used. Setting both Lists are not allowed.<br>
 Additionaly there is **UpdateByProperties** for specifying custom properties, by which we want update to be done.<br>
 Using UpdateByProperties while also having Identity column requires that Id property be [Excluded](https://github.com/borisdj/EFCore.BulkExtensions/issues/131).<br>
-If **NotifyAfter** is not set it will have same value as _BatchSize_ while **BulkCopyTimeout** when not set has SqlBulkCopy default which is 30 seconds and if set to 0 it indicates no limit.<br>
-_PreserveInsertOrder_ and _SetOutputIdentity_ have purpose only when PK has Identity (usually *int* type with AutoIncrement), while if PK is Guid(sequential) created in Application there is no need for them. Also Tables with Composite Keys have no Identity column so no functionality for them in that case either.
+If **NotifyAfter** is not set it will have same value as _BatchSize_ while **BulkCopyTimeout** when not set has SqlBulkCopy default which is 30 seconds and if set to 0 it indicates no limit.<br><br>
+_PreserveInsertOrder_ and _SetOutputIdentity_ have purpose only when PK has Identity (usually *int* type with AutoIncrement), while if PK is Guid(sequential) created in Application there is no need for them.<br> Also Tables with Composite Keys have no Identity column so no functionality for them in that case either.
 ```C#
 var bulkConfig = new BulkConfig {PreserveInsertOrder = true, SetOutputIdentity = true, BatchSize = 4000 };
 context.BulkInsert(entList, bulkConfig);
