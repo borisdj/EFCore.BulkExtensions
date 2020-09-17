@@ -1,4 +1,3 @@
-using FastMember;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -48,6 +47,7 @@ namespace EFCore.BulkExtensions
         public BulkConfig BulkConfig { get; set; }
         public Dictionary<string, string> OutputPropertyColumnNamesDict { get; set; } = new Dictionary<string, string>();
         public Dictionary<string, string> PropertyColumnNamesDict { get; set; } = new Dictionary<string, string>();
+        public Dictionary<string, FastProperty> FastPropertyDict { get; set; } = new Dictionary<string, FastProperty>();
         public Dictionary<string, INavigation> OwnedTypesDict { get; set; } = new Dictionary<string, INavigation>();
         public HashSet<string> ShadowProperties { get; set; } = new HashSet<string>();
         public Dictionary<string, ValueConverter> ConvertibleProperties { get; set; } = new Dictionary<string, ValueConverter>();
@@ -185,6 +185,14 @@ namespace EFCore.BulkExtensions
                 }
             }
 
+            foreach (var property in allProperties)
+            {
+                if (property.PropertyInfo != null) // skip Shadow Property
+                {
+                    FastPropertyDict.Add(property.Name, new FastProperty(property.PropertyInfo));
+                }
+            }
+
             UpdateByPropertiesAreNullable = properties.Any(a => PrimaryKeys != null && PrimaryKeys.Contains(a.Name) && a.IsNullable);
 
             if (AreSpecifiedPropertiesToInclude || AreSpecifiedPropertiesToExclude)
@@ -217,6 +225,8 @@ namespace EFCore.BulkExtensions
                     foreach (var navgationProperty in ownedTypes)
                     {
                         var property = navgationProperty.PropertyInfo;
+                        FastPropertyDict.Add(property.Name, new FastProperty(property));
+
                         Type navOwnedType = type.Assembly.GetType(property.PropertyType.FullName);
                         var ownedEntityType = context.Model.FindEntityType(property.PropertyType);
                         if (ownedEntityType == null) // when entity has more then one ownedType (e.g. Address HomeAddress, Address WorkAddress) or one ownedType is in multiple Entities like Audit is usually.
@@ -232,6 +242,11 @@ namespace EFCore.BulkExtensions
                             {
                                 string columnName = ownedEntityProperty.GetColumnName();
                                 ownedEntityPropertyNameColumnNameDict.Add(ownedEntityProperty.Name, columnName);
+                                var ownedEntityPropertyFullName = property.Name + "_" + ownedEntityProperty.Name;
+                                if (!FastPropertyDict.ContainsKey(ownedEntityPropertyFullName))
+                                {
+                                    FastPropertyDict.Add(ownedEntityPropertyFullName, new FastProperty(ownedEntityProperty.PropertyInfo));
+                                }
                             }
 
                             var converter = ownedEntityProperty.GetValueConverter();
@@ -444,12 +459,12 @@ namespace EFCore.BulkExtensions
 
         #endregion
 
-        public static string GetUniquePropertyValues(object entity, List<string> propertiesNames, TypeAccessor accessor)
+        public static string GetUniquePropertyValues(object entity, List<string> propertiesNames, Dictionary<string, FastProperty> fastPropertyDict)
         {
             StringBuilder result = new StringBuilder(1024);
             foreach (var propertyName in propertiesNames)
             {
-                result.Append(accessor[entity, propertyName]);
+                result.Append(fastPropertyDict[propertyName].Get(entity).ToString());
             }
             return result.ToString();
         }
@@ -495,11 +510,10 @@ namespace EFCore.BulkExtensions
 
             List<string> selectByPropertyNames = PropertyColumnNamesDict.Keys.Where(a => PrimaryKeys.Contains(a)).ToList();
 
-            var accessor = TypeAccessor.Create(type, true);
             Dictionary<string, T> existingEntitiesDict = new Dictionary<string, T>();
             foreach (var existingEntity in existingEntities)
             {
-                string uniqueProperyValues = GetUniquePropertyValues(existingEntity, selectByPropertyNames, accessor);
+                string uniqueProperyValues = GetUniquePropertyValues(existingEntity, selectByPropertyNames, FastPropertyDict);
                 existingEntitiesDict.Add(uniqueProperyValues, existingEntity);
             }
 
@@ -507,12 +521,13 @@ namespace EFCore.BulkExtensions
             {
                 T existingEntity;
                 T entity = entities[i];
-                string uniqueProperyValues = GetUniquePropertyValues(entity, selectByPropertyNames, accessor);
+                string uniqueProperyValues = GetUniquePropertyValues(entity, selectByPropertyNames, FastPropertyDict);
                 if (existingEntitiesDict.TryGetValue(uniqueProperyValues, out existingEntity))
                 {
                     foreach (var propertyName in propertyNames)
                     {
-                        accessor[entity, propertyName] = accessor[existingEntity, propertyName];
+                        var propertyValue = FastPropertyDict[propertyName].Get(existingEntity);
+                        FastPropertyDict[propertyName].Set(entity, propertyValue);
                     }
                 }
             }
@@ -523,16 +538,18 @@ namespace EFCore.BulkExtensions
         {
             if (BulkConfig.PreserveInsertOrder) // Updates PK in entityList
             {
-                var accessor = TypeAccessor.Create(type, true);
                 string identityPropertyName = OutputPropertyColumnNamesDict.SingleOrDefault(a => a.Value == IdentityColumnName).Key;
 
                 for (int i = 0; i < NumberOfEntities; i++)
                 {
-                    accessor[entities[i], identityPropertyName] = accessor[entitiesWithOutputIdentity[i], identityPropertyName];
+                    var propertyValue = FastPropertyDict[identityPropertyName].Get(entitiesWithOutputIdentity[i]);
+                    FastPropertyDict[identityPropertyName].Set(entities[i], propertyValue);
+
                     if (TimeStampColumnName != null) // timestamp/rowversion is also generated by the SqlServer so if exist should ba updated as well
                     {
                         string timeStampPropertyName = OutputPropertyColumnNamesDict.SingleOrDefault(a => a.Value == TimeStampColumnName).Key;
-                        accessor[entities[i], timeStampPropertyName] = accessor[entitiesWithOutputIdentity[i], timeStampPropertyName];
+                        var timeStampPropertyValue = FastPropertyDict[timeStampPropertyName].Get(entitiesWithOutputIdentity[i]);
+                        FastPropertyDict[timeStampPropertyName].Set(entities[i], timeStampPropertyValue);
                     }
                 }
             }

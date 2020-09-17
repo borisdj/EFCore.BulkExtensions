@@ -41,6 +41,14 @@ namespace EFCore.BulkExtensions.Tests
                 Assert.EndsWith(" TOP(1)", firstItem.Name);
             }
         }
+        // BATCH for Sqlite does Not work since after switch to 3.0.0
+        // Method ToParametrizedSql with Sqlite throws Exception on line:
+        //   var enumerator = query.Provider.Execute<IEnumerable>(query.Expression).GetEnumerator();
+        // Message:
+        //   System.InvalidOperationException : The LINQ expression 'DbSet<Item>.Where(i => i.ItemId <= 500 && i.Price >= __price_0)' could not be translated.
+        //   Either rewrite the query in a form that can be translated, or switch to client evaluation explicitly by inserting a call to either AsEnumerable(), AsAsyncEnumerable(), ToList(), or ToListAsync().
+        //   See https://go.microsoft.com/fwlink/?linkid=2101038 for more information.
+        //   QueryableMethodTranslatingExpressionVisitor.<VisitMethodCall>g__CheckTranslated|8_0(ShapedQueryExpression translated, <>c__DisplayClass8_0& )
 
         internal void RunDeleteAll(DbServer databaseType)
         {
