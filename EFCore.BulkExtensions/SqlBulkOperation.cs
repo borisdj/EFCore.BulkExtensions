@@ -745,6 +745,9 @@ namespace EFCore.BulkExtensions
                 {
                     var fk = entityShadowFkPropertiesDict[property.Name];
                     entityPropertiesDict.TryGetValue(fk.GetColumnName(), out var entityProperty);
+                    if (entityProperty == null) // BulkRead
+                        continue;
+
                     var columnName = entityProperty.GetColumnName();
                     var propertyType = entityProperty.ClrType;
                     var underlyingType = Nullable.GetUnderlyingType(propertyType);
@@ -838,6 +841,10 @@ namespace EFCore.BulkExtensions
                     {
                         var fk = entityShadowFkPropertiesDict[property.Name];
                         var columnName = fk.GetColumnName();
+                        entityPropertiesDict.TryGetValue(fk.GetColumnName(), out var entityProperty);
+                        if (entityProperty == null) // BulkRead
+                            continue;
+
                         columnsDict[columnName] = propertyValue == null ? null : fk.FindFirstPrincipal().PropertyInfo.GetValue(propertyValue);
                     }
                     else if (entityNavigationOwnedDict.ContainsKey(property.Name) && !tableInfo.LoadOnlyPKColumn)

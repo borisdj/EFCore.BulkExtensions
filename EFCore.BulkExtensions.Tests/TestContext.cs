@@ -21,6 +21,7 @@ namespace EFCore.BulkExtensions.Tests
         public DbSet<Teacher> Teachers { get; set; }
         public DbSet<Info> Infos { get; set; }
         public DbSet<ChangeLog> ChangeLogs { get; set; }
+        public DbSet<ItemLink> ItemLinks { get; set; }
 
         public TestContext(DbContextOptions options) : base(options)
         {
@@ -192,6 +193,13 @@ namespace EFCore.BulkExtensions.Tests
         public DateTime ConvertedTime { get; set; }
 
         public InfoType InfoType { get; set; }
+    }
+
+    // For testing ForeignKey Shadow Properties
+    public class ItemLink
+    {
+        public int ItemLinkId { get; set; }
+        public virtual Item Item { get; set; }
     }
 
     // For testing OwnedTypes
