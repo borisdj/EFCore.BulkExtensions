@@ -149,8 +149,7 @@ using (var transaction = context.Database.BeginTransaction())
 When **CalculateStats** is set to True the result is return in `BulkConfig.StatsInfo` (*StatsNumber-Inserted/Updated*).<br>
 If used for pure Insert (with Batching) then SetOutputIdentity should also be configured because Merge have to be used.<br>
 **TrackingEntities** can be set to True if we want to have tracking of entities from BulkRead or when SetOutputIdentity is set.<br>
-**UseTempDB** when set then BulkOperation has to be [inside Transaction](https://github.com/borisdj/EFCore.BulkExtensions/issues/49).<br>
-**UseOnlyDataTable** when set DataTable is used [instead of FastMember](https://github.com/borisdj/EFCore.BulkExtensions/issues/320) library.
+**UseTempDB** when set then BulkOperation has to be [inside Transaction](https://github.com/borisdj/EFCore.BulkExtensions/issues/49)
 
 **SqlBulkCopyOptions** is Enum with [[Flags]](https://stackoverflow.com/questions/8447/what-does-the-flags-enum-attribute-mean-in-c) attribute which enables specifying one or more options:<br>
 *Default, KeepIdentity, CheckConstraints, TableLock, KeepNulls, FireTriggers, UseInternalTransaction*
