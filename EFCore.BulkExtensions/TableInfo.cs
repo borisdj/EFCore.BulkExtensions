@@ -43,6 +43,7 @@ namespace EFCore.BulkExtensions
         public bool ColumnNameContainsSquareBracket { get; set; }
         public bool LoadOnlyPKColumn { get; set; }
         public int NumberOfEntities { get; set; }
+        public bool HasShadowForeignKeyProperties { get; set; }
 
         public BulkConfig BulkConfig { get; set; }
         public Dictionary<string, string> OutputPropertyColumnNamesDict { get; set; } = new Dictionary<string, string>();
@@ -212,7 +213,8 @@ namespace EFCore.BulkExtensions
             else
             {
                 PropertyColumnNamesDict = properties.ToDictionary(a => a.Name, b => b.GetColumnName().Replace("]", "]]"));
-                ShadowProperties = new HashSet<string>(properties.Where(p => p.IsShadowProperty()).Select(p => p.GetColumnName()));
+                ShadowProperties = new HashSet<string>(properties.Where(p => p.IsShadowProperty() && !p.IsForeignKey()).Select(p => p.GetColumnName()));
+                HasShadowForeignKeyProperties = properties.Any(x => x.IsForeignKey() && x.IsShadowProperty());
                 foreach (var property in properties.Where(p => p.GetValueConverter() != null))
                 {
                     string columnName = property.GetColumnName();

@@ -718,6 +718,7 @@ namespace EFCore.BulkExtensions
             var entityType = context.Model.FindEntityType(type);
             var entityPropertiesDict = entityType.GetProperties().Where(a => tableInfo.PropertyColumnNamesDict.ContainsKey(a.Name)).ToDictionary(a => a.Name, a => a);
             var entityNavigationOwnedDict = entityType.GetNavigations().Where(a => a.GetTargetType().IsOwned()).ToDictionary(a => a.Name, a => a);
+            var entityShadowFkPropertiesDict = entityType.GetProperties().Where(a => a.IsShadowProperty() && a.IsForeignKey()).ToDictionary(x => x.GetContainingForeignKeys().First().DependentToPrincipal.Name, a => a);
             var properties = type.GetProperties();
             var discriminatorColumn = tableInfo.ShadowProperties.Count == 0 ? null : tableInfo.ShadowProperties.ElementAt(0);
 
@@ -739,6 +740,21 @@ namespace EFCore.BulkExtensions
 
                     dataTable.Columns.Add(columnName, propertyType);
                     columnsDict.Add(property.Name, null);
+                }
+                else if (entityShadowFkPropertiesDict.ContainsKey(property.Name))
+                {
+                    var fk = entityShadowFkPropertiesDict[property.Name];
+                    entityPropertiesDict.TryGetValue(fk.GetColumnName(), out var entityProperty);
+                    var columnName = entityProperty.GetColumnName();
+                    var propertyType = entityProperty.ClrType;
+                    var underlyingType = Nullable.GetUnderlyingType(propertyType);
+                    if (underlyingType != null)
+                    {
+                        propertyType = underlyingType;
+                    }
+
+                    dataTable.Columns.Add(columnName, propertyType);
+                    columnsDict.Add(columnName, null);
                 }
                 else if (entityNavigationOwnedDict.ContainsKey(property.Name)) // isOWned
                 {
@@ -817,6 +833,12 @@ namespace EFCore.BulkExtensions
                     if (entityPropertiesDict.ContainsKey(property.Name))
                     {
                         columnsDict[property.Name] = propertyValue;
+                    }
+                    else if (entityShadowFkPropertiesDict.ContainsKey(property.Name))
+                    {
+                        var fk = entityShadowFkPropertiesDict[property.Name];
+                        var columnName = fk.GetColumnName();
+                        columnsDict[columnName] = propertyValue == null ? null : fk.FindFirstPrincipal().PropertyInfo.GetValue(propertyValue);
                     }
                     else if (entityNavigationOwnedDict.ContainsKey(property.Name) && !tableInfo.LoadOnlyPKColumn)
                     {
