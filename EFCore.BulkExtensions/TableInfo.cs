@@ -43,7 +43,6 @@ namespace EFCore.BulkExtensions
         public bool ColumnNameContainsSquareBracket { get; set; }
         public bool LoadOnlyPKColumn { get; set; }
         public int NumberOfEntities { get; set; }
-        public bool HasShadowForeignKeyProperties { get; set; }
 
         public BulkConfig BulkConfig { get; set; }
         public Dictionary<string, string> OutputPropertyColumnNamesDict { get; set; } = new Dictionary<string, string>();
@@ -214,12 +213,16 @@ namespace EFCore.BulkExtensions
             {
                 PropertyColumnNamesDict = properties.ToDictionary(a => a.Name, b => b.GetColumnName().Replace("]", "]]"));
                 ShadowProperties = new HashSet<string>(properties.Where(p => p.IsShadowProperty() && !p.IsForeignKey()).Select(p => p.GetColumnName()));
-                HasShadowForeignKeyProperties = properties.Any(x => x.IsForeignKey() && x.IsShadowProperty());
                 foreach (var property in properties.Where(p => p.GetValueConverter() != null))
                 {
                     string columnName = property.GetColumnName();
                     ValueConverter converter = property.GetValueConverter();
                     ConvertibleProperties.Add(columnName, converter);
+                }
+
+                foreach (var navigation in entityType.GetNavigations().Where(x => !x.IsCollection()))
+                {
+                    FastPropertyDict.Add(navigation.Name, new FastProperty(navigation.PropertyInfo));
                 }
 
                 if (HasOwnedTypes)  // Support owned entity property update. TODO: Optimize
