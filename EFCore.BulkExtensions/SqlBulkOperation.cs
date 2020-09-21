@@ -990,7 +990,7 @@ namespace EFCore.BulkExtensions
                     value = entity.GetType().Name;
                 }
 
-                if (tableInfo.ConvertibleProperties.ContainsKey(propertyColumn.Key))
+                if (tableInfo.ConvertibleProperties.ContainsKey(propertyColumn.Key) && value != DBNull.Value)
                 {
                     value = tableInfo.ConvertibleProperties[propertyColumn.Key].ConvertToProvider.Invoke(value);
                 }
