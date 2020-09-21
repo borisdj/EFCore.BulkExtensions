@@ -110,7 +110,9 @@ namespace EFCore.BulkExtensions
                 throw new InvalidOperationException($"DbContext does not contain EntitySet for Type: { type.Name }");
 
             //var relationalData = entityType.Relational(); relationalData.Schema relationalData.TableName // DEPRECATED in Core3.0
-            Schema = entityType.GetSchema() ?? "dbo";
+            bool isSqlServer = context.Database.ProviderName.EndsWith(DbServer.SqlServer.ToString());
+            string defaultSchema = isSqlServer ? "dbo" : null;
+            Schema = entityType.GetSchema() ?? defaultSchema;
             TableName = entityType.GetTableName();
 
             TempTableSufix = "Temp";
