@@ -276,6 +276,7 @@ namespace EFCore.BulkExtensions.Tests
                     //context.ChangeLogs.BatchDelete(); // TODO
                     context.BulkDelete(context.ItemLinks.ToList());
                 }
+                context.BulkDelete(context.Items.ToList()); // On table with FK Truncate does not work
 
                 for (int i = 1; i < 10; ++i)
                 {
@@ -309,9 +310,13 @@ namespace EFCore.BulkExtensions.Tests
                 if (databaseType == DbServer.SqlServer)
                 {
                     context.BulkRead(entities);
-                    foreach(var entity in entities)
+                    foreach (var entity in entities)
+                    {
                         Assert.NotNull(entity.Item);
+                    }
                 }
+
+                context.BulkDelete(context.ItemLinks.ToList());
             }
         }
     }

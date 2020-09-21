@@ -189,7 +189,7 @@ namespace EFCore.BulkExtensions
             {
                 if (property.PropertyInfo != null) // skip Shadow Property
                 {
-                    FastPropertyDict.Add(property.Name, new FastProperty(property.PropertyInfo));
+                    FastPropertyDict.Add(property.Name, new FastProperty(property.PropertyInfo));   
                 }
             }
 
@@ -220,7 +220,7 @@ namespace EFCore.BulkExtensions
                     ConvertibleProperties.Add(columnName, converter);
                 }
 
-                foreach (var navigation in entityType.GetNavigations().Where(x => !x.IsCollection()))
+                foreach (var navigation in entityType.GetNavigations().Where(x => !x.IsCollection() && !x.GetTargetType().IsOwned()))
                 {
                     FastPropertyDict.Add(navigation.Name, new FastProperty(navigation.PropertyInfo));
                 }

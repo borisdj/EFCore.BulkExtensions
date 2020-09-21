@@ -26,8 +26,6 @@ namespace EFCore.BulkExtensions
 
         public bool TrackingEntities { get; set; }
 
-        public bool UseOnlyDataTable { get; set; }
-
         public bool WithHoldlock { get; set; } = true;
 
         public bool CalculateStats { get; set; }
