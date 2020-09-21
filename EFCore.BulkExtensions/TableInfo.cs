@@ -315,7 +315,7 @@ namespace EFCore.BulkExtensions
         #endregion
 
         #region SqlCommands
-        public void CheckHasIdentity(DbContext context)
+        public void CheckHasIdentity(DbContext context) // No longer used
         {
             context.Database.OpenConnection();
             try
@@ -346,7 +346,7 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        public async Task CheckHasIdentityAsync(DbContext context, CancellationToken cancellationToken)
+        public async Task CheckHasIdentityAsync(DbContext context, CancellationToken cancellationToken) // No longer used
         {
             await context.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
 
@@ -480,8 +480,6 @@ namespace EFCore.BulkExtensions
         public Dictionary<string, string> ConfigureBulkReadTableInfo(DbContext context)
         {
             InsertToTempTable = true;
-            if (BulkConfig.UpdateByProperties == null || BulkConfig.UpdateByProperties.Count() == 0)
-                CheckHasIdentity(context);
 
             var previousPropertyColumnNamesDict = PropertyColumnNamesDict;
             BulkConfig.PropertiesToInclude = PrimaryKeys;

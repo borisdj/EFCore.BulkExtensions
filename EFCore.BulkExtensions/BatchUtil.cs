@@ -374,8 +374,7 @@ namespace EFCore.BulkExtensions
                     }
                 }
 
-                var nextNonWhitespaceIndex = 
-                    Array.FindIndex(mainSqlQuery.ToCharArray(), x => !char.IsWhiteSpace(x));
+                var nextNonWhitespaceIndex = Array.FindIndex(mainSqlQuery.ToCharArray(), x => !char.IsWhiteSpace(x));
 
                 if (nextNonWhitespaceIndex > 0)
                 {

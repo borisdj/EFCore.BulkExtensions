@@ -245,7 +245,6 @@ namespace EFCore.BulkExtensions
             if (providerName.EndsWith(DbServer.SqlServer.ToString()))
             {
                 tableInfo.InsertToTempTable = true;
-                tableInfo.CheckHasIdentity(context);
 
                 var dropTempTableIfExists = tableInfo.BulkConfig.UseTempDB;
 
@@ -386,7 +385,6 @@ namespace EFCore.BulkExtensions
             if (providerName.EndsWith(DbServer.SqlServer.ToString()))
             {
                 tableInfo.InsertToTempTable = true;
-                await tableInfo.CheckHasIdentityAsync(context, cancellationToken).ConfigureAwait(false);
 
                 var dropTempTableIfExists = tableInfo.BulkConfig.UseTempDB;
 

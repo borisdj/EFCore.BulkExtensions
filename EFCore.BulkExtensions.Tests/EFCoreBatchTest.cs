@@ -41,7 +41,7 @@ namespace EFCore.BulkExtensions.Tests
                 Assert.EndsWith(" TOP(1)", firstItem.Name);
             }
         }
-        // BATCH for Sqlite does Not work since after switch to 3.0.0
+        // BATCH for Sqlite does Not work since switching to 3.0.0
         // Method ToParametrizedSql with Sqlite throws Exception on line:
         //   var enumerator = query.Provider.Execute<IEnumerable>(query.Expression).GetEnumerator();
         // Message:
