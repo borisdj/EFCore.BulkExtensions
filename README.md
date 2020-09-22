@@ -1,5 +1,5 @@
 # EFCore.BulkExtensions
-EntityFrameworkCore extensions: Bulk operations (**Insert, Update, Delete, Read, Upsert, Sync**) and Batch (**Delete, Update**).<br>
+EntityFrameworkCore extensions: Bulk operations (**Insert, Update, Delete, Read, Upsert, Sync, Truncate**) and Batch (**Delete, Update**).<br>
 Library is Lightweight and very Efficient, having all mostly used CRUD operation.<br>
 Was selected in top 20 [EF Core Extensions](https://docs.microsoft.com/en-us/ef/core/extensions/) recommended by Microsoft.<br>
 Current version is using EF Core 3.1 and at the moment supports Microsoft SQL Server(2008+) and SQLite.<br>
