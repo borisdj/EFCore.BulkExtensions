@@ -84,9 +84,9 @@ More info in the [Example](https://github.com/borisdj/EFCore.BulkExtensions#read
 ## BulkConfig arguments
 
 **BulkInsert_/OrUpdate/OrDelete** methods can have optional argument **BulkConfig** with properties (bool, int, object, List<string>):<br>
-*{ PreserveInsertOrder, SetOutputIdentity, BatchSize, NotifyAfter, BulkCopyTimeout, EnableStreaming, UseTempDB, TrackingEntities, UseOnlyDataTable, WithHoldlock, CalculateStats, StatsInfo, PropertiesToInclude, PropertiesToExclude, UpdateByProperties, SqlBulkCopyOptions }*<br>
-Default behaviour is {<br>
-*PreserveInsertOrder*: false, *SetOutputIdentity*: false, *BatchSize*: 2000, *NotifyAfter*: null, *BulkCopyTimeout*: null,<br> *EnableStreaming*: false, *UseTempDB*: false, *TrackingEntities*: false, *UseOnlyDataTable*: false, *WithHoldlock*: true,<br> *CalculateStats*: false, *StatsInfo*: null, *PropertiesToInclude*: null, *PropertiesToExclude*: null, *UpdateByProperties*: null, *SqlBulkCopyOptions*: Default }<br><br>
+{ *PreserveInsertOrder, SetOutputIdentity, BatchSize, NotifyAfter, BulkCopyTimeout, EnableStreaming, UseTempDB, TrackingEntities, UseOnlyDataTable, WithHoldlock, CalculateStats, StatsInfo, PropertiesToInclude, PropertiesToExclude, UpdateByProperties, SqlBulkCopyOptions }*<br>
+Default behaviour is <br>
+{ *PreserveInsertOrder*: false, *SetOutputIdentity*: false, *BatchSize*: 2000, *NotifyAfter*: null, *BulkCopyTimeout*: null,<br> *EnableStreaming*: false, *UseTempDB*: false, *TrackingEntities*: false, *UseOnlyDataTable*: false, *WithHoldlock*: true,<br> *CalculateStats*: false, *StatsInfo*: null, *PropertiesToInclude*: null, *PropertiesToExclude*: null, *UpdateByProperties*: null, *SqlBulkCopyOptions*: Default }<br><br>
 If we want to change defaults, BulkConfig should be added explicitly with one or more bool properties set to true, and/or int props like **BatchSize** to different number.<br> Config also has DelegateFunc for setting *Underlying-Connection/Transaction*, e.g. in UnderlyingTest.<br>
 When doing update we can chose to exclude one or more properties by adding their names into **PropertiesToExclude**, or if we need to update less then half column then **PropertiesToInclude** can be used. Setting both Lists are not allowed.<br><br>
 Additionaly there is **UpdateByProperties** for specifying custom properties, by which we want update to be done.<br>
