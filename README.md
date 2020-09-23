@@ -39,7 +39,7 @@ context.BulkRead(entitiesList);                   context.BulkReadAsync(entities
 context.Truncate<Entity>();                       context.TruncateAsync<Entity>();
 ```
 **Batch** Extensions are made on *IQueryable* DbSet and can be used as in the following code segment.<br>
-They are done as pure sql and no check is done whether some are prior loaded in memory and are being Tracked.
+They are done as pure sql and no check is done whether some are prior loaded in memory and are being Tracked.<br>
 (*updateColumns* is optional parameter in which PropertyNames added explicitly when we need update to it's default value)
 ```C#
 // Delete
