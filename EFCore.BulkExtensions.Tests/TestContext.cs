@@ -190,6 +190,8 @@ namespace EFCore.BulkExtensions.Tests
 
         public string Message { get; set; }
 
+        public string Note { get; protected set; } // To test protected Setter
+
         public DateTime ConvertedTime { get; set; }
 
         public InfoType InfoType { get; set; }
