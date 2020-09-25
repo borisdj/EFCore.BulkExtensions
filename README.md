@@ -63,7 +63,7 @@ If Windows Authentication is used then in ConnectionString there should be *Trus
 
 When used directly each of these operations are separate transactions and are automatically committed.<br>
 And if we need multiple operations in single procedure then explicit transaction should be used.<br>
-For example since child tables are not automatically insert with parent we need explicit second call:
+For example since child tables are not automatically inserted with parent we need explicit second call:
 ```C#
 using (var transaction = context.Database.BeginTransaction())
 {
