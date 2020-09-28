@@ -166,7 +166,6 @@ Library supports [Global Query Filters](https://docs.microsoft.com/en-us/ef/core
 It also maps [OwnedTypes](https://docs.microsoft.com/en-us/ef/core/modeling/owned-entities), which is implemented with `DataTable` class.</br>
 With [Computed](https://docs.microsoft.com/en-us/ef/core/modeling/relational/computed-columns) and [Timestamp](https://docs.microsoft.com/en-us/ef/core/modeling/concurrency) Columns it will work in a way that they are automatically excluded from Insert. And when combined with *SetOutputIdentity* they will be Selected.<br>
 Bulk Extension methods can be [Overridden](https://github.com/borisdj/EFCore.BulkExtensions/issues/56) if required, for example to set AuditInfo.<br>
-For mapping FKs explicit Id properties have to be in entity. Having only [Navigation](https://github.com/borisdj/EFCore.BulkExtensions/issues/95) property is not supported.<br>
 If having problems with Deadlock there is useful info in [issue/46](https://github.com/borisdj/EFCore.BulkExtensions/issues/46).
 
 ## TPH inheritance
