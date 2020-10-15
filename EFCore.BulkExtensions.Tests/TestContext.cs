@@ -183,14 +183,17 @@ namespace EFCore.BulkExtensions.Tests
         InfoTypeB
     }
 
+    public abstract class InfoBase
+    {
+        public string Note { get; private set; } // To test private Setter in base class
+    }
+
     // For testring ValueConversion
-    public class Info
+    public class Info : InfoBase
     {
         public int InfoId { get; set; }
 
         public string Message { get; set; }
-
-        public string Note { get; protected set; } // To test protected Setter
 
         public DateTime ConvertedTime { get; set; }
 
