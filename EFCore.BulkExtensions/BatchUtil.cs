@@ -1,4 +1,3 @@
-using Microsoft.Data.SqlClient;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
@@ -6,6 +5,7 @@ using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.Internal;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -100,8 +100,21 @@ namespace EFCore.BulkExtensions
                 var sqlParametersReloaded = new List<object>();
                 foreach (var parameter in sqlParameters)
                 {
-                    var sqlParameter = (SqlParameter)parameter;
+                    var sqlParameter = (IDbDataParameter)parameter;
                     sqlParametersReloaded.Add(new SqliteParameter(sqlParameter.ParameterName, sqlParameter.Value));
+                }
+                return sqlParametersReloaded;
+            }
+            else if (databaseType == DbServer.SqlServer)
+            {
+                // if SqlServer, might need to convert
+                // Microsoft.Data.SqlClient to System.Data.SqlClient
+                var sqlParametersReloaded = new List<object>();
+                var c = context.Database.GetDbConnection();
+                foreach (var parameter in sqlParameters)
+                {
+                    var sqlParameter = (IDbDataParameter)parameter;
+                    sqlParametersReloaded.Add(SqlClientHelper.CorrectParameterType(c, sqlParameter));
                 }
                 return sqlParametersReloaded;
             }
@@ -192,7 +205,10 @@ namespace EFCore.BulkExtensions
                     {
                         sql += $"[{columnName}] = @{columnName}, ";
                         propertyUpdateValue = propertyUpdateValue ?? DBNull.Value;
-                        parameters.Add(new SqlParameter($"@{columnName}", propertyUpdateValue));
+                        var p = SqlClientHelper.CreateParameter(context.Database.GetDbConnection());
+                        p.ParameterName = $"@{columnName}";
+                        p.Value = propertyUpdateValue;
+                        parameters.Add(p);
                     }
                 }
             }
@@ -250,7 +266,8 @@ namespace EFCore.BulkExtensions
             else if (expression is ConstantExpression constantExpression)
             {
                 var parmName = $"param_{sqlParameters.Count}";
-                sqlParameters.Add(new SqlParameter(parmName, constantExpression.Value ?? DBNull.Value));
+                // will rely on SqlClientHelper.CorrectParameterType to fix the type before executing
+                sqlParameters.Add(new Microsoft.Data.SqlClient.SqlParameter(parmName, constantExpression.Value ?? DBNull.Value));
                 sqlColumns.Append($" @{parmName}");
             }
             else if (expression is UnaryExpression unaryExpression)
@@ -303,7 +320,8 @@ namespace EFCore.BulkExtensions
             {
                 var value = Expression.Lambda(expression).Compile().DynamicInvoke();
                 var parmName = $"param_{sqlParameters.Count}";
-                sqlParameters.Add(new SqlParameter(parmName, value ?? DBNull.Value));
+                // will rely on SqlClientHelper.CorrectParameterType to fix the type before executing
+                sqlParameters.Add(new Microsoft.Data.SqlClient.SqlParameter(parmName, value ?? DBNull.Value));
                 sqlColumns.Append($" @{parmName}");
             }
         }

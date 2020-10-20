@@ -1,4 +1,3 @@
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -292,7 +291,44 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        public void SetSqlBulkCopyConfig<T>(SqlBulkCopy sqlBulkCopy, IList<T> entities, bool setColumnMapping, Action<decimal> progress)
+        /// <summary>
+        /// Supports <see cref="System.Data.SqlClient.SqlBulkCopy"/>
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="sqlBulkCopy"></param>
+        /// <param name="entities"></param>
+        /// <param name="setColumnMapping"></param>
+        /// <param name="progress"></param>
+        public void SetSqlBulkCopyConfig<T>(System.Data.SqlClient.SqlBulkCopy sqlBulkCopy, IList<T> entities, bool setColumnMapping, Action<decimal> progress)
+        {
+            sqlBulkCopy.DestinationTableName = InsertToTempTable ? FullTempTableName : FullTableName;
+            sqlBulkCopy.BatchSize = BulkConfig.BatchSize;
+            sqlBulkCopy.NotifyAfter = BulkConfig.NotifyAfter ?? BulkConfig.BatchSize;
+            sqlBulkCopy.SqlRowsCopied += (sender, e) =>
+            {
+                progress?.Invoke(SqlBulkOperation.GetProgress(entities.Count, e.RowsCopied)); // round to 4 decimal places
+            };
+            sqlBulkCopy.BulkCopyTimeout = BulkConfig.BulkCopyTimeout ?? sqlBulkCopy.BulkCopyTimeout;
+            sqlBulkCopy.EnableStreaming = BulkConfig.EnableStreaming;
+
+            if (setColumnMapping)
+            {
+                foreach (var element in PropertyColumnNamesDict)
+                {
+                    sqlBulkCopy.ColumnMappings.Add(element.Key, element.Value);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Supports <see cref="Microsoft.Data.SqlClient.SqlBulkCopy"/>
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="sqlBulkCopy"></param>
+        /// <param name="entities"></param>
+        /// <param name="setColumnMapping"></param>
+        /// <param name="progress"></param>
+        public void SetSqlBulkCopyConfig<T>(Microsoft.Data.SqlClient.SqlBulkCopy sqlBulkCopy, IList<T> entities, bool setColumnMapping, Action<decimal> progress)
         {
             sqlBulkCopy.DestinationTableName = InsertToTempTable ? FullTempTableName : FullTableName;
             sqlBulkCopy.BatchSize = BulkConfig.BatchSize;
@@ -450,7 +486,10 @@ namespace EFCore.BulkExtensions
 
         protected int GetNumberUpdated(DbContext context)
         {
-            var resultParameter = new SqlParameter("@result", SqlDbType.Int) { Direction = ParameterDirection.Output };
+            var resultParameter = SqlClientHelper.CreateParameter(context.Database.GetDbConnection());
+            resultParameter.ParameterName = "@result";
+            resultParameter.DbType = DbType.Int32;
+            resultParameter.Direction = ParameterDirection.Output;
             string sqlQueryCount = SqlQueryBuilder.SelectCountIsUpdateFromOutputTable(this);
             context.Database.ExecuteSqlRaw($"SET @result = ({sqlQueryCount});", resultParameter);
             return (int)resultParameter.Value;
@@ -458,7 +497,12 @@ namespace EFCore.BulkExtensions
 
         protected async Task<int> GetNumberUpdatedAsync(DbContext context, CancellationToken cancellationToken)
         {
-            var resultParameters = new List<SqlParameter> { new SqlParameter("@result", SqlDbType.Int) { Direction = ParameterDirection.Output } };
+            var resultParameters = new List<IDbDataParameter>();
+            var p = SqlClientHelper.CreateParameter(context.Database.GetDbConnection());
+            p.ParameterName = "@result";
+            p.DbType = DbType.Int32;
+            p.Direction = ParameterDirection.Output;
+            resultParameters.Add(p);
             string sqlQueryCount = SqlQueryBuilder.SelectCountIsUpdateFromOutputTable(this);
             await context.Database.ExecuteSqlRawAsync($"SET @result = ({sqlQueryCount});", resultParameters, cancellationToken).ConfigureAwait(false); // TODO cancellationToken if Not
             return (int)resultParameters.FirstOrDefault().Value;
