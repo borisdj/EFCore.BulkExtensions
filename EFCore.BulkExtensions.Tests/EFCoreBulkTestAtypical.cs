@@ -4,6 +4,7 @@ using System.Data;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
+using NetTopologySuite.Geometries;
 
 namespace EFCore.BulkExtensions.Tests
 {
@@ -258,6 +259,29 @@ namespace EFCore.BulkExtensions.Tests
             }
         }
 
+        [Fact]
+        private void InsertWithGeometryColumn() 
+        {
+            ContextUtil.DbServer = DbServer.SqlServer;
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.BulkDelete(context.Students.ToList());
+            }
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                var entities = new List<Student> {
+                    new Student {
+                        Name = "name",
+                        Subject = "Math",
+                        Location = new Point(52, 13)
+                    }
+                };
+
+                context.BulkInsert(entities);
+            }
+        }
+        
         [Theory]
         [InlineData(DbServer.SqlServer)]
         [InlineData(DbServer.Sqlite)]

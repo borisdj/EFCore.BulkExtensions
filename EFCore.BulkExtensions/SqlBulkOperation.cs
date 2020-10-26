@@ -11,6 +11,8 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
+using NetTopologySuite.Geometries;
+using NetTopologySuite.IO;
 
 namespace EFCore.BulkExtensions
 {
@@ -712,6 +714,8 @@ namespace EFCore.BulkExtensions
             var columnsDict = new Dictionary<string, object>();
             var ownedEntitiesMappedProperties = new HashSet<string>();
 
+            var isSqlServer = context.Database.ProviderName.EndsWith(DbServer.SqlServer.ToString());
+
             type = tableInfo.HasAbstractList ? entities[0].GetType() : type;
             var entityType = context.Model.FindEntityType(type);
             var entityPropertiesDict = entityType.GetProperties().Where(a => tableInfo.PropertyColumnNamesDict.ContainsKey(a.Name)).ToDictionary(a => a.Name, a => a);
@@ -734,6 +738,11 @@ namespace EFCore.BulkExtensions
                     if (underlyingType != null)
                     {
                         propertyType = underlyingType;
+                    }
+
+                    if (propertyType == typeof(Geometry) && isSqlServer) 
+                    {
+                        propertyType = typeof(byte[]);
                     }
 
                     dataTable.Columns.Add(columnName, propertyType);
@@ -829,6 +838,14 @@ namespace EFCore.BulkExtensions
                         {
                             propertyValue = tableInfo.ConvertibleProperties[columnName].ConvertToProvider.Invoke(propertyValue);
                         }
+                    }
+
+                    if (propertyValue is Geometry geometryValue && isSqlServer) 
+                    {
+                        geometryValue.SRID = tableInfo.BulkConfig.SRID;
+                        propertyValue = new SqlServerBytesWriter {
+                            IsGeography = true,
+                        }.Write(geometryValue);
                     }
 
                     if (entityPropertiesDict.ContainsKey(property.Name))

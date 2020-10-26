@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using NetTopologySuite.Geometries;
 
 namespace EFCore.BulkExtensions.Tests
 {
@@ -68,7 +69,7 @@ namespace EFCore.BulkExtensions.Tests
             if (DbServer == DbServer.SqlServer)
             {
                 var connectionString = $"Server=localhost;Database={databaseName};Trusted_Connection=True;MultipleActiveResultSets=true";
-                optionsBuilder.UseSqlServer(connectionString); // Can NOT Test with UseInMemoryDb (Exception: Relational-specific methods can only be used when the context is using a relational)
+                optionsBuilder.UseSqlServer(connectionString, opt => opt.UseNetTopologySuite()); // Can NOT Test with UseInMemoryDb (Exception: Relational-specific methods can only be used when the context is using a relational)
             }
             else if (DbServer == DbServer.Sqlite)
             {
@@ -154,6 +155,8 @@ namespace EFCore.BulkExtensions.Tests
     public class Student : Person
     {
         public string Subject { get; set; }
+        
+        public Geometry Location { get; set; }
     }
 
     public class Teacher : Person

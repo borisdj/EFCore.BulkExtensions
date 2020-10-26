@@ -29,6 +29,9 @@ namespace EFCore.BulkExtensions
         public bool WithHoldlock { get; set; } = true;
 
         public bool CalculateStats { get; set; }
+
+        public int SRID { get; set; } = 4326;
+        
         public StatsInfo StatsInfo { get; set; }
 
         public List<string> PropertiesToInclude { get; set; }
