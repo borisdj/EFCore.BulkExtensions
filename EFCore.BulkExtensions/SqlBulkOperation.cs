@@ -715,6 +715,10 @@ namespace EFCore.BulkExtensions
             var ownedEntitiesMappedProperties = new HashSet<string>();
 
             var isSqlServer = context.Database.ProviderName.EndsWith(DbServer.SqlServer.ToString());
+            var sqlServerBytesWriter = new SqlServerBytesWriter 
+            {
+                IsGeography = true
+            };
 
             type = tableInfo.HasAbstractList ? entities[0].GetType() : type;
             var entityType = context.Model.FindEntityType(type);
@@ -843,9 +847,7 @@ namespace EFCore.BulkExtensions
                     if (propertyValue is Geometry geometryValue && isSqlServer) 
                     {
                         geometryValue.SRID = tableInfo.BulkConfig.SRID;
-                        propertyValue = new SqlServerBytesWriter {
-                            IsGeography = true,
-                        }.Write(geometryValue);
+                        propertyValue = sqlServerBytesWriter.Write(geometryValue);
                     }
 
                     if (entityPropertiesDict.ContainsKey(property.Name))
