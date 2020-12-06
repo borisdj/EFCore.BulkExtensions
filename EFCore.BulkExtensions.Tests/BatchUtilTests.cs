@@ -1,4 +1,5 @@
-﻿using Xunit;
+﻿using EFCore.BulkExtensions.SqlAdapters;
+using Xunit;
 
 namespace EFCore.BulkExtensions.Tests
 {
