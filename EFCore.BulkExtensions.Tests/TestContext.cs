@@ -26,6 +26,12 @@ namespace EFCore.BulkExtensions.Tests
         public TestContext(DbContextOptions options) : base(options)
         {
             Database.EnsureCreated();
+
+            if (Database.IsSqlServer())
+            {
+                Database.ExecuteSqlRaw(@"if exists(select 1 from systypes where name='UdttIntInt') drop type UdttIntInt");
+                Database.ExecuteSqlRaw(@"create type UdttIntInt AS TABLE(C1 int not null, C2 int not null)");
+            }
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -43,6 +49,8 @@ namespace EFCore.BulkExtensions.Tests
             if (Database.IsSqlServer())
             {
                 modelBuilder.Entity<Document>().Property(p => p.ContentLength).HasComputedColumnSql($"(CONVERT([int], len([{nameof(Document.Content)}])))");
+
+                modelBuilder.Entity<UdttIntInt>(entity => { entity.HasNoKey(); });
             }
             else if (Database.IsSqlite())
             {
@@ -143,6 +151,13 @@ namespace EFCore.BulkExtensions.Tests
         public string Description { get; set; }
     }
 
+    // User Defined Table Type
+    public class UdttIntInt
+    {
+        public int C1 { get; set; }
+        public int C2 { get; set; }
+    }
+
     // Person, Instructor nad Student are used to test Bulk with Shadow Property and Discriminator column
     public abstract class Person
     {
@@ -171,6 +186,7 @@ namespace EFCore.BulkExtensions.Tests
 
         [Timestamp]
         public byte[] VersionChange { get; set; }
+
         //public ulong RowVersion { get; set; }
 
         [DatabaseGenerated(DatabaseGeneratedOption.Computed)] // Computed columns have to be configured with Fluent API
@@ -228,7 +244,7 @@ namespace EFCore.BulkExtensions.Tests
 
         [NotMapped] // alternatively in OnModelCreating(): modelBuilder.Entity<Audit>().Ignore(a => a.ChangedTime);
         public DateTime? ChangedTime { get; set; }
-        
+
         public InfoType InfoType { get; set; }
     }
 
