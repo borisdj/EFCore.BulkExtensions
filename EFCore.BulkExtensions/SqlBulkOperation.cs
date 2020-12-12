@@ -531,7 +531,8 @@ namespace EFCore.BulkExtensions
                         long lastRowIdScalar = (long)await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
                         var identityPropertyInteger = false;
                         string identityPropertyName = tableInfo.PropertyColumnNamesDict.SingleOrDefault(a => a.Value == tableInfo.IdentityColumnName).Key;
-                        if (tableInfo.FastPropertyDict[identityPropertyName].GetType() == typeof(int))
+
+                        if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(int))
                         {
                             identityPropertyInteger = true;
                         }
