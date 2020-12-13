@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
@@ -40,7 +42,13 @@ namespace EFCore.BulkExtensions.Tests
                 Assert.EndsWith(" Concatenated", lastItem.Name);
                 Assert.EndsWith(" TOP(1)", firstItem.Name);
             }
+
+            if (databaseType == DbServer.SqlServer)
+            {
+                RunUdttBatch();
+            }
         }
+
         // BATCH for Sqlite does Not work since switching to 3.0.0
         // Method ToParametrizedSql with Sqlite throws Exception on line:
         //   var enumerator = query.Provider.Execute<IEnumerable>(query.Expression).GetEnumerator();
@@ -175,6 +183,83 @@ namespace EFCore.BulkExtensions.Tests
             {
                 context.Items.Where(a => descriptionsToDelete.Any(toDelete => toDelete == a.Description)).BatchDelete();
             }
+        }
+
+        private void RunUdttBatch()
+        {
+            var userRoles = (
+                from userId in Enumerable.Range(1, 5)
+                from roleId in Enumerable.Range(1, 5)
+                select new UserRole { UserId = userId, RoleId = roleId, }
+                )
+                .ToList();
+            var random = new Random();
+            var keysToUpdate = userRoles
+                .Where(x => random.Next() % 2 == 1)
+                .Select(x => new UdttIntInt { C1 = x.UserId, C2 = x.RoleId, })
+                .ToList();
+            var keysToDelete = userRoles
+                .Where(x => !keysToUpdate.Where(y => y.C1 == x.UserId && y.C2 == x.RoleId).Any())
+                .Select(x => new UdttIntInt { C1 = x.UserId, C2 = x.RoleId, })
+                .ToList();
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.UserRoles.BatchDelete();
+
+                context.UserRoles.AddRange(userRoles);
+                context.SaveChanges();
+            }
+
+            // read with User Defined Table Type parameter
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                var keysToUpdateQueryable = GetQueryableUdtt(context, keysToUpdate);
+                var userRolesToUpdate = context.UserRoles
+                    .Where(x => keysToUpdateQueryable.Where(y => y.C1 == x.UserId && y.C2 == x.RoleId).Any())
+                    .ToList();
+
+                var keysToDeleteQueryable = GetQueryableUdtt(context, keysToDelete);
+                var userRolesToDelete = context.UserRoles
+                    .Where(x => keysToDeleteQueryable.Where(y => y.C1 == x.UserId && y.C2 == x.RoleId).Any())
+                    .ToList();
+
+                Assert.Equal(keysToUpdate.Count, userRolesToUpdate.Count);
+                Assert.Equal(keysToDelete.Count, userRolesToDelete.Count);
+            }
+
+            // batch update and batch delete with User Defined Table Type parameter
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                var keysToUpdateQueryable = GetQueryableUdtt(context, keysToUpdate);
+                var keysToDeleteQueryable = GetQueryableUdtt(context, keysToDelete);
+                var userRolesToUpdate = context.UserRoles.Where(x => keysToUpdateQueryable.Where(y => y.C1 == x.UserId && y.C2 == x.RoleId).Any());
+                var userRolesToDelete = context.UserRoles.Where(x => keysToDeleteQueryable.Where(y => y.C1 == x.UserId && y.C2 == x.RoleId).Any());
+
+                // System.ArgumentException : No mapping exists from object type System.Object[] to a known managed provider native type.
+                userRolesToUpdate.BatchUpdate(x => new UserRole { Description = "updated", });
+                userRolesToDelete.BatchDelete();
+            }
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                Assert.Equal(keysToUpdate.Count, context.UserRoles.Count());
+                Assert.True(!context.UserRoles.Where(x => x.Description == null || x.Description != "updated").Any());
+            }
+        }
+
+        private IQueryable<UdttIntInt> GetQueryableUdtt(TestContext context, IReadOnlyList<UdttIntInt> list)
+        {
+            var parameterName = $"@p_{Guid.NewGuid():n}";
+            var dt = new DataTable();
+            dt.Columns.Add(nameof(UdttIntInt.C1), typeof(int));
+            dt.Columns.Add(nameof(UdttIntInt.C2), typeof(int));
+            foreach (var item in list)
+            {
+                dt.Rows.Add(item.C1, item.C2);
+            }
+            var parameter = new SqlParameter(parameterName, dt) { SqlDbType = SqlDbType.Structured, TypeName = "dbo.UdttIntInt", };
+            return context.Set<UdttIntInt>().FromSqlRaw($@"select * from {parameterName}", parameter);
         }
     }
 }
