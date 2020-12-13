@@ -35,7 +35,7 @@ namespace EFCore.BulkExtensions
 #pragma warning restore EF1001 // Internal EF Core API usage.
                 var parameterNames = new HashSet<string>(command.Parameters.Select(p => p.InvariantName));
                 sql = command.CommandText;
-                parameters = parameterValues.Where(pv => parameterNames.Contains(pv.Key)).Select(pv => new SqlParameter("@" + pv.Key, pv.Value)).ToList();
+                parameters = parameterValues.Where(pv => parameterNames.Contains(pv.Key)).Select(ToSqlParameter).ToList();
             }
             else
             {
@@ -45,14 +45,21 @@ namespace EFCore.BulkExtensions
                 var sqlGenerator = factory.Create();
                 var command = sqlGenerator.GetCommand(selectExpression);
                 sql = command.CommandText;
-                parameters = parameterValues.Select(pv => new SqlParameter("@" + pv.Key, pv.Value)).ToList();
+                parameters = parameterValues.Select(ToSqlParameter).ToList();
             }
 
             return (sql, parameters);
         }
 
         private static readonly BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.NonPublic;
+
         private static object Private(this object obj, string privateField) => obj?.GetType().GetField(privateField, bindingFlags)?.GetValue(obj);
+
         private static T Private<T>(this object obj, string privateField) => (T)obj?.GetType().GetField(privateField, bindingFlags)?.GetValue(obj);
+
+        private static SqlParameter ToSqlParameter(KeyValuePair<string, object> pv) =>
+            pv.Value is object[] parameters && parameters.Length == 1 && parameters[0] is SqlParameter parameter
+                ? parameter
+                : new SqlParameter("@" + pv.Key, pv.Value);
     }
 }
