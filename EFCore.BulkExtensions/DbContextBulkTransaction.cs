@@ -78,7 +78,7 @@ namespace EFCore.BulkExtensions
             }
             else if (operationType == OperationType.Truncate)
             {
-                return SqlBulkOperation.TruncateAsync(context, tableInfo);
+                return SqlBulkOperation.TruncateAsync(context, tableInfo, cancellationToken);
             }
             else
             {
@@ -104,7 +104,7 @@ namespace EFCore.BulkExtensions
             }
             else if (operationType == OperationType.Truncate)
             {
-                return SqlBulkOperation.TruncateAsync(context, tableInfo);
+                return SqlBulkOperation.TruncateAsync(context, tableInfo, cancellationToken);
             }
             else
             {

@@ -827,19 +827,19 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        public static async Task TruncateAsync(DbContext context, TableInfo tableInfo)
+        public static async Task TruncateAsync(DbContext context, TableInfo tableInfo, CancellationToken cancellationToken)
         {
             string providerName = context.Database.ProviderName;
             // -- SQL Server --
             if (providerName.EndsWith(DbServer.SqlServer.ToString()))
             {
-                await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.TruncateTable(tableInfo.FullTableName));
+                await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.TruncateTable(tableInfo.FullTableName), cancellationToken);
 
             }
             // -- Sqlite --
             else if (providerName.EndsWith(DbServer.Sqlite.ToString()))
             {
-                context.Database.ExecuteSqlRaw(SqlQueryBuilder.DeleteTable(tableInfo.FullTableName));
+                await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.DeleteTable(tableInfo.FullTableName), cancellationToken);
             }
             else
             {
