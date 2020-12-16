@@ -498,7 +498,7 @@ namespace EFCore.BulkExtensions
 
                 if (dropTempTableIfExists)
                 {
-                    await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB)).ConfigureAwait(false);
+                    await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB), cancellationToken).ConfigureAwait(false);
                 }
 
                 await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo), cancellationToken).ConfigureAwait(false);
@@ -756,7 +756,7 @@ namespace EFCore.BulkExtensions
 
             if (dropTempTableIfExists)
             {
-                await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB)).ConfigureAwait(false);
+                await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB), cancellationToken).ConfigureAwait(false);
             }
 
             string providerName = context.Database.ProviderName;
@@ -827,19 +827,19 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        public static async Task TruncateAsync(DbContext context, TableInfo tableInfo)
+        public static async Task TruncateAsync(DbContext context, TableInfo tableInfo, CancellationToken cancellationToken)
         {
             string providerName = context.Database.ProviderName;
             // -- SQL Server --
             if (providerName.EndsWith(DbServer.SqlServer.ToString()))
             {
-                await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.TruncateTable(tableInfo.FullTableName));
+                await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.TruncateTable(tableInfo.FullTableName), cancellationToken);
 
             }
             // -- Sqlite --
             else if (providerName.EndsWith(DbServer.Sqlite.ToString()))
             {
-                context.Database.ExecuteSqlRaw(SqlQueryBuilder.DeleteTable(tableInfo.FullTableName));
+                await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.DeleteTable(tableInfo.FullTableName), cancellationToken);
             }
             else
             {
