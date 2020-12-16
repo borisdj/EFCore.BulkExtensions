@@ -85,7 +85,7 @@ namespace EFCore.BulkExtensions
                                         context.Database.ExecuteSqlRaw(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB));
                                     }
                                 }
-                                throw ex;
+                                throw;
                             }
                         }
                     }
@@ -110,7 +110,7 @@ namespace EFCore.BulkExtensions
                                         context.Database.ExecuteSqlRaw(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB));
                                     }
                                 }
-                                throw ex;
+                                throw;
                             }
                         }
                     }
@@ -206,7 +206,7 @@ namespace EFCore.BulkExtensions
                                         await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB), cancellationToken).ConfigureAwait(false);
                                     }
                                 }
-                                throw ex;
+                                throw;
                             }
                         }
                     }
@@ -231,7 +231,7 @@ namespace EFCore.BulkExtensions
                                         await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB), cancellationToken).ConfigureAwait(false);
                                     }
                                 }
-                                throw ex;
+                                throw;
                             }
                         }
                     }
