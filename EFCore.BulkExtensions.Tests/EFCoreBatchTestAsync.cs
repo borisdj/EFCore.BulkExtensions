@@ -105,6 +105,16 @@ namespace EFCore.BulkExtensions.Tests
                                                 .Where(a => list.Contains(a.Description))
                                                 .BatchUpdateAsync(a => new Item() { TimeUpdated = DateTime.Now })
                                                 .ConfigureAwait(false);
+
+                var newValue = 5;
+
+                await context.Parents.Where(parent => parent.ParentId == 1)
+                    .BatchUpdateAsync(parent => new Parent
+                    {
+                        Description = parent.Children.Where(child => child.IsEnabled && child.Value == newValue).Sum(child => child.Value).ToString(),
+                        Value = newValue
+                    })
+                    .ConfigureAwait(false);
             }
         }
 
