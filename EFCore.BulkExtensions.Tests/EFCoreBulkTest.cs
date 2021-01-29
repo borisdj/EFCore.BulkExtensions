@@ -36,6 +36,7 @@ namespace EFCore.BulkExtensions.Tests
             if (databaseType == DbServer.SqlServer)
             {
                 RunRead(isBulkOperation); // Not Yet supported for Sqlite
+                RunInsertOrUpdateOrDelete(isBulkOperation); // Not Yet supported for Sqlite
             }
             RunDelete(isBulkOperation, databaseType);
 
@@ -273,6 +274,54 @@ namespace EFCore.BulkExtensions.Tests
             }
         }
 
+        private void RunInsertOrUpdateOrDelete(bool isBulkOperation)
+        {
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                var entities = new List<Item>();
+                var dateTimeNow = DateTime.Now;
+                for (int i = 2; i <= EntitiesNumber; i += 2)
+                {
+                    entities.Add(new Item
+                    {
+                        ItemId = i,
+                        Name = "name InsertOrUpdateOrDelete " + i,
+                        Description = "info",
+                        Quantity = i,
+                        Price = i / (i % 5 + 1),
+                        TimeUpdated = dateTimeNow
+                    });
+                }
+                if (isBulkOperation)
+                {
+                    var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
+                    context.BulkInsertOrUpdateOrDelete(entities, bulkConfig, (a) => WriteProgress(a));
+                }
+                else
+                {
+                    var existingItems = context.Items;
+                    var removedItems = existingItems.Where(x => !entities.Any(y => y.ItemId == x.ItemId));
+                    context.Items.RemoveRange(removedItems);
+                    context.Items.AddRange(entities);
+                    context.SaveChanges();
+                }
+            }
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                //int entitiesCount = ItemsCountQuery(context);
+                int entitiesCount = context.Items.Count();
+                //Item lastEntity = LastItemQuery(context);
+                Item firstEntity = context.Items.OrderBy(a => a.ItemId).FirstOrDefault();
+                Item lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
+
+                Assert.Equal(EntitiesNumber / 2, entitiesCount);
+                Assert.NotNull(firstEntity);
+                Assert.Equal("name InsertOrUpdateOrDelete 2", firstEntity.Name);
+                Assert.NotNull(lastEntity);
+                Assert.Equal("name InsertOrUpdateOrDelete " + EntitiesNumber, lastEntity.Name);
+            }
+        }
+
         private void RunUpdate(bool isBulkOperation, DbServer databaseType)
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
@@ -291,7 +340,8 @@ namespace EFCore.BulkExtensions.Tests
                         new BulkConfig
                         {
                             PropertiesToInclude = new List<string> { nameof(Item.Description) },
-                            UpdateByProperties = databaseType == DbServer.SqlServer ? new List<string> { nameof(Item.Name) } : null
+                            UpdateByProperties = databaseType == DbServer.SqlServer ? new List<string> { nameof(Item.Name) } : null,
+                            CalculateStats = true
                         }
                     );
                 }
@@ -352,7 +402,8 @@ namespace EFCore.BulkExtensions.Tests
                 // ItemHistories will also be deleted because of Relationship - ItemId (Delete Rule: Cascade)
                 if (isBulkOperation)
                 {
-                    context.BulkDelete(entities);
+                    var bulkConfig = new BulkConfig() { CalculateStats = true };
+                    context.BulkDelete(entities, bulkConfig);
                 }
                 else
                 {

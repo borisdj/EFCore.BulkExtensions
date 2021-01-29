@@ -35,6 +35,7 @@ namespace EFCore.BulkExtensions.Tests
             if (databaseType == DbServer.SqlServer)
             {
                 await RunReadAsync(isBulkOperation); // Not Yet supported for Sqlite
+                await RunInsertOrUpdateOrDeleteAsync(isBulkOperation); // Not Yet supported for Sqlite
             }
             await RunDeleteAsync(isBulkOperation, databaseType);
         }
@@ -235,6 +236,54 @@ namespace EFCore.BulkExtensions.Tests
             }
         }
 
+        private async Task RunInsertOrUpdateOrDeleteAsync(bool isBulkOperation)
+        {
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                var entities = new List<Item>();
+                var dateTimeNow = DateTime.Now;
+                for (int i = 2; i <= EntitiesNumber; i += 2)
+                {
+                    entities.Add(new Item
+                    {
+                        ItemId = i,
+                        Name = "name InsertOrUpdateOrDelete " + i,
+                        Description = "info",
+                        Quantity = i,
+                        Price = i / (i % 5 + 1),
+                        TimeUpdated = dateTimeNow
+                    });
+                }
+                if (isBulkOperation)
+                {
+                    var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
+                    await context.BulkInsertOrUpdateOrDeleteAsync(entities, bulkConfig);
+                }
+                else
+                {
+                    var existingItems = context.Items;
+                    var removedItems = existingItems.Where(x => !entities.Any(y => y.ItemId == x.ItemId));
+                    context.Items.RemoveRange(removedItems);
+                    await context.Items.AddRangeAsync(entities);
+                    await context.SaveChangesAsync();
+                }
+            }
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                //int entitiesCount = ItemsCountQuery(context);
+                int entitiesCount = await context.Items.CountAsync();
+                //Item lastEntity = LastItemQuery(context);
+                Item firstEntity = context.Items.OrderBy(a => a.ItemId).FirstOrDefault();
+                Item lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
+
+                Assert.Equal(EntitiesNumber / 2, entitiesCount);
+                Assert.NotNull(firstEntity);
+                Assert.Equal("name InsertOrUpdateOrDelete 2", firstEntity.Name);
+                Assert.NotNull(lastEntity);
+                Assert.Equal("name InsertOrUpdateOrDelete " + EntitiesNumber, lastEntity.Name);
+            }
+        }
+
         private async Task RunUpdateAsync(bool isBulkOperation)
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
@@ -308,7 +357,8 @@ namespace EFCore.BulkExtensions.Tests
                 // ItemHistories will also be deleted because of Relationship - ItemId (Delete Rule: Cascade)
                 if (isBulkOperation)
                 {
-                    await context.BulkDeleteAsync(entities);
+                    var bulkConfig = new BulkConfig() { CalculateStats = true };
+                    await context.BulkDeleteAsync(entities, bulkConfig);
                 }
                 else
                 {

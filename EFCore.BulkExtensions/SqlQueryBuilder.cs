@@ -139,7 +139,16 @@ namespace EFCore.BulkExtensions
             }
             if (tableInfo.CreatedOutputTable)
             {
-                q += $" OUTPUT {GetCommaSeparatedColumns(outputColumnsNames, "INSERTED")}" + isUpdateStatsValue +
+                string commaSeparatedColumnsNames;
+                if (operationType == OperationType.InsertOrUpdateDelete || operationType == OperationType.Delete)
+                {
+                    commaSeparatedColumnsNames = string.Join(", ", outputColumnsNames.Select(x => $"COALESCE(INSERTED.[{x}], DELETED.[{x}])"));
+                }
+                else
+                {
+                    commaSeparatedColumnsNames = GetCommaSeparatedColumns(outputColumnsNames, "INSERTED");
+                }
+                q += $" OUTPUT {commaSeparatedColumnsNames}" + isUpdateStatsValue +
                      $" INTO {tableInfo.FullTempOutputTableName}";
             }
             q += ";";
