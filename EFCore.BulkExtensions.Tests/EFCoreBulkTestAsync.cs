@@ -135,7 +135,7 @@ namespace EFCore.BulkExtensions.Tests
                     {
                         using (var transaction = await context.Database.BeginTransactionAsync())
                         {
-                            await context.BulkInsertAsync(entities, new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true, BatchSize = 4000 });
+                            await context.BulkInsertAsync(entities, new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true, BatchSize = 4000, CalculateStats = true });
 
                             foreach (var entity in entities)
                             {

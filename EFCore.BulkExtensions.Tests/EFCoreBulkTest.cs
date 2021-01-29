@@ -168,7 +168,8 @@ namespace EFCore.BulkExtensions.Tests
                                     PreserveInsertOrder = true,
                                     SetOutputIdentity = true,
                                     BatchSize = 4000,
-                                    UseTempDB = true
+                                    UseTempDB = true,
+                                    CalculateStats = true
                                 },
                                 (a) => WriteProgress(a)
                             );
