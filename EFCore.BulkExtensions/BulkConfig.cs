@@ -51,5 +51,7 @@ namespace EFCore.BulkExtensions
         public int StatsNumberInserted { get; set; }
 
         public int StatsNumberUpdated { get; set; }
+
+        public int StatsNumberDeleted { get; set; }
     }
 }

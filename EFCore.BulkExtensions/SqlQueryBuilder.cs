@@ -15,9 +15,9 @@ namespace EFCore.BulkExtensions
             {
                 columnsNames.Remove(tableInfo.TimeStampColumnName);
             }
-            string isUpdateStatsColumn = (tableInfo.BulkConfig.CalculateStats && isOutputTable) ? ",[IsUpdate] = CAST(0 AS bit)" : "";
+            string statsColumns = (tableInfo.BulkConfig.CalculateStats && isOutputTable) ? ",[IsUpdate] = CAST(0 AS bit),[IsDelete] = CAST(0 AS bit)" : "";
 
-            var q = $"SELECT TOP 0 {GetCommaSeparatedColumns(columnsNames, "T")} " + isUpdateStatsColumn +
+            var q = $"SELECT TOP 0 {GetCommaSeparatedColumns(columnsNames, "T")} " + statsColumns +
                     $"INTO {newTableName} FROM {existingTableName} AS T " +
                     $"LEFT JOIN {existingTableName} AS Source ON 1 = 0;"; // removes Identity constrain
             return q;
@@ -38,7 +38,17 @@ namespace EFCore.BulkExtensions
 
         public static string SelectCountIsUpdateFromOutputTable(TableInfo tableInfo)
         {
-            var q = $"SELECT COUNT(*) FROM {tableInfo.FullTempOutputTableName} WHERE [IsUpdate] = 1";
+            return SelectCountColumnFromOutputTable(tableInfo, "IsUpdate");
+        }
+
+        public static string SelectCountIsDeleteFromOutputTable(TableInfo tableInfo)
+        {
+            return SelectCountColumnFromOutputTable(tableInfo, "IsDelete");
+        }
+
+        public static string SelectCountColumnFromOutputTable(TableInfo tableInfo, string columnName)
+        {
+            var q = $"SELECT COUNT(*) FROM {tableInfo.FullTempOutputTableName} WHERE [{columnName}] = 1";
             return q;
         }
 
@@ -109,7 +119,7 @@ namespace EFCore.BulkExtensions
             List<string> nonIdentityColumnsNames = columnsNames.Where(a => !a.Equals(tableInfo.IdentityColumnName, StringComparison.OrdinalIgnoreCase)).ToList();
             List<string> insertColumnsNames = (tableInfo.HasIdentity && !keepIdentity) ? nonIdentityColumnsNames : columnsNames;
 
-            string isUpdateStatsValue = (tableInfo.BulkConfig.CalculateStats) ? ",(CASE $action WHEN 'UPDATE' THEN 1 Else 0 END)" : "";
+            string isUpdateStatsValue = (tableInfo.BulkConfig.CalculateStats) ? ",(CASE $action WHEN 'UPDATE' THEN 1 Else 0 END),(CASE $action WHEN 'DELETE' THEN 1 Else 0 END)" : "";
 
             if (tableInfo.BulkConfig.PreserveInsertOrder)
                 sourceTable = $"(SELECT TOP {tableInfo.NumberOfEntities} * FROM {sourceTable} ORDER BY {GetCommaSeparatedColumns(primaryKeys)})";

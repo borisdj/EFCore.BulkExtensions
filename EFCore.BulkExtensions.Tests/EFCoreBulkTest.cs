@@ -31,7 +31,7 @@ namespace EFCore.BulkExtensions.Tests
             new EFCoreBatchTest().RunDeleteAll(databaseType);
 
             RunInsert(isBulkOperation);
-            RunInsertOrUpdate(isBulkOperation);
+            RunInsertOrUpdate(isBulkOperation, databaseType);
             RunUpdate(isBulkOperation, databaseType);
             if (databaseType == DbServer.SqlServer)
             {
@@ -161,18 +161,18 @@ namespace EFCore.BulkExtensions.Tests
                     {
                         using (var transaction = context.Database.BeginTransaction())
                         {
-                            context.BulkInsert(
-                                entities,
-                                new BulkConfig
-                                {
-                                    PreserveInsertOrder = true,
-                                    SetOutputIdentity = true,
-                                    BatchSize = 4000,
-                                    UseTempDB = true,
-                                    CalculateStats = true
-                                },
-                                (a) => WriteProgress(a)
-                            );
+                            var bulkConfig = new BulkConfig
+                            {
+                                PreserveInsertOrder = true,
+                                SetOutputIdentity = true,
+                                BatchSize = 4000,
+                                UseTempDB = true,
+                                CalculateStats = true
+                            };
+                            context.BulkInsert(entities, bulkConfig, (a) => WriteProgress(a));
+                            Assert.Equal(EntitiesNumber - 1, bulkConfig.StatsInfo.StatsNumberInserted);
+                            Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberUpdated);
+                            Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberDeleted);
 
                             foreach (var entity in entities)
                             {
@@ -233,7 +233,7 @@ namespace EFCore.BulkExtensions.Tests
             }
         }
 
-        private void RunInsertOrUpdate(bool isBulkOperation)
+        private void RunInsertOrUpdate(bool isBulkOperation, DbServer databaseType)
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
@@ -255,6 +255,12 @@ namespace EFCore.BulkExtensions.Tests
                 {
                     var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
                     context.BulkInsertOrUpdate(entities, bulkConfig, (a) => WriteProgress(a));
+                    if (databaseType == DbServer.SqlServer)
+                    {
+                        Assert.Equal(1, bulkConfig.StatsInfo.StatsNumberInserted);
+                        Assert.Equal(EntitiesNumber / 2 - 1, bulkConfig.StatsInfo.StatsNumberUpdated);
+                        Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberDeleted);
+                    }
                 }
                 else
                 {
@@ -297,6 +303,9 @@ namespace EFCore.BulkExtensions.Tests
                 {
                     var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
                     context.BulkInsertOrUpdateOrDelete(entities, bulkConfig, (a) => WriteProgress(a));
+                    Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberInserted);
+                    Assert.Equal(EntitiesNumber / 2, bulkConfig.StatsInfo.StatsNumberUpdated);
+                    Assert.Equal(EntitiesNumber / 2, bulkConfig.StatsInfo.StatsNumberDeleted);
                 }
                 else
                 {
@@ -336,15 +345,19 @@ namespace EFCore.BulkExtensions.Tests
                 }
                 if (isBulkOperation)
                 {
-                    context.BulkUpdate(
-                        entities,
-                        new BulkConfig
-                        {
-                            PropertiesToInclude = new List<string> { nameof(Item.Description) },
-                            UpdateByProperties = databaseType == DbServer.SqlServer ? new List<string> { nameof(Item.Name) } : null,
-                            CalculateStats = true
-                        }
-                    );
+                    var bulkConfig = new BulkConfig
+                    {
+                        PropertiesToInclude = new List<string> { nameof(Item.Description) },
+                        UpdateByProperties = databaseType == DbServer.SqlServer ? new List<string> { nameof(Item.Name) } : null,
+                        CalculateStats = true
+                    };
+                    context.BulkUpdate(entities, bulkConfig);
+                    if (databaseType == DbServer.SqlServer)
+                    {
+                        Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberInserted);
+                        Assert.Equal(EntitiesNumber, bulkConfig.StatsInfo.StatsNumberUpdated);
+                        Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberDeleted);
+                    }
                 }
                 else
                 {
@@ -405,6 +418,12 @@ namespace EFCore.BulkExtensions.Tests
                 {
                     var bulkConfig = new BulkConfig() { CalculateStats = true };
                     context.BulkDelete(entities, bulkConfig);
+                    if (databaseType == DbServer.SqlServer)
+                    {
+                        Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberInserted);
+                        Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberUpdated);
+                        Assert.Equal(entities.Count, bulkConfig.StatsInfo.StatsNumberDeleted);
+                    }
                 }
                 else
                 {
