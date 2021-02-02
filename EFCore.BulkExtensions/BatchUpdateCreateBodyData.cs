@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using EFCore.BulkExtensions.SqlAdapters;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,7 +24,7 @@ namespace EFCore.BulkExtensions
             LambdaExpression updateExpression)
         {
             BaseSql = baseSql;
-            DatabaseType = BatchUtil.GetDatabaseType(dbContext);
+            DatabaseType = SqlAdaptersMapping.GetDatabaseType(dbContext);
             DbContext = dbContext;
             Query = query;
             RootInstanceParameterName = updateExpression.Parameters?.First()?.Name;
