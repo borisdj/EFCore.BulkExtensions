@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Data;
 using Microsoft.Data.SqlClient;
 using Xunit;
+using EFCore.BulkExtensions.SqlAdapters;
 
 namespace EFCore.BulkExtensions.Tests
 {
