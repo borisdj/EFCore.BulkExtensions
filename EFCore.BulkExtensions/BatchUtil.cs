@@ -104,7 +104,7 @@ namespace EFCore.BulkExtensions
             string tableAliasSufixAs = string.Empty;
             string topStatement = string.Empty;
 
-            (tableAlias, topStatement) = sqlQueryBuilder.GetBatchSqlReformatTableAliasAndTopStatement(fullSqlQuery);
+            (tableAlias, topStatement) = sqlQueryBuilder.GetBatchSqlReformatTableAliasAndTopStatement(sqlQuery);
 
             int indexFROM = sqlQuery.IndexOf(Environment.NewLine);
             string sql = sqlQuery.Substring(indexFROM, sqlQuery.Length - indexFROM);
