@@ -1,24 +1,19 @@
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.Internal;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
+using EFCore.BulkExtensions.SqlAdapters;
 
 namespace EFCore.BulkExtensions
 {
     public static class BatchUtil
     {
-        static readonly int SelectStatementLength = "SELECT".Length;
 
         // In comment are Examples of how SqlQuery is changed for Sql Batch
 
@@ -34,7 +29,7 @@ namespace EFCore.BulkExtensions
             (string sql, string tableAlias, string tableAliasSufixAs, string topStatement, string leadingComments, IEnumerable<object> innerParameters) = GetBatchSql(query, context, isUpdate: false);
 
             innerParameters = ReloadSqlParameters(context, innerParameters.ToList()); // Sqlite requires SqliteParameters
-            tableAlias = (GetDatabaseType(context) == DbServer.SqlServer) ? $"[{tableAlias}]" : tableAlias;
+            tableAlias = (SqlAdaptersMapping.GetDatabaseType(context) == DbServer.SqlServer) ? $"[{tableAlias}]" : tableAlias;
 
             var resultQuery = $"{leadingComments}DELETE {topStatement}{tableAlias}{sql}";
             return (resultQuery, new List<object>(innerParameters));
@@ -82,11 +77,11 @@ namespace EFCore.BulkExtensions
             var sqlColumns = new StringBuilder();
             var sqlParameters = new List<object>(innerParameters);
             var columnNameValueDict = TableInfo.CreateInstance(GetDbContext(query), type, new List<object>(), OperationType.Read, new BulkConfig()).PropertyColumnNamesDict;
-            var dbType = GetDatabaseType(context);
+            var dbType = SqlAdaptersMapping.GetDatabaseType(context);
             CreateUpdateBody(columnNameValueDict, tableAlias, expression.Body, dbType, ref sqlColumns, ref sqlParameters);
 
             sqlParameters = ReloadSqlParameters(context, sqlParameters); // Sqlite requires SqliteParameters
-            sqlColumns = (GetDatabaseType(context) == DbServer.SqlServer) ? sqlColumns : sqlColumns.Replace($"[{tableAlias}].", "");
+            sqlColumns = (SqlAdaptersMapping.GetDatabaseType(context) == DbServer.SqlServer) ? sqlColumns : sqlColumns.Replace($"[{tableAlias}].", "");
 
             var resultQuery = $"{leadingComments}UPDATE {topStatement}{tableAlias}{tableAliasSufixAs} SET {sqlColumns} {sql}";
             return (resultQuery, sqlParameters);
@@ -94,67 +89,36 @@ namespace EFCore.BulkExtensions
 
         public static List<object> ReloadSqlParameters(DbContext context, List<object> sqlParameters)
         {
-            DbServer databaseType = GetDatabaseType(context);
-            if (databaseType == DbServer.Sqlite)
-            {
-                var sqlParametersReloaded = new List<object>();
-                foreach (var parameter in sqlParameters)
-                {
-                    var sqlParameter = (IDbDataParameter)parameter;
-                    sqlParametersReloaded.Add(new SqliteParameter(sqlParameter.ParameterName, sqlParameter.Value));
-                }
-                return sqlParametersReloaded;
-            }
-            else if (databaseType == DbServer.SqlServer)
-            {
-                // if SqlServer, might need to convert
-                // Microsoft.Data.SqlClient to System.Data.SqlClient
-                var sqlParametersReloaded = new List<object>();
-                var c = context.Database.GetDbConnection();
-                foreach (var parameter in sqlParameters)
-                {
-                    var sqlParameter = (IDbDataParameter)parameter;
-                    sqlParametersReloaded.Add(SqlClientHelper.CorrectParameterType(c, sqlParameter));
-                }
-                return sqlParametersReloaded;
-            }
-            else // for SqlServer return original
-            {
-                return sqlParameters;
-            }
+            return SqlAdaptersMapping.GetAdapterDialect(context).ReloadSqlParameters(context,sqlParameters);
         }
 
         public static (string, string, string, string, string, IEnumerable<object>) GetBatchSql(IQueryable query, DbContext context, bool isUpdate)
         {
+            var sqlQueryBuilder = SqlAdaptersMapping.GetAdapterDialect(context);
             var (fullSqlQuery, innerParameters) = query.ToParametrizedSql();
 
-            DbServer databaseType = GetDatabaseType(context);
+            DbServer databaseType = SqlAdaptersMapping.GetDatabaseType(context);
             var (leadingComments, sqlQuery) = SplitLeadingCommentsAndMainSqlQuery(fullSqlQuery);
 
             string tableAlias = string.Empty;
             string tableAliasSufixAs = string.Empty;
             string topStatement = string.Empty;
-            if (databaseType != DbServer.Sqlite) // when Sqlite and Deleted metod tableAlias is Empty: ""
-            {
-                string escapeSymbolEnd = (databaseType == DbServer.SqlServer) ? "]" : "."; // SqlServer : PostrgeSql;
-                string escapeSymbolStart = (databaseType == DbServer.SqlServer) ? "[" : " "; // SqlServer : PostrgeSql;
-                string tableAliasEnd = sqlQuery.Substring(SelectStatementLength, sqlQuery.IndexOf(escapeSymbolEnd) - SelectStatementLength); // " TOP(10) [table_alias" / " [table_alias" : " table_alias"
-                int tableAliasStartIndex = tableAliasEnd.IndexOf(escapeSymbolStart);
-                tableAlias = tableAliasEnd.Substring(tableAliasStartIndex + escapeSymbolStart.Length); // "table_alias"
-                topStatement = tableAliasEnd.Substring(0, tableAliasStartIndex).TrimStart(); // "TOP(10) " / if TOP not present in query this will be a Substring(0,0) == ""
-            }
+
+            (tableAlias, topStatement) = sqlQueryBuilder.GetBatchSqlReformatTableAliasAndTopStatement(fullSqlQuery);
 
             int indexFROM = sqlQuery.IndexOf(Environment.NewLine);
             string sql = sqlQuery.Substring(indexFROM, sqlQuery.Length - indexFROM);
             sql = sql.Contains("{") ? sql.Replace("{", "{{") : sql; // Curly brackets have to be escaped:
             sql = sql.Contains("}") ? sql.Replace("}", "}}") : sql; // https://github.com/aspnet/EntityFrameworkCore/issues/8820
 
-            if (isUpdate && databaseType == DbServer.Sqlite)
+            if (isUpdate)
             {
-                var match = Regex.Match(sql, @"FROM (""[^""]+"")( AS ""[^""]+"")");
-                tableAlias = match.Groups[1].Value;
-                tableAliasSufixAs = match.Groups[2].Value;
-                sql = sql.Substring(match.Index + match.Length);
+                var extracted = sqlQueryBuilder.GetBatchSqlExtractTableAliasFromQuery(
+                    sql, tableAlias, tableAliasSufixAs
+                );
+                tableAlias = extracted.TableAlias;
+                tableAliasSufixAs = extracted.TableAliasSuffixAs;
+                sql = extracted.Sql;
             }
 
             return (sql, tableAlias, tableAliasSufixAs, topStatement, leadingComments, innerParameters);
@@ -291,7 +255,9 @@ namespace EFCore.BulkExtensions
                 switch (binaryExpression.NodeType)
                 {
                     case ExpressionType.Add:
-                        sqlColumns.Append(dbType == DbServer.Sqlite && IsStringConcat(binaryExpression) ? " ||" : " +");
+                        var sqlOperator = SqlAdaptersMapping.GetAdapterDialect(dbType)
+                            .GetBinaryExpressionAddOperation(binaryExpression);
+                        sqlColumns.Append(" " + sqlOperator);
                         break;
                     case ExpressionType.Divide:
                         sqlColumns.Append(" /");
@@ -342,25 +308,7 @@ namespace EFCore.BulkExtensions
 #pragma warning restore EF1001 // Internal EF Core API usage.
         }
 
-        public static DbServer GetDatabaseType(DbContext context)
-        {
-            return context.Database.ProviderName.EndsWith(DbServer.Sqlite.ToString()) ? DbServer.Sqlite : DbServer.SqlServer;
-        }
-
-        internal static bool IsStringConcat(BinaryExpression binaryExpression)
-        {
-            var methodProperty = binaryExpression.GetType().GetProperty("Method");
-            if (methodProperty == null)
-            {
-                return false;
-            }
-            var method = methodProperty.GetValue(binaryExpression) as MethodInfo;
-            if (method == null)
-            {
-                return false;
-            }
-            return method.DeclaringType == typeof(string) && method.Name == nameof(string.Concat);
-        }
+      
 
         public static (string, string) SplitLeadingCommentsAndMainSqlQuery(string sqlQuery)
         {

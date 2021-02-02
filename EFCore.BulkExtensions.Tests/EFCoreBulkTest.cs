@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using EFCore.BulkExtensions.SqlAdapters;
 using Microsoft.EntityFrameworkCore.Storage;
 using Xunit;
 
