@@ -1,11 +1,11 @@
+using EFCore.BulkExtensions.SqlAdapters;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using Microsoft.EntityFrameworkCore;
 using System.Data;
-using Microsoft.Data.SqlClient;
+using System.Linq;
 using Xunit;
-using EFCore.BulkExtensions.SqlAdapters;
 
 namespace EFCore.BulkExtensions.Tests
 {
@@ -23,6 +23,7 @@ namespace EFCore.BulkExtensions.Tests
             RunDeleteAll(databaseType);
             RunInsert();
             RunBatchUpdate();
+            RunBatchUpdate_UsingNavigationPropertiesThatTranslateToAnInnerQuery();
             int deletedEntities = RunTopBatchDelete();
             RunBatchDelete();
             RunBatchDelete2();
@@ -97,6 +98,62 @@ namespace EFCore.BulkExtensions.Tests
                                                                                                                     //query.BatchUpdate(a => new Item { Quantity = a.Quantity + 100 }); // example direct value without variable
 
                 query.Take(1).BatchUpdate(a => new Item { Name = a.Name + " TOP(1)", Quantity = a.Quantity + incrementStep }); // example of BatchUpdate with TOP(1)
+            }
+        }
+
+        private void RunBatchUpdate_UsingNavigationPropertiesThatTranslateToAnInnerQuery()
+        {
+            var testDbCommandInterceptor = new TestDbCommandInterceptor();
+
+            using (var context = new TestContext(ContextUtil.GetOptions(testDbCommandInterceptor)))
+            {
+                context.Parents.Where(parent => parent.ParentId < 5 && !string.IsNullOrEmpty(parent.Details.Notes))
+                    .BatchUpdate(parent => new Parent { Description = parent.Details.Notes ?? "Fallback" });
+
+                var actualSqlExecuted = testDbCommandInterceptor.ExecutedNonQueryCommands?.LastOrDefault();
+                var expectedSql =
+@"UPDATE p SET  [p].[Description] = (
+    SELECT COALESCE([p1].[Notes], N'Fallback')
+    FROM [ParentDetail] AS [p1]
+    WHERE [p1].[ParentId] = [p].[ParentId]) 
+FROM [Parent] AS [p]
+LEFT JOIN [ParentDetail] AS [p0] ON [p].[ParentId] = [p0].[ParentId]
+WHERE ([p].[ParentId] < 5) AND ([p0].[Notes] IS NOT NULL AND (([p0].[Notes] <> N'') OR [p0].[Notes] IS NULL))";
+
+                Assert.Equal(expectedSql.Replace("\r\n", "\n"), actualSqlExecuted.Replace("\r\n", "\n"));
+
+                context.Parents.Where(parent => parent.ParentId == 1)
+                    .BatchUpdate(parent => new Parent { Value = parent.Children.Where(child => child.IsEnabled).Sum(child => child.Value) });
+
+                actualSqlExecuted = testDbCommandInterceptor.ExecutedNonQueryCommands?.LastOrDefault();
+                expectedSql =
+@"UPDATE p SET  [p].[Value] = (
+    SELECT SUM([c].[Value])
+    FROM [Child] AS [c]
+    WHERE ([p].[ParentId] = [c].[ParentId]) AND ([c].[IsEnabled] = CAST(1 AS bit))) 
+FROM [Parent] AS [p]
+WHERE [p].[ParentId] = 1";
+
+                Assert.Equal(expectedSql.Replace("\r\n", "\n"), actualSqlExecuted.Replace("\r\n", "\n"));
+
+                var newValue = 5;
+
+                context.Parents.Where(parent => parent.ParentId == 1)
+                    .BatchUpdate(parent => new Parent { 
+                        Description = parent.Children.Where(child => child.IsEnabled && child.Value == newValue).Sum(child => child.Value).ToString(),
+                        Value = newValue
+                    });
+
+                actualSqlExecuted = testDbCommandInterceptor.ExecutedNonQueryCommands?.LastOrDefault();
+                expectedSql =
+@"UPDATE p SET  [p].[Description] = (CONVERT(VARCHAR(100), (
+    SELECT SUM([c].[Value])
+    FROM [Child] AS [c]
+    WHERE ([p].[ParentId] = [c].[ParentId]) AND (([c].[IsEnabled] = CAST(1 AS bit)) AND ([c].[Value] = @__p_0))))) , [p].[Value] = @param_1 
+FROM [Parent] AS [p]
+WHERE [p].[ParentId] = 1";
+
+                Assert.Equal(expectedSql.Replace("\r\n", "\n"), actualSqlExecuted.Replace("\r\n", "\n"));
             }
         }
 

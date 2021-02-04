@@ -1,11 +1,13 @@
+using EFCore.BulkExtensions.SqlAdapters;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using EFCore.BulkExtensions.SqlAdapters;
+using System.Linq;
 
 namespace EFCore.BulkExtensions.Tests
 {
@@ -23,6 +25,10 @@ namespace EFCore.BulkExtensions.Tests
         public DbSet<Info> Infos { get; set; }
         public DbSet<ChangeLog> ChangeLogs { get; set; }
         public DbSet<ItemLink> ItemLinks { get; set; }
+
+        public DbSet<Parent> Parents { get; set; }
+        public DbSet<ParentDetail> ParentDetails { get; set; }
+        public DbSet<Child> Children { get; set; }
 
         public TestContext(DbContextOptions options) : base(options)
         {
@@ -69,7 +75,9 @@ namespace EFCore.BulkExtensions.Tests
     {
         public static DbServer DbServer { get; set; }
 
-        public static DbContextOptions GetOptions()
+        public static DbContextOptions GetOptions(IInterceptor dbInterceptor) => GetOptions(new[] { dbInterceptor });
+
+        public static DbContextOptions GetOptions(IEnumerable<IInterceptor> dbInterceptors = null)
         {
             var databaseName = nameof(EFCoreBulkTest);
             var optionsBuilder = new DbContextOptionsBuilder<TestContext>();
@@ -77,6 +85,10 @@ namespace EFCore.BulkExtensions.Tests
             if (DbServer == DbServer.SqlServer)
             {
                 var connectionString = $"Server=localhost;Database={databaseName};Trusted_Connection=True;MultipleActiveResultSets=true";
+
+                // ALTERNATIVELY (Using MSSQLLocalDB):
+                //var connectionString = $@"Data Source=(localdb)\MSSQLLocalDB;Database={databaseName};Trusted_Connection=True;MultipleActiveResultSets=True";
+
                 optionsBuilder.UseSqlServer(connectionString); // Can NOT Test with UseInMemoryDb (Exception: Relational-specific methods can only be used when the context is using a relational)
             }
             else if (DbServer == DbServer.Sqlite)
@@ -91,6 +103,11 @@ namespace EFCore.BulkExtensions.Tests
             else
             {
                 throw new NotSupportedException($"Database {DbServer} is not supported. Only SQL Server and SQLite are Currently supported.");
+            }
+
+            if (dbInterceptors?.Any() == true)
+            {
+                optionsBuilder.AddInterceptors(dbInterceptors);
             }
 
             return optionsBuilder.Options;
@@ -259,5 +276,36 @@ namespace EFCore.BulkExtensions.Tests
 
         [NotMapped]
         public string Remark { get; set; }
+    }
+
+    // For testing BatchUpdate expressions that use nested queries
+    public class Parent
+    {
+        public ICollection<Child> Children { get; set; }
+        public decimal CombinedChildBalance { get; set; }
+        public string Description { get; set; }
+        public virtual ParentDetail Details { get; set; }
+        public int ParentId { get; set; }
+        public decimal Value { get; set; }
+    }
+
+    public class ParentDetail
+    {
+        public int ParentDetailId { get; set; }
+
+        public virtual Parent Parent { get; set; }
+        public int ParentId { get; set; }
+
+        public string Notes { get; set; }
+    }
+
+    public class Child
+    {
+        public int ChildId { get; set; }
+        public bool IsEnabled { get; set; }
+        public decimal Value { get; set; }
+
+        public virtual Parent Parent { get; set; }
+        public int ParentId { get; set; }
     }
 }

@@ -48,6 +48,7 @@ namespace EFCore.BulkExtensions
         public Dictionary<string, string> OutputPropertyColumnNamesDict { get; set; } = new Dictionary<string, string>();
         public Dictionary<string, string> PropertyColumnNamesDict { get; set; } = new Dictionary<string, string>();
         public Dictionary<string, FastProperty> FastPropertyDict { get; set; } = new Dictionary<string, FastProperty>();
+        public Dictionary<string, INavigation> AllNavigationsDictionary { get; private set; }
         public Dictionary<string, INavigation> OwnedTypesDict { get; set; } = new Dictionary<string, INavigation>();
         public HashSet<string> ShadowProperties { get; set; } = new HashSet<string>();
         public Dictionary<string, ValueConverter> ConvertibleProperties { get; set; } = new Dictionary<string, ValueConverter>();
@@ -142,7 +143,10 @@ namespace EFCore.BulkExtensions
                 allProperties = extendedAllProperties.Distinct();
             }
 
-            var ownedTypes = entityType.GetNavigations().Where(a => a.GetTargetType().IsOwned());
+            var navigations = entityType.GetNavigations();
+            AllNavigationsDictionary = navigations.ToDictionary(nav => nav.Name, nav => nav);
+
+            var ownedTypes = navigations.Where(a => a.GetTargetType().IsOwned());
             HasOwnedTypes = ownedTypes.Any();
             OwnedTypesDict = ownedTypes.ToDictionary(a => a.Name, a => a);
 

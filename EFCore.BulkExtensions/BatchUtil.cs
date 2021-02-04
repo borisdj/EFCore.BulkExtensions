@@ -1,3 +1,4 @@
+using EFCore.BulkExtensions.SqlAdapters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
 using Microsoft.EntityFrameworkCore.Query;
@@ -8,7 +9,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
-using EFCore.BulkExtensions.SqlAdapters;
+using System.Text.RegularExpressions;
 
 namespace EFCore.BulkExtensions
 {
@@ -74,14 +75,15 @@ namespace EFCore.BulkExtensions
         private static (string, List<object>) GetSqlUpdate<T>(IQueryable query, DbContext context, Type type, Expression<Func<T, T>> expression) where T : class
         {
             (string sql, string tableAlias, string tableAliasSufixAs, string topStatement, string leadingComments, IEnumerable<object> innerParameters) = GetBatchSql(query, context, isUpdate: true);
-            var sqlColumns = new StringBuilder();
-            var sqlParameters = new List<object>(innerParameters);
-            var columnNameValueDict = TableInfo.CreateInstance(GetDbContext(query), type, new List<object>(), OperationType.Read, new BulkConfig()).PropertyColumnNamesDict;
-            var dbType = SqlAdaptersMapping.GetDatabaseType(context);
-            CreateUpdateBody(columnNameValueDict, tableAlias, expression.Body, dbType, ref sqlColumns, ref sqlParameters);
 
-            sqlParameters = ReloadSqlParameters(context, sqlParameters); // Sqlite requires SqliteParameters
-            sqlColumns = (SqlAdaptersMapping.GetDatabaseType(context) == DbServer.SqlServer) ? sqlColumns : sqlColumns.Replace($"[{tableAlias}].", "");
+            var createUpdateBodyData = new BatchUpdateCreateBodyData(sql, context, innerParameters, query, type, tableAlias, expression);
+
+            CreateUpdateBody(createUpdateBodyData, expression.Body);
+
+            var sqlParameters = ReloadSqlParameters(context, createUpdateBodyData.SqlParameters); // Sqlite requires SqliteParameters
+            var sqlColumns = (createUpdateBodyData.DatabaseType == DbServer.SqlServer) 
+                ? createUpdateBodyData.UpdateColumnsSql
+                : createUpdateBodyData.UpdateColumnsSql.Replace($"[{tableAlias}].", "");
 
             var resultQuery = $"{leadingComments}UPDATE {topStatement}{tableAlias}{tableAliasSufixAs} SET {sqlColumns} {sql}";
             return (resultQuery, sqlParameters);
@@ -198,8 +200,14 @@ namespace EFCore.BulkExtensions
         /// <param name="expression"></param>
         /// <param name="sqlColumns"></param>
         /// <param name="sqlParameters"></param>
-        public static void CreateUpdateBody(Dictionary<string, string> columnNameValueDict, string tableAlias, Expression expression, DbServer dbType, ref StringBuilder sqlColumns, ref List<object> sqlParameters)
+        public static void CreateUpdateBody(BatchUpdateCreateBodyData createBodyData, Expression expression)
         {
+            var rootTypeTableInfo = createBodyData.GetTableInfoForType(createBodyData.RootType);
+            var columnNameValueDict = rootTypeTableInfo.PropertyColumnNamesDict;
+            var tableAlias = createBodyData.TableAlias;
+            var sqlColumns = createBodyData.UpdateColumnsSql;
+            var sqlParameters = createBodyData.SqlParameters;
+
             if (expression is MemberInitExpression memberInitExpression)
             {
                 foreach (var item in memberInitExpression.Bindings)
@@ -213,83 +221,129 @@ namespace EFCore.BulkExtensions
 
                         sqlColumns.Append(" =");
 
-                        CreateUpdateBody(columnNameValueDict, tableAlias, assignment.Expression, dbType, ref sqlColumns, ref sqlParameters);
+                        if (!TryCreateUpdateBodyNestedQuery(createBodyData, assignment.Expression, assignment))
+                        {
+                            CreateUpdateBody(createBodyData, assignment.Expression);
+                        }
 
                         if (memberInitExpression.Bindings.IndexOf(item) < (memberInitExpression.Bindings.Count - 1))
                             sqlColumns.Append(" ,");
                     }
                 }
+
+                return;
             }
-            else if (expression is MemberExpression memberExpression && memberExpression.Expression is ParameterExpression)
+
+            if (expression is MemberExpression memberExpression 
+                && memberExpression.Expression is ParameterExpression parameterExpression
+                && parameterExpression.Name == createBodyData.RootInstanceParameterName)
             {
                 if (columnNameValueDict.TryGetValue(memberExpression.Member.Name, out string value))
+                {
                     sqlColumns.Append($" [{tableAlias}].[{value}]");
+                }
                 else
+                {
                     sqlColumns.Append($" [{tableAlias}].[{memberExpression.Member.Name}]");
+                }
+
+                return;
             }
-            else if (expression is ConstantExpression constantExpression)
+
+            if (expression is ConstantExpression constantExpression)
             {
-                var parmName = $"param_{sqlParameters.Count}";
+                var constantParamName = $"param_{sqlParameters.Count}";
                 // will rely on SqlClientHelper.CorrectParameterType to fix the type before executing
-                sqlParameters.Add(new Microsoft.Data.SqlClient.SqlParameter(parmName, constantExpression.Value ?? DBNull.Value));
-                sqlColumns.Append($" @{parmName}");
+                sqlParameters.Add(new Microsoft.Data.SqlClient.SqlParameter(constantParamName, constantExpression.Value ?? DBNull.Value));
+                sqlColumns.Append($" @{constantParamName}");
+                return;
             }
-            else if (expression is UnaryExpression unaryExpression)
+
+            if (expression is UnaryExpression unaryExpression)
             {
                 switch (unaryExpression.NodeType)
                 {
                     case ExpressionType.Convert:
-                        CreateUpdateBody(columnNameValueDict, tableAlias, unaryExpression.Operand, dbType, ref sqlColumns, ref sqlParameters);
+                        CreateUpdateBody(createBodyData, unaryExpression.Operand);
                         break;
                     case ExpressionType.Not:
                         sqlColumns.Append(" ~");//this way only for SQL Server 
-                        CreateUpdateBody(columnNameValueDict, tableAlias, unaryExpression.Operand, dbType, ref sqlColumns, ref sqlParameters);
+                        CreateUpdateBody(createBodyData, unaryExpression.Operand);
                         break;
                     default: break;
                 }
-            }
-            else if (expression is BinaryExpression binaryExpression)
-            {
-                CreateUpdateBody(columnNameValueDict, tableAlias, binaryExpression.Left, dbType, ref sqlColumns, ref sqlParameters);
 
+                return;
+            }
+
+            if (expression is BinaryExpression binaryExpression)
+            {
                 switch (binaryExpression.NodeType)
                 {
                     case ExpressionType.Add:
-                        var sqlOperator = SqlAdaptersMapping.GetAdapterDialect(dbType)
+                        CreateUpdateBody(createBodyData, binaryExpression.Left);
+                        var sqlOperator = SqlAdaptersMapping.GetAdapterDialect(createBodyData.DatabaseType)
                             .GetBinaryExpressionAddOperation(binaryExpression);
                         sqlColumns.Append(" " + sqlOperator);
+                        CreateUpdateBody(createBodyData, binaryExpression.Right);
                         break;
+
                     case ExpressionType.Divide:
+                        CreateUpdateBody(createBodyData, binaryExpression.Left);
                         sqlColumns.Append(" /");
+                        CreateUpdateBody(createBodyData, binaryExpression.Right);
                         break;
+
                     case ExpressionType.Multiply:
+                        CreateUpdateBody(createBodyData, binaryExpression.Left);
                         sqlColumns.Append(" *");
+                        CreateUpdateBody(createBodyData, binaryExpression.Right);
                         break;
+
                     case ExpressionType.Subtract:
+                        CreateUpdateBody(createBodyData, binaryExpression.Left);
                         sqlColumns.Append(" -");
+                        CreateUpdateBody(createBodyData, binaryExpression.Right);
                         break;
+
                     case ExpressionType.And:
+                        CreateUpdateBody(createBodyData, binaryExpression.Left);
                         sqlColumns.Append(" &");
+                        CreateUpdateBody(createBodyData, binaryExpression.Right);
                         break;
+
                     case ExpressionType.Or:
+                        CreateUpdateBody(createBodyData, binaryExpression.Left);
                         sqlColumns.Append(" |");
+                        CreateUpdateBody(createBodyData, binaryExpression.Right);
                         break;
+
                     case ExpressionType.ExclusiveOr:
+                        CreateUpdateBody(createBodyData, binaryExpression.Left);
                         sqlColumns.Append(" ^");
+                        CreateUpdateBody(createBodyData, binaryExpression.Right);
                         break;
-                    default: break;
+
+                    case ExpressionType.Coalesce:
+                        sqlColumns.Append("COALESCE(");
+                        CreateUpdateBody(createBodyData, binaryExpression.Left);
+                        sqlColumns.Append(", ");
+                        CreateUpdateBody(createBodyData, binaryExpression.Right);
+                        break;
+
+                    default: 
+                        throw new NotSupportedException($"{nameof(BatchUtil)}.{nameof(CreateUpdateBody)}(..) is not supported for a binary exression of type {binaryExpression.NodeType}");
                 }
 
-                CreateUpdateBody(columnNameValueDict, tableAlias, binaryExpression.Right, dbType, ref sqlColumns, ref sqlParameters);
+                return;
             }
-            else
-            {
-                var value = Expression.Lambda(expression).Compile().DynamicInvoke();
-                var parmName = $"param_{sqlParameters.Count}";
-                // will rely on SqlClientHelper.CorrectParameterType to fix the type before executing
-                sqlParameters.Add(new Microsoft.Data.SqlClient.SqlParameter(parmName, value ?? DBNull.Value));
-                sqlColumns.Append($" @{parmName}");
-            }
+
+            // For any other case fallback on compiling and executing the expression
+            var compiledExpressionValue = Expression.Lambda(expression).Compile().DynamicInvoke();
+            var parmName = $"param_{sqlParameters.Count}";
+            // will rely on SqlClientHelper.CorrectParameterType to fix the type before executing
+            sqlParameters.Add(new Microsoft.Data.SqlClient.SqlParameter(parmName, compiledExpressionValue ?? DBNull.Value));
+            sqlColumns.Append($" @{parmName}");
         }
 
         public static DbContext GetDbContext(IQueryable query)
@@ -361,6 +415,390 @@ namespace EFCore.BulkExtensions
             }
 
             return (leadingCommentsBuilder.ToString(), mainSqlQuery);
+        }
+
+        private static readonly MethodInfo DbContextSetMethodInfo = typeof(DbContext)
+            .GetMethod(nameof(DbContext.Set), BindingFlags.Public | BindingFlags.Instance);
+
+        public static readonly Regex TableAliasPattern = new Regex(@"(?:FROM|JOIN)\s+(\[\S+\]) AS (\[\S+\])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        public static bool TryCreateUpdateBodyNestedQuery(BatchUpdateCreateBodyData createBodyData, Expression expression, MemberAssignment memberAssignment)
+        {
+            if (expression is MemberExpression rootMemberExpression && rootMemberExpression.Expression is ParameterExpression)
+            {
+                // This is a basic assignment expression so don't try checking for a nested query
+                return false;
+            }
+
+            var rootTypeTableInfo = createBodyData.GetTableInfoForType(createBodyData.RootType);
+
+            var expressionStack = new Stack<ExpressionNode>();
+            var visited = new HashSet<Expression>();
+
+            var rootParameterExpressionNodes = new List<ExpressionNode>();
+            expressionStack.Push(new ExpressionNode(expression, null));
+
+            // Perform a depth first traversal of the the expression tree and see if there is a
+            // leaf node in the format rootLambdaParameter.NavigationProperty indicating a nested
+            // query is needed
+            while (expressionStack.Count > 0)
+            {
+                var currentExpressionNode = expressionStack.Pop();
+                var currentExpression = currentExpressionNode.Expression;
+                if (visited.Contains(currentExpression))
+                {
+                    continue;
+                }
+
+                visited.Add(currentExpression);
+                switch (currentExpression)
+                {
+                    case MemberExpression currentMemberExpression:
+                        if (currentMemberExpression.Expression is ParameterExpression finalExpression
+                            && finalExpression.Name == createBodyData.RootInstanceParameterName)
+                        {
+                            if (rootTypeTableInfo.AllNavigationsDictionary.TryGetValue(currentMemberExpression.Member.Name, out _))
+                            {
+                                rootParameterExpressionNodes.Add(new ExpressionNode(finalExpression, currentExpressionNode));
+                                break;
+                            }
+                        }
+
+                        expressionStack.Push(new ExpressionNode(currentMemberExpression.Expression, currentExpressionNode));
+                        break;
+
+                    case MethodCallExpression currentMethodCallExpresion:
+                        if (currentMethodCallExpresion.Object != null)
+                        {
+                            expressionStack.Push(new ExpressionNode(currentMethodCallExpresion.Object, currentExpressionNode));
+                        }
+
+                        if (currentMethodCallExpresion.Arguments?.Count > 0)
+                        {
+                            foreach (var argumentExpression in currentMethodCallExpresion.Arguments)
+                            {
+                                expressionStack.Push(new ExpressionNode(argumentExpression, currentExpressionNode));
+                            }
+                        }
+                        break;
+
+                    case LambdaExpression currentLambdaExpression:
+                        expressionStack.Push(new ExpressionNode(currentLambdaExpression.Body, currentExpressionNode));
+                        break;
+
+                    case UnaryExpression currentUnaryExpression:
+                        expressionStack.Push(new ExpressionNode(currentUnaryExpression.Operand, currentExpressionNode));
+                        break;
+
+                    case BinaryExpression currentBinaryExpression:
+                        expressionStack.Push(new ExpressionNode(currentBinaryExpression.Left, currentExpressionNode));
+                        expressionStack.Push(new ExpressionNode(currentBinaryExpression.Right, currentExpressionNode));
+                        break;
+
+                    case ConditionalExpression currentConditionalExpression:
+                        expressionStack.Push(new ExpressionNode(currentConditionalExpression.Test, currentExpressionNode));
+                        expressionStack.Push(new ExpressionNode(currentConditionalExpression.IfTrue, currentExpressionNode));
+                        expressionStack.Push(new ExpressionNode(currentConditionalExpression.IfFalse, currentExpressionNode));
+                        break;
+
+                    default:
+                        break;
+                }
+            }
+
+            if (rootParameterExpressionNodes.Count < 1)
+            {
+                return false;
+            }
+
+            if (!(memberAssignment.Member is PropertyInfo memberPropertyInfo))
+            {
+                return false;
+            }
+
+            var originalParameterNode = rootParameterExpressionNodes.FirstOrDefault();
+            var firstNavigationNode = originalParameterNode.Parent;
+            var firstMemberExpression = (MemberExpression)firstNavigationNode.Expression;
+            var firstNavigation = rootTypeTableInfo.AllNavigationsDictionary[firstMemberExpression.Member.Name];
+            var isFirstNavigationACollectionType = firstNavigation.IsCollection();
+
+            var firstNavigationTargetType = firstNavigation.GetTargetType();
+            var firstNavigationType = firstNavigationTargetType.ClrType;
+            var firstNavigationTableName = firstNavigationTargetType.GetTableName();
+
+            IQueryable innerQueryable;
+            if (isFirstNavigationACollectionType)
+            {
+                var dbSetGenericMethod = DbContextSetMethodInfo.MakeGenericMethod(createBodyData.RootType);
+                var dbSetQueryable = (IQueryable)dbSetGenericMethod.Invoke(createBodyData.DbContext, null);
+
+                var rootParameter = originalParameterNode.Expression as ParameterExpression;
+                innerQueryable = dbSetQueryable.Provider.CreateQuery(Expression.Call(
+                    null,
+                    QueryableMethods.Select.MakeGenericMethod(createBodyData.RootType, memberPropertyInfo.PropertyType),
+                    dbSetQueryable.Expression,
+                    Expression.Lambda(expression, rootParameter)
+                ));
+            }
+            else
+            {
+                var dbSetGenericMethod = DbContextSetMethodInfo.MakeGenericMethod(firstNavigationType);
+                var dbSetQueryable = (IQueryable)dbSetGenericMethod.Invoke(createBodyData.DbContext, null);
+
+                var rootParamterName = $"x{firstMemberExpression.Member.Name}";
+                var rootParameter = Expression.Parameter(firstNavigationType, rootParamterName);
+
+                Expression lambdaBody = rootParameter;
+                var previousNode = firstNavigationNode;
+                var currentNode = previousNode.Parent;
+                while (currentNode != null)
+                {
+                    var wasNodeHandled = false;
+                    switch (currentNode.Expression)
+                    {
+                        case MemberExpression currentMemberExpression:
+                            lambdaBody = Expression.MakeMemberAccess(lambdaBody, currentMemberExpression.Member);
+                            wasNodeHandled = true;
+                            break;
+
+                        case MethodCallExpression currentMethodCallExpression:
+                            if (currentMethodCallExpression.Object == previousNode.Expression)
+                            {
+                                lambdaBody = Expression.Call(lambdaBody, currentMethodCallExpression.Method, currentMethodCallExpression.Arguments);
+                                wasNodeHandled = true;
+                            }
+                            else if (currentMethodCallExpression.Arguments != null)
+                            {
+                                var didFindArgumentToSwap = false;
+                                var newArguments = new List<Expression>();
+                                foreach (var nextArgument in currentMethodCallExpression.Arguments)
+                                {
+                                    if (nextArgument == previousNode.Expression)
+                                    {
+                                        newArguments.Add(lambdaBody);
+                                        didFindArgumentToSwap = true;
+                                        continue;
+                                    }
+
+                                    newArguments.Add(nextArgument);
+                                }
+
+                                if (didFindArgumentToSwap)
+                                {
+                                    lambdaBody = Expression.Call(currentMethodCallExpression.Object, currentMethodCallExpression.Method, newArguments);
+                                    wasNodeHandled = true;
+                                }
+                            }
+                            break;
+
+                        case UnaryExpression currentUnaryExpression:
+                            if (currentUnaryExpression.Operand == previousNode.Expression)
+                            {
+                                lambdaBody = Expression.MakeUnary(currentUnaryExpression.NodeType, lambdaBody, currentUnaryExpression.Type);
+                                wasNodeHandled = true;
+                            }
+                            break;
+
+                        case BinaryExpression currentBinaryExpression:
+                            if (currentBinaryExpression.Left == previousNode.Expression)
+                            {
+                                lambdaBody = Expression.MakeBinary(currentBinaryExpression.NodeType, lambdaBody, currentBinaryExpression.Right);
+                                wasNodeHandled = true;
+                            }
+                            else if (currentBinaryExpression.Right == previousNode.Expression)
+                            {
+                                lambdaBody = Expression.MakeBinary(currentBinaryExpression.NodeType, currentBinaryExpression.Left, lambdaBody);
+                                wasNodeHandled = true;
+                            }
+                            break;
+
+                        case LambdaExpression currentLambdaExpression:
+                            if (currentLambdaExpression.Body == previousNode.Expression)
+                            {
+                                lambdaBody = Expression.Lambda(lambdaBody, currentLambdaExpression.Parameters);
+                                wasNodeHandled = true;
+                            }
+                            break;
+
+                        case ConditionalExpression currentConditionalExpression:
+                            if (currentConditionalExpression.Test == previousNode.Expression)
+                            {
+                                lambdaBody = Expression.Condition(lambdaBody, currentConditionalExpression.IfTrue, currentConditionalExpression.IfFalse, currentConditionalExpression.Type);
+                                wasNodeHandled = true;
+                            }
+                            else if (currentConditionalExpression.IfTrue == previousNode.Expression)
+                            {
+                                lambdaBody = Expression.Condition(currentConditionalExpression.Test, lambdaBody, currentConditionalExpression.IfFalse, currentConditionalExpression.Type);
+                                wasNodeHandled = true;
+                            }
+                            else if (currentConditionalExpression.IfFalse == previousNode.Expression)
+                            {
+                                lambdaBody = Expression.Condition(currentConditionalExpression.Test, currentConditionalExpression.IfTrue, lambdaBody, currentConditionalExpression.Type);
+                                wasNodeHandled = true;
+                            }
+                            break;
+
+                        default:
+                            break;
+                    }
+
+                    if (!wasNodeHandled)
+                    {
+                        return false;
+                    }
+
+                    previousNode = currentNode;
+                    currentNode = currentNode.Parent;
+                }
+
+                innerQueryable = dbSetQueryable.Provider.CreateQuery(Expression.Call(
+                    null,
+                    QueryableMethods.Select.MakeGenericMethod(firstNavigationType, memberPropertyInfo.PropertyType),
+                    dbSetQueryable.Expression,
+                    Expression.Lambda(lambdaBody, rootParameter)
+                ));
+            }
+
+            var (innerSql, innerSqlParameters) = innerQueryable.ToParametrizedSql();
+            innerSql = innerSql.Trim();
+
+            string firstNavigationAlias = null;
+            var rootTableNameWithBrackets = $"[{rootTypeTableInfo.TableName}]";
+            var rootTableAliasWithBrackets = $"[{createBodyData.TableAlias}]";
+            var firstNavigationTableNameWithBrackets = $"[{firstNavigationTableName}]";
+            foreach (Match match in TableAliasPattern.Matches(innerSql))
+            {
+                var tableName = match.Groups[1].Value;
+                var originalAlias = match.Groups[2].Value;
+
+                if (isFirstNavigationACollectionType
+                    && tableName.Equals(rootTableNameWithBrackets, StringComparison.OrdinalIgnoreCase)
+                    && originalAlias.Equals(rootTableAliasWithBrackets, StringComparison.OrdinalIgnoreCase))
+                {
+                    // Don't rename this alias, and cut off the unnecessary FROM clause
+                    innerSql = innerSql.Substring(0, match.Index);
+                    continue;
+                }
+
+                if (!createBodyData.TableAliasesInUse.Contains(originalAlias))
+                {
+                    if (tableName.Equals(firstNavigationTableNameWithBrackets, StringComparison.OrdinalIgnoreCase))
+                    {
+                        firstNavigationAlias = originalAlias;
+                    }
+
+                    createBodyData.TableAliasesInUse.Add(originalAlias);
+                    continue;
+                }
+
+                var aliasIndex = -1;
+                var aliasPrefix = originalAlias.Substring(0, originalAlias.Length - 1);
+                string newAlias;
+                do
+                {
+                    ++aliasIndex;
+                    newAlias = $"{aliasPrefix}{aliasIndex}]";
+                }
+                while (createBodyData.TableAliasesInUse.Contains(newAlias));
+
+                createBodyData.TableAliasesInUse.Add(newAlias);
+                innerSql = innerSql.Replace(originalAlias, newAlias);
+
+                if (tableName.Equals(firstNavigationTableNameWithBrackets, StringComparison.OrdinalIgnoreCase))
+                {
+                    firstNavigationAlias = newAlias;
+                }
+            }
+
+            if (isFirstNavigationACollectionType)
+            {
+                innerSql = innerSql.Substring(6).Trim();
+                
+                if (innerSql.StartsWith("("))
+                {
+                    createBodyData.UpdateColumnsSql.Append(' ').Append(innerSql);
+                }
+                else
+                {
+                    createBodyData.UpdateColumnsSql.Append(" (").Append(innerSql).Append(')');
+                }
+
+                createBodyData.SqlParameters.AddRange(innerSqlParameters);
+                return true;
+            }
+
+            var whereClauseCondition = new StringBuilder("WHERE ");
+            var dependencyKeyProperties = firstNavigation.ForeignKey.Properties;
+            var principalKeyProperties = firstNavigation.ForeignKey.PrincipalKey.Properties;
+            var navigationColumnFastLookup = createBodyData.GetTableInfoForType(firstNavigationType).PropertyColumnNamesDict;
+            var columnNameValueDict = rootTypeTableInfo.PropertyColumnNamesDict;
+            var rootTableAlias = createBodyData.TableAlias;
+            if (firstNavigation.IsDependentToPrincipal())
+            {
+                for (int keyIndex = 0; keyIndex < dependencyKeyProperties.Count; ++keyIndex)
+                {
+                    if (keyIndex > 0)
+                    {
+                        whereClauseCondition.Append(" AND ");
+                    }
+
+                    var dependencyColumnName = navigationColumnFastLookup[dependencyKeyProperties[keyIndex].Name];
+                    var principalColumnName = columnNameValueDict[principalKeyProperties[keyIndex].Name];
+                    whereClauseCondition.Append(firstNavigationAlias).Append(".[").Append(principalColumnName).Append("] = [")
+                        .Append(rootTableAlias).Append("].[").Append(dependencyColumnName).Append(']');
+                }
+            }
+            else
+            {
+                for (int keyIndex = 0; keyIndex < dependencyKeyProperties.Count; ++keyIndex)
+                {
+                    if (keyIndex > 0)
+                    {
+                        whereClauseCondition.Append(" AND ");
+                    }
+
+                    var dependencyColumnName = navigationColumnFastLookup[dependencyKeyProperties[keyIndex].Name];
+                    var principalColumnName = columnNameValueDict[principalKeyProperties[keyIndex].Name];
+                    whereClauseCondition.Append(firstNavigationAlias).Append(".[").Append(dependencyColumnName).Append("] = [")
+                        .Append(rootTableAlias).Append("].[").Append(principalColumnName).Append(']');
+                }
+            }
+
+            var whereClauseIndex = innerSql.LastIndexOf("WHERE ", StringComparison.OrdinalIgnoreCase);
+            if (whereClauseIndex > -1)
+            {
+                innerSql = innerSql.Substring(0, whereClauseIndex) + whereClauseCondition.ToString() + "AND " + innerSql.Substring(whereClauseIndex + 5);
+            }
+            else
+            {
+                var orderByIndex = innerSql.LastIndexOf("ORDER BY ", StringComparison.OrdinalIgnoreCase);
+                if (orderByIndex > -1)
+                {
+                    innerSql = innerSql.Substring(0, orderByIndex) + '\n' + whereClauseCondition.ToString() + '\n' + innerSql.Substring(orderByIndex);
+                }
+                else
+                {
+                    innerSql = innerSql + '\n' + whereClauseCondition.ToString();
+                }
+
+            }
+
+            createBodyData.UpdateColumnsSql.Append(" (\n    ").Append(innerSql.Replace("\n", "\n    ")).Append(')');
+            createBodyData.SqlParameters.AddRange(innerSqlParameters);
+
+            return true;
+        }
+
+        public class ExpressionNode
+        {
+            public ExpressionNode (Expression expression, ExpressionNode parent)
+            {
+                Expression = expression;
+                Parent = parent;
+            }
+
+            public Expression Expression { get; }
+            public ExpressionNode Parent { get; }
         }
     }
 }
