@@ -28,8 +28,15 @@ WHEN NOT MATCHED BY TARGET THEN INSERT ([Description], [Name], [Price], [Quantit
 VALUES (S.[Description], S.[Name], S.[Price], S.[Quantity], S.[TimeUpdated])
 WHEN MATCHED THEN UPDATE SET T.[Description] = S.[Description], T.[Name] = S.[Name], T.[Price] = S.[Price], T.[Quantity] = S.[Quantity], T.[TimeUpdated] = S.[TimeUpdated]
 --WHEN NOT MATCHED BY SOURCE THEN DELETE
+--OUTPUT COALESCE(INSERTED.[ItemId], DELETED.[ItemId]), COALESCE(INSERTED.[Description], DELETED.[Description]), COALESCE(INSERTED.[Name], DELETED.[Name]), COALESCE(INSERTED.[Price], DELETED.[Price]), COALESCE(INSERTED.[Quantity], DELETED.[Quantity]), COALESCE(INSERTED.[TimeUpdated], DELETED.[TimeUpdated])
 OUTPUT INSERTED.[ItemId], INSERTED.[Description], INSERTED.[Name], INSERTED.[Price], INSERTED.[Quantity], INSERTED.[TimeUpdated] -- All columns: INSERTED.*
 INTO [dbo].[ItemTemp1234Output];
+
+-- INSERT Item without corresponding value in ItemTemp1234, so it will be deleted when enabling DELETE in the previous query
+INSERT INTO [dbo].[Item]
+([Description], [Name], [Price], [Quantity], [TimeUpdated])
+VALUES
+('Desc4', 'SomeName4', 16.12, 39, '2017-01-01')
 
 -- Delete TempTable
 DROP TABLE [dbo].[ItemTemp1234];

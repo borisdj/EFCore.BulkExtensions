@@ -32,11 +32,12 @@ namespace EFCore.BulkExtensions.Tests
             new EFCoreBatchTest().RunDeleteAll(databaseType);
 
             RunInsert(isBulkOperation);
-            RunInsertOrUpdate(isBulkOperation);
+            RunInsertOrUpdate(isBulkOperation, databaseType);
             RunUpdate(isBulkOperation, databaseType);
             if (databaseType == DbServer.SqlServer)
             {
                 RunRead(isBulkOperation); // Not Yet supported for Sqlite
+                RunInsertOrUpdateOrDelete(isBulkOperation); // Not Yet supported for Sqlite
             }
             RunDelete(isBulkOperation, databaseType);
 
@@ -161,17 +162,18 @@ namespace EFCore.BulkExtensions.Tests
                     {
                         using (var transaction = context.Database.BeginTransaction())
                         {
-                            context.BulkInsert(
-                                entities,
-                                new BulkConfig
-                                {
-                                    PreserveInsertOrder = true,
-                                    SetOutputIdentity = true,
-                                    BatchSize = 4000,
-                                    UseTempDB = true
-                                },
-                                (a) => WriteProgress(a)
-                            );
+                            var bulkConfig = new BulkConfig
+                            {
+                                PreserveInsertOrder = true,
+                                SetOutputIdentity = true,
+                                BatchSize = 4000,
+                                UseTempDB = true,
+                                CalculateStats = true
+                            };
+                            context.BulkInsert(entities, bulkConfig, (a) => WriteProgress(a));
+                            Assert.Equal(EntitiesNumber - 1, bulkConfig.StatsInfo.StatsNumberInserted);
+                            Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberUpdated);
+                            Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberDeleted);
 
                             foreach (var entity in entities)
                             {
@@ -232,7 +234,7 @@ namespace EFCore.BulkExtensions.Tests
             }
         }
 
-        private void RunInsertOrUpdate(bool isBulkOperation)
+        private void RunInsertOrUpdate(bool isBulkOperation, DbServer databaseType)
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
@@ -254,6 +256,12 @@ namespace EFCore.BulkExtensions.Tests
                 {
                     var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
                     context.BulkInsertOrUpdate(entities, bulkConfig, (a) => WriteProgress(a));
+                    if (databaseType == DbServer.SqlServer)
+                    {
+                        Assert.Equal(1, bulkConfig.StatsInfo.StatsNumberInserted);
+                        Assert.Equal(EntitiesNumber / 2 - 1, bulkConfig.StatsInfo.StatsNumberUpdated);
+                        Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberDeleted);
+                    }
                 }
                 else
                 {
@@ -274,6 +282,57 @@ namespace EFCore.BulkExtensions.Tests
             }
         }
 
+        private void RunInsertOrUpdateOrDelete(bool isBulkOperation)
+        {
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                var entities = new List<Item>();
+                var dateTimeNow = DateTime.Now;
+                for (int i = 2; i <= EntitiesNumber; i += 2)
+                {
+                    entities.Add(new Item
+                    {
+                        ItemId = i,
+                        Name = "name InsertOrUpdateOrDelete " + i,
+                        Description = "info",
+                        Quantity = i,
+                        Price = i / (i % 5 + 1),
+                        TimeUpdated = dateTimeNow
+                    });
+                }
+                if (isBulkOperation)
+                {
+                    var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
+                    context.BulkInsertOrUpdateOrDelete(entities, bulkConfig, (a) => WriteProgress(a));
+                    Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberInserted);
+                    Assert.Equal(EntitiesNumber / 2, bulkConfig.StatsInfo.StatsNumberUpdated);
+                    Assert.Equal(EntitiesNumber / 2, bulkConfig.StatsInfo.StatsNumberDeleted);
+                }
+                else
+                {
+                    var existingItems = context.Items;
+                    var removedItems = existingItems.Where(x => !entities.Any(y => y.ItemId == x.ItemId));
+                    context.Items.RemoveRange(removedItems);
+                    context.Items.AddRange(entities);
+                    context.SaveChanges();
+                }
+            }
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                //int entitiesCount = ItemsCountQuery(context);
+                int entitiesCount = context.Items.Count();
+                //Item lastEntity = LastItemQuery(context);
+                Item firstEntity = context.Items.OrderBy(a => a.ItemId).FirstOrDefault();
+                Item lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
+
+                Assert.Equal(EntitiesNumber / 2, entitiesCount);
+                Assert.NotNull(firstEntity);
+                Assert.Equal("name InsertOrUpdateOrDelete 2", firstEntity.Name);
+                Assert.NotNull(lastEntity);
+                Assert.Equal("name InsertOrUpdateOrDelete " + EntitiesNumber, lastEntity.Name);
+            }
+        }
+
         private void RunUpdate(bool isBulkOperation, DbServer databaseType)
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
@@ -287,14 +346,19 @@ namespace EFCore.BulkExtensions.Tests
                 }
                 if (isBulkOperation)
                 {
-                    context.BulkUpdate(
-                        entities,
-                        new BulkConfig
-                        {
-                            PropertiesToInclude = new List<string> { nameof(Item.Description) },
-                            UpdateByProperties = databaseType == DbServer.SqlServer ? new List<string> { nameof(Item.Name) } : null
-                        }
-                    );
+                    var bulkConfig = new BulkConfig
+                    {
+                        PropertiesToInclude = new List<string> { nameof(Item.Description) },
+                        UpdateByProperties = databaseType == DbServer.SqlServer ? new List<string> { nameof(Item.Name) } : null,
+                        CalculateStats = true
+                    };
+                    context.BulkUpdate(entities, bulkConfig);
+                    if (databaseType == DbServer.SqlServer)
+                    {
+                        Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberInserted);
+                        Assert.Equal(EntitiesNumber, bulkConfig.StatsInfo.StatsNumberUpdated);
+                        Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberDeleted);
+                    }
                 }
                 else
                 {
@@ -353,7 +417,14 @@ namespace EFCore.BulkExtensions.Tests
                 // ItemHistories will also be deleted because of Relationship - ItemId (Delete Rule: Cascade)
                 if (isBulkOperation)
                 {
-                    context.BulkDelete(entities);
+                    var bulkConfig = new BulkConfig() { CalculateStats = true };
+                    context.BulkDelete(entities, bulkConfig);
+                    if (databaseType == DbServer.SqlServer)
+                    {
+                        Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberInserted);
+                        Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberUpdated);
+                        Assert.Equal(entities.Count, bulkConfig.StatsInfo.StatsNumberDeleted);
+                    }
                 }
                 else
                 {

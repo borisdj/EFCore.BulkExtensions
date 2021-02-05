@@ -500,6 +500,17 @@ namespace EFCore.BulkExtensions
             return (int)resultParameter.Value;
         }
 
+        protected int GetNumberDeleted(DbContext context)
+        {
+            var resultParameter = SqlClientHelper.CreateParameter(context.Database.GetDbConnection());
+            resultParameter.ParameterName = "@result";
+            resultParameter.DbType = DbType.Int32;
+            resultParameter.Direction = ParameterDirection.Output;
+            string sqlQueryCount = SqlQueryBuilder.SelectCountIsDeleteFromOutputTable(this);
+            context.Database.ExecuteSqlRaw($"SET @result = ({sqlQueryCount});", resultParameter);
+            return (int)resultParameter.Value;
+        }
+
         protected async Task<int> GetNumberUpdatedAsync(DbContext context, CancellationToken cancellationToken)
         {
             var resultParameters = new List<IDbDataParameter>();
@@ -509,6 +520,19 @@ namespace EFCore.BulkExtensions
             p.Direction = ParameterDirection.Output;
             resultParameters.Add(p);
             string sqlQueryCount = SqlQueryBuilder.SelectCountIsUpdateFromOutputTable(this);
+            await context.Database.ExecuteSqlRawAsync($"SET @result = ({sqlQueryCount});", resultParameters, cancellationToken).ConfigureAwait(false); // TODO cancellationToken if Not
+            return (int)resultParameters.FirstOrDefault().Value;
+        }
+
+        protected async Task<int> GetNumberDeletedAsync(DbContext context, CancellationToken cancellationToken)
+        {
+            var resultParameters = new List<IDbDataParameter>();
+            var p = SqlClientHelper.CreateParameter(context.Database.GetDbConnection());
+            p.ParameterName = "@result";
+            p.DbType = DbType.Int32;
+            p.Direction = ParameterDirection.Output;
+            resultParameters.Add(p);
+            string sqlQueryCount = SqlQueryBuilder.SelectCountIsDeleteFromOutputTable(this);
             await context.Database.ExecuteSqlRawAsync($"SET @result = ({sqlQueryCount});", resultParameters, cancellationToken).ConfigureAwait(false); // TODO cancellationToken if Not
             return (int)resultParameters.FirstOrDefault().Value;
         }
@@ -641,13 +665,13 @@ namespace EFCore.BulkExtensions
             }
             if (BulkConfig.CalculateStats)
             {
-                string sqlQueryCount = SqlQueryBuilder.SelectCountIsUpdateFromOutputTable(this);
-
                 int numberUpdated = GetNumberUpdated(context);
+                int numberDeleted = GetNumberDeleted(context);
                 BulkConfig.StatsInfo = new StatsInfo
                 {
                     StatsNumberUpdated = numberUpdated,
-                    StatsNumberInserted = entities.Count - numberUpdated
+                    StatsNumberDeleted = numberDeleted,
+                    StatsNumberInserted = entities.Count - numberUpdated - numberDeleted
                 };
             }
         }
@@ -676,10 +700,12 @@ namespace EFCore.BulkExtensions
             if (BulkConfig.CalculateStats)
             {
                 int numberUpdated = await GetNumberUpdatedAsync(context, cancellationToken).ConfigureAwait(false);
+                int numberDeleted = await GetNumberDeletedAsync(context, cancellationToken).ConfigureAwait(false);
                 BulkConfig.StatsInfo = new StatsInfo
                 {
                     StatsNumberUpdated = numberUpdated,
-                    StatsNumberInserted = entities.Count - numberUpdated
+                    StatsNumberDeleted = numberDeleted,
+                    StatsNumberInserted = entities.Count - numberUpdated - numberDeleted
                 };
             }
         }
