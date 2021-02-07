@@ -150,7 +150,7 @@ namespace EFCore.BulkExtensions
             HasOwnedTypes = ownedTypes.Any();
             OwnedTypesDict = ownedTypes.ToDictionary(a => a.Name, a => a);
 
-            IdentityColumnName = allProperties.SingleOrDefault(a => a.IsPrimaryKey() && (a.ClrType.Name.StartsWith("Byte") || a.ClrType.Name.StartsWith("SByte") || a.ClrType.Name.StartsWith("Int") || a.ClrType.Name.StartsWith("UInt")) && !a.ClrType.Name.EndsWith("[]") && a.ValueGenerated == ValueGenerated.OnAdd)?.Name; // ValueGenerated equals OnAdd even for nonIdentity column like Guid so we only type int as second condition
+            IdentityColumnName = allProperties.SingleOrDefault(a => a.IsPrimaryKey() && (a.ClrType.Name.StartsWith("Byte") || a.ClrType.Name.StartsWith("SByte") || a.ClrType.Name.StartsWith("Int") || a.ClrType.Name.StartsWith("UInt")) && !a.ClrType.Name.EndsWith("[]") && a.ValueGenerated == ValueGenerated.OnAdd)?.GetColumnName(); // ValueGenerated equals OnAdd even for nonIdentity column like Guid so we only type int as second condition
 
             // timestamp/row version properties are only set by the Db, the property has a [Timestamp] Attribute or is configured in FluentAPI with .IsRowVersion()
             // They can be identified by the columne type "timestamp" or .IsConcurrencyToken in combination with .ValueGenerated == ValueGenerated.OnAddOrUpdate
