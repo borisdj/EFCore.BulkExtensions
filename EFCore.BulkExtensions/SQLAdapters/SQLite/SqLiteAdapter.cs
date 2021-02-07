@@ -346,28 +346,25 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
             SqliteCommand command = connection.CreateCommand();
             command.Transaction = transaction;
 
-            OperationType operationType = tableInfo.BulkConfig.OperationType;
+            var operationType = tableInfo.BulkConfig.OperationType;
 
-            if (operationType == OperationType.Insert)
+            switch (operationType)
             {
-                command.CommandText = SqlQueryBuilderSqlite.InsertIntoTable(tableInfo, OperationType.Insert);
-            }
-            else if (operationType == OperationType.InsertOrUpdate)
-            {
-                command.CommandText = SqlQueryBuilderSqlite.InsertIntoTable(tableInfo, OperationType.InsertOrUpdate);
-            }
-            else if (operationType == OperationType.InsertOrUpdateDelete)
-            {
-                throw new NotSupportedException("Sqlite supports only UPSERT(analog for MERGE WHEN MATCHED) but does not have functionality to do: 'WHEN NOT MATCHED BY SOURCE THEN DELETE'" +
-                                                "What can be done is to read all Data, find rows that are not in input List, then with those do the BulkDelete.");
-            }
-            else if (operationType == OperationType.Update)
-            {
-                command.CommandText = SqlQueryBuilderSqlite.UpdateSetTable(tableInfo);
-            }
-            else if (operationType == OperationType.Delete)
-            {
-                command.CommandText = SqlQueryBuilderSqlite.DeleteFromTable(tableInfo);
+                case OperationType.Insert:
+                    command.CommandText = SqlQueryBuilderSqlite.InsertIntoTable(tableInfo, OperationType.Insert);
+                    break;
+                case OperationType.InsertOrUpdate:
+                    command.CommandText = SqlQueryBuilderSqlite.InsertIntoTable(tableInfo, OperationType.InsertOrUpdate);
+                    break;
+                case OperationType.InsertOrUpdateDelete:
+                    throw new NotSupportedException("Sqlite supports only UPSERT(analog for MERGE WHEN MATCHED) but does not have functionality to do: 'WHEN NOT MATCHED BY SOURCE THEN DELETE'" +
+                                                    "What can be done is to read all Data, find rows that are not in input List, then with those do the BulkDelete.");
+                case OperationType.Update:
+                    command.CommandText = SqlQueryBuilderSqlite.UpdateSetTable(tableInfo);
+                    break;
+                case OperationType.Delete:
+                    command.CommandText = SqlQueryBuilderSqlite.DeleteFromTable(tableInfo);
+                    break;
             }
 
             type = tableInfo.HasAbstractList ? entities[0].GetType() : type;
@@ -409,8 +406,8 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
 
         internal static void LoadSqliteValues<T>(TableInfo tableInfo, T entity, SqliteCommand command)
         {
-            var PropertyColumnsDict = tableInfo.PropertyColumnNamesDict;
-            foreach (var propertyColumn in PropertyColumnsDict)
+            var propertyColumnsDict = tableInfo.PropertyColumnNamesDict;
+            foreach (var propertyColumn in propertyColumnsDict)
             {
                 object value;
                 if (!tableInfo.ShadowProperties.Contains(propertyColumn.Key))
@@ -438,7 +435,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
                         {
                             var ownedPropertyValue = tableInfo.FastPropertyDict[ownedPropertyName].Get(entity);
                             var subPropertyFullName = $"{ownedPropertyName}_{subPropertyName}";
-                            value = tableInfo.FastPropertyDict[subPropertyFullName].Get(ownedPropertyValue);
+                            value = tableInfo.FastPropertyDict[subPropertyFullName]?.Get(ownedPropertyValue);
                         }
                     }
                     else

@@ -27,10 +27,10 @@ namespace EFCore.BulkExtensions
         // WHERE [a].[Columns] = FilterValues
         public static (string, List<object>) GetSqlDelete(IQueryable query, DbContext context)
         {
-            (string sql, string tableAlias, string tableAliasSufixAs, string topStatement, string leadingComments, IEnumerable<object> innerParameters) = GetBatchSql(query, context, isUpdate: false);
+            var (sql, tableAlias, _, topStatement, leadingComments, innerParameters) = GetBatchSql(query, context, isUpdate: false);
 
             innerParameters = ReloadSqlParameters(context, innerParameters.ToList()); // Sqlite requires SqliteParameters
-            tableAlias = (SqlAdaptersMapping.GetDatabaseType(context) == DbServer.SqlServer) ? $"[{tableAlias}]" : tableAlias;
+            tableAlias = SqlAdaptersMapping.GetDatabaseType(context) == DbServer.SqlServer ? $"[{tableAlias}]" : tableAlias;
 
             var resultQuery = $"{leadingComments}DELETE {topStatement}{tableAlias}{sql}";
             return (resultQuery, new List<object>(innerParameters));
@@ -45,7 +45,7 @@ namespace EFCore.BulkExtensions
         // WHERE [a].[Columns] = FilterValues
         public static (string, List<object>) GetSqlUpdate(IQueryable query, DbContext context, object updateValues, List<string> updateColumns)
         {
-            (string sql, string tableAlias, string tableAliasSufixAs, string topStatement, string leadingComments, IEnumerable<object> innerParameters) = GetBatchSql(query, context, isUpdate: true);
+            var (sql, tableAlias, tableAliasSufixAs, topStatement, leadingComments, innerParameters) = GetBatchSql(query, context, isUpdate: true);
             var sqlParameters = new List<object>(innerParameters);
 
             string sqlSET = GetSqlSetSegment(context, updateValues.GetType(), updateValues, updateColumns, sqlParameters);
@@ -99,17 +99,16 @@ namespace EFCore.BulkExtensions
             var sqlQueryBuilder = SqlAdaptersMapping.GetAdapterDialect(context);
             var (fullSqlQuery, innerParameters) = query.ToParametrizedSql();
 
-            DbServer databaseType = SqlAdaptersMapping.GetDatabaseType(context);
             var (leadingComments, sqlQuery) = SplitLeadingCommentsAndMainSqlQuery(fullSqlQuery);
 
-            string tableAlias = string.Empty;
+            string tableAlias;
             string tableAliasSufixAs = string.Empty;
-            string topStatement = string.Empty;
+            string topStatement;
 
             (tableAlias, topStatement) = sqlQueryBuilder.GetBatchSqlReformatTableAliasAndTopStatement(sqlQuery);
 
-            int indexFROM = sqlQuery.IndexOf(Environment.NewLine);
-            string sql = sqlQuery.Substring(indexFROM, sqlQuery.Length - indexFROM);
+            int indexFrom = sqlQuery.IndexOf(Environment.NewLine, StringComparison.Ordinal);
+            string sql = sqlQuery.Substring(indexFrom, sqlQuery.Length - indexFrom);
             sql = sql.Contains("{") ? sql.Replace("{", "{{") : sql; // Curly brackets have to be escaped:
             sql = sql.Contains("}") ? sql.Replace("}", "}}") : sql; // https://github.com/aspnet/EntityFrameworkCore/issues/8820
 
@@ -178,7 +177,7 @@ namespace EFCore.BulkExtensions
                     }
                 }
             }
-            if (String.IsNullOrEmpty(sql))
+            if (string.IsNullOrEmpty(sql))
             {
                 throw new InvalidOperationException("SET Columns not defined. If one or more columns should be updated to theirs default value use 'updateColumns' argument.");
             }
@@ -186,13 +185,6 @@ namespace EFCore.BulkExtensions
             return $"SET {sql}";
         }
 
-        /// <summary>
-        /// Recursive analytic expression 
-        /// </summary>
-        /// <param name="tableAlias"></param>
-        /// <param name="expression"></param>
-        /// <param name="sqlColumns"></param>
-        /// <param name="sqlParameters"></param>
         /// <summary>
         /// Recursive analytic expression 
         /// </summary>
@@ -348,7 +340,7 @@ namespace EFCore.BulkExtensions
 
         public static DbContext GetDbContext(IQueryable query)
         {
-            var bindingFlags = BindingFlags.NonPublic | BindingFlags.Instance;
+            const BindingFlags bindingFlags = BindingFlags.NonPublic | BindingFlags.Instance;
             var queryCompiler = typeof(EntityQueryProvider).GetField("_queryCompiler", bindingFlags).GetValue(query.Provider);
             var queryContextFactory = queryCompiler.GetType().GetField("_queryContextFactory", bindingFlags).GetValue(queryCompiler);
 
@@ -374,7 +366,7 @@ namespace EFCore.BulkExtensions
                 if (mainSqlQuery.StartsWith("--"))
                 {
                     // pull off line comment
-                    var indexOfNextNewLine = mainSqlQuery.IndexOf(Environment.NewLine);
+                    var indexOfNextNewLine = mainSqlQuery.IndexOf(Environment.NewLine, StringComparison.Ordinal);
                     if (indexOfNextNewLine > -1)
                     {
                         leadingCommentsBuilder.Append(mainSqlQuery.Substring(0, indexOfNextNewLine + Environment.NewLine.Length));
@@ -385,7 +377,7 @@ namespace EFCore.BulkExtensions
 
                 if (mainSqlQuery.StartsWith("/*"))
                 {
-                    var nextBlockCommentEndIndex = mainSqlQuery.IndexOf("*/");
+                    var nextBlockCommentEndIndex = mainSqlQuery.IndexOf("*/", StringComparison.Ordinal);
                     if (nextBlockCommentEndIndex > -1)
                     {
                         leadingCommentsBuilder.Append(mainSqlQuery.Substring(0, nextBlockCommentEndIndex + 2));

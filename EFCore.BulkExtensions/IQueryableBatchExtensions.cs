@@ -12,14 +12,14 @@ namespace EFCore.BulkExtensions
     {
         public static int BatchDelete(this IQueryable query)
         {
-            DbContext context = BatchUtil.GetDbContext(query);
-            (string sql, var sqlParameters) = BatchUtil.GetSqlDelete(query, context);
+            var context = BatchUtil.GetDbContext(query);
+            var (sql, sqlParameters) = BatchUtil.GetSqlDelete(query, context);
             return context.Database.ExecuteSqlRaw(sql, sqlParameters);
         }
 
         public static int BatchUpdate(this IQueryable query, object updateValues, List<string> updateColumns = null)
         {
-            DbContext context = BatchUtil.GetDbContext(query);
+            var context = BatchUtil.GetDbContext(query);
             var (sql, sqlParameters) = BatchUtil.GetSqlUpdate(query, context, updateValues, updateColumns);
             return context.Database.ExecuteSqlRaw(sql, sqlParameters);
         }
@@ -42,14 +42,14 @@ namespace EFCore.BulkExtensions
 
         public static async Task<int> BatchDeleteAsync(this IQueryable query, CancellationToken cancellationToken = default)
         {
-            DbContext context = BatchUtil.GetDbContext(query);
-            (string sql, var sqlParameters) = BatchUtil.GetSqlDelete(query, context);
+            var context = BatchUtil.GetDbContext(query);
+            var (sql, sqlParameters) = BatchUtil.GetSqlDelete(query, context);
             return await context.Database.ExecuteSqlRawAsync(sql, sqlParameters, cancellationToken).ConfigureAwait(false);
         }
 
         public static async Task<int> BatchUpdateAsync(this IQueryable query, object updateValues, List<string> updateColumns = null, CancellationToken cancellationToken = default)
         {
-            DbContext context = BatchUtil.GetDbContext(query);
+            var context = BatchUtil.GetDbContext(query);
             var (sql, sqlParameters) = BatchUtil.GetSqlUpdate(query, context, updateValues, updateColumns);
             return await context.Database.ExecuteSqlRawAsync(sql, sqlParameters, cancellationToken).ConfigureAwait(false);
         }

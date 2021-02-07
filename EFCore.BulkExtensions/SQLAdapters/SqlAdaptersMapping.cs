@@ -10,10 +10,9 @@ namespace EFCore.BulkExtensions.SqlAdapters
     public enum DbServer
     {
         SqlServer,
-
-        // MySql,
-        //  PostgreSql,
         Sqlite,
+        //PostgreSql, // ProviderName can be added as  optional Attribute of Enum so it can be defined when not the same, like Npgsql for PostgreSql
+        //MySql,
     }
 
     public static class SqlAdaptersMapping
