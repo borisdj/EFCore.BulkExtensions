@@ -195,7 +195,7 @@ namespace EFCore.BulkExtensions
             {
                 if (property.PropertyInfo != null) // skip Shadow Property
                 {
-                    FastPropertyDict.Add(property.Name, new FastProperty(property.PropertyInfo));   
+                    FastPropertyDict.Add(property.Name, new FastProperty(property.PropertyInfo));
                 }
             }
 
@@ -751,17 +751,14 @@ namespace EFCore.BulkExtensions
         public Expression<Func<DbContext, IEnumerable>> GetQueryExpression(Type entityType, string sqlQuery, bool ordered = true)
         {
             var parameter = Expression.Parameter(typeof(DbContext), "ctx");
-            var method = typeof(DbContext).GetMethod("Set").MakeGenericMethod(entityType);
-            var expression = Expression.Call(parameter, method);
-            method = typeof(RelationalQueryableExtensions).GetMethod("FromSqlRaw").MakeGenericMethod(entityType);
-            expression = Expression.Call(method, expression, Expression.Constant(sqlQuery), Expression.Constant(Array.Empty<object>()));
+            var expression = Expression.Call(parameter, "Set", new Type[] { entityType });
+            expression = Expression.Call(typeof(RelationalQueryableExtensions), "FromSqlRaw", new Type[] { entityType }, expression, Expression.Constant(sqlQuery), Expression.Constant(Array.Empty<object>()));
             if (BulkConfig.TrackingEntities) // If Else can not be replaced with Ternary operator for Expression
             {
             }
             else
             {
-                method = typeof(EntityFrameworkQueryableExtensions).GetMethod("AsNoTracking").MakeGenericMethod(entityType);
-                expression = Expression.Call(method, expression);
+                expression = Expression.Call(typeof(EntityFrameworkQueryableExtensions), "AsNoTracking", new Type[] { entityType }, expression);
             }
             expression = ordered ? OrderBy(entityType, expression, PrimaryKeys[0]) : expression;
             return Expression.Lambda<Func<DbContext, IEnumerable>>(expression, parameter);
