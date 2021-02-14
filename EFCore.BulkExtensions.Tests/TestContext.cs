@@ -80,14 +80,14 @@ namespace EFCore.BulkExtensions.Tests
         public static DbContextOptions GetOptions(IInterceptor dbInterceptor) => GetOptions(new[] { dbInterceptor });
         public static DbContextOptions GetOptions(IEnumerable<IInterceptor> dbInterceptors = null) => GetOptions<TestContext>(dbInterceptors);
 
-        public static DbContextOptions GetOptions<TDbContext>(IEnumerable<IInterceptor> dbInterceptors = null)
+        public static DbContextOptions GetOptions<TDbContext>(IEnumerable<IInterceptor> dbInterceptors = null, string databaseName = nameof(EFCoreBulkTest))
             where TDbContext: DbContext
         {
             var optionsBuilder = new DbContextOptionsBuilder<TDbContext>();
 
             if (DbServer == DbServer.SqlServer)
             {
-                var connectionString = GetSqlServerConnectionString();
+                var connectionString = GetSqlServerConnectionString(databaseName);
 
                 // ALTERNATIVELY (Using MSSQLLocalDB):
                 //var connectionString = $@"Data Source=(localdb)\MSSQLLocalDB;Database={databaseName};Trusted_Connection=True;MultipleActiveResultSets=True";
@@ -96,7 +96,7 @@ namespace EFCore.BulkExtensions.Tests
             }
             else if (DbServer == DbServer.Sqlite)
             {
-                string connectionString = GetSqliteConnectionString();
+                string connectionString = GetSqliteConnectionString(databaseName);
                 optionsBuilder.UseSqlite(connectionString);
 
                 // ALTERNATIVELY:
@@ -125,15 +125,13 @@ namespace EFCore.BulkExtensions.Tests
             return configBuilder.Build();
         }
 
-        public static string GetSqlServerConnectionString()
+        public static string GetSqlServerConnectionString(string databaseName)
         {
-            var databaseName = nameof(EFCoreBulkTest);
             return GetConfiguration().GetConnectionString("SqlServer").Replace("{databaseName}", databaseName);
         }
 
-        public static string GetSqliteConnectionString()
+        public static string GetSqliteConnectionString(string databaseName)
         {
-            var databaseName = nameof(EFCoreBulkTest);
             return GetConfiguration().GetConnectionString("Sqlite").Replace("{databaseName}", databaseName);
         }
     }

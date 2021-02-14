@@ -18,7 +18,7 @@ namespace EFCore.BulkExtensions.Tests.ShadowProperties
         {
             ContextUtil.DbServer = databaseType;
 
-            using var db = new SpDbContext(ContextUtil.GetOptions<SpDbContext>());
+            using var db = new SpDbContext(ContextUtil.GetOptions<SpDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_ShadowProperties"));
 
             db.BulkInsertOrUpdate(this.GetTestData(db).ToList(), new BulkConfig
             {
@@ -44,7 +44,7 @@ namespace EFCore.BulkExtensions.Tests.ShadowProperties
 
         public void Dispose()
         {
-            using var db = new SpDbContext(ContextUtil.GetOptions<SpDbContext>());
+            using var db = new SpDbContext(ContextUtil.GetOptions<SpDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_ShadowProperties"));
             db.Database.EnsureDeleted();
         }
     }
