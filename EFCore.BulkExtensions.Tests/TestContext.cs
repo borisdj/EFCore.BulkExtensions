@@ -3,11 +3,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
+using System.Reflection.Metadata;
 
 namespace EFCore.BulkExtensions.Tests
 {
@@ -76,15 +78,16 @@ namespace EFCore.BulkExtensions.Tests
         public static DbServer DbServer { get; set; }
 
         public static DbContextOptions GetOptions(IInterceptor dbInterceptor) => GetOptions(new[] { dbInterceptor });
+        public static DbContextOptions GetOptions(IEnumerable<IInterceptor> dbInterceptors = null) => GetOptions<TestContext>(dbInterceptors);
 
-        public static DbContextOptions GetOptions(IEnumerable<IInterceptor> dbInterceptors = null)
+        public static DbContextOptions GetOptions<TDbContext>(IEnumerable<IInterceptor> dbInterceptors = null)
+            where TDbContext: DbContext
         {
-            var databaseName = nameof(EFCoreBulkTest);
-            var optionsBuilder = new DbContextOptionsBuilder<TestContext>();
+            var optionsBuilder = new DbContextOptionsBuilder<TDbContext>();
 
             if (DbServer == DbServer.SqlServer)
             {
-                var connectionString = $"Server=localhost;Database={databaseName};Trusted_Connection=True;MultipleActiveResultSets=true";
+                var connectionString = GetSqlServerConnectionString();
 
                 // ALTERNATIVELY (Using MSSQLLocalDB):
                 //var connectionString = $@"Data Source=(localdb)\MSSQLLocalDB;Database={databaseName};Trusted_Connection=True;MultipleActiveResultSets=True";
@@ -93,7 +96,7 @@ namespace EFCore.BulkExtensions.Tests
             }
             else if (DbServer == DbServer.Sqlite)
             {
-                string connectionString = $"Data Source={databaseName}.db";
+                string connectionString = GetSqliteConnectionString();
                 optionsBuilder.UseSqlite(connectionString);
 
                 // ALTERNATIVELY:
@@ -111,6 +114,27 @@ namespace EFCore.BulkExtensions.Tests
             }
 
             return optionsBuilder.Options;
+        }
+
+        private static IConfiguration GetConfiguration()
+        {
+            var configBuilder = new ConfigurationBuilder()
+                .AddJsonFile("testsettings.json", optional: false)
+                .AddJsonFile("testsettings.local.json", optional: true);
+
+            return configBuilder.Build();
+        }
+
+        public static string GetSqlServerConnectionString()
+        {
+            var databaseName = nameof(EFCoreBulkTest);
+            return GetConfiguration().GetConnectionString("SqlServer").Replace("{databaseName}", databaseName);
+        }
+
+        public static string GetSqliteConnectionString()
+        {
+            var databaseName = nameof(EFCoreBulkTest);
+            return GetConfiguration().GetConnectionString("Sqlite").Replace("{databaseName}", databaseName);
         }
     }
 

@@ -5,10 +5,12 @@ using System.Data;
 using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using EFCore.BulkExtensions.SqlAdapters;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
@@ -460,7 +462,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
             var entityNavigationOwnedDict = entityType.GetNavigations().Where(a => a.GetTargetType().IsOwned()).ToDictionary(a => a.Name, a => a);
             var entityShadowFkPropertiesDict = entityType.GetProperties().Where(a => a.IsShadowProperty() && a.IsForeignKey()).ToDictionary(x => x.GetContainingForeignKeys().First().DependentToPrincipal.Name, a => a);
             var properties = type.GetProperties();
-            var discriminatorColumn = tableInfo.ShadowProperties.Count == 0 ? null : tableInfo.ShadowProperties.ElementAt(0);
+            var discriminatorColumn = GetDiscriminatorColumn(tableInfo);
 
             foreach (var property in properties)
             {
@@ -552,6 +554,26 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                     }
                 }
             }
+
+            if (tableInfo.BulkConfig.EnableShadowProperties)
+            {
+                foreach (var sp in entityPropertiesDict.Values.Where(y => y.IsShadowProperty()))
+                {
+                    var columnName = sp.GetColumnName();
+                    var isConvertible = tableInfo.ConvertibleProperties.ContainsKey(columnName);
+                    var propertyType = isConvertible ? tableInfo.ConvertibleProperties[columnName].ProviderClrType : sp.ClrType;
+
+                    var underlyingType = Nullable.GetUnderlyingType(propertyType);
+                    if (underlyingType != null)
+                    {
+                        propertyType = underlyingType;
+                    }
+
+                    dataTable.Columns.Add(columnName, propertyType);
+                    columnsDict.Add(sp.Name, null);
+                }
+            }
+
             if (discriminatorColumn != null)
             {
                 dataTable.Columns.Add(discriminatorColumn, typeof(string));
@@ -607,12 +629,46 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                         }
                     }
                 }
+
+                if (tableInfo.BulkConfig.EnableShadowProperties)
+                {
+                    foreach (var sp in entityPropertiesDict.Values.Where(y => y.IsShadowProperty()))
+                    {
+                        var propertyValue = context.Entry(entity).Property(sp.Name).CurrentValue;
+                        var columnName = sp.GetColumnName();
+
+                        if (tableInfo.ConvertibleProperties.ContainsKey(columnName))
+                        {
+                            propertyValue = tableInfo.ConvertibleProperties[columnName].ConvertToProvider.Invoke(propertyValue);
+                        }
+
+                        columnsDict[sp.Name] = propertyValue;
+                    }
+                }
+
                 var record = columnsDict.Values.ToArray();
                 dataTable.Rows.Add(record);
             }
 
             return dataTable;
         }
+
+        private static string GetDiscriminatorColumn(TableInfo tableInfo)
+        {
+            string discriminatorColumn;
+
+            if (!tableInfo.BulkConfig.EnableShadowProperties)
+            {
+                discriminatorColumn = tableInfo.ShadowProperties.Count == 0 ? null : tableInfo.ShadowProperties.ElementAt(0);
+            }
+            else
+            {
+                discriminatorColumn = null;
+            }
+
+            return discriminatorColumn;
+        }
+
        #endregion
     }
 }

@@ -35,6 +35,8 @@ namespace EFCore.BulkExtensions
 
         public List<string> UpdateByProperties { get; set; }
 
+        public bool EnableShadowProperties { get; set; } = false;
+
         // since Microsoft.Data.SqlClient.SqlBulkCopyOptions is a superset of 
         // System.Data.SqlClient.SqlBulkCopyOptions, allow user to always specify
         // Microsoft.Data.SqlClient and we will convert it to the desired type
