@@ -219,10 +219,16 @@ namespace EFCore.BulkExtensions
             {
                 PropertyColumnNamesDict = properties.ToDictionary(a => a.Name, b => b.GetColumnName().Replace("]", "]]"));
                 ShadowProperties = new HashSet<string>(properties.Where(p => p.IsShadowProperty() && !p.IsForeignKey()).Select(p => p.GetColumnName()));
-                foreach (var property in properties.Where(p => p.GetValueConverter() != null))
+                foreach (var property in properties)
                 {
-                    string columnName = property.GetColumnName();
-                    ValueConverter converter = property.GetValueConverter();
+                    var converter = property.GetTypeMapping().Converter;
+
+                    if (converter is null)
+                    {
+                        continue;
+                    }
+
+                    var columnName = property.GetColumnName();
                     ConvertibleProperties.Add(columnName, converter);
                 }
 
