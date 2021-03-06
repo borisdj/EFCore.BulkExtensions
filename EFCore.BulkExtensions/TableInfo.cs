@@ -47,6 +47,8 @@ namespace EFCore.BulkExtensions
         public BulkConfig BulkConfig { get; set; }
         public Dictionary<string, string> OutputPropertyColumnNamesDict { get; set; } = new Dictionary<string, string>();
         public Dictionary<string, string> PropertyColumnNamesDict { get; set; } = new Dictionary<string, string>();
+        public Dictionary<string, string> PropertyColumnNamesCompareDict { get; set; } = new Dictionary<string, string>();
+        public Dictionary<string, string> PropertyColumnNamesUpdateDict { get; set; } = new Dictionary<string, string>();
         public Dictionary<string, FastProperty> FastPropertyDict { get; set; } = new Dictionary<string, FastProperty>();
         public Dictionary<string, INavigation> AllNavigationsDictionary { get; private set; }
         public Dictionary<string, INavigation> OwnedTypesDict { get; set; } = new Dictionary<string, INavigation>();
@@ -159,6 +161,8 @@ namespace EFCore.BulkExtensions
             TimeStampColumnName = timeStampProperties.FirstOrDefault()?.GetColumnName(); // can be only One
             var allPropertiesExceptTimeStamp = allProperties.Except(timeStampProperties);
             var properties = allPropertiesExceptTimeStamp.Where(a => a.GetComputedColumnSql() == null);
+            var propertiesOnCompare = allPropertiesExceptTimeStamp.Where(a => a.GetComputedColumnSql() == null);
+            var propertiesOnUpdate = allPropertiesExceptTimeStamp.Where(a => a.GetComputedColumnSql() == null);
 
             // TimeStamp prop. is last column in OutputTable since it is added later with varbinary(8) type in which Output can be inserted
             OutputPropertyColumnNamesDict = allPropertiesExceptTimeStamp.Concat(timeStampProperties).ToDictionary(a => a.Name, b => b.GetColumnName().Replace("]", "]]")); // square brackets have to be escaped
@@ -166,6 +170,12 @@ namespace EFCore.BulkExtensions
 
             bool AreSpecifiedPropertiesToInclude = BulkConfig.PropertiesToInclude?.Count() > 0;
             bool AreSpecifiedPropertiesToExclude = BulkConfig.PropertiesToExclude?.Count() > 0;
+
+            bool AreSpecifiedPropertiesToIncludeOnCompare = BulkConfig.PropertiesToIncludeOnCompare?.Count() > 0;
+            bool AreSpecifiedPropertiesToExcludeOnCompare = BulkConfig.PropertiesToExcludeOnCompare?.Count() > 0;
+
+            bool AreSpecifiedPropertiesToIncludeOnUpdate = BulkConfig.PropertiesToExcludeOnUpdate?.Count() > 0;
+            bool AreSpecifiedPropertiesToExcludeOnUpdate = BulkConfig.PropertiesToIncludeOnUpdate?.Count() > 0;
 
             if (AreSpecifiedPropertiesToInclude)
             {
@@ -210,6 +220,36 @@ namespace EFCore.BulkExtensions
                 if (AreSpecifiedPropertiesToExclude)
                     properties = properties.Where(a => !BulkConfig.PropertiesToExclude.Contains(a.Name));
             }
+
+            if (AreSpecifiedPropertiesToIncludeOnCompare || AreSpecifiedPropertiesToExcludeOnCompare)
+            {
+                if (AreSpecifiedPropertiesToIncludeOnCompare && AreSpecifiedPropertiesToExcludeOnCompare)
+                    throw new InvalidOperationException("Only one group of properties, either PropertiesToIncludeOnCompare or PropertiesToExcludeOnCompare can be specified, specifying both not allowed.");
+                if (AreSpecifiedPropertiesToIncludeOnCompare)
+                    propertiesOnCompare = propertiesOnCompare.Where(a => BulkConfig.PropertiesToIncludeOnCompare.Contains(a.Name));
+                if (AreSpecifiedPropertiesToExcludeOnCompare)
+                    propertiesOnCompare = propertiesOnCompare.Where(a => !BulkConfig.PropertiesToExcludeOnCompare.Contains(a.Name));
+            }
+            else
+            {
+                propertiesOnCompare = properties;
+            }
+            if (AreSpecifiedPropertiesToIncludeOnUpdate || AreSpecifiedPropertiesToExcludeOnUpdate)
+            {
+                if (AreSpecifiedPropertiesToIncludeOnUpdate && AreSpecifiedPropertiesToExcludeOnUpdate)
+                    throw new InvalidOperationException("Only one group of properties, either PropertiesToIncludeOnUpdate or PropertiesToExcludeOnUpdate can be specified, specifying both not allowed.");
+                if (AreSpecifiedPropertiesToIncludeOnUpdate)
+                    propertiesOnUpdate = propertiesOnUpdate.Where(a => BulkConfig.PropertiesToIncludeOnUpdate.Contains(a.Name));
+                if (AreSpecifiedPropertiesToExcludeOnUpdate)
+                    propertiesOnUpdate = propertiesOnUpdate.Where(a => !BulkConfig.PropertiesToExcludeOnUpdate.Contains(a.Name));
+            }
+            else
+            {
+                propertiesOnUpdate = properties;
+            }
+
+            PropertyColumnNamesCompareDict = propertiesOnCompare.ToDictionary(a => a.Name, b => b.GetColumnName().Replace("]", "]]"));
+            PropertyColumnNamesUpdateDict = propertiesOnUpdate.ToDictionary(a => a.Name, b => b.GetColumnName().Replace("]", "]]"));
 
             if (loadOnlyPKColumn)
             {
