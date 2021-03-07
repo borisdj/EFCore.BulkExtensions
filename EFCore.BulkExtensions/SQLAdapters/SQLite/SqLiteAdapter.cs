@@ -33,7 +33,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
                 int rowsCopied = 0;
                 foreach (var item in entities)
                 {
-                    LoadSqliteValues(tableInfo, item, command);
+                    LoadSqliteValues(tableInfo, item, command, context);
                     command.ExecuteNonQuery();
                     ProgressHelper.SetProgress(ref rowsCopied, entities.Count, tableInfo.BulkConfig, progress);
                 }
@@ -72,7 +72,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
 
                 foreach (var item in entities)
                 {
-                    LoadSqliteValues(tableInfo, item, command);
+                    LoadSqliteValues(tableInfo, item, command, context);
                     await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
                     ProgressHelper.SetProgress(ref rowsCopied, entities.Count, tableInfo.BulkConfig, progress);
                 }
@@ -110,7 +110,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
                     int rowsCopied = 0;
                     foreach (var item in entities)
                     {
-                        LoadSqliteValues(tableInfo, item, command);
+                        LoadSqliteValues(tableInfo, item, command, context);
                         command.ExecuteNonQuery();
                         ProgressHelper.SetProgress(ref rowsCopied, entities.Count, tableInfo.BulkConfig, progress);
                     }
@@ -226,7 +226,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
 
                     foreach (var item in entities)
                     {
-                        LoadSqliteValues(tableInfo, item, command);
+                        LoadSqliteValues(tableInfo, item, command, context);
                         await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
                         ProgressHelper.SetProgress(ref rowsCopied, entities.Count, tableInfo.BulkConfig, progress);
                     }
@@ -404,13 +404,15 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
             return command;
         }
 
-        internal static void LoadSqliteValues<T>(TableInfo tableInfo, T entity, SqliteCommand command)
+        internal static void LoadSqliteValues<T>(TableInfo tableInfo, T entity, SqliteCommand command, DbContext dbContext)
         {
             var propertyColumnsDict = tableInfo.PropertyColumnNamesDict;
             foreach (var propertyColumn in propertyColumnsDict)
             {
+                var isShadowProperty = tableInfo.ShadowProperties.Contains(propertyColumn.Key);
+
                 object value;
-                if (!tableInfo.ShadowProperties.Contains(propertyColumn.Key))
+                if (!isShadowProperty)
                 {
                     if (propertyColumn.Key.Contains(".")) // ToDo: change IF clause to check for NavigationProperties, optimise, integrate with same code segment from LoadData method
                     {
@@ -443,9 +445,18 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
                         value = tableInfo.FastPropertyDict[propertyColumn.Key].Get(entity);
                     }
                 }
-                else // IsShadowProperty
+                else
                 {
-                    value = entity.GetType().Name;
+                    if (tableInfo.BulkConfig.EnableShadowProperties)
+                    {
+                        // Get the sahdow property value
+                        value = dbContext.Entry(entity).Property(propertyColumn.Key).CurrentValue;
+                    }
+                    else
+                    {
+                        // Set the value for the discriminator column
+                        value = entity.GetType().Name;
+                    }
                 }
 
                 if (tableInfo.ConvertibleProperties.ContainsKey(propertyColumn.Key) && value != DBNull.Value)
