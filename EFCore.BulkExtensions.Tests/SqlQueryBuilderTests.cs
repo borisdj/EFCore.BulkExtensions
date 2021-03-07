@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Xunit;
 
 namespace EFCore.BulkExtensions.Tests
@@ -29,7 +30,42 @@ namespace EFCore.BulkExtensions.Tests
             string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING [dbo].[ItemTemp1234] AS S " +
                               "ON T.[ItemId] = S.[ItemId] " +
                               "WHEN NOT MATCHED BY TARGET THEN INSERT ([Name]) VALUES (S.[Name]) " +
-                              "WHEN MATCHED THEN UPDATE SET T.[Name] = S.[Name];";
+                              "WHEN MATCHED AND EXISTS (SELECT S.[Name] " +
+                              "EXCEPT SELECT T.[Name]) " +
+                              "THEN UPDATE SET T.[Name] = S.[Name];";
+
+            Assert.Equal(result, expected);
+        }
+
+        [Fact]
+        public void MergeTableInsertOrUpdateWithCompareTest()
+        {
+            TableInfo tableInfo = GetTestTableWithCompareInfo();
+            tableInfo.IdentityColumnName = "ItemId";
+            string result = SqlQueryBuilder.MergeTable(tableInfo, OperationType.InsertOrUpdate);
+
+            string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING [dbo].[ItemTemp1234] AS S " +
+                              "ON T.[ItemId] = S.[ItemId] " +
+                              "WHEN NOT MATCHED BY TARGET THEN INSERT ([Name], [TimeUpdated]) VALUES (S.[Name], S.[TimeUpdated]) " +
+                              "WHEN MATCHED AND EXISTS (SELECT S.[Name] " +
+                              "EXCEPT SELECT T.[Name]) " +
+                              "THEN UPDATE SET T.[Name] = S.[Name], T.[TimeUpdated] = S.[TimeUpdated];";
+
+            Assert.Equal(result, expected);
+        }
+        [Fact]
+        public void MergeTableInsertOrUpdateNoUpdateTest()
+        {
+            TableInfo tableInfo = GetTestTableWithNoUpdateInfo();
+            tableInfo.IdentityColumnName = "ItemId";
+            string result = SqlQueryBuilder.MergeTable(tableInfo, OperationType.InsertOrUpdate);
+
+            string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING [dbo].[ItemTemp1234] AS S " +
+                              "ON T.[ItemId] = S.[ItemId] " +
+                              "WHEN NOT MATCHED BY TARGET THEN INSERT ([Name], [TimeUpdated]) VALUES (S.[Name], S.[TimeUpdated]) " +
+                              "WHEN MATCHED AND EXISTS (SELECT S.[Name], S.[TimeUpdated] " +
+                              "EXCEPT SELECT T.[Name], T.[TimeUpdated]) " +
+                              "THEN UPDATE SET T.[Name] = S.[Name];";
 
             Assert.Equal(result, expected);
         }
@@ -43,7 +79,9 @@ namespace EFCore.BulkExtensions.Tests
 
             string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING [dbo].[ItemTemp1234] AS S " +
                               "ON T.[ItemId] = S.[ItemId] " +
-                              "WHEN MATCHED THEN UPDATE SET T.[Name] = S.[Name];";
+                              "WHEN MATCHED AND EXISTS (SELECT S.[Name] " +
+                              "EXCEPT SELECT T.[Name]) " +
+                              "THEN UPDATE SET T.[Name] = S.[Name];";
 
             Assert.Equal(result, expected);
         }
@@ -52,7 +90,7 @@ namespace EFCore.BulkExtensions.Tests
         public void SelectJoinTableReadTest()
         {
             TableInfo tableInfo = GetTestTableInfo();
-            tableInfo.BulkConfig.UpdateByProperties = new List<string> { nameof(Item.Name) };
+            tableInfo.BulkConfig.UpdateByProperties = new List<string> {nameof(Item.Name)};
             string result = SqlQueryBuilder.SelectJoinTable(tableInfo);
 
             string expected = "SELECT S.[ItemId], S.[Name] FROM [dbo].[Item] AS S " +
@@ -80,15 +118,70 @@ namespace EFCore.BulkExtensions.Tests
             var tableInfo = new TableInfo()
             {
                 Schema = "dbo",
-                TableName = "Item",
-                PrimaryKeys = new List<string> { "ItemId" },
+                TableName = nameof(Item),
+                PrimaryKeys = new List<string> { nameof(Item.ItemId) },
                 TempTableSufix = "Temp1234",
                 BulkConfig = new BulkConfig()
             };
-            var nameText = "Name";
+            const string nameText = nameof(Item.Name);
 
             tableInfo.PropertyColumnNamesDict.Add(tableInfo.PrimaryKeys[0], tableInfo.PrimaryKeys[0]);
             tableInfo.PropertyColumnNamesDict.Add(nameText, nameText);
+            //compare on all columns (default)
+            tableInfo.PropertyColumnNamesCompareDict = tableInfo.PropertyColumnNamesDict;
+            //update all columns (default)
+            tableInfo.PropertyColumnNamesUpdateDict = tableInfo.PropertyColumnNamesDict;
+            return tableInfo;
+        }
+
+        private TableInfo GetTestTableWithCompareInfo()
+        {
+            var tableInfo = new TableInfo()
+            {
+                Schema = "dbo",
+                TableName = nameof(Item),
+                PrimaryKeys = new List<string> { nameof(Item.ItemId) },
+                TempTableSufix = "Temp1234",
+                BulkConfig = new BulkConfig()
+            };
+            const string nameText = nameof(Item.Name);
+            const string timeUpdatedText = nameof(Item.TimeUpdated);
+
+            tableInfo.PropertyColumnNamesDict.Add(tableInfo.PrimaryKeys[0], tableInfo.PrimaryKeys[0]);
+            tableInfo.PropertyColumnNamesDict.Add(nameText, nameText);
+            tableInfo.PropertyColumnNamesDict.Add(timeUpdatedText, timeUpdatedText);
+
+            //do not update if only the TimeUpdated changed
+            tableInfo.PropertyColumnNamesCompareDict =
+                tableInfo.PropertyColumnNamesDict.Where(p => p.Key != timeUpdatedText).ToDictionary(p => p.Key, p => p.Value);
+
+            //if an update id called, update all columns
+            tableInfo.PropertyColumnNamesUpdateDict = tableInfo.PropertyColumnNamesDict;
+            return tableInfo;
+        }
+        private TableInfo GetTestTableWithNoUpdateInfo()
+        {
+            var tableInfo = new TableInfo()
+            {
+                Schema = "dbo",
+                TableName = nameof(Item),
+                PrimaryKeys = new List<string> { nameof(Item.ItemId) },
+                TempTableSufix = "Temp1234",
+                BulkConfig = new BulkConfig()
+            };
+            const string nameText = nameof(Item.Name);
+            const string timeUpdatedText = nameof(Item.TimeUpdated);
+
+            tableInfo.PropertyColumnNamesDict.Add(tableInfo.PrimaryKeys[0], tableInfo.PrimaryKeys[0]);
+            tableInfo.PropertyColumnNamesDict.Add(nameText, nameText);
+            tableInfo.PropertyColumnNamesDict.Add(timeUpdatedText, timeUpdatedText);
+
+            //update a row if any of the values are updated
+            tableInfo.PropertyColumnNamesCompareDict = tableInfo.PropertyColumnNamesDict;
+
+            //the TimeUpdated can be inserted but not updated.
+            tableInfo.PropertyColumnNamesUpdateDict =
+                tableInfo.PropertyColumnNamesDict.Where(p => p.Key != timeUpdatedText).ToDictionary(p => p.Key, p => p.Value);
 
             return tableInfo;
         }

@@ -30,8 +30,12 @@ namespace EFCore.BulkExtensions
         public StatsInfo StatsInfo { get; set; }
 
         public List<string> PropertiesToInclude { get; set; }
+        public List<string> PropertiesToIncludeOnCompare { get; set; }
+        public List<string> PropertiesToIncludeOnUpdate { get; set; }
 
         public List<string> PropertiesToExclude { get; set; }
+        public List<string> PropertiesToExcludeOnCompare { get; set; }
+        public List<string> PropertiesToExcludeOnUpdate { get; set; }
 
         public List<string> UpdateByProperties { get; set; }
 
