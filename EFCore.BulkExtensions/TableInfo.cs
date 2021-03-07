@@ -246,6 +246,15 @@ namespace EFCore.BulkExtensions
             else
             {
                 propertiesOnUpdate = properties;
+
+                if (BulkConfig.UpdateByProperties != null) // to remove NonIdentity PK like Guid from SET ID = ID, ...
+                {
+                    propertiesOnUpdate = propertiesOnUpdate.Where(a => !BulkConfig.UpdateByProperties.Contains(a.Name));
+                }
+                else if (primaryKeys != null)
+                {
+                    propertiesOnUpdate = propertiesOnUpdate.Where(a => !primaryKeys.Contains(a.Name));
+                }
             }
 
             PropertyColumnNamesCompareDict = propertiesOnCompare.ToDictionary(a => a.Name, b => b.GetColumnName().Replace("]", "]]"));
