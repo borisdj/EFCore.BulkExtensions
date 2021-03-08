@@ -12,6 +12,8 @@ using EFCore.BulkExtensions.SqlAdapters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
+using NetTopologySuite.Geometries;
+using NetTopologySuite.IO;
 
 namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
 {
@@ -456,6 +458,12 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
             var columnsDict = new Dictionary<string, object>();
             var ownedEntitiesMappedProperties = new HashSet<string>();
 
+            var isSqlServer = context.Database.ProviderName.EndsWith(DbServer.SqlServer.ToString());
+            var sqlServerBytesWriter = new SqlServerBytesWriter
+            {
+                IsGeography = true
+            };
+
             type = tableInfo.HasAbstractList ? entities[0].GetType() : type;
             var entityType = context.Model.FindEntityType(type);
             var entityPropertiesDict = entityType.GetProperties().Where(a => tableInfo.PropertyColumnNamesDict.ContainsKey(a.Name)).ToDictionary(a => a.Name, a => a);
@@ -483,6 +491,11 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                         propertyType = underlyingType;
                     }
 
+                    if (propertyType == typeof(Geometry) && isSqlServer)
+                    {
+                        propertyType = typeof(byte[]);
+                    }
+
                     dataTable.Columns.Add(columnName, propertyType);
                     columnsDict.Add(property.Name, null);
                 }
@@ -499,6 +512,11 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                     if (underlyingType != null)
                     {
                         propertyType = underlyingType;
+                    }
+
+                    if (propertyType == typeof(Geometry) && isSqlServer)
+                    {
+                        propertyType = typeof(byte[]);
                     }
 
                     dataTable.Columns.Add(columnName, propertyType);
@@ -572,6 +590,11 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                         propertyType = underlyingType;
                     }
 
+                    if (propertyType == typeof(Geometry) && isSqlServer)
+                    {
+                        propertyType = typeof(byte[]);
+                    }
+
                     dataTable.Columns.Add(columnName, propertyType);
                     columnsDict.Add(sp.Name, null);
                 }
@@ -596,6 +619,12 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                         {
                             propertyValue = tableInfo.ConvertibleProperties[columnName].ConvertToProvider.Invoke(propertyValue);
                         }
+                    }
+
+                    if (propertyValue is Geometry geometryValue && isSqlServer)
+                    {
+                        geometryValue.SRID = tableInfo.BulkConfig.SRID;
+                        propertyValue = sqlServerBytesWriter.Write(geometryValue);
                     }
 
                     if (entityPropertiesDict.ContainsKey(property.Name))

@@ -4,6 +4,7 @@ using System.Data;
 using System.Linq;
 using EFCore.BulkExtensions.SqlAdapters;
 using Microsoft.EntityFrameworkCore;
+using NetTopologySuite.Geometries;
 using Xunit;
 
 namespace EFCore.BulkExtensions.Tests
@@ -318,6 +319,28 @@ namespace EFCore.BulkExtensions.Tests
                 }
 
                 context.BulkDelete(context.ItemLinks.ToList());
+            }
+        }
+
+        [Fact]
+        private void InsertWithGeometryColumn()
+        {
+            ContextUtil.DbServer = DbServer.SqlServer;
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.BulkDelete(context.Addresses.ToList());
+            }
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                var entities = new List<Address> {
+                    new Address {
+                        Street = "Some Street nn",
+                        Location = new Point(52, 13)
+                    }
+                };
+
+                context.BulkInsert(entities);
             }
         }
     }

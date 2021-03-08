@@ -41,6 +41,8 @@ namespace EFCore.BulkExtensions
 
         public bool EnableShadowProperties { get; set; } = false;
 
+        public int SRID { get; set; } = 4326; // Spatial Reference Identifier // https://docs.microsoft.com/en-us/sql/relational-databases/spatial/spatial-reference-identifiers-srids
+
         // since Microsoft.Data.SqlClient.SqlBulkCopyOptions is a superset of 
         // System.Data.SqlClient.SqlBulkCopyOptions, allow user to always specify
         // Microsoft.Data.SqlClient and we will convert it to the desired type

@@ -4,12 +4,12 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Microsoft.Extensions.Configuration;
+using NetTopologySuite.Geometries;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
-using System.Reflection.Metadata;
 
 namespace EFCore.BulkExtensions.Tests
 {
@@ -27,6 +27,7 @@ namespace EFCore.BulkExtensions.Tests
         public DbSet<Info> Infos { get; set; }
         public DbSet<ChangeLog> ChangeLogs { get; set; }
         public DbSet<ItemLink> ItemLinks { get; set; }
+        public DbSet<Address> Addresses { get; set; }
 
         public DbSet<Parent> Parents { get; set; }
         public DbSet<ParentDetail> ParentDetails { get; set; }
@@ -64,6 +65,8 @@ namespace EFCore.BulkExtensions.Tests
             else if (Database.IsSqlite())
             {
                 modelBuilder.Entity<Document>().Property(p => p.VersionChange).ValueGeneratedOnAddOrUpdate().IsConcurrencyToken().HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                modelBuilder.Entity<Address>().Ignore(p => p.Location);
             }
 
             // [Timestamp] alternative:
@@ -92,7 +95,8 @@ namespace EFCore.BulkExtensions.Tests
                 // ALTERNATIVELY (Using MSSQLLocalDB):
                 //var connectionString = $@"Data Source=(localdb)\MSSQLLocalDB;Database={databaseName};Trusted_Connection=True;MultipleActiveResultSets=True";
 
-                optionsBuilder.UseSqlServer(connectionString); // Can NOT Test with UseInMemoryDb (Exception: Relational-specific methods can only be used when the context is using a relational)
+                //optionsBuilder.UseSqlServer(connectionString); // Can NOT Test with UseInMemoryDb (Exception: Relational-specific methods can only be used when the context is using a relational)
+                optionsBuilder.UseSqlServer(connectionString, opt => opt.UseNetTopologySuite()); // Can NOT Test with UseInMemoryDb (Exception: Relational-specific methods can only be used when the context is using a relational)
             }
             else if (DbServer == DbServer.Sqlite)
             {
@@ -209,6 +213,14 @@ namespace EFCore.BulkExtensions.Tests
     public class Student : Person
     {
         public string Subject { get; set; }
+    }
+
+    public class Address
+    {
+        public int AddressId { get; set; }
+        public string Street { get; set; }
+
+        public Geometry Location { get; set; }
     }
 
     public class Teacher : Person
