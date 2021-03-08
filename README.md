@@ -157,6 +157,7 @@ When **CalculateStats** is set to True the result is return in `BulkConfig.Stats
 If used for pure Insert (with Batching) then SetOutputIdentity should also be configured because Merge have to be used.<br>
 **TrackingEntities** can be set to True if we want to have tracking of entities from BulkRead or when SetOutputIdentity is set.<br>
 **UseTempDB** when set then BulkOperation has to be [inside Transaction](https://github.com/borisdj/EFCore.BulkExtensions/issues/49)
+**EnableShadowProperties** For adding (normal) Shadow Property to  model that persist the values. This disables automatic discrimator feature, use manual model method instead.
 **SRID** Spatial Reference Identifier - for SQL Server with NetTopologySuite.
 
 **SqlBulkCopyOptions** is Enum with [[Flags]](https://stackoverflow.com/questions/8447/what-does-the-flags-enum-attribute-mean-in-c) attribute which enables specifying one or more options:<br>
