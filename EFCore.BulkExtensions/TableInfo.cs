@@ -174,8 +174,8 @@ namespace EFCore.BulkExtensions
             bool AreSpecifiedPropertiesToIncludeOnCompare = BulkConfig.PropertiesToIncludeOnCompare?.Count() > 0;
             bool AreSpecifiedPropertiesToExcludeOnCompare = BulkConfig.PropertiesToExcludeOnCompare?.Count() > 0;
 
-            bool AreSpecifiedPropertiesToIncludeOnUpdate = BulkConfig.PropertiesToExcludeOnUpdate?.Count() > 0;
-            bool AreSpecifiedPropertiesToExcludeOnUpdate = BulkConfig.PropertiesToIncludeOnUpdate?.Count() > 0;
+            bool AreSpecifiedPropertiesToIncludeOnUpdate = BulkConfig.PropertiesToIncludeOnUpdate?.Count() > 0;
+            bool AreSpecifiedPropertiesToExcludeOnUpdate = BulkConfig.PropertiesToExcludeOnUpdate?.Count() > 0;
 
             if (AreSpecifiedPropertiesToInclude)
             {
