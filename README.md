@@ -85,9 +85,9 @@ More info in the [Example](https://github.com/borisdj/EFCore.BulkExtensions#read
 ## BulkConfig arguments
 
 **BulkInsert_/OrUpdate/OrDelete** methods can have optional argument **BulkConfig** with properties (bool, int, object, List<string>):<br>
-{ *PreserveInsertOrder, SetOutputIdentity, BatchSize, NotifyAfter, BulkCopyTimeout, EnableStreaming, UseTempDB, TrackingEntities, WithHoldlock, CalculateStats, StatsInfo, PropertiesToInclude, PropertiesToIncludeOnCompare, PropertiesToExclude, PropertiesToExcludeOnCompare, UpdateByProperties, SqlBulkCopyOptions }*<br>
+{ *PreserveInsertOrder, SetOutputIdentity, BatchSize, NotifyAfter, BulkCopyTimeout, EnableStreaming, UseTempDB, TrackingEntities, WithHoldlock, CalculateStats, StatsInfo, PropertiesToInclude, PropertiesToIncludeOnCompare, PropertiesToExclude, PropertiesToExcludeOnCompare, UpdateByProperties, EnableShadowProperties, SRID, SqlBulkCopyOptions }*<br>
 Default behaviour is <br>
-{ *PreserveInsertOrder*: false, *SetOutputIdentity*: false, *BatchSize*: 2000, *NotifyAfter*: null, *BulkCopyTimeout*: null,<br> *EnableStreaming*: false, *UseTempDB*: false, *TrackingEntities*: false, *WithHoldlock*: true,<br> *CalculateStats*: false, *StatsInfo*: null, *PropertiesToInclude*: null, *PropertiesToIncludeOnCompare* : null, *PropertiesToExclude*: null, *PropertiesToExcludeOnCompare*: null, *UpdateByProperties*: null, *SqlBulkCopyOptions*: Default }<br><br>
+{ *PreserveInsertOrder*: false, *SetOutputIdentity*: false, *BatchSize*: 2000, *NotifyAfter*: null, *BulkCopyTimeout*: null,<br> *EnableStreaming*: false, *UseTempDB*: false, *TrackingEntities*: false, *WithHoldlock*: true,<br> *CalculateStats*: false, *StatsInfo*: null, *PropertiesToInclude*: null, *PropertiesToIncludeOnCompare* : null, *PropertiesToExclude*: null, *PropertiesToExcludeOnCompare*: null, *UpdateByProperties*: null, *EnableShadowProperties*: false, *SRID*: 4326, *SqlBulkCopyOptions*: Default }<br><br>
 If we want to change defaults, BulkConfig should be added explicitly with one or more bool properties set to true, and/or int props like **BatchSize** to different number.<br> Config also has DelegateFunc for setting *Underlying-Connection/Transaction*, e.g. in UnderlyingTest.<br>
 When doing update we can chose to exclude one or more properties by adding their names into **PropertiesToExclude**, or if we need to update less then half column then **PropertiesToInclude** can be used. Setting both Lists are not allowed.<br><br>
 When using the **BulkInsert_/OrUpdate** methods, you may also specify the **PropertiesToIncludeOnCompare** and **PropertiesToExcludeOnCompare** properties. By adding a column name to the *PropertiesToExcludeOnCompare*, will allow it to be inserted and updated but will not update the row if any of the other columns in that row did not change. For example, if you are importing bulk data and want to keep an internal *CreateDate* or *UpdateDate*, you add those columns to the *PropertiesToExcludeOnCompare*.<br>
@@ -157,6 +157,7 @@ When **CalculateStats** is set to True the result is return in `BulkConfig.Stats
 If used for pure Insert (with Batching) then SetOutputIdentity should also be configured because Merge have to be used.<br>
 **TrackingEntities** can be set to True if we want to have tracking of entities from BulkRead or when SetOutputIdentity is set.<br>
 **UseTempDB** when set then BulkOperation has to be [inside Transaction](https://github.com/borisdj/EFCore.BulkExtensions/issues/49)
+**SRID** Spatial Reference Identifier - for SQL Server with NetTopologySuite.
 
 **SqlBulkCopyOptions** is Enum with [[Flags]](https://stackoverflow.com/questions/8447/what-does-the-flags-enum-attribute-mean-in-c) attribute which enables specifying one or more options:<br>
 *Default, KeepIdentity, CheckConstraints, TableLock, KeepNulls, FireTriggers, UseInternalTransaction*
