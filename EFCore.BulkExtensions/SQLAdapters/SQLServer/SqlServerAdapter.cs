@@ -618,16 +618,16 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                         foreach (var ownedProperty in ownedProperties)
                         {
                             var columnName = $"{property.Name}_{ownedProperty.Name}";
-                            var ownedPropertyValue = tableInfo.FastPropertyDict[columnName].Get(propertyValue);
+                            var ownedPropertyValue = propertyValue == null ? null : tableInfo.FastPropertyDict[columnName].Get(propertyValue);
 
                             if (tableInfo.ConvertibleProperties.ContainsKey(columnName))
                             {
                                 var converter = tableInfo.ConvertibleProperties[columnName];
-                                columnsDict[columnName] = propertyValue == null ? null : converter.ConvertToProvider.Invoke(ownedPropertyValue);
+                                columnsDict[columnName] = ownedPropertyValue == null ? null : converter.ConvertToProvider.Invoke(ownedPropertyValue);
                             }
                             else
                             {
-                                columnsDict[columnName] = propertyValue == null ? null : ownedPropertyValue;
+                                columnsDict[columnName] = ownedPropertyValue;
                             }
                         }
                     }

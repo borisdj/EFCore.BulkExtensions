@@ -435,9 +435,9 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
                         }
                         else
                         {
-                            var ownedPropertyValue = tableInfo.FastPropertyDict[ownedPropertyName].Get(entity);
+                            var ownedPropertyValue = entity == null ? null : tableInfo.FastPropertyDict[ownedPropertyName].Get(entity);
                             var subPropertyFullName = $"{ownedPropertyName}_{subPropertyName}";
-                            value = tableInfo.FastPropertyDict[subPropertyFullName]?.Get(ownedPropertyValue);
+                            value = ownedPropertyValue == null ? null : tableInfo.FastPropertyDict[subPropertyFullName]?.Get(ownedPropertyValue);
                         }
                     }
                     else
