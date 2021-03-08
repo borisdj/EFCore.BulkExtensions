@@ -460,7 +460,10 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
             var entityType = context.Model.FindEntityType(type);
             var entityPropertiesDict = entityType.GetProperties().Where(a => tableInfo.PropertyColumnNamesDict.ContainsKey(a.Name)).ToDictionary(a => a.Name, a => a);
             var entityNavigationOwnedDict = entityType.GetNavigations().Where(a => a.GetTargetType().IsOwned()).ToDictionary(a => a.Name, a => a);
-            var entityShadowFkPropertiesDict = entityType.GetProperties().Where(a => a.IsShadowProperty() && a.IsForeignKey()).ToDictionary(x => x.GetContainingForeignKeys().First().DependentToPrincipal.Name, a => a);
+            var entityShadowFkPropertiesDict = entityType.GetProperties().Where(a => a.IsShadowProperty() && 
+                                                                                     a.IsForeignKey() &&
+                                                                                     a.GetContainingForeignKeys().FirstOrDefault()?.DependentToPrincipal?.Name != null)
+                                                                         .ToDictionary(x => x.GetContainingForeignKeys().First().DependentToPrincipal.Name, a => a);
             var properties = type.GetProperties();
             var discriminatorColumn = GetDiscriminatorColumn(tableInfo);
 
