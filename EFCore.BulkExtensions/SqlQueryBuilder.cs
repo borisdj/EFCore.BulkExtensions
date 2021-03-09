@@ -141,7 +141,7 @@ namespace EFCore.BulkExtensions
             }
 
             if ((operationType == OperationType.Update || operationType == OperationType.InsertOrUpdate ||
-                 operationType == OperationType.InsertOrUpdateDelete) & nonIdentityColumnsNames.Count > 0)
+                 operationType == OperationType.InsertOrUpdateDelete) & updateColumnNames.Count > 0)
             {
                 q += $" WHEN MATCHED AND EXISTS (SELECT {GetCommaSeparatedColumns(compareColumnNames, "S")}" +
                      $" EXCEPT SELECT {GetCommaSeparatedColumns(compareColumnNames, "T")})" +
