@@ -157,10 +157,10 @@ namespace EFCore.BulkExtensions
                                                                       a.ClrType.Name.StartsWith("SByte") ||
                                                                       a.ClrType.Name.StartsWith("Int") ||
                                                                       a.ClrType.Name.StartsWith("UInt") ||
-                                                                      (isSqlServer && a.ClrType.Name.StartsWith("Decimal")) &&
+                                                                      (isSqlServer && a.ClrType.Name.StartsWith("Decimal"))) &&
                                                                     !a.ClrType.Name.EndsWith("[]") && 
-                                                                    a.ValueGenerated == ValueGenerated.OnAdd)
-                                                              ?.GetColumnName(); // ValueGenerated equals OnAdd even for nonIdentity column like Guid so we only type int as second condition
+                                                                    a.ValueGenerated == ValueGenerated.OnAdd
+                                                              )?.GetColumnName(); // ValueGenerated equals OnAdd even for nonIdentity column like Guid so we only type int as second condition
 
             // timestamp/row version properties are only set by the Db, the property has a [Timestamp] Attribute or is configured in FluentAPI with .IsRowVersion()
             // They can be identified by the columne type "timestamp" or .IsConcurrencyToken in combination with .ValueGenerated == ValueGenerated.OnAddOrUpdate
