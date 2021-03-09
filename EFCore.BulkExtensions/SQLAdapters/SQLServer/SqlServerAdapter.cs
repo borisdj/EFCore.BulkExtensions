@@ -496,8 +496,11 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                         propertyType = typeof(byte[]);
                     }
 
-                    dataTable.Columns.Add(columnName, propertyType);
-                    columnsDict.Add(property.Name, null);
+                    if (!columnsDict.ContainsKey(property.Name))
+                    {
+                        dataTable.Columns.Add(columnName, propertyType);
+                        columnsDict.Add(property.Name, null);
+                    }
                 }
                 else if (entityShadowFkPropertiesDict.ContainsKey(property.Name))
                 {
@@ -519,8 +522,11 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                         propertyType = typeof(byte[]);
                     }
 
-                    dataTable.Columns.Add(columnName, propertyType);
-                    columnsDict.Add(columnName, null);
+                    if (!columnsDict.ContainsKey(property.Name))
+                    {
+                        dataTable.Columns.Add(columnName, propertyType);
+                        columnsDict.Add(columnName, null);
+                    }
                 }
                 else if (entityNavigationOwnedDict.ContainsKey(property.Name)) // isOWned
                 {
