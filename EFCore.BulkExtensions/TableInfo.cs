@@ -152,7 +152,15 @@ namespace EFCore.BulkExtensions
             HasOwnedTypes = ownedTypes.Any();
             OwnedTypesDict = ownedTypes.ToDictionary(a => a.Name, a => a);
 
-            IdentityColumnName = allProperties.SingleOrDefault(a => a.IsPrimaryKey() && (a.ClrType.Name.StartsWith("Byte") || a.ClrType.Name.StartsWith("SByte") || a.ClrType.Name.StartsWith("Int") || a.ClrType.Name.StartsWith("UInt")) && !a.ClrType.Name.EndsWith("[]") && a.ValueGenerated == ValueGenerated.OnAdd)?.GetColumnName(); // ValueGenerated equals OnAdd even for nonIdentity column like Guid so we only type int as second condition
+            IdentityColumnName = allProperties.SingleOrDefault(a => a.IsPrimaryKey() &&
+                                                                     (a.ClrType.Name.StartsWith("Byte") ||
+                                                                      a.ClrType.Name.StartsWith("SByte") ||
+                                                                      a.ClrType.Name.StartsWith("Int") ||
+                                                                      a.ClrType.Name.StartsWith("UInt") ||
+                                                                      (isSqlServer && a.ClrType.Name.StartsWith("Decimal")) &&
+                                                                    !a.ClrType.Name.EndsWith("[]") && 
+                                                                    a.ValueGenerated == ValueGenerated.OnAdd)
+                                                              ?.GetColumnName(); // ValueGenerated equals OnAdd even for nonIdentity column like Guid so we only type int as second condition
 
             // timestamp/row version properties are only set by the Db, the property has a [Timestamp] Attribute or is configured in FluentAPI with .IsRowVersion()
             // They can be identified by the columne type "timestamp" or .IsConcurrencyToken in combination with .ValueGenerated == ValueGenerated.OnAddOrUpdate
@@ -596,12 +604,16 @@ namespace EFCore.BulkExtensions
 
         public static string GetUniquePropertyValues(object entity, List<string> propertiesNames, Dictionary<string, FastProperty> fastPropertyDict)
         {
-            StringBuilder result = new StringBuilder(1024);
+            StringBuilder uniqueBuilder = new StringBuilder(1024);
+            string delimiter = "_"; // TODO: Consider making it Config-urable
             foreach (var propertyName in propertiesNames)
             {
-                result.Append(fastPropertyDict[propertyName].Get(entity).ToString());
+                uniqueBuilder.Append(fastPropertyDict[propertyName].Get(entity).ToString());
+                uniqueBuilder.Append(delimiter);
             }
-            return result.ToString();
+            string result = uniqueBuilder.ToString();
+            result = result.Substring(0, result.Length - 1); // removes last delimiter
+            return result;
         }
 
         #region ReadProcedures
