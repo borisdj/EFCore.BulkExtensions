@@ -5,6 +5,7 @@ using System.Data;
 using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -472,7 +473,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                                                                                      a.IsForeignKey() &&
                                                                                      a.GetContainingForeignKeys().FirstOrDefault()?.DependentToPrincipal?.Name != null)
                                                                          .ToDictionary(x => x.GetContainingForeignKeys().First().DependentToPrincipal.Name, a => a);
-            var properties = type.GetProperties();
+            var properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             var discriminatorColumn = GetDiscriminatorColumn(tableInfo);
 
             foreach (var property in properties)

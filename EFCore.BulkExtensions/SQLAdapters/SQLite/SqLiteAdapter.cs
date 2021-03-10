@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using EFCore.BulkExtensions.SqlAdapters;
@@ -370,7 +371,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
             type = tableInfo.HasAbstractList ? entities[0].GetType() : type;
             var entityType = context.Model.FindEntityType(type);
             var entityPropertiesDict = entityType.GetProperties().Where(a => tableInfo.PropertyColumnNamesDict.ContainsKey(a.Name)).ToDictionary(a => a.Name, a => a);
-            var properties = type.GetProperties();
+            var properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
             foreach (var property in properties)
             {
