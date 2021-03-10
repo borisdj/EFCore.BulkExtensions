@@ -94,7 +94,7 @@ When doing update we can chose to exclude one or more properties by adding their
 When using the **BulkInsert_/OrUpdate** methods, you may also specify the **PropertiesToIncludeOnCompare** and **PropertiesToExcludeOnCompare** properties. By adding a column name to the *PropertiesToExcludeOnCompare*, will allow it to be inserted and updated but will not update the row if any of the other columns in that row did not change. For example, if you are importing bulk data and want to keep an internal *CreateDate* or *UpdateDate*, you add those columns to the *PropertiesToExcludeOnCompare*.<br>
 Another option that may be used in the same scenario are the **PropertiesToIncludeOnUpdate** and **PropertiesToExcludeOnUpdate** properties. These properties will allow you to specify insert-only columns such as *CreateDate* and *CreatedBy*.
 
-If we want only to Insert new ones and to skip those that exist in Db then we can use InsertOrUpdate with config
+If we want only to Insert new ones and to skip those that exist in Db then we can use BulkInsertOrUpdate with config
 `PropertiesToIncludeOnUpdate = new List<string> { "" }`
 
 Additionaly there is **UpdateByProperties** for specifying custom properties, by which we want update to be done.<br>
