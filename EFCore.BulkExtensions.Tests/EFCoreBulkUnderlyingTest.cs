@@ -29,7 +29,7 @@ namespace EFCore.BulkExtensions.Tests
         {
             var builder = new DbContextOptionsBuilder<TestContext>();
             var databaseName = nameof(EFCoreBulkTest);
-            var connectionString = $"Server=localhost;Database={databaseName};Trusted_Connection=True;MultipleActiveResultSets=true";
+            var connectionString = ContextUtil.GetSqlServerConnectionString(databaseName);
             var connection = new SqlConnection(connectionString) as DbConnection;
             connection = new MyConnection(connection);
             builder.UseSqlServer(connection);

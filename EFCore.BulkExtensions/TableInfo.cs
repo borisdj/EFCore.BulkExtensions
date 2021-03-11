@@ -47,6 +47,8 @@ namespace EFCore.BulkExtensions
         public BulkConfig BulkConfig { get; set; }
         public Dictionary<string, string> OutputPropertyColumnNamesDict { get; set; } = new Dictionary<string, string>();
         public Dictionary<string, string> PropertyColumnNamesDict { get; set; } = new Dictionary<string, string>();
+        public Dictionary<string, string> PropertyColumnNamesCompareDict { get; set; } = new Dictionary<string, string>();
+        public Dictionary<string, string> PropertyColumnNamesUpdateDict { get; set; } = new Dictionary<string, string>();
         public Dictionary<string, FastProperty> FastPropertyDict { get; set; } = new Dictionary<string, FastProperty>();
         public Dictionary<string, INavigation> AllNavigationsDictionary { get; private set; }
         public Dictionary<string, INavigation> OwnedTypesDict { get; set; } = new Dictionary<string, INavigation>();
@@ -150,7 +152,15 @@ namespace EFCore.BulkExtensions
             HasOwnedTypes = ownedTypes.Any();
             OwnedTypesDict = ownedTypes.ToDictionary(a => a.Name, a => a);
 
-            IdentityColumnName = allProperties.SingleOrDefault(a => a.IsPrimaryKey() && (a.ClrType.Name.StartsWith("Byte") || a.ClrType.Name.StartsWith("SByte") || a.ClrType.Name.StartsWith("Int") || a.ClrType.Name.StartsWith("UInt")) && !a.ClrType.Name.EndsWith("[]") && a.ValueGenerated == ValueGenerated.OnAdd)?.GetColumnName(); // ValueGenerated equals OnAdd even for nonIdentity column like Guid so we only type int as second condition
+            IdentityColumnName = allProperties.SingleOrDefault(a => a.IsPrimaryKey() &&
+                                                                     (a.ClrType.Name.StartsWith("Byte") ||
+                                                                      a.ClrType.Name.StartsWith("SByte") ||
+                                                                      a.ClrType.Name.StartsWith("Int") ||
+                                                                      a.ClrType.Name.StartsWith("UInt") ||
+                                                                      (isSqlServer && a.ClrType.Name.StartsWith("Decimal"))) &&
+                                                                    !a.ClrType.Name.EndsWith("[]") && 
+                                                                    a.ValueGenerated == ValueGenerated.OnAdd
+                                                              )?.GetColumnName(); // ValueGenerated equals OnAdd even for nonIdentity column like Guid so we only type int as second condition
 
             // timestamp/row version properties are only set by the Db, the property has a [Timestamp] Attribute or is configured in FluentAPI with .IsRowVersion()
             // They can be identified by the columne type "timestamp" or .IsConcurrencyToken in combination with .ValueGenerated == ValueGenerated.OnAddOrUpdate
@@ -159,6 +169,8 @@ namespace EFCore.BulkExtensions
             TimeStampColumnName = timeStampProperties.FirstOrDefault()?.GetColumnName(); // can be only One
             var allPropertiesExceptTimeStamp = allProperties.Except(timeStampProperties);
             var properties = allPropertiesExceptTimeStamp.Where(a => a.GetComputedColumnSql() == null);
+            var propertiesOnCompare = allPropertiesExceptTimeStamp.Where(a => a.GetComputedColumnSql() == null);
+            var propertiesOnUpdate = allPropertiesExceptTimeStamp.Where(a => a.GetComputedColumnSql() == null);
 
             // TimeStamp prop. is last column in OutputTable since it is added later with varbinary(8) type in which Output can be inserted
             OutputPropertyColumnNamesDict = allPropertiesExceptTimeStamp.Concat(timeStampProperties).ToDictionary(a => a.Name, b => b.GetColumnName().Replace("]", "]]")); // square brackets have to be escaped
@@ -166,6 +178,12 @@ namespace EFCore.BulkExtensions
 
             bool AreSpecifiedPropertiesToInclude = BulkConfig.PropertiesToInclude?.Count() > 0;
             bool AreSpecifiedPropertiesToExclude = BulkConfig.PropertiesToExclude?.Count() > 0;
+
+            bool AreSpecifiedPropertiesToIncludeOnCompare = BulkConfig.PropertiesToIncludeOnCompare?.Count() > 0;
+            bool AreSpecifiedPropertiesToExcludeOnCompare = BulkConfig.PropertiesToExcludeOnCompare?.Count() > 0;
+
+            bool AreSpecifiedPropertiesToIncludeOnUpdate = BulkConfig.PropertiesToIncludeOnUpdate?.Count() > 0;
+            bool AreSpecifiedPropertiesToExcludeOnUpdate = BulkConfig.PropertiesToExcludeOnUpdate?.Count() > 0;
 
             if (AreSpecifiedPropertiesToInclude)
             {
@@ -211,6 +229,45 @@ namespace EFCore.BulkExtensions
                     properties = properties.Where(a => !BulkConfig.PropertiesToExclude.Contains(a.Name));
             }
 
+            if (AreSpecifiedPropertiesToIncludeOnCompare || AreSpecifiedPropertiesToExcludeOnCompare)
+            {
+                if (AreSpecifiedPropertiesToIncludeOnCompare && AreSpecifiedPropertiesToExcludeOnCompare)
+                    throw new InvalidOperationException("Only one group of properties, either PropertiesToIncludeOnCompare or PropertiesToExcludeOnCompare can be specified, specifying both not allowed.");
+                if (AreSpecifiedPropertiesToIncludeOnCompare)
+                    propertiesOnCompare = propertiesOnCompare.Where(a => BulkConfig.PropertiesToIncludeOnCompare.Contains(a.Name));
+                if (AreSpecifiedPropertiesToExcludeOnCompare)
+                    propertiesOnCompare = propertiesOnCompare.Where(a => !BulkConfig.PropertiesToExcludeOnCompare.Contains(a.Name));
+            }
+            else
+            {
+                propertiesOnCompare = properties;
+            }
+            if (AreSpecifiedPropertiesToIncludeOnUpdate || AreSpecifiedPropertiesToExcludeOnUpdate)
+            {
+                if (AreSpecifiedPropertiesToIncludeOnUpdate && AreSpecifiedPropertiesToExcludeOnUpdate)
+                    throw new InvalidOperationException("Only one group of properties, either PropertiesToIncludeOnUpdate or PropertiesToExcludeOnUpdate can be specified, specifying both not allowed.");
+                if (AreSpecifiedPropertiesToIncludeOnUpdate)
+                    propertiesOnUpdate = propertiesOnUpdate.Where(a => BulkConfig.PropertiesToIncludeOnUpdate.Contains(a.Name));
+                if (AreSpecifiedPropertiesToExcludeOnUpdate)
+                    propertiesOnUpdate = propertiesOnUpdate.Where(a => !BulkConfig.PropertiesToExcludeOnUpdate.Contains(a.Name));
+            }
+            else
+            {
+                propertiesOnUpdate = properties;
+
+                if (BulkConfig.UpdateByProperties != null) // to remove NonIdentity PK like Guid from SET ID = ID, ...
+                {
+                    propertiesOnUpdate = propertiesOnUpdate.Where(a => !BulkConfig.UpdateByProperties.Contains(a.Name));
+                }
+                else if (primaryKeys != null)
+                {
+                    propertiesOnUpdate = propertiesOnUpdate.Where(a => !primaryKeys.Contains(a.Name));
+                }
+            }
+
+            PropertyColumnNamesCompareDict = propertiesOnCompare.ToDictionary(a => a.Name, b => b.GetColumnName().Replace("]", "]]"));
+            PropertyColumnNamesUpdateDict = propertiesOnUpdate.ToDictionary(a => a.Name, b => b.GetColumnName().Replace("]", "]]"));
+
             if (loadOnlyPKColumn)
             {
                 PropertyColumnNamesDict = properties.Where(a => PrimaryKeys.Contains(a.Name)).ToDictionary(a => a.Name, b => b.GetColumnName().Replace("]", "]]"));
@@ -219,10 +276,16 @@ namespace EFCore.BulkExtensions
             {
                 PropertyColumnNamesDict = properties.ToDictionary(a => a.Name, b => b.GetColumnName().Replace("]", "]]"));
                 ShadowProperties = new HashSet<string>(properties.Where(p => p.IsShadowProperty() && !p.IsForeignKey()).Select(p => p.GetColumnName()));
-                foreach (var property in properties.Where(p => p.GetValueConverter() != null))
+                foreach (var property in properties)
                 {
-                    string columnName = property.GetColumnName();
-                    ValueConverter converter = property.GetValueConverter();
+                    var converter = property.GetTypeMapping().Converter;
+
+                    if (converter is null)
+                    {
+                        continue;
+                    }
+
+                    var columnName = property.GetColumnName();
                     ConvertibleProperties.Add(columnName, converter);
                 }
 
@@ -541,12 +604,16 @@ namespace EFCore.BulkExtensions
 
         public static string GetUniquePropertyValues(object entity, List<string> propertiesNames, Dictionary<string, FastProperty> fastPropertyDict)
         {
-            StringBuilder result = new StringBuilder(1024);
+            StringBuilder uniqueBuilder = new StringBuilder(1024);
+            string delimiter = "_"; // TODO: Consider making it Config-urable
             foreach (var propertyName in propertiesNames)
             {
-                result.Append(fastPropertyDict[propertyName].Get(entity).ToString());
+                uniqueBuilder.Append(fastPropertyDict[propertyName].Get(entity).ToString());
+                uniqueBuilder.Append(delimiter);
             }
-            return result.ToString();
+            string result = uniqueBuilder.ToString();
+            result = result.Substring(0, result.Length - 1); // removes last delimiter
+            return result;
         }
 
         #region ReadProcedures

@@ -30,10 +30,18 @@ namespace EFCore.BulkExtensions
         public StatsInfo StatsInfo { get; set; }
 
         public List<string> PropertiesToInclude { get; set; }
+        public List<string> PropertiesToIncludeOnCompare { get; set; }
+        public List<string> PropertiesToIncludeOnUpdate { get; set; }
 
         public List<string> PropertiesToExclude { get; set; }
+        public List<string> PropertiesToExcludeOnCompare { get; set; }
+        public List<string> PropertiesToExcludeOnUpdate { get; set; }
 
         public List<string> UpdateByProperties { get; set; }
+
+        public bool EnableShadowProperties { get; set; } = false;
+
+        public int SRID { get; set; } = 4326; // Spatial Reference Identifier // https://docs.microsoft.com/en-us/sql/relational-databases/spatial/spatial-reference-identifiers-srids
 
         // since Microsoft.Data.SqlClient.SqlBulkCopyOptions is a superset of 
         // System.Data.SqlClient.SqlBulkCopyOptions, allow user to always specify

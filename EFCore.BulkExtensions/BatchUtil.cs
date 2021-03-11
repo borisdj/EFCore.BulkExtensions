@@ -410,7 +410,7 @@ namespace EFCore.BulkExtensions
         }
 
         private static readonly MethodInfo DbContextSetMethodInfo = typeof(DbContext)
-            .GetMethod(nameof(DbContext.Set), BindingFlags.Public | BindingFlags.Instance);
+            .GetMethod(nameof(DbContext.Set), BindingFlags.Public | BindingFlags.Instance, null, Array.Empty<Type>(), null);
 
         public static readonly Regex TableAliasPattern = new Regex(@"(?:FROM|JOIN)\s+(\[\S+\]) AS (\[\S+\])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 

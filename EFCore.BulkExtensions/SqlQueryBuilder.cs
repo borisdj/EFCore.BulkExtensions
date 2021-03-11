@@ -115,8 +115,12 @@ namespace EFCore.BulkExtensions
             bool keepIdentity = tableInfo.BulkConfig.SqlBulkCopyOptions.HasFlag(SqlBulkCopyOptions.KeepIdentity);
             List<string> primaryKeys = tableInfo.PrimaryKeys.Select(k => tableInfo.PropertyColumnNamesDict[k]).ToList();
             List<string> columnsNames = tableInfo.PropertyColumnNamesDict.Values.ToList();
+            List<string> columnsNamesOnCompare = tableInfo.PropertyColumnNamesCompareDict.Values.ToList();
+            List<string> columnsNamesOnUpdate = tableInfo.PropertyColumnNamesUpdateDict.Values.ToList();
             List<string> outputColumnsNames = tableInfo.OutputPropertyColumnNamesDict.Values.ToList();
             List<string> nonIdentityColumnsNames = columnsNames.Where(a => !a.Equals(tableInfo.IdentityColumnName, StringComparison.OrdinalIgnoreCase)).ToList();
+            List<string> compareColumnNames = columnsNamesOnCompare.Where(a => !a.Equals(tableInfo.IdentityColumnName, StringComparison.OrdinalIgnoreCase)).ToList();
+            List<string> updateColumnNames = columnsNamesOnUpdate.Where(a => !a.Equals(tableInfo.IdentityColumnName, StringComparison.OrdinalIgnoreCase)).ToList();
             List<string> insertColumnsNames = (tableInfo.HasIdentity && !keepIdentity) ? nonIdentityColumnsNames : columnsNames;
 
             string isUpdateStatsValue = (tableInfo.BulkConfig.CalculateStats) ? ",(CASE $action WHEN 'UPDATE' THEN 1 Else 0 END),(CASE $action WHEN 'DELETE' THEN 1 Else 0 END)" : "";
@@ -135,10 +139,15 @@ namespace EFCore.BulkExtensions
                 q += $" WHEN NOT MATCHED BY TARGET THEN INSERT ({GetCommaSeparatedColumns(insertColumnsNames)})" +
                      $" VALUES ({GetCommaSeparatedColumns(insertColumnsNames, "S")})";
             }
-            if ((operationType == OperationType.Update || operationType == OperationType.InsertOrUpdate || operationType == OperationType.InsertOrUpdateDelete) & nonIdentityColumnsNames.Count() > 0)
+
+            if ((operationType == OperationType.Update || operationType == OperationType.InsertOrUpdate ||
+                 operationType == OperationType.InsertOrUpdateDelete) & updateColumnNames.Count > 0)
             {
-                q += $" WHEN MATCHED THEN UPDATE SET {GetCommaSeparatedColumns(nonIdentityColumnsNames, "T", "S")}";
+                q += $" WHEN MATCHED AND EXISTS (SELECT {GetCommaSeparatedColumns(compareColumnNames, "S")}" +
+                     $" EXCEPT SELECT {GetCommaSeparatedColumns(compareColumnNames, "T")})" +
+                     $" THEN UPDATE SET {GetCommaSeparatedColumns(updateColumnNames, "T", "S")}";
             }
+
             if (operationType == OperationType.InsertOrUpdateDelete)
             {
                 q += $" WHEN NOT MATCHED BY SOURCE THEN DELETE";

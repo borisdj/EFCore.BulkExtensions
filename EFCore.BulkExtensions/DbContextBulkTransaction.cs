@@ -68,62 +68,62 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        public static Task ExecuteAsync<T>(DbContext context, IList<T> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress, CancellationToken cancellationToken) where T : class
+        public static async Task ExecuteAsync<T>(DbContext context, IList<T> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress, CancellationToken cancellationToken) where T : class
         {
             using (ActivitySources.StartExecuteActivity(operationType, entities.Count))
             {
                 if (operationType != OperationType.Truncate && entities.Count == 0)
                 {
-                    return Task.CompletedTask;
+                    return;
                 }
 
                 TableInfo tableInfo = TableInfo.CreateInstance(context, entities, operationType, bulkConfig);
 
                 if (operationType == OperationType.Insert && !tableInfo.BulkConfig.SetOutputIdentity)
                 {
-                    return SqlBulkOperation.InsertAsync(context, entities, tableInfo, progress, cancellationToken);
+                    await SqlBulkOperation.InsertAsync(context, entities, tableInfo, progress, cancellationToken);
                 }
                 else if (operationType == OperationType.Read)
                 {
-                    return SqlBulkOperation.ReadAsync(context, entities, tableInfo, progress, cancellationToken);
+                    await SqlBulkOperation.ReadAsync(context, entities, tableInfo, progress, cancellationToken);
                 }
                 else if (operationType == OperationType.Truncate)
                 {
-                    return SqlBulkOperation.TruncateAsync(context, tableInfo, cancellationToken);
+                    await SqlBulkOperation.TruncateAsync(context, tableInfo, cancellationToken);
                 }
                 else
                 {
-                    return SqlBulkOperation.MergeAsync(context, entities, tableInfo, operationType, progress, cancellationToken);
+                    await SqlBulkOperation.MergeAsync(context, entities, tableInfo, operationType, progress, cancellationToken);
                 }
             }
         }
 
-        public static Task ExecuteAsync(DbContext context, Type type, IList<object> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress, CancellationToken cancellationToken)
+        public static async Task ExecuteAsync(DbContext context, Type type, IList<object> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress, CancellationToken cancellationToken)
         {
             using (ActivitySources.StartExecuteActivity(operationType, entities.Count))
             {
                 if (operationType != OperationType.Truncate && entities.Count == 0)
                 {
-                    return Task.CompletedTask;
+                    return;
                 }
 
                 TableInfo tableInfo = TableInfo.CreateInstance(context, type, entities, operationType, bulkConfig);
 
                 if (operationType == OperationType.Insert && !tableInfo.BulkConfig.SetOutputIdentity)
                 {
-                    return SqlBulkOperation.InsertAsync(context, type, entities, tableInfo, progress, cancellationToken);
+                    await SqlBulkOperation.InsertAsync(context, type, entities, tableInfo, progress, cancellationToken);
                 }
                 else if (operationType == OperationType.Read)
                 {
-                    return SqlBulkOperation.ReadAsync(context, type, entities, tableInfo, progress, cancellationToken);
+                    await SqlBulkOperation.ReadAsync(context, type, entities, tableInfo, progress, cancellationToken);
                 }
                 else if (operationType == OperationType.Truncate)
                 {
-                    return SqlBulkOperation.TruncateAsync(context, tableInfo, cancellationToken);
+                    await SqlBulkOperation.TruncateAsync(context, tableInfo, cancellationToken);
                 }
                 else
                 {
-                    return SqlBulkOperation.MergeAsync(context, type, entities, tableInfo, operationType, progress, cancellationToken);
+                    await SqlBulkOperation.MergeAsync(context, type, entities, tableInfo, operationType, progress, cancellationToken);
                 }
             }
         }

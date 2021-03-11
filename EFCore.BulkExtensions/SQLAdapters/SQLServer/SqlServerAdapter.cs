@@ -5,11 +5,16 @@ using System.Data;
 using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using EFCore.BulkExtensions.SqlAdapters;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
+using NetTopologySuite.Geometries;
+using NetTopologySuite.IO;
 
 namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
 {
@@ -454,13 +459,22 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
             var columnsDict = new Dictionary<string, object>();
             var ownedEntitiesMappedProperties = new HashSet<string>();
 
+            var isSqlServer = context.Database.ProviderName.EndsWith(DbServer.SqlServer.ToString());
+            var sqlServerBytesWriter = new SqlServerBytesWriter
+            {
+                IsGeography = true
+            };
+
             type = tableInfo.HasAbstractList ? entities[0].GetType() : type;
             var entityType = context.Model.FindEntityType(type);
             var entityPropertiesDict = entityType.GetProperties().Where(a => tableInfo.PropertyColumnNamesDict.ContainsKey(a.Name)).ToDictionary(a => a.Name, a => a);
             var entityNavigationOwnedDict = entityType.GetNavigations().Where(a => a.GetTargetType().IsOwned()).ToDictionary(a => a.Name, a => a);
-            var entityShadowFkPropertiesDict = entityType.GetProperties().Where(a => a.IsShadowProperty() && a.IsForeignKey()).ToDictionary(x => x.GetContainingForeignKeys().First().DependentToPrincipal.Name, a => a);
-            var properties = type.GetProperties();
-            var discriminatorColumn = tableInfo.ShadowProperties.Count == 0 ? null : tableInfo.ShadowProperties.ElementAt(0);
+            var entityShadowFkPropertiesDict = entityType.GetProperties().Where(a => a.IsShadowProperty() && 
+                                                                                     a.IsForeignKey() &&
+                                                                                     a.GetContainingForeignKeys().FirstOrDefault()?.DependentToPrincipal?.Name != null)
+                                                                         .ToDictionary(x => x.GetContainingForeignKeys().First().DependentToPrincipal.Name, a => a);
+            var properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            var discriminatorColumn = GetDiscriminatorColumn(tableInfo);
 
             foreach (var property in properties)
             {
@@ -478,8 +492,16 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                         propertyType = underlyingType;
                     }
 
-                    dataTable.Columns.Add(columnName, propertyType);
-                    columnsDict.Add(property.Name, null);
+                    if (propertyType == typeof(Geometry) && isSqlServer)
+                    {
+                        propertyType = typeof(byte[]);
+                    }
+
+                    if (!columnsDict.ContainsKey(property.Name))
+                    {
+                        dataTable.Columns.Add(columnName, propertyType);
+                        columnsDict.Add(property.Name, null);
+                    }
                 }
                 else if (entityShadowFkPropertiesDict.ContainsKey(property.Name))
                 {
@@ -496,8 +518,16 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                         propertyType = underlyingType;
                     }
 
-                    dataTable.Columns.Add(columnName, propertyType);
-                    columnsDict.Add(columnName, null);
+                    if (propertyType == typeof(Geometry) && isSqlServer)
+                    {
+                        propertyType = typeof(byte[]);
+                    }
+
+                    if (!columnsDict.ContainsKey(property.Name))
+                    {
+                        dataTable.Columns.Add(columnName, propertyType);
+                        columnsDict.Add(columnName, null);
+                    }
                 }
                 else if (entityNavigationOwnedDict.ContainsKey(property.Name)) // isOWned
                 {
@@ -552,6 +582,31 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                     }
                 }
             }
+
+            if (tableInfo.BulkConfig.EnableShadowProperties)
+            {
+                foreach (var sp in entityPropertiesDict.Values.Where(y => y.IsShadowProperty()))
+                {
+                    var columnName = sp.GetColumnName();
+                    var isConvertible = tableInfo.ConvertibleProperties.ContainsKey(columnName);
+                    var propertyType = isConvertible ? tableInfo.ConvertibleProperties[columnName].ProviderClrType : sp.ClrType;
+
+                    var underlyingType = Nullable.GetUnderlyingType(propertyType);
+                    if (underlyingType != null)
+                    {
+                        propertyType = underlyingType;
+                    }
+
+                    if (propertyType == typeof(Geometry) && isSqlServer)
+                    {
+                        propertyType = typeof(byte[]);
+                    }
+
+                    dataTable.Columns.Add(columnName, propertyType);
+                    columnsDict.Add(sp.Name, null);
+                }
+            }
+
             if (discriminatorColumn != null)
             {
                 dataTable.Columns.Add(discriminatorColumn, typeof(string));
@@ -571,6 +626,12 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                         {
                             propertyValue = tableInfo.ConvertibleProperties[columnName].ConvertToProvider.Invoke(propertyValue);
                         }
+                    }
+
+                    if (propertyValue is Geometry geometryValue && isSqlServer)
+                    {
+                        geometryValue.SRID = tableInfo.BulkConfig.SRID;
+                        propertyValue = sqlServerBytesWriter.Write(geometryValue);
                     }
 
                     if (entityPropertiesDict.ContainsKey(property.Name))
@@ -593,26 +654,60 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                         foreach (var ownedProperty in ownedProperties)
                         {
                             var columnName = $"{property.Name}_{ownedProperty.Name}";
-                            var ownedPropertyValue = tableInfo.FastPropertyDict[columnName].Get(propertyValue);
+                            var ownedPropertyValue = propertyValue == null ? null : tableInfo.FastPropertyDict[columnName].Get(propertyValue);
 
                             if (tableInfo.ConvertibleProperties.ContainsKey(columnName))
                             {
                                 var converter = tableInfo.ConvertibleProperties[columnName];
-                                columnsDict[columnName] = propertyValue == null ? null : converter.ConvertToProvider.Invoke(ownedPropertyValue);
+                                columnsDict[columnName] = ownedPropertyValue == null ? null : converter.ConvertToProvider.Invoke(ownedPropertyValue);
                             }
                             else
                             {
-                                columnsDict[columnName] = propertyValue == null ? null : ownedPropertyValue;
+                                columnsDict[columnName] = ownedPropertyValue;
                             }
                         }
                     }
                 }
+
+                if (tableInfo.BulkConfig.EnableShadowProperties)
+                {
+                    foreach (var sp in entityPropertiesDict.Values.Where(y => y.IsShadowProperty()))
+                    {
+                        var propertyValue = context.Entry(entity).Property(sp.Name).CurrentValue;
+                        var columnName = sp.GetColumnName();
+
+                        if (tableInfo.ConvertibleProperties.ContainsKey(columnName))
+                        {
+                            propertyValue = tableInfo.ConvertibleProperties[columnName].ConvertToProvider.Invoke(propertyValue);
+                        }
+
+                        columnsDict[sp.Name] = propertyValue;
+                    }
+                }
+
                 var record = columnsDict.Values.ToArray();
                 dataTable.Rows.Add(record);
             }
 
             return dataTable;
         }
+
+        private static string GetDiscriminatorColumn(TableInfo tableInfo)
+        {
+            string discriminatorColumn;
+
+            if (!tableInfo.BulkConfig.EnableShadowProperties)
+            {
+                discriminatorColumn = tableInfo.ShadowProperties.Count == 0 ? null : tableInfo.ShadowProperties.ElementAt(0);
+            }
+            else
+            {
+                discriminatorColumn = null;
+            }
+
+            return discriminatorColumn;
+        }
+
        #endregion
     }
 }

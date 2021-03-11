@@ -389,7 +389,7 @@ namespace EFCore.BulkExtensions.Tests
                     {
                         Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberInserted);
                         Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberUpdated);
-                        Assert.Equal(5000, bulkConfig.StatsInfo.StatsNumberDeleted);
+                        Assert.Equal(EntitiesNumber / 2, bulkConfig.StatsInfo.StatsNumberDeleted);
                     }
                 }
                 else

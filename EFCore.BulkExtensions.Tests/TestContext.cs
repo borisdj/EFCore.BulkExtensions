@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Microsoft.Extensions.Configuration;
+using NetTopologySuite.Geometries;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -25,6 +27,7 @@ namespace EFCore.BulkExtensions.Tests
         public DbSet<Info> Infos { get; set; }
         public DbSet<ChangeLog> ChangeLogs { get; set; }
         public DbSet<ItemLink> ItemLinks { get; set; }
+        public DbSet<Address> Addresses { get; set; }
 
         public DbSet<Parent> Parents { get; set; }
         public DbSet<ParentDetail> ParentDetails { get; set; }
@@ -62,6 +65,8 @@ namespace EFCore.BulkExtensions.Tests
             else if (Database.IsSqlite())
             {
                 modelBuilder.Entity<Document>().Property(p => p.VersionChange).ValueGeneratedOnAddOrUpdate().IsConcurrencyToken().HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                modelBuilder.Entity<Address>().Ignore(p => p.Location);
             }
 
             // [Timestamp] alternative:
@@ -76,24 +81,26 @@ namespace EFCore.BulkExtensions.Tests
         public static DbServer DbServer { get; set; }
 
         public static DbContextOptions GetOptions(IInterceptor dbInterceptor) => GetOptions(new[] { dbInterceptor });
+        public static DbContextOptions GetOptions(IEnumerable<IInterceptor> dbInterceptors = null) => GetOptions<TestContext>(dbInterceptors);
 
-        public static DbContextOptions GetOptions(IEnumerable<IInterceptor> dbInterceptors = null)
+        public static DbContextOptions GetOptions<TDbContext>(IEnumerable<IInterceptor> dbInterceptors = null, string databaseName = nameof(EFCoreBulkTest))
+            where TDbContext: DbContext
         {
-            var databaseName = nameof(EFCoreBulkTest);
-            var optionsBuilder = new DbContextOptionsBuilder<TestContext>();
+            var optionsBuilder = new DbContextOptionsBuilder<TDbContext>();
 
             if (DbServer == DbServer.SqlServer)
             {
-                var connectionString = $"Server=localhost;Database={databaseName};Trusted_Connection=True;MultipleActiveResultSets=true";
+                var connectionString = GetSqlServerConnectionString(databaseName);
 
                 // ALTERNATIVELY (Using MSSQLLocalDB):
                 //var connectionString = $@"Data Source=(localdb)\MSSQLLocalDB;Database={databaseName};Trusted_Connection=True;MultipleActiveResultSets=True";
 
-                optionsBuilder.UseSqlServer(connectionString); // Can NOT Test with UseInMemoryDb (Exception: Relational-specific methods can only be used when the context is using a relational)
+                //optionsBuilder.UseSqlServer(connectionString); // Can NOT Test with UseInMemoryDb (Exception: Relational-specific methods can only be used when the context is using a relational)
+                optionsBuilder.UseSqlServer(connectionString, opt => opt.UseNetTopologySuite()); // Can NOT Test with UseInMemoryDb (Exception: Relational-specific methods can only be used when the context is using a relational)
             }
             else if (DbServer == DbServer.Sqlite)
             {
-                string connectionString = $"Data Source={databaseName}.db";
+                string connectionString = GetSqliteConnectionString(databaseName);
                 optionsBuilder.UseSqlite(connectionString);
 
                 // ALTERNATIVELY:
@@ -111,6 +118,25 @@ namespace EFCore.BulkExtensions.Tests
             }
 
             return optionsBuilder.Options;
+        }
+
+        private static IConfiguration GetConfiguration()
+        {
+            var configBuilder = new ConfigurationBuilder()
+                .AddJsonFile("testsettings.json", optional: false)
+                .AddJsonFile("testsettings.local.json", optional: true);
+
+            return configBuilder.Build();
+        }
+
+        public static string GetSqlServerConnectionString(string databaseName)
+        {
+            return GetConfiguration().GetConnectionString("SqlServer").Replace("{databaseName}", databaseName);
+        }
+
+        public static string GetSqliteConnectionString(string databaseName)
+        {
+            return GetConfiguration().GetConnectionString("Sqlite").Replace("{databaseName}", databaseName);
         }
     }
 
@@ -187,6 +213,14 @@ namespace EFCore.BulkExtensions.Tests
     public class Student : Person
     {
         public string Subject { get; set; }
+    }
+
+    public class Address
+    {
+        public int AddressId { get; set; }
+        public string Street { get; set; }
+
+        public Geometry Location { get; set; }
     }
 
     public class Teacher : Person
