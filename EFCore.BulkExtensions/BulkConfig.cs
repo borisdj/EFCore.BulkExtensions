@@ -40,6 +40,7 @@ namespace EFCore.BulkExtensions
         public List<string> UpdateByProperties { get; set; }
 
         public bool EnableShadowProperties { get; set; } = false;
+        public bool IncludeGraph { get; set; } = false;
 
         public int SRID { get; set; } = 4326; // Spatial Reference Identifier // https://docs.microsoft.com/en-us/sql/relational-databases/spatial/spatial-reference-identifiers-srids
 
