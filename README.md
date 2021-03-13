@@ -109,7 +109,8 @@ context.BulkInsertOrUpdate(entList, b => b.SetOutputIdentity = true); //example 
 ```
 
 **PreserveInsertOrder** makes sure that entites are inserted to Db as they are ordered in entitiesList.<br>
-When there is Identity column (int autoincrement) with zeros it will temporary be automatically changed from 0s into range -N:-1 for the proper order. Or it can be manually set with proper values for order.<br>
+When table has Identity column (int autoincrement) with 0 values in list they will temporary be automatically changed from 0s into range -N:-1.<br>
+Or it can be manually set with proper values for order (Negative values used to skip  conflict with existing ones in Db).<br>
 Here single Id value itself doesn't matter, db will change it to next in sequence, what matters is their mutual relationship for sorting.<br>
 Insertion order is implemented with [TOP](https://docs.microsoft.com/en-us/sql/t-sql/queries/top-transact-sql) in conjuction with ORDER BY. [stackoverflow:merge-into-insertion-order](https://stackoverflow.com/questions/884187/merge-into-insertion-order).<br>
 This config should also be used when we have set *SetOutputIdentity* on Entity containing NotMapped Property. [issues/76](https://github.com/borisdj/EFCore.BulkExtensions/issues/76)
