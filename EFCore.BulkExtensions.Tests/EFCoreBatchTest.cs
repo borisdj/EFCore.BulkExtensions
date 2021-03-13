@@ -37,7 +37,9 @@ namespace EFCore.BulkExtensions.Tests
             RunContainsBatchDelete2();
             RunContainsBatchDelete3();
             RunAnyBatchDelete();
-            
+
+            UpdateSetting(SettingsEnum.Sett1, "Val1UPDATE");
+
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 var firstItem = context.Items.ToList().FirstOrDefault();
@@ -67,15 +69,6 @@ namespace EFCore.BulkExtensions.Tests
                 RunIncludeDelete();
             }
         }
-
-        // BATCH for Sqlite does Not work since switching to 3.0.0
-        // Method ToParametrizedSql with Sqlite throws Exception on line:
-        //   var enumerator = query.Provider.Execute<IEnumerable>(query.Expression).GetEnumerator();
-        // Message:
-        //   System.InvalidOperationException : The LINQ expression 'DbSet<Item>.Where(i => i.ItemId <= 500 && i.Price >= __price_0)' could not be translated.
-        //   Either rewrite the query in a form that can be translated, or switch to client evaluation explicitly by inserting a call to either AsEnumerable(), AsAsyncEnumerable(), ToList(), or ToListAsync().
-        //   See https://go.microsoft.com/fwlink/?linkid=2101038 for more information.
-        //   QueryableMethodTranslatingExpressionVisitor.<VisitMethodCall>g__CheckTranslated|8_0(ShapedQueryExpression translated, <>c__DisplayClass8_0& )
 
         internal void RunDeleteAll(DbServer databaseType)
         {
@@ -111,6 +104,15 @@ namespace EFCore.BulkExtensions.Tests
                 {
                     query = query.Where(a => a.ItemId <= 500 && a.Price >= price);
                 }
+
+                // BATCH for Sqlite does Not work with multiple Conditions since switching to 3.0.0
+                // Method ToParametrizedSql with Sqlite throws Exception on line:
+                //   var enumerator = query.Provider.Execute<IEnumerable>(query.Expression).GetEnumerator();
+                // Message:
+                //   System.InvalidOperationException : The LINQ expression 'DbSet<Item>.Where(i => i.ItemId <= 500 && i.Price >= __price_0)' could not be translated.
+                //   Either rewrite the query in a form that can be translated, or switch to client evaluation explicitly by inserting a call to either AsEnumerable(), AsAsyncEnumerable(), ToList(), or ToListAsync().
+                //   See https://go.microsoft.com/fwlink/?linkid=2101038 for more information.
+                //   QueryableMethodTranslatingExpressionVisitor.<VisitMethodCall>g__CheckTranslated|8_0(ShapedQueryExpression translated, <>c__DisplayClass8_0& )
                 if (databaseType == DbServer.Sqlite)
                 {
                     query = query.Where(a => a.ItemId <= 500); // Sqlite currently does Not support multiple conditions
@@ -381,6 +383,31 @@ WHERE [p].[ParentId] = 1";
             }
             var parameter = new SqlParameter(parameterName, dt) { SqlDbType = SqlDbType.Structured, TypeName = "dbo.UdttIntInt", };
             return context.Set<UdttIntInt>().FromSqlRaw($@"select * from {parameterName}", parameter);
+        }
+
+        private void UpdateSetting(SettingsEnum settings, object value)
+        {
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.Truncate<Setting>();
+            }
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.Settings.Add(new Setting() { Settings = SettingsEnum.Sett1, Value = "Val1" });
+                context.SaveChanges();
+            }
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                // can work with explicit value: .Where(x => x.Settings == SettingsEnum.Sett1) or if named Parameter used then it has to be named (settings) same as Property (Settings) - Case not relevant, it is CaseInsensitive
+                context.Settings.Where(x => x.Settings == settings).BatchUpdate(x => new Setting { Value = value.ToString() });
+            }
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.Truncate<Setting>();
+            }
         }
     }
 }

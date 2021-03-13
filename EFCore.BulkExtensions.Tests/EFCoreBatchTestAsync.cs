@@ -31,6 +31,8 @@ namespace EFCore.BulkExtensions.Tests
 
             await RunBatchDeleteAsync();
 
+            await UpdateSettingAsync(SettingsEnum.Sett1, "Val1UPDATE");
+
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 var firstItem = (await context.Items.ToListAsync()).First();
@@ -157,6 +159,31 @@ namespace EFCore.BulkExtensions.Tests
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 await context.Items.Where(a => a.ItemId > 500).BatchDeleteAsync();
+            }
+        }
+
+        private async Task UpdateSettingAsync(SettingsEnum settings, object value)
+        {
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                await context.TruncateAsync<Setting>();
+            }
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                await context.Settings.AddAsync(new Setting() { Settings = SettingsEnum.Sett1, Value = "Val1" }).ConfigureAwait(false);
+                await context.SaveChangesAsync().ConfigureAwait(false);
+            }
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                // can work with explicit value: .Where(x => x.Settings == SettingsEnum.Sett1) or if named Parameter used then it has to be named (settings) same as Property (Settings) - Case not relevant, it is CaseInsensitive
+                await context.Settings.Where(x => x.Settings == settings).BatchUpdateAsync(x => new Setting { Value = value.ToString() }).ConfigureAwait(false);
+            }
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                await context.TruncateAsync<Setting>();
             }
         }
     }
