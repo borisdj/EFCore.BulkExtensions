@@ -24,6 +24,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
         
         public void Insert<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress)
         {
+            tableInfo.CheckToSetIdentityForPreserveOrder(entities);
             var connection = OpenAndGetSqlConnection(context, tableInfo.BulkConfig);
             try
             {
@@ -85,10 +86,15 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
             {
                 context.Database.CloseConnection();
             }
+            if (!tableInfo.CreatedOutputTable)
+            {
+                tableInfo.CheckToSetIdentityForPreserveOrder(entities, reset: true);
+            }
         }
 
         public async Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, CancellationToken cancellationToken)
         {
+            tableInfo.CheckToSetIdentityForPreserveOrder(entities);
             var connection = await OpenAndGetSqlConnectionAsync(context, tableInfo.BulkConfig, cancellationToken).ConfigureAwait(false);
             try
             {
@@ -149,6 +155,10 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
             finally
             {
                 await context.Database.CloseConnectionAsync().ConfigureAwait(false);
+            }
+            if (!tableInfo.CreatedOutputTable)
+            {
+                tableInfo.CheckToSetIdentityForPreserveOrder(entities, reset: true);
             }
         }
 
