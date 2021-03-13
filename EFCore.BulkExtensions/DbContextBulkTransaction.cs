@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace EFCore.BulkExtensions
 {
-    internal static class DbContextBulkTransaction
+    internal static partial class DbContextBulkTransaction
     {
         public static void Execute<T>(DbContext context, IList<T> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress) where T : class
         {
@@ -17,23 +19,30 @@ namespace EFCore.BulkExtensions
                     return;
                 }
 
-                TableInfo tableInfo = TableInfo.CreateInstance(context, entities, operationType, bulkConfig);
-
-                if (operationType == OperationType.Insert && !tableInfo.BulkConfig.SetOutputIdentity)
+                if (bulkConfig.IncludeGraph)
                 {
-                    SqlBulkOperation.Insert(context, entities, tableInfo, progress);
-                }
-                else if (operationType == OperationType.Read)
-                {
-                    SqlBulkOperation.Read(context, entities, tableInfo, progress);
-                }
-                else if (operationType == OperationType.Truncate)
-                {
-                    SqlBulkOperation.Truncate(context, tableInfo);
+                    DbContextBulkTransactionGraphUtil.ExecuteWithGraph(context, entities, operationType, bulkConfig, progress);
                 }
                 else
                 {
-                    SqlBulkOperation.Merge(context, entities, tableInfo, operationType, progress);
+                    TableInfo tableInfo = TableInfo.CreateInstance(context, entities, operationType, bulkConfig);
+
+                    if (operationType == OperationType.Insert && !tableInfo.BulkConfig.SetOutputIdentity)
+                    {
+                        SqlBulkOperation.Insert(context, entities, tableInfo, progress);
+                    }
+                    else if (operationType == OperationType.Read)
+                    {
+                        SqlBulkOperation.Read(context, entities, tableInfo, progress);
+                    }
+                    else if (operationType == OperationType.Truncate)
+                    {
+                        SqlBulkOperation.Truncate(context, tableInfo);
+                    }
+                    else
+                    {
+                        SqlBulkOperation.Merge(context, entities, tableInfo, operationType, progress);
+                    }
                 }
             }
         }
@@ -47,23 +56,30 @@ namespace EFCore.BulkExtensions
                     return;
                 }
 
-                TableInfo tableInfo = TableInfo.CreateInstance(context, type, entities, operationType, bulkConfig);
-
-                if (operationType == OperationType.Insert && !tableInfo.BulkConfig.SetOutputIdentity)
+                if (bulkConfig.IncludeGraph)
                 {
-                    SqlBulkOperation.Insert(context, type, entities, tableInfo, progress);
-                }
-                else if (operationType == OperationType.Read)
-                {
-                    SqlBulkOperation.Read(context, type, entities, tableInfo, progress);
-                }
-                else if (operationType == OperationType.Truncate)
-                {
-                    SqlBulkOperation.Truncate(context, tableInfo);
+                    DbContextBulkTransactionGraphUtil.ExecuteWithGraph(context, entities, operationType, bulkConfig, progress);
                 }
                 else
                 {
-                    SqlBulkOperation.Merge(context, type, entities, tableInfo, operationType, progress);
+                    TableInfo tableInfo = TableInfo.CreateInstance(context, type, entities, operationType, bulkConfig);
+
+                    if (operationType == OperationType.Insert && !tableInfo.BulkConfig.SetOutputIdentity)
+                    {
+                        SqlBulkOperation.Insert(context, type, entities, tableInfo, progress);
+                    }
+                    else if (operationType == OperationType.Read)
+                    {
+                        SqlBulkOperation.Read(context, type, entities, tableInfo, progress);
+                    }
+                    else if (operationType == OperationType.Truncate)
+                    {
+                        SqlBulkOperation.Truncate(context, tableInfo);
+                    }
+                    else
+                    {
+                        SqlBulkOperation.Merge(context, type, entities, tableInfo, operationType, progress);
+                    }
                 }
             }
         }
@@ -77,23 +93,30 @@ namespace EFCore.BulkExtensions
                     return;
                 }
 
-                TableInfo tableInfo = TableInfo.CreateInstance(context, entities, operationType, bulkConfig);
-
-                if (operationType == OperationType.Insert && !tableInfo.BulkConfig.SetOutputIdentity)
+                if (bulkConfig.IncludeGraph)
                 {
-                    await SqlBulkOperation.InsertAsync(context, entities, tableInfo, progress, cancellationToken);
-                }
-                else if (operationType == OperationType.Read)
-                {
-                    await SqlBulkOperation.ReadAsync(context, entities, tableInfo, progress, cancellationToken);
-                }
-                else if (operationType == OperationType.Truncate)
-                {
-                    await SqlBulkOperation.TruncateAsync(context, tableInfo, cancellationToken);
+                    await DbContextBulkTransactionGraphUtil.ExecuteWithGraphAsync(context, entities, operationType, bulkConfig, progress, cancellationToken);
                 }
                 else
                 {
-                    await SqlBulkOperation.MergeAsync(context, entities, tableInfo, operationType, progress, cancellationToken);
+                    TableInfo tableInfo = TableInfo.CreateInstance(context, entities, operationType, bulkConfig);
+
+                    if (operationType == OperationType.Insert && !tableInfo.BulkConfig.SetOutputIdentity)
+                    {
+                        await SqlBulkOperation.InsertAsync(context, entities, tableInfo, progress, cancellationToken);
+                    }
+                    else if (operationType == OperationType.Read)
+                    {
+                        await SqlBulkOperation.ReadAsync(context, entities, tableInfo, progress, cancellationToken);
+                    }
+                    else if (operationType == OperationType.Truncate)
+                    {
+                        await SqlBulkOperation.TruncateAsync(context, tableInfo, cancellationToken);
+                    }
+                    else
+                    {
+                        await SqlBulkOperation.MergeAsync(context, entities, tableInfo, operationType, progress, cancellationToken);
+                    }
                 }
             }
         }
@@ -107,23 +130,30 @@ namespace EFCore.BulkExtensions
                     return;
                 }
 
-                TableInfo tableInfo = TableInfo.CreateInstance(context, type, entities, operationType, bulkConfig);
-
-                if (operationType == OperationType.Insert && !tableInfo.BulkConfig.SetOutputIdentity)
+                if (bulkConfig.IncludeGraph)
                 {
-                    await SqlBulkOperation.InsertAsync(context, type, entities, tableInfo, progress, cancellationToken);
-                }
-                else if (operationType == OperationType.Read)
-                {
-                    await SqlBulkOperation.ReadAsync(context, type, entities, tableInfo, progress, cancellationToken);
-                }
-                else if (operationType == OperationType.Truncate)
-                {
-                    await SqlBulkOperation.TruncateAsync(context, tableInfo, cancellationToken);
+                    await DbContextBulkTransactionGraphUtil.ExecuteWithGraphAsync(context, entities, operationType, bulkConfig, progress, cancellationToken);
                 }
                 else
                 {
-                    await SqlBulkOperation.MergeAsync(context, type, entities, tableInfo, operationType, progress, cancellationToken);
+                    TableInfo tableInfo = TableInfo.CreateInstance(context, type, entities, operationType, bulkConfig);
+
+                    if (operationType == OperationType.Insert && !tableInfo.BulkConfig.SetOutputIdentity)
+                    {
+                        await SqlBulkOperation.InsertAsync(context, type, entities, tableInfo, progress, cancellationToken);
+                    }
+                    else if (operationType == OperationType.Read)
+                    {
+                        await SqlBulkOperation.ReadAsync(context, type, entities, tableInfo, progress, cancellationToken);
+                    }
+                    else if (operationType == OperationType.Truncate)
+                    {
+                        await SqlBulkOperation.TruncateAsync(context, tableInfo, cancellationToken);
+                    }
+                    else
+                    {
+                        await SqlBulkOperation.MergeAsync(context, type, entities, tableInfo, operationType, progress, cancellationToken);
+                    }
                 }
             }
         }

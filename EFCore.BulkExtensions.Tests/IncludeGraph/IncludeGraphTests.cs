@@ -13,35 +13,15 @@ namespace EFCore.BulkExtensions.Tests.IncludeGraph
 {
     public class IncludeGraphTests : IDisposable
     {
-        [Theory]
-        [InlineData(DbServer.SqlServer)]
-        //[InlineData(DbServer.Sqlite)]
-        public void BulkInsertOrUpdate_EntityWithNestedObjectGraph_SavesGraphToDatabase(DbServer databaseType)
+        private static WorkOrder WorkOrder1 = new WorkOrder
         {
-            ContextUtil.DbServer = databaseType;
-
-            using var db = new GraphDbContext(ContextUtil.GetOptions<GraphDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_Graph"));
-
-            db.BulkInsertOrUpdate(this.GetTestData(db).ToList(), new BulkConfig
+            Description = "Fix belt",
+            Asset = new Asset
             {
-                IncludeGraph = true,
-                EnableShadowProperties = true
-            });
-
-            Assert.True(db.WorkOrderSpares.Any());
-        }
-
-        private IEnumerable<WorkOrder> GetTestData(DbContext db)
-        {
-            var one = new WorkOrder
-            {
-                Description = "Fix belt",
-                Asset = new Asset
-                {
-                    Description = "MANU-1",
-                    Location = "WAREHOUSE-1"
-                },
-                WorkOrderSpares =
+                Description = "MANU-1",
+                Location = "WAREHOUSE-1"
+            },
+            WorkOrderSpares =
                 {
                     new WorkOrderSpare
                     {
@@ -64,9 +44,64 @@ namespace EFCore.BulkExtensions.Tests.IncludeGraph
                         }
                     }
                 }
-            };
+        };
 
-            yield return one;
+        private static WorkOrder WorkOrder2 = new WorkOrder
+        {
+            Description = "Fix toilets",
+            Asset = new Asset
+            {
+                Description = "FLUSHMASTER-1",
+                Location = "GYM-BLOCK-3"
+            },
+            WorkOrderSpares =
+            {
+                new WorkOrderSpare
+                {
+                    Description = "Plunger",
+                    Quantity = 2,
+                    Spare = new Spare
+                    {
+                        PartNumber = "Poo'o'magic 531",
+                        Barcode = "544532bbc"
+                    }
+                },
+                new WorkOrderSpare
+                {
+                    Description = "Crepepele",
+                    Quantity = 1,
+                    Spare = new Spare
+                    {
+                        PartNumber = "MZD f",
+                        Barcode = "222655"
+                    }
+                }
+            }
+        };
+
+        [Theory]
+        [InlineData(DbServer.SqlServer)]
+        [InlineData(DbServer.Sqlite)]
+        public void BulkInsertOrUpdate_EntityWithNestedObjectGraph_SavesGraphToDatabase(DbServer databaseType)
+        {
+            ContextUtil.DbServer = databaseType;
+
+            using var db = new GraphDbContext(ContextUtil.GetOptions<GraphDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_Graph"));
+
+            db.BulkInsertOrUpdate(this.GetTestData(db).ToList(), new BulkConfig
+            {
+                IncludeGraph = true,
+                EnableShadowProperties = true
+            });
+
+            Assert.True(db.WorkOrderSpares.Any());
+        }
+
+        private IEnumerable<WorkOrder> GetTestData(DbContext db)
+        {
+            yield return WorkOrder1;
+            yield return WorkOrder2;
+
         }
 
         public void Dispose()

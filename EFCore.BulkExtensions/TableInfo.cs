@@ -679,12 +679,12 @@ namespace EFCore.BulkExtensions
         }
         #endregion
 
-        protected void UpdateEntitiesIdentity<T>(Type type, IList<T> entities, IList<T> entitiesWithOutputIdentity)
+        protected void UpdateEntitiesIdentity<T>(DbContext context, Type type, IList<T> entities, IList<T> entitiesWithOutputIdentity)
         {
+            var identityPropertyName = OutputPropertyColumnNamesDict.SingleOrDefault(a => a.Value == IdentityColumnName).Key;
+
             if (BulkConfig.PreserveInsertOrder) // Updates PK in entityList
             {
-                string identityPropertyName = OutputPropertyColumnNamesDict.SingleOrDefault(a => a.Value == IdentityColumnName).Key;
-
                 for (int i = 0; i < NumberOfEntities; i++)
                 {
                     var propertyValue = FastPropertyDict[identityPropertyName].Get(entitiesWithOutputIdentity[i]);
@@ -695,6 +695,20 @@ namespace EFCore.BulkExtensions
                         string timeStampPropertyName = OutputPropertyColumnNamesDict.SingleOrDefault(a => a.Value == TimeStampColumnName).Key;
                         var timeStampPropertyValue = FastPropertyDict[timeStampPropertyName].Get(entitiesWithOutputIdentity[i]);
                         FastPropertyDict[timeStampPropertyName].Set(entities[i], timeStampPropertyValue);
+                    }
+                }
+            }
+            else if (BulkConfig.IncludeGraph)
+            {
+                for (int i = 0; i < NumberOfEntities; i++)
+                {
+                    var originalEntity = entities[i];
+                    var outputEntity = entitiesWithOutputIdentity[i];
+
+                    if (context.Entry(originalEntity).IsKeySet == false)
+                    {
+                        var newPk = context.Entry(outputEntity).Property(identityPropertyName).CurrentValue;
+                        context.Entry(originalEntity).Property(identityPropertyName).CurrentValue = newPk;
                     }
                 }
             }
@@ -728,7 +742,8 @@ namespace EFCore.BulkExtensions
                 string sqlQuery = SqlQueryBuilder.SelectFromOutputTable(this);
                 var entitiesWithOutputIdentity = (typeof(T) == type) ? QueryOutputTable<T>(context, sqlQuery).ToList() :
                     QueryOutputTable(context, type, sqlQuery).Cast<T>().ToList();
-                UpdateEntitiesIdentity(type, entities, entitiesWithOutputIdentity);
+
+                UpdateEntitiesIdentity(context, type, entities, entitiesWithOutputIdentity);
             }
             if (BulkConfig.CalculateStats)
             {
@@ -762,7 +777,7 @@ namespace EFCore.BulkExtensions
                 //var entitiesWithOutputIdentity = await QueryOutputTableAsync<T>(context, sqlQuery).ToListAsync(cancellationToken).ConfigureAwait(false); // TempFIX
                 var entitiesWithOutputIdentity = (typeof(T) == type) ? QueryOutputTable<T>(context, sqlQuery).ToList() :
                     QueryOutputTable(context, type, sqlQuery).Cast<T>().ToList();
-                UpdateEntitiesIdentity(type, entities, entitiesWithOutputIdentity);
+                UpdateEntitiesIdentity(context, type, entities, entitiesWithOutputIdentity);
             }
             if (BulkConfig.CalculateStats)
             {

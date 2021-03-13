@@ -588,6 +588,11 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                 foreach (var sp in entityPropertiesDict.Values.Where(y => y.IsShadowProperty()))
                 {
                     var columnName = sp.GetColumnName();
+
+                    // If a model has an entity which has a relationship without an explicity defined FK, the data table will already contain the foreign key shadow property
+                    if (dataTable.Columns.Contains(columnName))
+                        continue;
+                    
                     var isConvertible = tableInfo.ConvertibleProperties.ContainsKey(columnName);
                     var propertyType = isConvertible ? tableInfo.ConvertibleProperties[columnName].ProviderClrType : sp.ClrType;
 
