@@ -21,8 +21,14 @@ namespace EFCore.BulkExtensions.Tests
 
             await RunDeleteAllAsync(databaseType);
             await RunInsertAsync();
-            await RunBatchUpdateAsync();
-            int deletedEntities = await RunTopBatchDeleteAsync();
+            await RunBatchUpdateAsync(databaseType);
+
+            int deletedEntities = 1;
+            if (databaseType == DbServer.SqlServer)
+            {
+                deletedEntities = await RunTopBatchDeleteAsync();
+            }
+
             await RunBatchDeleteAsync();
 
             using (var context = new TestContext(ContextUtil.GetOptions()))
@@ -35,7 +41,11 @@ namespace EFCore.BulkExtensions.Tests
                 Assert.Null(lastItem.Price);
                 Assert.StartsWith("name ", lastItem.Name);
                 Assert.EndsWith(" Concatenated", lastItem.Name);
-                Assert.EndsWith(" TOP(1)", firstItem.Name);
+
+                if (databaseType == DbServer.SqlServer)
+                {
+                    Assert.EndsWith(" TOP(1)", firstItem.Name);
+                }
             }
         }
 
@@ -84,21 +94,34 @@ namespace EFCore.BulkExtensions.Tests
             }
         }
 
-        private async Task RunBatchUpdateAsync()
+        private async Task RunBatchUpdateAsync(DbServer databaseType)
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 //var updateColumns = new List<string> { nameof(Item.Quantity) }; // Adding explicitly PropertyName for update to its default value
 
                 decimal price = 0;
-                var query = context.Items.Where(a => a.ItemId <= 500 && a.Price >= price);
+
+                var query = context.Items.AsQueryable();
+                if (databaseType == DbServer.SqlServer)
+                {
+                    query = query.Where(a => a.ItemId <= 500 && a.Price >= price);
+                }
+                if (databaseType == DbServer.Sqlite)
+                {
+                    query = query.Where(a => a.ItemId <= 500); // Sqlite currently does Not support multiple conditions
+                }
 
                 await query.BatchUpdateAsync(new Item { Description = "Updated" }/*, updateColumns*/);
 
                 await query.BatchUpdateAsync(a => new Item { Name = a.Name + " Concatenated", Quantity = a.Quantity + 100, Price = null }); // example of BatchUpdate value Increment/Decrement
 
-                query = context.Items.Where(a => a.ItemId <= 500 && a.Price == null);
-                await query.Take(1).BatchUpdateAsync(a => new Item { Name = a.Name + " TOP(1)", Quantity = a.Quantity + 100 }); // example of BatchUpdate with TOP(1)
+                if (databaseType == DbServer.SqlServer) // Sqlite currently does Not support Take(): LIMIT
+                {
+                    query = context.Items.Where(a => a.ItemId <= 500 && a.Price == null);
+                    await query.Take(1).BatchUpdateAsync(a => new Item { Name = a.Name + " TOP(1)", Quantity = a.Quantity + 100 }); // example of BatchUpdate with TOP(1)
+
+                }
 
                 var list = new List<string>() { "Updated" };
                 var updatedCount = await context.Set<Item>()
@@ -107,15 +130,17 @@ namespace EFCore.BulkExtensions.Tests
                                                 .BatchUpdateAsync(a => new Item() { TimeUpdated = DateTime.Now })
                                                 .ConfigureAwait(false);
 
-                var newValue = 5;
-
-                await context.Parents.Where(parent => parent.ParentId == 1)
-                    .BatchUpdateAsync(parent => new Parent
-                    {
-                        Description = parent.Children.Where(child => child.IsEnabled && child.Value == newValue).Sum(child => child.Value).ToString(),
-                        Value = newValue
-                    })
-                    .ConfigureAwait(false);
+                if (databaseType == DbServer.SqlServer) // Sqlite Not supported
+                {
+                    var newValue = 5;
+                    await context.Parents.Where(parent => parent.ParentId == 1)
+                        .BatchUpdateAsync(parent => new Parent
+                        {
+                            Description = parent.Children.Where(child => child.IsEnabled && child.Value == newValue).Sum(child => child.Value).ToString(),
+                            Value = newValue
+                        })
+                        .ConfigureAwait(false);
+                }
             }
         }
 

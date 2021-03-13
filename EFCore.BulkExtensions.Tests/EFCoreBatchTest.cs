@@ -22,9 +22,15 @@ namespace EFCore.BulkExtensions.Tests
 
             RunDeleteAll(databaseType);
             RunInsert();
-            RunBatchUpdate();
-            RunBatchUpdate_UsingNavigationPropertiesThatTranslateToAnInnerQuery();
-            int deletedEntities = RunTopBatchDelete();
+            RunBatchUpdate(databaseType);
+
+            int deletedEntities = 1;
+            if (databaseType == DbServer.SqlServer)
+            {
+                RunBatchUpdate_UsingNavigationPropertiesThatTranslateToAnInnerQuery();
+                deletedEntities = RunTopBatchDelete();
+            }
+
             RunBatchDelete();
             RunBatchDelete2();
             RunContainsBatchDelete();
@@ -42,7 +48,11 @@ namespace EFCore.BulkExtensions.Tests
                 Assert.Equal(1.5m, lastItem.Price);
                 Assert.StartsWith("name ", lastItem.Name);
                 Assert.EndsWith(" Concatenated", lastItem.Name);
-                Assert.EndsWith(" TOP(1)", firstItem.Name);
+
+                if (databaseType == DbServer.SqlServer)
+                {
+                    Assert.EndsWith(" TOP(1)", firstItem.Name);
+                }
             }
 
             if (databaseType == DbServer.SqlServer)
@@ -81,23 +91,34 @@ namespace EFCore.BulkExtensions.Tests
             }
         }
 
-        private void RunBatchUpdate()
+        private void RunBatchUpdate(DbServer databaseType)
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 //var updateColumns = new List<string> { nameof(Item.Quantity) }; // Adding explicitly PropertyName for update to its default value
 
                 decimal price = 0;
-                var query = context.Items.Where(a => a.ItemId <= 500 && a.Price >= price);
+
+                var query = context.Items.AsQueryable();
+                if (databaseType == DbServer.SqlServer)
+                {
+                    query = query.Where(a => a.ItemId <= 500 && a.Price >= price);
+                }
+                if (databaseType == DbServer.Sqlite)
+                {
+                    query = query.Where(a => a.ItemId <= 500); // Sqlite currently does Not support multiple conditions
+                }
 
                 query.BatchUpdate(new Item { Description = "Updated", Price = 1.5m }/*, updateColumns*/);
 
                 var incrementStep = 100;
                 var suffix = " Concatenated";
                 query.BatchUpdate(a => new Item { Name = a.Name + suffix, Quantity = a.Quantity + incrementStep }); // example of BatchUpdate Increment/Decrement value in variable
-                                                                                                                    //query.BatchUpdate(a => new Item { Quantity = a.Quantity + 100 }); // example direct value without variable
 
-                query.Take(1).BatchUpdate(a => new Item { Name = a.Name + " TOP(1)", Quantity = a.Quantity + incrementStep }); // example of BatchUpdate with TOP(1)
+                if (databaseType == DbServer.SqlServer) // Sqlite currently does Not support Take(): LIMIT
+                {
+                    query.Take(1).BatchUpdate(a => new Item { Name = a.Name + " TOP(1)", Quantity = a.Quantity + incrementStep }); // example of BatchUpdate with TOP(1)
+                }
             }
         }
 

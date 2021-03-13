@@ -13,7 +13,7 @@ namespace EFCore.BulkExtensions.Tests
 {
     public class EFCoreBulkTestAsync
     {
-        protected int EntitiesNumber => 100000;
+        protected int EntitiesNumber => 10000;
 
         private static Func<TestContext, int> ItemsCountQuery = EF.CompileQuery<TestContext, int>(ctx => ctx.Items.Count());
         private static Func<TestContext, Item> LastItemQuery = EF.CompileQuery<TestContext, Item>(ctx => ctx.Items.LastOrDefault());
