@@ -171,8 +171,7 @@ Last optional argument is **Action progress** (Example in *EfOperationTest.cs* *
 context.BulkInsert(entitiesList, null, (a) => WriteProgress(a));
 ```
 
-Library supports [Global Query Filters](https://docs.microsoft.com/en-us/ef/core/querying/filters) and [Value Conversions](https://docs.microsoft.com/en-us/ef/core/modeling/value-conversions) as well.</br>
-More info on Batch and named Property with Enum to String Conversion: [EnumToString in BatchUpdateAsync](https://github.com/borisdj/EFCore.BulkExtensions/issues/397)</br>
+Library supports [Global Query Filters](https://docs.microsoft.com/en-us/ef/core/querying/filters) and [Value Conversions](https://docs.microsoft.com/en-us/ef/core/modeling/value-conversions) as well. BatchUpdate and named Property with [EnumToString Conversion](https://github.com/borisdj/EFCore.BulkExtensions/issues/397)</br>
 It also maps [OwnedTypes](https://docs.microsoft.com/en-us/ef/core/modeling/owned-entities), which is implemented with `DataTable` class.</br>
 With [Computed](https://docs.microsoft.com/en-us/ef/core/modeling/relational/computed-columns) and [Timestamp](https://docs.microsoft.com/en-us/ef/core/modeling/concurrency) Columns it will work in a way that they are automatically excluded from Insert. And when combined with *SetOutputIdentity* they will be Selected.<br>
 Bulk Extension methods can be [Overridden](https://github.com/borisdj/EFCore.BulkExtensions/issues/56) if required, for example to set AuditInfo.<br>
