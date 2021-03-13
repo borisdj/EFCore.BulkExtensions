@@ -109,19 +109,13 @@ context.BulkInsertOrUpdate(entList, b => b.SetOutputIdentity = true); //example 
 ```
 
 **PreserveInsertOrder** makes sure that entites are inserted to Db as they are ordered in entitiesList.<br>
-However for this to work Id column needs to be set for the proper order.<br>
-For example if table already has rows, let's say it has 1000 rows with Id-s (1:1000), and we now want to add 300 more.<br>
-Since Id-s are generated in Db we could not set them, they would all be 0 (int default) in list.<br>
-But if we want to keep the order as they are ordered in list then those Id-s should be set say 1 to 300 (for BulkInsert).<br>
-Here single Id value itself doesn't matter, db will change it to (1001:1300), what matters is their mutual relationship for sorting.<br>
+When there is Identity column (int autoincrement) with zeros it will temporary be automatically changed from 0s into range -N:-1 for the proper order. Or it can be manually set with proper values for order.<br>
+Here single Id value itself doesn't matter, db will change it to next in sequence, what matters is their mutual relationship for sorting.<br>
 Insertion order is implemented with [TOP](https://docs.microsoft.com/en-us/sql/t-sql/queries/top-transact-sql) in conjuction with ORDER BY. [stackoverflow:merge-into-insertion-order](https://stackoverflow.com/questions/884187/merge-into-insertion-order).<br>
 This config should also be used when we have set *SetOutputIdentity* on Entity containing NotMapped Property. [issues/76](https://github.com/borisdj/EFCore.BulkExtensions/issues/76)
 
-When using **PreserveInsertOrder** with **SetOutputIdentity** Id value does matter.<br>
-If it's BulkInsertOrUpdate method for those that will be updated it has to match Id.<br>
-And if we need to sort those for insert(BulkInsert/OrUpdate) and not have conflict with existing Id-s, there are 2 ways:<br>
-One is set Id to really high values, order of magnitude 10^10, and another even better setting them to negative values.<br>
-So if we have list of 8000, say 3000 for update (they keep the real Id) and 5000 for insert then Id-s could be (-5000:-1).
+When using **PreserveInsertOrder** with **SetOutputIdentity** Id values will be updated to new ones from database.<br>
+When using BulkInsertOrUpdate method for those that will be updated Id has to match it prior or some other unique colum if using UpdateByProperties.<br>
 
 **SetOutputIdentity** is useful when BulkInsert is done to multiple related tables, that have Identity column.<br>
 After Insert is done to first table, we need Id-s that were generated in Db because they are FK(ForeignKey) in second table.<br>
