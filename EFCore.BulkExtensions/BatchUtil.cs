@@ -30,9 +30,58 @@ namespace EFCore.BulkExtensions
             var (sql, tableAlias, _, topStatement, leadingComments, innerParameters) = GetBatchSql(query, context, isUpdate: false);
 
             innerParameters = ReloadSqlParameters(context, innerParameters.ToList()); // Sqlite requires SqliteParameters
-            tableAlias = SqlAdaptersMapping.GetDatabaseType(context) == DbServer.SqlServer ? $"[{tableAlias}]" : tableAlias;
+            var databaseType = SqlAdaptersMapping.GetDatabaseType(context);
 
-            var resultQuery = $"{leadingComments}DELETE {topStatement}{tableAlias}{sql}";
+            string resultQuery;
+            if (databaseType == DbServer.SqlServer)
+            {
+                tableAlias = $"[{tableAlias}]";
+                int outerQueryOrderByIndex = -1;
+                var useUpdateableCte = false;
+                var lastOrderByIndex = sql.LastIndexOf(Environment.NewLine + $"ORDER BY ", StringComparison.OrdinalIgnoreCase);
+                if (lastOrderByIndex > -1)
+                {
+                    var subQueryEnd = sql.LastIndexOf($") AS {tableAlias}" + Environment.NewLine, StringComparison.OrdinalIgnoreCase);
+                    if (subQueryEnd == -1 || lastOrderByIndex > subQueryEnd)
+                    {
+                        outerQueryOrderByIndex = lastOrderByIndex;
+
+                        if (topStatement.Length > 0)
+                        {
+                            useUpdateableCte = true;
+                        }
+                        else
+                        {
+                            int offSetIndex = sql.LastIndexOf(Environment.NewLine + "OFFSET ", StringComparison.OrdinalIgnoreCase);
+                            if (offSetIndex > outerQueryOrderByIndex)
+                            {
+                                useUpdateableCte = true;
+                            }
+                        }
+                    }
+                }
+
+                if (useUpdateableCte)
+                {
+                    var cte = "cte" + Guid.NewGuid().ToString().Substring(0, 8); // 8 chars of Guid as tableNameSuffix to avoid same name collision with other tables
+                    resultQuery = $"{leadingComments}WITH [{cte}] AS (SELECT {topStatement}* {sql}) DELETE FROM [{cte}]";
+                }
+                else
+                {
+                    if (outerQueryOrderByIndex > -1)
+                    {
+                        // ORDER BY is not allowed without TOP or OFFSET.
+                        sql = sql.Substring(0, outerQueryOrderByIndex);
+                    }
+
+                    resultQuery = $"{leadingComments}DELETE {topStatement}{tableAlias}{sql}";
+                }
+            }
+            else
+            {
+                resultQuery = $"{leadingComments}DELETE {topStatement}{tableAlias}{sql}";
+            }
+
             return (resultQuery, new List<object>(innerParameters));
         }
 

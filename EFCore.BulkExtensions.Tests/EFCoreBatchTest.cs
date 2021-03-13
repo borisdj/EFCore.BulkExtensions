@@ -37,7 +37,7 @@ namespace EFCore.BulkExtensions.Tests
             RunContainsBatchDelete2();
             RunContainsBatchDelete3();
             RunAnyBatchDelete();
-
+            
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 var firstItem = context.Items.ToList().FirstOrDefault();
@@ -58,6 +58,13 @@ namespace EFCore.BulkExtensions.Tests
             if (databaseType == DbServer.SqlServer)
             {
                 RunUdttBatch();
+            }
+
+            if (databaseType == DbServer.SqlServer)
+            {
+                // Removing ORDER BY and CTE's are not implemented for SQLite.
+                RunOrderByDeletes();
+                RunIncludeDelete();
             }
         }
 
@@ -261,6 +268,41 @@ WHERE [p].[ParentId] = 1";
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 context.Items.Where(a => descriptionsToDelete.Any(toDelete => toDelete == a.Description)).BatchDelete();
+            }
+        }
+
+        private void RunOrderByDeletes()
+        {
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.Items.OrderBy(x => x.Name).Skip(2).Take(4).BatchDelete();
+            }
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.Items.OrderBy(x => x.Name).Take(2).BatchDelete();
+            }
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.Items.OrderBy(x => x.Name).BatchDelete();
+            }
+        }
+
+        private void RunIncludeDelete()
+        {
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.Items.Include(x => x.ItemHistories).Where(x => !x.ItemHistories.Any()).OrderBy(x => x.ItemId).Skip(2).Take(4).BatchDelete();
+            }
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.Items.Include(x => x.ItemHistories).Where(x => !x.ItemHistories.Any()).OrderBy(x => x.ItemId).Take(4).BatchDelete();
+            }
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.Items.Include(x => x.ItemHistories).Where(x => !x.ItemHistories.Any()).BatchDelete();
             }
         }
 
