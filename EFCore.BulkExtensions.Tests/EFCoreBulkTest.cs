@@ -131,7 +131,7 @@ namespace EFCore.BulkExtensions.Tests
                 {
                     var entity = new Item
                     {
-                        ItemId = isBulkOperation ? j : 0,
+                        ItemId = 0, //isBulkOperation ? j : 0, // no loger used since order(Identity temporary filled with negative values from -N to -1) is set automaticaly when PreserveInsertOrder=TRUE
                         Name = "name " + i,
                         Description = "info " + Guid.NewGuid().ToString().Substring(0, 3),
                         Quantity = i % 10,

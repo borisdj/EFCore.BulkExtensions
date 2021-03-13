@@ -679,6 +679,28 @@ namespace EFCore.BulkExtensions
         }
         #endregion
 
+        public void CheckToSetIdentityForPreserveOrder<T>(IList<T> entities, bool reset = false)
+        {
+            string identityPropertyName = PropertyColumnNamesDict.SingleOrDefault(a => a.Value == IdentityColumnName).Key;
+
+            bool doSetIdentityColumnsForInsertOrder = BulkConfig.PreserveInsertOrder &&
+                                                      entities.Count() > 0 &&
+                                                      PrimaryKeys.Count() == 1 &&
+                                                      PrimaryKeys[0] == IdentityColumnName &&
+                                                      (int)FastPropertyDict[identityPropertyName].Get(entities[0]) == 0 &&
+                                                      (int)FastPropertyDict[identityPropertyName].Get(entities[1]) == 0;
+            if (doSetIdentityColumnsForInsertOrder)
+            {
+                int i = -entities.Count();
+                foreach (var entity in entities)
+                {
+                    int idValue = reset ? 0 : i;
+                    FastPropertyDict[identityPropertyName].Set(entity, idValue);
+                    i++;
+                }
+            }
+        }
+
         protected void UpdateEntitiesIdentity<T>(Type type, IList<T> entities, IList<T> entitiesWithOutputIdentity)
         {
             if (BulkConfig.PreserveInsertOrder) // Updates PK in entityList
