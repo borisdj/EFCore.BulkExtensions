@@ -6,9 +6,9 @@ DELETE FROM [Item];
 INSERT INTO [Item]
 ([ItemId], [Description], [Name], [Price], [Quantity], [TimeUpdated])
 VALUES
-(1, 'Desc1', 'SomeName1', 22.11, 34, '2019-01-01'),
-(2, 'Desc2', 'SomeName2', 12.66, 45, '2019-01-01'),
-(3, 'Desc3', 'SomeName3', 14.35, 46, '2019-01-01');
+(1, 'Desc1', 'SomeName1', 22.11, 34, '2020-01-01'),
+(2, 'Desc2', 'SomeName2', 12.66, 45, '2020-01-01'),
+(3, 'Desc3', 'SomeName3', 14.35, 46, '2020-01-01');
 
 
 INSERT INTO [Item]
@@ -26,7 +26,7 @@ INSERT INTO [Item]
 ([ItemId], [Description], [Name], [Price], [Quantity], [TimeUpdated])
 VALUES (3, 'Desc1', 'SomeName3', 22.11, 34, '2019-01-01')
 ON CONFLICT([ItemId]) DO UPDATE
-SET [Description] = 'Desc1', [Name] = 'Name3 UPDATED', [Price] = 22.11, [Quantity] = 34, [TimeUpdated] = '2019-01-01';
+SET [Description] = 'Desc1', [Name] = 'Name3 UPDATED', [Price] = 22.11, [Quantity] = 34, [TimeUpdated] = '2020-01-01';
 
 
 -- INSERT GUID AS TEXT
