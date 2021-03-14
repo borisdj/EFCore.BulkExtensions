@@ -85,9 +85,9 @@ More info in the [Example](https://github.com/borisdj/EFCore.BulkExtensions#read
 ## BulkConfig arguments
 
 **BulkInsert_/OrUpdate/OrDelete** methods can have optional argument **BulkConfig** with properties (bool, int, object, List<string>):<br>
-{ *PreserveInsertOrder, SetOutputIdentity, BatchSize, NotifyAfter, BulkCopyTimeout, EnableStreaming, UseTempDB, TrackingEntities, WithHoldlock, CalculateStats, StatsInfo, PropertiesToInclude, PropertiesToIncludeOnCompare, PropertiesToExclude, PropertiesToIncludeOnUpdate, PropertiesToExcludeOnCompare, PropertiesToExcludeOnUpdate, UpdateByProperties, EnableShadowProperties, SRID, SqlBulkCopyOptions }*<br>
+{ *PreserveInsertOrder, SetOutputIdentity, BatchSize, NotifyAfter, BulkCopyTimeout, EnableStreaming, UseTempDB, UniqueTableNameTempDb, CustomDestinationTableName, TrackingEntities, WithHoldlock, CalculateStats, StatsInfo, PropertiesToInclude, PropertiesToIncludeOnCompare, PropertiesToExclude, PropertiesToIncludeOnUpdate, PropertiesToExcludeOnCompare, PropertiesToExcludeOnUpdate, UpdateByProperties, EnableShadowProperties, SRID, SqlBulkCopyOptions }*<br>
 Default behaviour is <br>
-{ *PreserveInsertOrder*: false, *SetOutputIdentity*: false, *BatchSize*: 2000, *NotifyAfter*: null, *BulkCopyTimeout*: null,<br> *EnableStreaming*: false, *UseTempDB*: false, *TrackingEntities*: false, *WithHoldlock*: true,<br> *CalculateStats*: false, *StatsInfo*: null, *PropertiesToInclude*: null, *PropertiesToIncludeOnCompare* : null, *PropertiesToIncludeOnUpdate* : null, *PropertiesToExclude*: null, *PropertiesToExcludeOnCompare*: null, *PropertiesToExcludeOnUpdate*: null, *UpdateByProperties*: null, *EnableShadowProperties*: false, *SRID*: 4326, *SqlBulkCopyOptions*: Default }<br><br>
+{ *PreserveInsertOrder*: false, *SetOutputIdentity*: false, *BatchSize*: 2000, *NotifyAfter*: null, *BulkCopyTimeout*: null,<br> *EnableStreaming*: false, *UseTempDB*: false, *UniqueTableNameTempDb*: true, *CustomDestinationTableName*: null, *TrackingEntities*: false, *WithHoldlock*: true,<br> *CalculateStats*: false, *StatsInfo*: null, *PropertiesToInclude*: null, *PropertiesToIncludeOnCompare* : null, *PropertiesToIncludeOnUpdate* : null, *PropertiesToExclude*: null, *PropertiesToExcludeOnCompare*: null, *PropertiesToExcludeOnUpdate*: null, *UpdateByProperties*: null, *EnableShadowProperties*: false, *SRID*: 4326, *SqlBulkCopyOptions*: Default }<br><br>
 If we want to change defaults, BulkConfig should be added explicitly with one or more bool properties set to true, and/or int props like **BatchSize** to different number.<br> Config also has DelegateFunc for setting *Underlying-Connection/Transaction*, e.g. in UnderlyingTest.<br>
 When doing update we can chose to exclude one or more properties by adding their names into **PropertiesToExclude**, or if we need to update less then half column then **PropertiesToInclude** can be used. Setting both Lists are not allowed.
 
@@ -155,6 +155,8 @@ When **CalculateStats** is set to True the result is return in `BulkConfig.Stats
 If used for pure Insert (with Batching) then SetOutputIdentity should also be configured because Merge have to be used.<br>
 **TrackingEntities** can be set to True if we want to have tracking of entities from BulkRead or when SetOutputIdentity is set.<br>
 **UseTempDB** when set then BulkOperation has to be [inside Transaction](https://github.com/borisdj/EFCore.BulkExtensions/issues/49)<br>
+**UniqueTableNameTempDb** when changed to true temp table name will be only 'Temp' without random numbers.<br>
+**CustomDestinationTableName** can be set with 'TableName' only or with 'Schema.TableName'.<br>
 **EnableShadowProperties** to add (normal) Shadow Property and persist value. Disables automatic discrimator, use manual method.<br>
 **SRID** Spatial Reference Identifier - for SQL Server with NetTopologySuite.
 
