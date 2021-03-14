@@ -22,13 +22,14 @@ namespace EFCore.BulkExtensions
 
         public bool UniqueTableNameTempDb { get; set; } = true;
 
+        public string CustomDestinationTableName { get; set; }
+
         public bool TrackingEntities { get; set; }
 
         public bool WithHoldlock { get; set; } = true;
 
         public bool CalculateStats { get; set; }
         public StatsInfo StatsInfo { get; set; }
-
         public List<string> PropertiesToInclude { get; set; }
         public List<string> PropertiesToIncludeOnCompare { get; set; }
         public List<string> PropertiesToIncludeOnUpdate { get; set; }

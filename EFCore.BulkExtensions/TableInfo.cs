@@ -115,8 +115,21 @@ namespace EFCore.BulkExtensions
             //var relationalData = entityType.Relational(); relationalData.Schema relationalData.TableName // DEPRECATED in Core3.0
             bool isSqlServer = context.Database.ProviderName.EndsWith(DbServer.SqlServer.ToString());
             string defaultSchema = isSqlServer ? "dbo" : null;
-            Schema = entityType.GetSchema() ?? defaultSchema;
-            TableName = entityType.GetTableName();
+
+            string customSchema = null;
+            string customTableName = null;
+            if (BulkConfig.CustomDestinationTableName != null)
+            {
+                customTableName = BulkConfig.CustomDestinationTableName;
+                if (customTableName.Contains('.'))
+                {
+                    var tableNameSplitList = BulkConfig.CustomDestinationTableName.Split('.');
+                    customSchema = tableNameSplitList[0];
+                    customTableName = tableNameSplitList[1];
+                }
+            }
+            Schema = customSchema ?? entityType.GetSchema() ?? defaultSchema;
+            TableName = customTableName ?? entityType.GetTableName();
 
             TempTableSufix = "Temp";
 
