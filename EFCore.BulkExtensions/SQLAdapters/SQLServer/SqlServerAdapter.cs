@@ -501,6 +501,11 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                     if (propertyType == typeof(Geometry) && isSqlServer)
                     {
                         propertyType = typeof(byte[]);
+                        tableInfo.HasSpatialType = true;
+                        if (tableInfo.BulkConfig.PropertiesToIncludeOnCompare != null || tableInfo.BulkConfig.PropertiesToIncludeOnCompare != null)
+                        {
+                            throw new InvalidOperationException("OnCompare properties Config can not be set for Entity with Spatial types like 'Geometry'");
+                        }
                     }
 
                     if (!columnsDict.ContainsKey(property.Name))

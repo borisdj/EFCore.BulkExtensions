@@ -42,6 +42,7 @@ namespace EFCore.BulkExtensions
         public bool HasAbstractList { get; set; }
         public bool ColumnNameContainsSquareBracket { get; set; }
         public bool LoadOnlyPKColumn { get; set; }
+        public bool HasSpatialType { get; set; }
         public int NumberOfEntities { get; set; }
 
         public BulkConfig BulkConfig { get; set; }
@@ -241,12 +242,12 @@ namespace EFCore.BulkExtensions
                 if (AreSpecifiedPropertiesToInclude)
                 {
                     properties = properties.Where(a => BulkConfig.PropertiesToInclude.Contains(a.Name));
-                    ValidateSpecifiedPropertiesList(properties, nameof(BulkConfig.PropertiesToInclude));
+                    ValidateSpecifiedPropertiesList(properties, BulkConfig.PropertiesToInclude, nameof(BulkConfig.PropertiesToInclude));
                 }
                 if (AreSpecifiedPropertiesToExclude)
                 {
                     properties = properties.Where(a => !BulkConfig.PropertiesToExclude.Contains(a.Name));
-                    ValidateSpecifiedPropertiesList(properties, nameof(BulkConfig.PropertiesToExclude));
+                    ValidateSpecifiedPropertiesList(properties, BulkConfig.PropertiesToExclude, nameof(BulkConfig.PropertiesToExclude));
                 }
             }
 
@@ -259,12 +260,12 @@ namespace EFCore.BulkExtensions
                 if (AreSpecifiedPropertiesToIncludeOnCompare)
                 {
                     propertiesOnCompare = propertiesOnCompare.Where(a => BulkConfig.PropertiesToIncludeOnCompare.Contains(a.Name));
-                    ValidateSpecifiedPropertiesList(propertiesOnCompare, nameof(BulkConfig.PropertiesToIncludeOnCompare));
+                    ValidateSpecifiedPropertiesList(propertiesOnCompare, BulkConfig.PropertiesToIncludeOnCompare, nameof(BulkConfig.PropertiesToIncludeOnCompare));
                 }
                 if (AreSpecifiedPropertiesToExcludeOnCompare)
                 {
                     propertiesOnCompare = propertiesOnCompare.Where(a => !BulkConfig.PropertiesToExcludeOnCompare.Contains(a.Name));
-                    ValidateSpecifiedPropertiesList(propertiesOnCompare, nameof(BulkConfig.PropertiesToExcludeOnCompare));
+                    ValidateSpecifiedPropertiesList(propertiesOnCompare, BulkConfig.PropertiesToExcludeOnCompare, nameof(BulkConfig.PropertiesToExcludeOnCompare));
                 }
             }
             else
@@ -280,12 +281,12 @@ namespace EFCore.BulkExtensions
                 if (AreSpecifiedPropertiesToIncludeOnUpdate)
                 {
                     propertiesOnUpdate = propertiesOnUpdate.Where(a => BulkConfig.PropertiesToIncludeOnUpdate.Contains(a.Name));
-                    ValidateSpecifiedPropertiesList(propertiesOnUpdate, nameof(BulkConfig.PropertiesToIncludeOnUpdate));
+                    ValidateSpecifiedPropertiesList(propertiesOnUpdate, BulkConfig.PropertiesToIncludeOnUpdate, nameof(BulkConfig.PropertiesToIncludeOnUpdate));
                 }
                 if (AreSpecifiedPropertiesToExcludeOnUpdate)
                 {
                     propertiesOnUpdate = propertiesOnUpdate.Where(a => !BulkConfig.PropertiesToExcludeOnUpdate.Contains(a.Name));
-                    ValidateSpecifiedPropertiesList(propertiesOnUpdate, nameof(BulkConfig.PropertiesToExcludeOnUpdate));
+                    ValidateSpecifiedPropertiesList(propertiesOnUpdate, BulkConfig.PropertiesToExcludeOnUpdate, nameof(BulkConfig.PropertiesToExcludeOnUpdate));
                 }
             }
             else
@@ -396,13 +397,13 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        protected void ValidateSpecifiedPropertiesList(IEnumerable<IProperty> properties, string specifiedPropertiesList)
+        protected void ValidateSpecifiedPropertiesList(IEnumerable<IProperty> properties, List<string> specifiedPropertiesList, string specifiedPropertiesListName)
         {
-            foreach (var configSpecifiedPropertyName in BulkConfig.PropertiesToInclude)
+            foreach (var configSpecifiedPropertyName in specifiedPropertiesList)
             {
                 if (!properties.Any(a => a.Name == configSpecifiedPropertyName))
                 {
-                    throw new InvalidOperationException($"PropertyName '{configSpecifiedPropertyName}' specified in '{specifiedPropertiesList}' not found in Properties.");
+                    throw new InvalidOperationException($"PropertyName '{configSpecifiedPropertyName}' specified in '{specifiedPropertiesListName}' not found in Properties.");
                 }
             }
         }

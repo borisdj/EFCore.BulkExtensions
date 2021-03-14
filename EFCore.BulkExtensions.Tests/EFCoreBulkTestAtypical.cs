@@ -341,7 +341,7 @@ namespace EFCore.BulkExtensions.Tests
                     }
                 };
 
-                context.BulkInsert(entities);
+                context.BulkInsertOrUpdate(entities);
             }
         }
     }
