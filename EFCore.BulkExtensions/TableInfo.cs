@@ -235,21 +235,37 @@ namespace EFCore.BulkExtensions
             if (AreSpecifiedPropertiesToInclude || AreSpecifiedPropertiesToExclude)
             {
                 if (AreSpecifiedPropertiesToInclude && AreSpecifiedPropertiesToExclude)
-                    throw new InvalidOperationException("Only one group of properties, either PropertiesToInclude or PropertiesToExclude can be specified, specifying both not allowed.");
+                {
+                    throw new MultiplePropertyListSetException(nameof(BulkConfig.PropertiesToInclude), nameof(BulkConfig.PropertiesToExclude));
+                }  
                 if (AreSpecifiedPropertiesToInclude)
+                {
                     properties = properties.Where(a => BulkConfig.PropertiesToInclude.Contains(a.Name));
+                    ValidateSpecifiedPropertiesList(properties, nameof(BulkConfig.PropertiesToInclude));
+                }
                 if (AreSpecifiedPropertiesToExclude)
+                {
                     properties = properties.Where(a => !BulkConfig.PropertiesToExclude.Contains(a.Name));
+                    ValidateSpecifiedPropertiesList(properties, nameof(BulkConfig.PropertiesToExclude));
+                }
             }
 
             if (AreSpecifiedPropertiesToIncludeOnCompare || AreSpecifiedPropertiesToExcludeOnCompare)
             {
                 if (AreSpecifiedPropertiesToIncludeOnCompare && AreSpecifiedPropertiesToExcludeOnCompare)
-                    throw new InvalidOperationException("Only one group of properties, either PropertiesToIncludeOnCompare or PropertiesToExcludeOnCompare can be specified, specifying both not allowed.");
+                {
+                    throw new MultiplePropertyListSetException(nameof(BulkConfig.PropertiesToIncludeOnCompare), nameof(BulkConfig.PropertiesToExcludeOnCompare));
+                }
                 if (AreSpecifiedPropertiesToIncludeOnCompare)
+                {
                     propertiesOnCompare = propertiesOnCompare.Where(a => BulkConfig.PropertiesToIncludeOnCompare.Contains(a.Name));
+                    ValidateSpecifiedPropertiesList(propertiesOnCompare, nameof(BulkConfig.PropertiesToIncludeOnCompare));
+                }
                 if (AreSpecifiedPropertiesToExcludeOnCompare)
+                {
                     propertiesOnCompare = propertiesOnCompare.Where(a => !BulkConfig.PropertiesToExcludeOnCompare.Contains(a.Name));
+                    ValidateSpecifiedPropertiesList(propertiesOnCompare, nameof(BulkConfig.PropertiesToExcludeOnCompare));
+                }
             }
             else
             {
@@ -258,11 +274,19 @@ namespace EFCore.BulkExtensions
             if (AreSpecifiedPropertiesToIncludeOnUpdate || AreSpecifiedPropertiesToExcludeOnUpdate)
             {
                 if (AreSpecifiedPropertiesToIncludeOnUpdate && AreSpecifiedPropertiesToExcludeOnUpdate)
-                    throw new InvalidOperationException("Only one group of properties, either PropertiesToIncludeOnUpdate or PropertiesToExcludeOnUpdate can be specified, specifying both not allowed.");
+                {
+                    throw new MultiplePropertyListSetException(nameof(BulkConfig.PropertiesToIncludeOnUpdate), nameof(BulkConfig.PropertiesToExcludeOnUpdate));
+                }
                 if (AreSpecifiedPropertiesToIncludeOnUpdate)
+                {
                     propertiesOnUpdate = propertiesOnUpdate.Where(a => BulkConfig.PropertiesToIncludeOnUpdate.Contains(a.Name));
+                    ValidateSpecifiedPropertiesList(propertiesOnUpdate, nameof(BulkConfig.PropertiesToIncludeOnUpdate));
+                }
                 if (AreSpecifiedPropertiesToExcludeOnUpdate)
+                {
                     propertiesOnUpdate = propertiesOnUpdate.Where(a => !BulkConfig.PropertiesToExcludeOnUpdate.Contains(a.Name));
+                    ValidateSpecifiedPropertiesList(propertiesOnUpdate, nameof(BulkConfig.PropertiesToExcludeOnUpdate));
+                }
             }
             else
             {
@@ -368,6 +392,17 @@ namespace EFCore.BulkExtensions
                             }
                         }
                     }
+                }
+            }
+        }
+
+        protected void ValidateSpecifiedPropertiesList(IEnumerable<IProperty> properties, string specifiedPropertiesList)
+        {
+            foreach (var configSpecifiedPropertyName in BulkConfig.PropertiesToInclude)
+            {
+                if (!properties.Any(a => a.Name == configSpecifiedPropertyName))
+                {
+                    throw new InvalidOperationException($"PropertyName '{configSpecifiedPropertyName}' specified in '{specifiedPropertiesList}' not found in Properties.");
                 }
             }
         }
@@ -927,5 +962,14 @@ namespace EFCore.BulkExtensions
             return orderedQuery;
         }*/
         #endregion
+    }
+
+    [Serializable]
+    class MultiplePropertyListSetException : Exception
+    {
+        public MultiplePropertyListSetException() { }
+        public MultiplePropertyListSetException(string propertyList1Name, string PropertyList2Name)
+            : base(String.Format("Only one group of properties, either {0} or {1} can be specified, specifying both not allowed.", propertyList1Name, PropertyList2Name)) { }
+
     }
 }
