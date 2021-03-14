@@ -342,7 +342,7 @@ namespace EFCore.BulkExtensions.Tests
                 foreach (var entity in entities)
                 {
                     entity.Description = "Desc Update " + counter++;
-                    entity.Quantity = entity.Quantity + 1000; // will not be changed since Quantity property is not in config PropertiesToInclude
+                    entity.Quantity += 1000; // will not be changed since Quantity property is not in config PropertiesToInclude
                 }
                 if (isBulkOperation)
                 {
