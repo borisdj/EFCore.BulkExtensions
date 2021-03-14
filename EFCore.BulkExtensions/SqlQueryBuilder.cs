@@ -143,8 +143,8 @@ namespace EFCore.BulkExtensions
             if ((operationType == OperationType.Update || operationType == OperationType.InsertOrUpdate ||
                  operationType == OperationType.InsertOrUpdateDelete) & updateColumnNames.Count > 0)
             {
-                q += $" WHEN MATCHED AND EXISTS (SELECT {GetCommaSeparatedColumns(compareColumnNames, "S")}" +
-                     $" EXCEPT SELECT {GetCommaSeparatedColumns(compareColumnNames, "T")})" +
+                q += $" WHEN MATCHED AND EXISTS (SELECT {GetCommaSeparatedColumns(compareColumnNames, "S")}" + // EXISTS better handles nulls
+                     $" EXCEPT SELECT {GetCommaSeparatedColumns(compareColumnNames, "T")})" +                  // EXCEPT does not update if all values are same
                      $" THEN UPDATE SET {GetCommaSeparatedColumns(updateColumnNames, "T", "S")}";
             }
 

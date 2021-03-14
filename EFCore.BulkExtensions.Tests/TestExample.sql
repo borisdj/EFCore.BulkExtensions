@@ -26,7 +26,9 @@ USING (SELECT TOP 2147483647 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S
 ON T.[ItemId] = S.[ItemId]
 WHEN NOT MATCHED BY TARGET THEN INSERT ([Description], [Name], [Price], [Quantity], [TimeUpdated])
 VALUES (S.[Description], S.[Name], S.[Price], S.[Quantity], S.[TimeUpdated])
-WHEN MATCHED THEN UPDATE SET T.[Description] = S.[Description], T.[Name] = S.[Name], T.[Price] = S.[Price], T.[Quantity] = S.[Quantity], T.[TimeUpdated] = S.[TimeUpdated]
+WHEN MATCHED AND EXISTS (SELECT S.[Description], S.[Name], S.[Price], S.[Quantity], S.[TimeUpdated]
+EXCEPT SELECT T.[Description], T.[Name], T.[Price], T.[Quantity], T.[TimeUpdated])
+THEN UPDATE SET T.[Description] = S.[Description], T.[Name] = S.[Name], T.[Price] = S.[Price], T.[Quantity] = S.[Quantity], T.[TimeUpdated] = S.[TimeUpdated]
 --WHEN NOT MATCHED BY SOURCE THEN DELETE
 --OUTPUT COALESCE(INSERTED.[ItemId], DELETED.[ItemId]), COALESCE(INSERTED.[Description], DELETED.[Description]), COALESCE(INSERTED.[Name], DELETED.[Name]), COALESCE(INSERTED.[Price], DELETED.[Price]), COALESCE(INSERTED.[Quantity], DELETED.[Quantity]), COALESCE(INSERTED.[TimeUpdated], DELETED.[TimeUpdated])
 OUTPUT INSERTED.[ItemId], INSERTED.[Description], INSERTED.[Name], INSERTED.[Price], INSERTED.[Quantity], INSERTED.[TimeUpdated] -- All columns: INSERTED.*
