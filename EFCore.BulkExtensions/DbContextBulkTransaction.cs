@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace EFCore.BulkExtensions
 {
-    internal static partial class DbContextBulkTransaction
+    internal static class DbContextBulkTransaction
     {
         public static void Execute<T>(DbContext context, IList<T> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress) where T : class
         {
