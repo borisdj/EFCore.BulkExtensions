@@ -501,7 +501,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                         propertyType = underlyingType;
                     }
 
-                    if (propertyType == typeof(Geometry) && isSqlServer)
+                    if (isSqlServer && (propertyType == typeof(Geometry) || propertyType.IsSubclassOf(typeof(Geometry))))
                     {
                         propertyType = typeof(byte[]);
                         tableInfo.HasSpatialType = true;
@@ -616,7 +616,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                         propertyType = underlyingType;
                     }
 
-                    if (propertyType == typeof(Geometry) && isSqlServer)
+                    if (isSqlServer && (propertyType == typeof(Geometry) || propertyType.IsSubclassOf(typeof(Geometry))))
                     {
                         propertyType = typeof(byte[]);
                     }
