@@ -773,6 +773,8 @@ namespace EFCore.BulkExtensions
             {
                 for (int i = 0; i < NumberOfEntities; i++)
                 {
+                    if (i == entitiesWithOutputIdentity.Count())
+                        break;
                     var originalEntity = entities[i];
                     var outputEntity = entitiesWithOutputIdentity[i];
 
