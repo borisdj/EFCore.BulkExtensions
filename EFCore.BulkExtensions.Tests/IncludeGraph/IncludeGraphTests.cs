@@ -81,20 +81,30 @@ namespace EFCore.BulkExtensions.Tests.IncludeGraph
 
         [Theory]
         [InlineData(DbServer.SqlServer)]
-        [InlineData(DbServer.Sqlite)]
+        //[InlineData(DbServer.Sqlite)]
         public void BulkInsertOrUpdate_EntityWithNestedObjectGraph_SavesGraphToDatabase(DbServer databaseType)
         {
             ContextUtil.DbServer = databaseType;
 
             using var db = new GraphDbContext(ContextUtil.GetOptions<GraphDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_Graph"));
 
-            db.BulkInsertOrUpdate(this.GetTestData(db).ToList(), new BulkConfig
+            var testData = this.GetTestData(db).ToList();
+            db.BulkInsertOrUpdate(testData, new BulkConfig
             {
-                IncludeGraph = true,
-                EnableShadowProperties = true
+                IncludeGraph = true
             });
 
-            Assert.True(db.WorkOrderSpares.Any());
+            var workOrderQuery = db.WorkOrderSpares
+                .Include(y => y.WorkOrder)
+                .Include(y => y.WorkOrder.Asset)
+                .Include(y => y.Spare);
+
+            foreach (var wos in workOrderQuery)
+            {
+                Assert.NotNull(wos.WorkOrder);
+                Assert.NotNull(wos.WorkOrder.Asset);
+                Assert.NotNull(wos.Spare);
+            }
         }
 
         private IEnumerable<WorkOrder> GetTestData(DbContext db)

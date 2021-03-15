@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using EFCore.BulkExtensions.SqlAdapters;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using System;
 using System.Collections;
@@ -27,8 +28,15 @@ namespace EFCore.BulkExtensions
                        && operationType != OperationType.Update)
                 throw new InvalidBulkConfigException($"{nameof(BulkConfig)}.{nameof(BulkConfig.IncludeGraph)} only supports Insert or Update operations.");
 
+            // Sqlite bulk merge adapter does not support multiple objects of the same type with a zero value primary key
+            if (SqlAdaptersMapping.GetDatabaseType(context) == DbServer.Sqlite)
+                throw new NotSupportedException("Sqlite is not currently supported due to its BulkInsert implementation.");
+
             // If this is set to false, won't be able to propogate new primary keys to the relationships
             bulkConfig.SetOutputIdentity = true;
+
+            // If this is set to false, wont' be able to support some code first model types as EFCore uses shadow properties when a relationship's foreign keys arent explicitly defined
+            bulkConfig.EnableShadowProperties = true;
 
             var rootGraphItems = GraphUtil.GetOrderedGraph(context, entities);
 

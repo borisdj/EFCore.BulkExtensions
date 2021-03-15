@@ -19,7 +19,7 @@ namespace EFCore.BulkExtensions
                     return;
                 }
 
-                if (bulkConfig.IncludeGraph)
+                if (bulkConfig?.IncludeGraph == true)
                 {
                     DbContextBulkTransactionGraphUtil.ExecuteWithGraph(context, entities, operationType, bulkConfig, progress);
                 }
@@ -56,7 +56,7 @@ namespace EFCore.BulkExtensions
                     return;
                 }
 
-                if (bulkConfig.IncludeGraph)
+                if (bulkConfig?.IncludeGraph == true)
                 {
                     DbContextBulkTransactionGraphUtil.ExecuteWithGraph(context, entities, operationType, bulkConfig, progress);
                 }
@@ -93,7 +93,7 @@ namespace EFCore.BulkExtensions
                     return;
                 }
 
-                if (bulkConfig.IncludeGraph)
+                if (bulkConfig?.IncludeGraph == true)
                 {
                     await DbContextBulkTransactionGraphUtil.ExecuteWithGraphAsync(context, entities, operationType, bulkConfig, progress, cancellationToken);
                 }
@@ -130,7 +130,7 @@ namespace EFCore.BulkExtensions
                     return;
                 }
 
-                if (bulkConfig.IncludeGraph)
+                if (bulkConfig?.IncludeGraph == true)
                 {
                     await DbContextBulkTransactionGraphUtil.ExecuteWithGraphAsync(context, entities, operationType, bulkConfig, progress, cancellationToken);
                 }
