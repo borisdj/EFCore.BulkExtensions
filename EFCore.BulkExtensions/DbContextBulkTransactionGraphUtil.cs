@@ -63,7 +63,6 @@ namespace EFCore.BulkExtensions
                         SqlBulkOperation.Merge(context, actionGraphItem.EntityClrType, entitiesToAction, tableInfo, operationType, progress);
                     }
                     
-
                     // Loop through the dependants and update their foreign keys with the PK values of the just inserted / merged entities
                     foreach (var graphEntity in actionGraphItem.Entities)
                     {
@@ -73,7 +72,21 @@ namespace EFCore.BulkExtensions
                         // If the parent entity is null its the root type of the object graph.
                         if (parentEntity is null)
                         {
-                            continue;
+                            foreach (var navigation in actionGraphItem.Relationships)
+                            {
+                                // If this relationship requires the parents value to exist
+                                if (navigation.ParentNavigation.IsDependentToPrincipal() == false)
+                                {
+                                    foreach (var navGraphEntity in navigation.Entities)
+                                    {
+                                        if (navGraphEntity.ParentEntity != entity)
+                                            continue;
+
+                                        SetForeignKeyForRelationship(context, navigation.ParentNavigation,
+                                            navGraphEntity.Entity, entity);
+                                    }
+                                }
+                            }
                         }
                         else
                         {

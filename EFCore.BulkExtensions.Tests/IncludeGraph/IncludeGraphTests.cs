@@ -82,14 +82,14 @@ namespace EFCore.BulkExtensions.Tests.IncludeGraph
         [Theory]
         [InlineData(DbServer.SqlServer)]
         //[InlineData(DbServer.Sqlite)]
-        public void BulkInsertOrUpdate_EntityWithNestedObjectGraph_SavesGraphToDatabase(DbServer databaseType)
+        public async Task BulkInsertOrUpdate_EntityWithNestedObjectGraph_SavesGraphToDatabase(DbServer databaseType)
         {
             ContextUtil.DbServer = databaseType;
 
             using var db = new GraphDbContext(ContextUtil.GetOptions<GraphDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_Graph"));
 
             var testData = this.GetTestData(db).ToList();
-            db.BulkInsertOrUpdate(testData, new BulkConfig
+            await db.BulkInsertOrUpdateAsync(testData, new BulkConfig
             {
                 IncludeGraph = true
             });

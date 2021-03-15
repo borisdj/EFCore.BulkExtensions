@@ -31,15 +31,15 @@ namespace EFCore.BulkExtensions.Tests.ShadowProperties
                 cfg.HasKey(y => y.Id);
 
                 cfg.HasMany(y => y.WorkOrderSpares).WithOne(y => y.WorkOrder);
-                cfg.HasOne(y => y.Asset).WithMany();
+                cfg.HasOne(y => y.Asset).WithMany().IsRequired();
             });
 
             modelBuilder.Entity<WorkOrderSpare>(cfg =>
             {
                 cfg.HasKey(y => y.Id);
 
-                cfg.HasOne(y => y.WorkOrder).WithMany(y => y.WorkOrderSpares);
-                cfg.HasOne(y => y.Spare);
+                cfg.HasOne(y => y.WorkOrder).WithMany(y => y.WorkOrderSpares).IsRequired();
+                cfg.HasOne(y => y.Spare).WithMany().IsRequired();
             });
 
             modelBuilder.Entity<Spare>(cfg =>
