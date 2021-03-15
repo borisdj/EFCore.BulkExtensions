@@ -136,43 +136,6 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        private class PrimaryKeyComparer : List<object>
-        {
-            public override bool Equals(object obj)
-            {
-                var objCast = obj as PrimaryKeyComparer;
-
-                if (objCast is null)
-                    return base.Equals(objCast);
-
-                if (objCast.Count != this.Count)
-                    return base.Equals(objCast);
-
-                for (int i = 0; i < this.Count; i++)
-                {
-                    var a = this[i];
-                    var b = objCast[i];
-
-                    if (a.Equals(b) == false)
-                        return false;
-                }
-
-                return true;
-            }
-
-            public override int GetHashCode()
-            {
-                int hash = 0xC0FFEE;
-
-                foreach (var x in this)
-                {
-                    hash = hash * 31 + x.GetHashCode();
-                }
-
-                return hash;
-            }
-        }
-
         private static IEnumerable<object> GetUniqueEntities(DbContext context, GraphUtil.GraphItem graphItem)
         {
             var pk = graphItem.EntityType.FindPrimaryKey();
@@ -223,6 +186,43 @@ namespace EFCore.BulkExtensions
                 var pkVal = pkValues[i];
 
                 context.Entry(dependent).Property(dk.Name).CurrentValue = pkVal;
+            }
+        }
+
+        private class PrimaryKeyComparer : List<object>
+        {
+            public override bool Equals(object obj)
+            {
+                var objCast = obj as PrimaryKeyComparer;
+
+                if (objCast is null)
+                    return base.Equals(objCast);
+
+                if (objCast.Count != this.Count)
+                    return base.Equals(objCast);
+
+                for (int i = 0; i < this.Count; i++)
+                {
+                    var a = this[i];
+                    var b = objCast[i];
+
+                    if (a.Equals(b) == false)
+                        return false;
+                }
+
+                return true;
+            }
+
+            public override int GetHashCode()
+            {
+                int hash = 0xC0FFEE;
+
+                foreach (var x in this)
+                {
+                    hash = hash * 31 + x.GetHashCode();
+                }
+
+                return hash;
             }
         }
     }
