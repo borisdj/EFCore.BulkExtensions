@@ -48,6 +48,7 @@ namespace EFCore.BulkExtensions
         public BulkConfig BulkConfig { get; set; }
         public Dictionary<string, string> OutputPropertyColumnNamesDict { get; set; } = new Dictionary<string, string>();
         public Dictionary<string, string> PropertyColumnNamesDict { get; set; } = new Dictionary<string, string>();
+        public Dictionary<string, string> ColumnNamesTypesDict { get; set; } = new Dictionary<string, string>();
         public Dictionary<string, string> PropertyColumnNamesCompareDict { get; set; } = new Dictionary<string, string>();
         public Dictionary<string, string> PropertyColumnNamesUpdateDict { get; set; } = new Dictionary<string, string>();
         public Dictionary<string, FastProperty> FastPropertyDict { get; set; } = new Dictionary<string, FastProperty>();
@@ -147,6 +148,8 @@ namespace EFCore.BulkExtensions
 
             var allProperties = entityType.GetProperties().AsEnumerable();
 
+            ColumnNamesTypesDict = allProperties.ToDictionary(a => a.GetColumnName(), a => a.GetColumnType());
+
             // load all derived type properties
             if (entityType.IsAbstract())
             {
@@ -242,12 +245,12 @@ namespace EFCore.BulkExtensions
                 if (AreSpecifiedPropertiesToInclude)
                 {
                     properties = properties.Where(a => BulkConfig.PropertiesToInclude.Contains(a.Name));
-                    ValidateSpecifiedPropertiesList(properties, BulkConfig.PropertiesToInclude, nameof(BulkConfig.PropertiesToInclude));
+                    ValidateSpecifiedPropertiesList(BulkConfig.PropertiesToInclude, nameof(BulkConfig.PropertiesToInclude));
                 }
                 if (AreSpecifiedPropertiesToExclude)
                 {
                     properties = properties.Where(a => !BulkConfig.PropertiesToExclude.Contains(a.Name));
-                    ValidateSpecifiedPropertiesList(properties, BulkConfig.PropertiesToExclude, nameof(BulkConfig.PropertiesToExclude));
+                    ValidateSpecifiedPropertiesList(BulkConfig.PropertiesToExclude, nameof(BulkConfig.PropertiesToExclude));
                 }
             }
 
@@ -260,12 +263,12 @@ namespace EFCore.BulkExtensions
                 if (AreSpecifiedPropertiesToIncludeOnCompare)
                 {
                     propertiesOnCompare = propertiesOnCompare.Where(a => BulkConfig.PropertiesToIncludeOnCompare.Contains(a.Name));
-                    ValidateSpecifiedPropertiesList(propertiesOnCompare, BulkConfig.PropertiesToIncludeOnCompare, nameof(BulkConfig.PropertiesToIncludeOnCompare));
+                    ValidateSpecifiedPropertiesList(BulkConfig.PropertiesToIncludeOnCompare, nameof(BulkConfig.PropertiesToIncludeOnCompare));
                 }
                 if (AreSpecifiedPropertiesToExcludeOnCompare)
                 {
                     propertiesOnCompare = propertiesOnCompare.Where(a => !BulkConfig.PropertiesToExcludeOnCompare.Contains(a.Name));
-                    ValidateSpecifiedPropertiesList(propertiesOnCompare, BulkConfig.PropertiesToExcludeOnCompare, nameof(BulkConfig.PropertiesToExcludeOnCompare));
+                    ValidateSpecifiedPropertiesList(BulkConfig.PropertiesToExcludeOnCompare, nameof(BulkConfig.PropertiesToExcludeOnCompare));
                 }
             }
             else
@@ -281,12 +284,12 @@ namespace EFCore.BulkExtensions
                 if (AreSpecifiedPropertiesToIncludeOnUpdate)
                 {
                     propertiesOnUpdate = propertiesOnUpdate.Where(a => BulkConfig.PropertiesToIncludeOnUpdate.Contains(a.Name));
-                    ValidateSpecifiedPropertiesList(propertiesOnUpdate, BulkConfig.PropertiesToIncludeOnUpdate, nameof(BulkConfig.PropertiesToIncludeOnUpdate));
+                    ValidateSpecifiedPropertiesList(BulkConfig.PropertiesToIncludeOnUpdate, nameof(BulkConfig.PropertiesToIncludeOnUpdate));
                 }
                 if (AreSpecifiedPropertiesToExcludeOnUpdate)
                 {
                     propertiesOnUpdate = propertiesOnUpdate.Where(a => !BulkConfig.PropertiesToExcludeOnUpdate.Contains(a.Name));
-                    ValidateSpecifiedPropertiesList(propertiesOnUpdate, BulkConfig.PropertiesToExcludeOnUpdate, nameof(BulkConfig.PropertiesToExcludeOnUpdate));
+                    ValidateSpecifiedPropertiesList(BulkConfig.PropertiesToExcludeOnUpdate, nameof(BulkConfig.PropertiesToExcludeOnUpdate));
                 }
             }
             else
@@ -397,11 +400,11 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        protected void ValidateSpecifiedPropertiesList(IEnumerable<IProperty> properties, List<string> specifiedPropertiesList, string specifiedPropertiesListName)
+        protected void ValidateSpecifiedPropertiesList(List<string> specifiedPropertiesList, string specifiedPropertiesListName)
         {
             foreach (var configSpecifiedPropertyName in specifiedPropertiesList)
             {
-                if (!properties.Any(a => a.Name == configSpecifiedPropertyName))
+                if (! ColumnNamesTypesDict.Any(a => a.Key == configSpecifiedPropertyName))
                 {
                     throw new InvalidOperationException($"PropertyName '{configSpecifiedPropertyName}' specified in '{specifiedPropertiesListName}' not found in Properties.");
                 }
@@ -980,14 +983,5 @@ namespace EFCore.BulkExtensions
             return orderedQuery;
         }*/
         #endregion
-    }
-
-    [Serializable]
-    class MultiplePropertyListSetException : Exception
-    {
-        public MultiplePropertyListSetException() { }
-        public MultiplePropertyListSetException(string propertyList1Name, string PropertyList2Name)
-            : base(String.Format("Only one group of properties, either {0} or {1} can be specified, specifying both not allowed.", propertyList1Name, PropertyList2Name)) { }
-
     }
 }

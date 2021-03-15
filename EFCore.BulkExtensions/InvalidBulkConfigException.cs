@@ -22,4 +22,12 @@ namespace EFCore.BulkExtensions
         {
         }
     }
+
+    [Serializable]
+    class MultiplePropertyListSetException : InvalidBulkConfigException
+    {
+        public MultiplePropertyListSetException() { }
+        public MultiplePropertyListSetException(string propertyList1Name, string PropertyList2Name)
+            : base(string.Format("Only one group of properties, either {0} or {1} can be specified, specifying both not allowed.", propertyList1Name, PropertyList2Name)) { }
+    }
 }

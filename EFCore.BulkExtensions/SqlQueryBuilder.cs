@@ -23,6 +23,46 @@ namespace EFCore.BulkExtensions
             return q;
         }
 
+        public static string AlterTableColumnsToNullable(string tableName, TableInfo tableInfo, bool isOutputTable = false)
+        {
+            string q = "";
+            foreach (var column in tableInfo.ColumnNamesTypesDict)
+            {
+                string columnName = column.Key;
+                string columnType = column.Value;
+                if (columnName == tableInfo.TimeStampColumnName)
+                    columnType = tableInfo.TimeStampOutColumnType;
+                q += $"ALTER TABLE {tableName} ALTER COLUMN {columnName} {columnType}; ";
+            }
+            return q;
+        }
+
+        // Not used for TableCopy since order of columns is not the same as of original table, that is required for the MERGE (insted after creation columns are Altered to Nullable)
+        public static string CreateTable(string newTableName, TableInfo tableInfo, bool isOutputTable = false)
+        {
+            List<string> columnsNames = (isOutputTable ? tableInfo.OutputPropertyColumnNamesDict : tableInfo.PropertyColumnNamesDict).Values.ToList();
+            if (tableInfo.TimeStampColumnName != null)
+            {
+                columnsNames.Remove(tableInfo.TimeStampColumnName);
+            }
+            var columnsNamesAndTypes = new List<Tuple<string, string>>();
+            foreach (var columnName in columnsNames)
+            {
+                if (!tableInfo.ColumnNamesTypesDict.TryGetValue(columnName, out string columnType))
+                {
+                    throw new InvalidOperationException($"Column Type not found in ColumnNamesTypesDict for column: '{columnName}'");
+                }
+                columnsNamesAndTypes.Add(new Tuple<string, string>(columnName, columnType));
+            }
+            if (tableInfo.BulkConfig.CalculateStats && isOutputTable)
+            {
+                columnsNamesAndTypes.Add(new Tuple<string, string>("[IsUpdate]", "bit"));
+                columnsNamesAndTypes.Add(new Tuple<string, string>("[IsDelete]", "bit"));
+            }
+            var q = $"CREATE TABLE {newTableName} ({GetCommaSeparatedColumnsAndTypes(columnsNamesAndTypes)});";
+            return q;
+        }
+
         public static string AddColumn(string fullTableName, string columnName, string columnType)
         {
             var q = $"ALTER TABLE {fullTableName} ADD [{columnName}] {columnType};";
@@ -32,7 +72,7 @@ namespace EFCore.BulkExtensions
         public static string SelectFromOutputTable(TableInfo tableInfo)
         {
             List<string> columnsNames = tableInfo.OutputPropertyColumnNamesDict.Values.ToList();
-            var q = $"SELECT {GetCommaSeparatedColumns(columnsNames)} FROM {tableInfo.FullTempOutputTableName}";
+            var q = $"SELECT {GetCommaSeparatedColumns(columnsNames)} FROM {tableInfo.FullTempOutputTableName} WHERE [{tableInfo.PrimaryKeys.FirstOrDefault()}] IS NOT NULL";
             return q;
         }
 
@@ -206,6 +246,20 @@ namespace EFCore.BulkExtensions
                 commaSeparatedColumns += prefixTable != "" ? $"{prefixTable}[{columnName}]" : $"[{columnName}]";
                 commaSeparatedColumns += equalsTable != "" ? $" = {equalsTable}[{columnName}]" : "";
                 commaSeparatedColumns += ", ";
+            }
+            if (commaSeparatedColumns != "")
+            {
+                commaSeparatedColumns = commaSeparatedColumns.Remove(commaSeparatedColumns.Length - 2, 2); // removes last excess comma and space: ", "
+            }
+            return commaSeparatedColumns;
+        }
+
+        public static string GetCommaSeparatedColumnsAndTypes(List<Tuple<string, string>> columnsNamesAndTypes)
+        {
+            string commaSeparatedColumns = "";
+            foreach (var columnNameAndType in columnsNamesAndTypes)
+            {
+                commaSeparatedColumns += $"[{columnNameAndType.Item1}] {columnNameAndType.Item2}, ";
             }
             if (commaSeparatedColumns != "")
             {

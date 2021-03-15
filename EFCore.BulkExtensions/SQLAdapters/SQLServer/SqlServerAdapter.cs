@@ -181,6 +181,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                 {
                     context.Database.ExecuteSqlRaw(SqlQueryBuilder.AddColumn(tableInfo.FullTempOutputTableName, tableInfo.TimeStampColumnName, tableInfo.TimeStampOutColumnType));
                 }
+                context.Database.ExecuteSqlRaw(SqlQueryBuilder.AlterTableColumnsToNullable(tableInfo.FullTempOutputTableName, tableInfo));
             }
 
             bool keepIdentity = tableInfo.BulkConfig.SqlBulkCopyOptions.HasFlag(Microsoft.Data.SqlClient.SqlBulkCopyOptions.KeepIdentity);
@@ -239,6 +240,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                 {
                     await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.AddColumn(tableInfo.FullTempOutputTableName, tableInfo.TimeStampColumnName, tableInfo.TimeStampOutColumnType), cancellationToken).ConfigureAwait(false);
                 }
+                context.Database.ExecuteSqlRaw(SqlQueryBuilder.AlterTableColumnsToNullable(tableInfo.FullTempOutputTableName, tableInfo));
             }
 
             bool keepIdentity = tableInfo.BulkConfig.SqlBulkCopyOptions.HasFlag(Microsoft.Data.SqlClient.SqlBulkCopyOptions.KeepIdentity);

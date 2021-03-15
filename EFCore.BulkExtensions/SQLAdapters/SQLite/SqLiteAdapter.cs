@@ -89,7 +89,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
 
         public void Merge<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress) where T : class
         {
-             var connection = OpenAndGetSqliteConnection(context, tableInfo.BulkConfig);
+            var connection = OpenAndGetSqliteConnection(context, tableInfo.BulkConfig);
             bool doExplicitCommit = false;
 
             try
@@ -203,7 +203,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
 
         public async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, CancellationToken cancellationToken) where T : class
         {
-         var connection = await OpenAndGetSqliteConnectionAsync(context, tableInfo.BulkConfig, cancellationToken).ConfigureAwait(false);
+            var connection = await OpenAndGetSqliteConnectionAsync(context, tableInfo.BulkConfig, cancellationToken).ConfigureAwait(false);
             bool doExplicitCommit = false;
 
             try
