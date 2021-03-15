@@ -104,6 +104,7 @@ namespace EFCore.BulkExtensions
                 graphItem = new GraphItem
                 {
                     EntityClrType = entryEntityType,
+                    EntityType = entityType,
                     Entities =
                     {
                         graphEntity

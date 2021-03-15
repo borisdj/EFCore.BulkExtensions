@@ -51,7 +51,7 @@ namespace EFCore.BulkExtensions
             {
                 foreach (var actionGraphItem in rootGraphItems)
                 {
-                    var entitiesToAction = actionGraphItem.Entities.Select(y => y.Entity).ToList();
+                    var entitiesToAction = GetUniqueEntities(context, actionGraphItem).ToList();
                     var tableInfo = TableInfo.CreateInstance(context, actionGraphItem.EntityClrType, entitiesToAction, operationType, bulkConfig);
 
                     if (isAsync)
@@ -132,6 +132,74 @@ namespace EFCore.BulkExtensions
                     {
                         transaction.Dispose();
                     }
+                }
+            }
+        }
+
+        private class PrimaryKeyComparer : List<object>
+        {
+            public override bool Equals(object obj)
+            {
+                var objCast = obj as PrimaryKeyComparer;
+
+                if (objCast is null)
+                    return base.Equals(objCast);
+
+                if (objCast.Count != this.Count)
+                    return base.Equals(objCast);
+
+                for (int i = 0; i < this.Count; i++)
+                {
+                    var a = this[i];
+                    var b = objCast[i];
+
+                    if (a.Equals(b) == false)
+                        return false;
+                }
+
+                return true;
+            }
+
+            public override int GetHashCode()
+            {
+                int hash = 0xC0FFEE;
+
+                foreach (var x in this)
+                {
+                    hash = hash * 31 + x.GetHashCode();
+                }
+
+                return hash;
+            }
+        }
+
+        private static IEnumerable<object> GetUniqueEntities(DbContext context, GraphUtil.GraphItem graphItem)
+        {
+            var pk = graphItem.EntityType.FindPrimaryKey();
+            var processedPks = new HashSet<PrimaryKeyComparer>();
+
+            foreach (var e in graphItem.Entities)
+            {
+                var entity = e.Entity;
+                var entry = context.Entry(entity);
+
+                // If the entry has its key set, make sure its unique. It is possible for an entity to exist more than once in a graph.
+                if (entry.IsKeySet)
+                {
+                    var primaryKeyComparer = new PrimaryKeyComparer();
+
+                    foreach (var pkProp in pk.Properties)
+                    {
+                        primaryKeyComparer.Add(entry.Property(pkProp.Name).CurrentValue);
+                    }
+
+                    // If the processed pk already exists in the HashSet, its not unique.
+                    if (processedPks.Add(primaryKeyComparer))
+                        yield return entity;
+                }
+                else
+                {
+                    yield return entry;
                 }
             }
         }

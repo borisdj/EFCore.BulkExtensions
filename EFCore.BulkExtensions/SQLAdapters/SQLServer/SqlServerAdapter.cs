@@ -467,12 +467,15 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
 
             type = tableInfo.HasAbstractList ? entities[0].GetType() : type;
             var entityType = context.Model.FindEntityType(type);
-            var entityPropertiesDict = entityType.GetProperties().Where(a => tableInfo.PropertyColumnNamesDict.ContainsKey(a.Name)).ToDictionary(a => a.Name, a => a);
+            var entityTypeProperties = entityType.GetProperties();
+            var entityPropertiesDict = entityTypeProperties.Where(a => tableInfo.PropertyColumnNamesDict.ContainsKey(a.Name)).ToDictionary(a => a.Name, a => a);
             var entityNavigationOwnedDict = entityType.GetNavigations().Where(a => a.GetTargetType().IsOwned()).ToDictionary(a => a.Name, a => a);
-            var entityShadowFkPropertiesDict = entityType.GetProperties().Where(a => a.IsShadowProperty() && 
-                                                                                     a.IsForeignKey() &&
-                                                                                     a.GetContainingForeignKeys().FirstOrDefault()?.DependentToPrincipal?.Name != null)
-                                                                         .ToDictionary(x => x.GetContainingForeignKeys().First().DependentToPrincipal.Name, a => a);
+            var entityShadowFkPropertiesDict = entityTypeProperties.Where(a => 
+                a.IsShadowProperty() && 
+                a.IsForeignKey() &&
+                a.GetContainingForeignKeys().FirstOrDefault()?.DependentToPrincipal?.Name != null)
+                .ToDictionary(x => x.Name, a => a);
+
             var properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             var discriminatorColumn = GetDiscriminatorColumn(tableInfo);
 
