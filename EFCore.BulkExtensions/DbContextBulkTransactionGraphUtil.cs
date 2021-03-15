@@ -162,7 +162,7 @@ namespace EFCore.BulkExtensions
                 }
                 else
                 {
-                    yield return entry;
+                    yield return entity;
                 }
             }
         }
