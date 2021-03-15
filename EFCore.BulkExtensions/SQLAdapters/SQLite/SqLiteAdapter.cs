@@ -49,8 +49,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
             }
         }
 
-        public async  Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress,
-            CancellationToken cancellationToken)
+        public async  Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, CancellationToken cancellationToken)
         {
             var connection = await OpenAndGetSqliteConnectionAsync(context, tableInfo.BulkConfig, cancellationToken).ConfigureAwait(false);
             bool doExplicitCommit = false;
@@ -88,236 +87,234 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
             }
         }
 
-        public void Merge<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType,
-            Action<decimal> progress) where T : class
+        public void Merge<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress) where T : class
         {
              var connection = OpenAndGetSqliteConnection(context, tableInfo.BulkConfig);
-                bool doExplicitCommit = false;
+            bool doExplicitCommit = false;
 
-                try
+            try
+            {
+                if (context.Database.CurrentTransaction == null)
                 {
-                    if (context.Database.CurrentTransaction == null)
+                    //context.Database.UseTransaction(connection.BeginTransaction());
+                    doExplicitCommit = true;
+                }
+                var transaction = (SqliteTransaction)(context.Database.CurrentTransaction == null ?
+                                                        connection.BeginTransaction() :
+                                                        context.Database.CurrentTransaction.GetUnderlyingTransaction(tableInfo.BulkConfig));
+
+                var command = GetSqliteCommand(context, type, entities, tableInfo, connection, transaction);
+
+                type = tableInfo.HasAbstractList ? entities[0].GetType() : type;
+                int rowsCopied = 0;
+                foreach (var item in entities)
+                {
+                    LoadSqliteValues(tableInfo, item, command, context);
+                    command.ExecuteNonQuery();
+                    ProgressHelper.SetProgress(ref rowsCopied, entities.Count, tableInfo.BulkConfig, progress);
+                }
+
+                if (operationType != OperationType.Delete && tableInfo.BulkConfig.SetOutputIdentity && tableInfo.IdentityColumnName != null)
+                {
+                    command.CommandText = SqlQueryBuilderSqlite.SelectLastInsertRowId();
+                    long lastRowIdScalar = (long)command.ExecuteScalar();
+                    string identityPropertyName = tableInfo.IdentityColumnName;
+                    var identityPropertyInteger = false;
+                    var identityPropertyUnsigned = false;
+                    var identityPropertyByte = false;
+                    var identityPropertyShort = false;
+
+                    if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(ulong))
                     {
-                        //context.Database.UseTransaction(connection.BeginTransaction());
-                        doExplicitCommit = true;
+                        identityPropertyUnsigned = true;
                     }
-                    var transaction = (SqliteTransaction)(context.Database.CurrentTransaction == null ?
-                                                          connection.BeginTransaction() :
-                                                          context.Database.CurrentTransaction.GetUnderlyingTransaction(tableInfo.BulkConfig));
-
-                    var command = GetSqliteCommand(context, type, entities, tableInfo, connection, transaction);
-
-                    type = tableInfo.HasAbstractList ? entities[0].GetType() : type;
-                    int rowsCopied = 0;
-                    foreach (var item in entities)
+                    else if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(uint))
                     {
-                        LoadSqliteValues(tableInfo, item, command, context);
-                        command.ExecuteNonQuery();
-                        ProgressHelper.SetProgress(ref rowsCopied, entities.Count, tableInfo.BulkConfig, progress);
+                        identityPropertyInteger = true;
+                        identityPropertyUnsigned = true;
+                    }
+                    else if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(int))
+                    {
+                        identityPropertyInteger = true;
+                    }
+                    else if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(ushort))
+                    {
+                        identityPropertyShort = true;
+                        identityPropertyUnsigned = true;
+                    }
+                    else if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(short))
+                    {
+                        identityPropertyShort = true;
+                    }
+                    else if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(byte))
+                    {
+                        identityPropertyByte = true;
+                        identityPropertyUnsigned = true;
+                    }
+                    else if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(sbyte))
+                    {
+                        identityPropertyByte = true;
                     }
 
-                    if (operationType != OperationType.Delete && tableInfo.BulkConfig.SetOutputIdentity && tableInfo.IdentityColumnName != null)
+                    for (int i = entities.Count - 1; i >= 0; i--)
                     {
-                        command.CommandText = SqlQueryBuilderSqlite.SelectLastInsertRowId();
-                        long lastRowIdScalar = (long)command.ExecuteScalar();
-                        string identityPropertyName = tableInfo.IdentityColumnName;
-                        var identityPropertyInteger = false;
-                        var identityPropertyUnsigned = false;
-                        var identityPropertyByte = false;
-                        var identityPropertyShort = false;
-
-                        if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(ulong))
+                        if (identityPropertyByte)
                         {
-                            identityPropertyUnsigned = true;
-                        }
-                        else if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(uint))
-                        {
-                            identityPropertyInteger = true;
-                            identityPropertyUnsigned = true;
-                        }
-                        else if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(int))
-                        {
-                            identityPropertyInteger = true;
-                        }
-                        else if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(ushort))
-                        {
-                            identityPropertyShort = true;
-                            identityPropertyUnsigned = true;
-                        }
-                        else if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(short))
-                        {
-                            identityPropertyShort = true;
-                        }
-                        else if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(byte))
-                        {
-                            identityPropertyByte = true;
-                            identityPropertyUnsigned = true;
-                        }
-                        else if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(sbyte))
-                        {
-                            identityPropertyByte = true;
-                        }
-
-                        for (int i = entities.Count - 1; i >= 0; i--)
-                        {
-                            if (identityPropertyByte)
-                            {
-                                if (identityPropertyUnsigned)
-                                    tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (byte)lastRowIdScalar);
-                                else
-                                    tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (sbyte)lastRowIdScalar);
-                            }
-                            else if (identityPropertyShort)
-                            {
-                                if (identityPropertyUnsigned)
-                                    tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (ushort)lastRowIdScalar);
-                                else
-                                    tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (short)lastRowIdScalar);
-                            }
-                            else if (identityPropertyInteger)
-                            {
-                                if (identityPropertyUnsigned)
-                                    tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (uint)lastRowIdScalar);
-                                else
-                                    tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (int)lastRowIdScalar);
-                            }
+                            if (identityPropertyUnsigned)
+                                tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (byte)lastRowIdScalar);
                             else
-                            {
-                                if (identityPropertyUnsigned)
-                                    tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (ulong)lastRowIdScalar);
-                                else
-                                    tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], lastRowIdScalar);
-                            }
-
-                            lastRowIdScalar--;
+                                tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (sbyte)lastRowIdScalar);
                         }
-                    }
-                    if (doExplicitCommit)
-                    {
-                        transaction.Commit();
+                        else if (identityPropertyShort)
+                        {
+                            if (identityPropertyUnsigned)
+                                tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (ushort)lastRowIdScalar);
+                            else
+                                tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (short)lastRowIdScalar);
+                        }
+                        else if (identityPropertyInteger)
+                        {
+                            if (identityPropertyUnsigned)
+                                tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (uint)lastRowIdScalar);
+                            else
+                                tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (int)lastRowIdScalar);
+                        }
+                        else
+                        {
+                            if (identityPropertyUnsigned)
+                                tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (ulong)lastRowIdScalar);
+                            else
+                                tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], lastRowIdScalar);
+                        }
+
+                        lastRowIdScalar--;
                     }
                 }
-                finally
+                if (doExplicitCommit)
                 {
-                    context.Database.CloseConnection();
+                    transaction.Commit();
                 }
+            }
+            finally
+            {
+                context.Database.CloseConnection();
+            }
         }
 
-        public async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType,
-            Action<decimal> progress, CancellationToken cancellationToken) where T : class
+        public async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, CancellationToken cancellationToken) where T : class
         {
          var connection = await OpenAndGetSqliteConnectionAsync(context, tableInfo.BulkConfig, cancellationToken).ConfigureAwait(false);
-                bool doExplicitCommit = false;
+            bool doExplicitCommit = false;
 
-                try
+            try
+            {
+                if (context.Database.CurrentTransaction == null)
                 {
-                    if (context.Database.CurrentTransaction == null)
+                    //context.Database.UseTransaction(connection.BeginTransaction());
+                    doExplicitCommit = true;
+                }
+                var transaction = (SqliteTransaction)(context.Database.CurrentTransaction == null ?
+                                                        connection.BeginTransaction() :
+                                                        context.Database.CurrentTransaction.GetUnderlyingTransaction(tableInfo.BulkConfig));
+
+                var command = GetSqliteCommand(context, type, entities, tableInfo, connection, transaction);
+
+                type = tableInfo.HasAbstractList ? entities[0].GetType() : type;
+                int rowsCopied = 0;
+
+                foreach (var item in entities)
+                {
+                    LoadSqliteValues(tableInfo, item, command, context);
+                    await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                    ProgressHelper.SetProgress(ref rowsCopied, entities.Count, tableInfo.BulkConfig, progress);
+                }
+
+                if (operationType != OperationType.Delete && tableInfo.BulkConfig.SetOutputIdentity && tableInfo.IdentityColumnName != null)
+                {
+                    command.CommandText = SqlQueryBuilderSqlite.SelectLastInsertRowId();
+                    long lastRowIdScalar = (long)await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+                    string identityPropertyName = tableInfo.PropertyColumnNamesDict.SingleOrDefault(a => a.Value == tableInfo.IdentityColumnName).Key;
+
+                    var identityPropertyInteger = false;
+                    var identityPropertyUnsigned = false;
+                    var identityPropertyByte = false;
+                    var identityPropertyShort = false;
+
+                    if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(ulong))
                     {
-                        //context.Database.UseTransaction(connection.BeginTransaction());
-                        doExplicitCommit = true;
+                        identityPropertyUnsigned = true;
                     }
-                    var transaction = (SqliteTransaction)(context.Database.CurrentTransaction == null ?
-                                                          connection.BeginTransaction() :
-                                                          context.Database.CurrentTransaction.GetUnderlyingTransaction(tableInfo.BulkConfig));
-
-                    var command = GetSqliteCommand(context, type, entities, tableInfo, connection, transaction);
-
-                    type = tableInfo.HasAbstractList ? entities[0].GetType() : type;
-                    int rowsCopied = 0;
-
-                    foreach (var item in entities)
+                    else if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(uint))
                     {
-                        LoadSqliteValues(tableInfo, item, command, context);
-                        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-                        ProgressHelper.SetProgress(ref rowsCopied, entities.Count, tableInfo.BulkConfig, progress);
+                        identityPropertyInteger = true;
+                        identityPropertyUnsigned = true;
+                    }
+                    else if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(int))
+                    {
+                        identityPropertyInteger = true;
+                    }
+                    else if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(ushort))
+                    {
+                        identityPropertyShort = true;
+                        identityPropertyUnsigned = true;
+                    }
+                    else if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(short))
+                    {
+                        identityPropertyShort = true;
+                    }
+                    else if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(byte))
+                    {
+                        identityPropertyByte = true;
+                        identityPropertyUnsigned = true;
+                    }
+                    else if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(sbyte))
+                    {
+                        identityPropertyByte = true;
                     }
 
-                    if (operationType != OperationType.Delete && tableInfo.BulkConfig.SetOutputIdentity && tableInfo.IdentityColumnName != null)
+                    for (int i = entities.Count - 1; i >= 0; i--)
                     {
-                        command.CommandText = SqlQueryBuilderSqlite.SelectLastInsertRowId();
-                        long lastRowIdScalar = (long)await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
-                        string identityPropertyName = tableInfo.PropertyColumnNamesDict.SingleOrDefault(a => a.Value == tableInfo.IdentityColumnName).Key;
-
-                        var identityPropertyInteger = false;
-                        var identityPropertyUnsigned = false;
-                        var identityPropertyByte = false;
-                        var identityPropertyShort = false;
-
-                        if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(ulong))
+                        if (identityPropertyByte)
                         {
-                            identityPropertyUnsigned = true;
-                        }
-                        else if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(uint))
-                        {
-                            identityPropertyInteger = true;
-                            identityPropertyUnsigned = true;
-                        }
-                        else if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(int))
-                        {
-                            identityPropertyInteger = true;
-                        }
-                        else if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(ushort))
-                        {
-                            identityPropertyShort = true;
-                            identityPropertyUnsigned = true;
-                        }
-                        else if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(short))
-                        {
-                            identityPropertyShort = true;
-                        }
-                        else if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(byte))
-                        {
-                            identityPropertyByte = true;
-                            identityPropertyUnsigned = true;
-                        }
-                        else if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(sbyte))
-                        {
-                            identityPropertyByte = true;
-                        }
-
-                        for (int i = entities.Count - 1; i >= 0; i--)
-                        {
-                            if (identityPropertyByte)
-                            {
-                                if (identityPropertyUnsigned)
-                                    tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (byte)lastRowIdScalar);
-                                else
-                                    tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (sbyte)lastRowIdScalar);
-                            }
-                            else if (identityPropertyShort)
-                            {
-                                if (identityPropertyUnsigned)
-                                    tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (ushort)lastRowIdScalar);
-                                else
-                                    tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (short)lastRowIdScalar);
-                            }
-                            else if (identityPropertyInteger)
-                            {
-                                if (identityPropertyUnsigned)
-                                    tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (uint)lastRowIdScalar);
-                                else
-                                    tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (int)lastRowIdScalar);
-                            }
+                            if (identityPropertyUnsigned)
+                                tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (byte)lastRowIdScalar);
                             else
-                            {
-                                if (identityPropertyUnsigned)
-                                    tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (ulong)lastRowIdScalar);
-                                else
-                                    tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], lastRowIdScalar);
-                            }
-
-                            lastRowIdScalar--;
+                                tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (sbyte)lastRowIdScalar);
                         }
-                    }
-                    if (doExplicitCommit)
-                    {
-                        transaction.Commit();
+                        else if (identityPropertyShort)
+                        {
+                            if (identityPropertyUnsigned)
+                                tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (ushort)lastRowIdScalar);
+                            else
+                                tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (short)lastRowIdScalar);
+                        }
+                        else if (identityPropertyInteger)
+                        {
+                            if (identityPropertyUnsigned)
+                                tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (uint)lastRowIdScalar);
+                            else
+                                tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (int)lastRowIdScalar);
+                        }
+                        else
+                        {
+                            if (identityPropertyUnsigned)
+                                tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (ulong)lastRowIdScalar);
+                            else
+                                tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], lastRowIdScalar);
+                        }
+
+                        lastRowIdScalar--;
                     }
                 }
-                finally
+                if (doExplicitCommit)
                 {
-                    await context.Database.CloseConnectionAsync().ConfigureAwait(false);
+                    transaction.Commit();
                 }
+            }
+            finally
+            {
+                await context.Database.CloseConnectionAsync().ConfigureAwait(false);
+            }
         }
 
         public void Read<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress) where T : class

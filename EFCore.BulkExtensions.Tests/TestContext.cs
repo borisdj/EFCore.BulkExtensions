@@ -33,6 +33,8 @@ namespace EFCore.BulkExtensions.Tests
         public DbSet<ParentDetail> ParentDetails { get; set; }
         public DbSet<Child> Children { get; set; }
 
+        public DbSet<Setting> Settings { get; set; }
+
         public TestContext(DbContextOptions options) : base(options)
         {
             Database.EnsureCreated();
@@ -69,6 +71,8 @@ namespace EFCore.BulkExtensions.Tests
                 modelBuilder.Entity<Address>().Ignore(p => p.Location);
             }
 
+            modelBuilder.Entity<Setting>().Property(e => e.Settings).HasConversion<string>();
+
             // [Timestamp] alternative:
             //modelBuilder.Entity<Document>().Property(x => x.RowVersion).HasColumnType("timestamp").ValueGeneratedOnAddOrUpdate().HasConversion(new NumberToBytesConverter<ulong>()).IsConcurrencyToken();
 
@@ -96,7 +100,7 @@ namespace EFCore.BulkExtensions.Tests
                 //var connectionString = $@"Data Source=(localdb)\MSSQLLocalDB;Database={databaseName};Trusted_Connection=True;MultipleActiveResultSets=True";
 
                 //optionsBuilder.UseSqlServer(connectionString); // Can NOT Test with UseInMemoryDb (Exception: Relational-specific methods can only be used when the context is using a relational)
-                optionsBuilder.UseSqlServer(connectionString, opt => opt.UseNetTopologySuite()); // Can NOT Test with UseInMemoryDb (Exception: Relational-specific methods can only be used when the context is using a relational)
+                optionsBuilder.UseSqlServer(connectionString, opt => opt.UseNetTopologySuite()); // NetTopologySuite for Geometry / Geometry types
             }
             else if (DbServer == DbServer.Sqlite)
             {
@@ -264,6 +268,22 @@ namespace EFCore.BulkExtensions.Tests
 
         public InfoType InfoType { get; set; }
     }
+
+    public enum SettingsEnum
+    {
+        Sett1,
+        Sett2
+    }
+    // For testing Convertible Property (Key Settings in modelBuilder configured as 'nvarchar' insted of 'int')
+    public class Setting
+    {
+        [Key]
+        public SettingsEnum Settings { get; set; }
+        [Required]
+        [MaxLength(20)]
+        public string Value { get; set; }
+    }
+
 
     // For testing ForeignKey Shadow Properties
     public class ItemLink

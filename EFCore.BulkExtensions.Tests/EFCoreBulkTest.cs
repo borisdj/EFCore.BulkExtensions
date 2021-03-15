@@ -14,7 +14,7 @@ namespace EFCore.BulkExtensions.Tests
 {
     public class EFCoreBulkTest
     {
-        protected int EntitiesNumber => 100000;
+        protected int EntitiesNumber => 10000;
 
         private static Func<TestContext, int> ItemsCountQuery = EF.CompileQuery<TestContext, int>(ctx => ctx.Items.Count());
         private static Func<TestContext, Item> LastItemQuery = EF.CompileQuery<TestContext, Item>(ctx => ctx.Items.LastOrDefault());
@@ -131,7 +131,7 @@ namespace EFCore.BulkExtensions.Tests
                 {
                     var entity = new Item
                     {
-                        ItemId = isBulkOperation ? j : 0,
+                        ItemId = 0, //isBulkOperation ? j : 0, // no loger used since order(Identity temporary filled with negative values from -N to -1) is set automaticaly when PreserveInsertOrder=TRUE
                         Name = "name " + i,
                         Description = "info " + Guid.NewGuid().ToString().Substring(0, 3),
                         Quantity = i % 10,
@@ -342,7 +342,7 @@ namespace EFCore.BulkExtensions.Tests
                 foreach (var entity in entities)
                 {
                     entity.Description = "Desc Update " + counter++;
-                    entity.Quantity = entity.Quantity + 1000; // will not be changed since Quantity property is not in config PropertiesToInclude
+                    entity.Quantity += 1000; // will not be changed since Quantity property is not in config PropertiesToInclude
                 }
                 if (isBulkOperation)
                 {

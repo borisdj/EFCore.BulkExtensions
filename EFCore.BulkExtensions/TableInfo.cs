@@ -42,6 +42,7 @@ namespace EFCore.BulkExtensions
         public bool HasAbstractList { get; set; }
         public bool ColumnNameContainsSquareBracket { get; set; }
         public bool LoadOnlyPKColumn { get; set; }
+        public bool HasSpatialType { get; set; }
         public int NumberOfEntities { get; set; }
 
         public BulkConfig BulkConfig { get; set; }
@@ -115,8 +116,21 @@ namespace EFCore.BulkExtensions
             //var relationalData = entityType.Relational(); relationalData.Schema relationalData.TableName // DEPRECATED in Core3.0
             bool isSqlServer = context.Database.ProviderName.EndsWith(DbServer.SqlServer.ToString());
             string defaultSchema = isSqlServer ? "dbo" : null;
-            Schema = entityType.GetSchema() ?? defaultSchema;
-            TableName = entityType.GetTableName();
+
+            string customSchema = null;
+            string customTableName = null;
+            if (BulkConfig.CustomDestinationTableName != null)
+            {
+                customTableName = BulkConfig.CustomDestinationTableName;
+                if (customTableName.Contains('.'))
+                {
+                    var tableNameSplitList = BulkConfig.CustomDestinationTableName.Split('.');
+                    customSchema = tableNameSplitList[0];
+                    customTableName = tableNameSplitList[1];
+                }
+            }
+            Schema = customSchema ?? entityType.GetSchema() ?? defaultSchema;
+            TableName = customTableName ?? entityType.GetTableName();
 
             TempTableSufix = "Temp";
 
@@ -222,21 +236,37 @@ namespace EFCore.BulkExtensions
             if (AreSpecifiedPropertiesToInclude || AreSpecifiedPropertiesToExclude)
             {
                 if (AreSpecifiedPropertiesToInclude && AreSpecifiedPropertiesToExclude)
-                    throw new InvalidOperationException("Only one group of properties, either PropertiesToInclude or PropertiesToExclude can be specified, specifying both not allowed.");
+                {
+                    throw new MultiplePropertyListSetException(nameof(BulkConfig.PropertiesToInclude), nameof(BulkConfig.PropertiesToExclude));
+                }  
                 if (AreSpecifiedPropertiesToInclude)
+                {
                     properties = properties.Where(a => BulkConfig.PropertiesToInclude.Contains(a.Name));
+                    ValidateSpecifiedPropertiesList(properties, BulkConfig.PropertiesToInclude, nameof(BulkConfig.PropertiesToInclude));
+                }
                 if (AreSpecifiedPropertiesToExclude)
+                {
                     properties = properties.Where(a => !BulkConfig.PropertiesToExclude.Contains(a.Name));
+                    ValidateSpecifiedPropertiesList(properties, BulkConfig.PropertiesToExclude, nameof(BulkConfig.PropertiesToExclude));
+                }
             }
 
             if (AreSpecifiedPropertiesToIncludeOnCompare || AreSpecifiedPropertiesToExcludeOnCompare)
             {
                 if (AreSpecifiedPropertiesToIncludeOnCompare && AreSpecifiedPropertiesToExcludeOnCompare)
-                    throw new InvalidOperationException("Only one group of properties, either PropertiesToIncludeOnCompare or PropertiesToExcludeOnCompare can be specified, specifying both not allowed.");
+                {
+                    throw new MultiplePropertyListSetException(nameof(BulkConfig.PropertiesToIncludeOnCompare), nameof(BulkConfig.PropertiesToExcludeOnCompare));
+                }
                 if (AreSpecifiedPropertiesToIncludeOnCompare)
+                {
                     propertiesOnCompare = propertiesOnCompare.Where(a => BulkConfig.PropertiesToIncludeOnCompare.Contains(a.Name));
+                    ValidateSpecifiedPropertiesList(propertiesOnCompare, BulkConfig.PropertiesToIncludeOnCompare, nameof(BulkConfig.PropertiesToIncludeOnCompare));
+                }
                 if (AreSpecifiedPropertiesToExcludeOnCompare)
+                {
                     propertiesOnCompare = propertiesOnCompare.Where(a => !BulkConfig.PropertiesToExcludeOnCompare.Contains(a.Name));
+                    ValidateSpecifiedPropertiesList(propertiesOnCompare, BulkConfig.PropertiesToExcludeOnCompare, nameof(BulkConfig.PropertiesToExcludeOnCompare));
+                }
             }
             else
             {
@@ -245,11 +275,19 @@ namespace EFCore.BulkExtensions
             if (AreSpecifiedPropertiesToIncludeOnUpdate || AreSpecifiedPropertiesToExcludeOnUpdate)
             {
                 if (AreSpecifiedPropertiesToIncludeOnUpdate && AreSpecifiedPropertiesToExcludeOnUpdate)
-                    throw new InvalidOperationException("Only one group of properties, either PropertiesToIncludeOnUpdate or PropertiesToExcludeOnUpdate can be specified, specifying both not allowed.");
+                {
+                    throw new MultiplePropertyListSetException(nameof(BulkConfig.PropertiesToIncludeOnUpdate), nameof(BulkConfig.PropertiesToExcludeOnUpdate));
+                }
                 if (AreSpecifiedPropertiesToIncludeOnUpdate)
+                {
                     propertiesOnUpdate = propertiesOnUpdate.Where(a => BulkConfig.PropertiesToIncludeOnUpdate.Contains(a.Name));
+                    ValidateSpecifiedPropertiesList(propertiesOnUpdate, BulkConfig.PropertiesToIncludeOnUpdate, nameof(BulkConfig.PropertiesToIncludeOnUpdate));
+                }
                 if (AreSpecifiedPropertiesToExcludeOnUpdate)
+                {
                     propertiesOnUpdate = propertiesOnUpdate.Where(a => !BulkConfig.PropertiesToExcludeOnUpdate.Contains(a.Name));
+                    ValidateSpecifiedPropertiesList(propertiesOnUpdate, BulkConfig.PropertiesToExcludeOnUpdate, nameof(BulkConfig.PropertiesToExcludeOnUpdate));
+                }
             }
             else
             {
@@ -355,6 +393,17 @@ namespace EFCore.BulkExtensions
                             }
                         }
                     }
+                }
+            }
+        }
+
+        protected void ValidateSpecifiedPropertiesList(IEnumerable<IProperty> properties, List<string> specifiedPropertiesList, string specifiedPropertiesListName)
+        {
+            foreach (var configSpecifiedPropertyName in specifiedPropertiesList)
+            {
+                if (!properties.Any(a => a.Name == configSpecifiedPropertyName))
+                {
+                    throw new InvalidOperationException($"PropertyName '{configSpecifiedPropertyName}' specified in '{specifiedPropertiesListName}' not found in Properties.");
                 }
             }
         }
@@ -678,7 +727,29 @@ namespace EFCore.BulkExtensions
             }
         }
         #endregion
+          
+        public void CheckToSetIdentityForPreserveOrder<T>(IList<T> entities, bool reset = false)
+        {
+            string identityPropertyName = PropertyColumnNamesDict.SingleOrDefault(a => a.Value == IdentityColumnName).Key;
 
+            bool doSetIdentityColumnsForInsertOrder = BulkConfig.PreserveInsertOrder &&
+                                                      entities.Count() > 0 &&
+                                                      PrimaryKeys.Count() == 1 &&
+                                                      PrimaryKeys[0] == IdentityColumnName &&
+                                                      (int)FastPropertyDict[identityPropertyName].Get(entities[0]) == 0 &&
+                                                      (int)FastPropertyDict[identityPropertyName].Get(entities[1]) == 0;
+            if (doSetIdentityColumnsForInsertOrder)
+            {
+                int i = -entities.Count();
+                foreach (var entity in entities)
+                {
+                    int idValue = reset ? 0 : i;
+                    FastPropertyDict[identityPropertyName].Set(entity, idValue);
+                    i++;
+                }
+            }
+        }
+      
         protected void UpdateEntitiesIdentity<T>(DbContext context, Type type, IList<T> entities, IList<T> entitiesWithOutputIdentity)
         {
             var identityPropertyName = OutputPropertyColumnNamesDict.SingleOrDefault(a => a.Value == IdentityColumnName).Key;
@@ -907,5 +978,14 @@ namespace EFCore.BulkExtensions
             return orderedQuery;
         }*/
         #endregion
+    }
+
+    [Serializable]
+    class MultiplePropertyListSetException : Exception
+    {
+        public MultiplePropertyListSetException() { }
+        public MultiplePropertyListSetException(string propertyList1Name, string PropertyList2Name)
+            : base(String.Format("Only one group of properties, either {0} or {1} can be specified, specifying both not allowed.", propertyList1Name, PropertyList2Name)) { }
+
     }
 }

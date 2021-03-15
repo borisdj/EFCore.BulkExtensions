@@ -22,15 +22,23 @@ namespace EFCore.BulkExtensions.Tests
 
             RunDeleteAll(databaseType);
             RunInsert();
-            RunBatchUpdate();
-            RunBatchUpdate_UsingNavigationPropertiesThatTranslateToAnInnerQuery();
-            int deletedEntities = RunTopBatchDelete();
+            RunBatchUpdate(databaseType);
+
+            int deletedEntities = 1;
+            if (databaseType == DbServer.SqlServer)
+            {
+                RunBatchUpdate_UsingNavigationPropertiesThatTranslateToAnInnerQuery();
+                deletedEntities = RunTopBatchDelete();
+            }
+
             RunBatchDelete();
             RunBatchDelete2();
             RunContainsBatchDelete();
             RunContainsBatchDelete2();
             RunContainsBatchDelete3();
             RunAnyBatchDelete();
+
+            UpdateSetting(SettingsEnum.Sett1, "Val1UPDATE");
 
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
@@ -42,23 +50,25 @@ namespace EFCore.BulkExtensions.Tests
                 Assert.Equal(1.5m, lastItem.Price);
                 Assert.StartsWith("name ", lastItem.Name);
                 Assert.EndsWith(" Concatenated", lastItem.Name);
-                Assert.EndsWith(" TOP(1)", firstItem.Name);
+
+                if (databaseType == DbServer.SqlServer)
+                {
+                    Assert.EndsWith(" TOP(1)", firstItem.Name);
+                }
             }
 
             if (databaseType == DbServer.SqlServer)
             {
                 RunUdttBatch();
             }
-        }
 
-        // BATCH for Sqlite does Not work since switching to 3.0.0
-        // Method ToParametrizedSql with Sqlite throws Exception on line:
-        //   var enumerator = query.Provider.Execute<IEnumerable>(query.Expression).GetEnumerator();
-        // Message:
-        //   System.InvalidOperationException : The LINQ expression 'DbSet<Item>.Where(i => i.ItemId <= 500 && i.Price >= __price_0)' could not be translated.
-        //   Either rewrite the query in a form that can be translated, or switch to client evaluation explicitly by inserting a call to either AsEnumerable(), AsAsyncEnumerable(), ToList(), or ToListAsync().
-        //   See https://go.microsoft.com/fwlink/?linkid=2101038 for more information.
-        //   QueryableMethodTranslatingExpressionVisitor.<VisitMethodCall>g__CheckTranslated|8_0(ShapedQueryExpression translated, <>c__DisplayClass8_0& )
+            if (databaseType == DbServer.SqlServer)
+            {
+                // Removing ORDER BY and CTE's are not implemented for SQLite.
+                RunOrderByDeletes();
+                RunIncludeDelete();
+            }
+        }
 
         internal void RunDeleteAll(DbServer databaseType)
         {
@@ -81,23 +91,43 @@ namespace EFCore.BulkExtensions.Tests
             }
         }
 
-        private void RunBatchUpdate()
+        private void RunBatchUpdate(DbServer databaseType)
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 //var updateColumns = new List<string> { nameof(Item.Quantity) }; // Adding explicitly PropertyName for update to its default value
 
                 decimal price = 0;
-                var query = context.Items.Where(a => a.ItemId <= 500 && a.Price >= price);
+
+                var query = context.Items.AsQueryable();
+                if (databaseType == DbServer.SqlServer)
+                {
+                    query = query.Where(a => a.ItemId <= 500 && a.Price >= price);
+                }
+
+                // BATCH for Sqlite does Not work with multiple Conditions since switching to 3.0.0
+                // Method ToParametrizedSql with Sqlite throws Exception on line:
+                //   var enumerator = query.Provider.Execute<IEnumerable>(query.Expression).GetEnumerator();
+                // Message:
+                //   System.InvalidOperationException : The LINQ expression 'DbSet<Item>.Where(i => i.ItemId <= 500 && i.Price >= __price_0)' could not be translated.
+                //   Either rewrite the query in a form that can be translated, or switch to client evaluation explicitly by inserting a call to either AsEnumerable(), AsAsyncEnumerable(), ToList(), or ToListAsync().
+                //   See https://go.microsoft.com/fwlink/?linkid=2101038 for more information.
+                //   QueryableMethodTranslatingExpressionVisitor.<VisitMethodCall>g__CheckTranslated|8_0(ShapedQueryExpression translated, <>c__DisplayClass8_0& )
+                if (databaseType == DbServer.Sqlite)
+                {
+                    query = query.Where(a => a.ItemId <= 500); // Sqlite currently does Not support multiple conditions
+                }
 
                 query.BatchUpdate(new Item { Description = "Updated", Price = 1.5m }/*, updateColumns*/);
 
                 var incrementStep = 100;
                 var suffix = " Concatenated";
                 query.BatchUpdate(a => new Item { Name = a.Name + suffix, Quantity = a.Quantity + incrementStep }); // example of BatchUpdate Increment/Decrement value in variable
-                                                                                                                    //query.BatchUpdate(a => new Item { Quantity = a.Quantity + 100 }); // example direct value without variable
 
-                query.Take(1).BatchUpdate(a => new Item { Name = a.Name + " TOP(1)", Quantity = a.Quantity + incrementStep }); // example of BatchUpdate with TOP(1)
+                if (databaseType == DbServer.SqlServer) // Sqlite currently does Not support Take(): LIMIT
+                {
+                    query.Take(1).BatchUpdate(a => new Item { Name = a.Name + " TOP(1)", Quantity = a.Quantity + incrementStep }); // example of BatchUpdate with TOP(1)
+                }
             }
         }
 
@@ -243,6 +273,41 @@ WHERE [p].[ParentId] = 1";
             }
         }
 
+        private void RunOrderByDeletes()
+        {
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.Items.OrderBy(x => x.Name).Skip(2).Take(4).BatchDelete();
+            }
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.Items.OrderBy(x => x.Name).Take(2).BatchDelete();
+            }
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.Items.OrderBy(x => x.Name).BatchDelete();
+            }
+        }
+
+        private void RunIncludeDelete()
+        {
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.Items.Include(x => x.ItemHistories).Where(x => !x.ItemHistories.Any()).OrderBy(x => x.ItemId).Skip(2).Take(4).BatchDelete();
+            }
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.Items.Include(x => x.ItemHistories).Where(x => !x.ItemHistories.Any()).OrderBy(x => x.ItemId).Take(4).BatchDelete();
+            }
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.Items.Include(x => x.ItemHistories).Where(x => !x.ItemHistories.Any()).BatchDelete();
+            }
+        }
+
         private void RunUdttBatch()
         {
             var userRoles = (
@@ -318,6 +383,31 @@ WHERE [p].[ParentId] = 1";
             }
             var parameter = new SqlParameter(parameterName, dt) { SqlDbType = SqlDbType.Structured, TypeName = "dbo.UdttIntInt", };
             return context.Set<UdttIntInt>().FromSqlRaw($@"select * from {parameterName}", parameter);
+        }
+
+        private void UpdateSetting(SettingsEnum settings, object value)
+        {
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.Truncate<Setting>();
+            }
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.Settings.Add(new Setting() { Settings = SettingsEnum.Sett1, Value = "Val1" });
+                context.SaveChanges();
+            }
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                // can work with explicit value: .Where(x => x.Settings == SettingsEnum.Sett1) or if named Parameter used then it has to be named (settings) same as Property (Settings) - Case not relevant, it is CaseInsensitive
+                context.Settings.Where(x => x.Settings == settings).BatchUpdate(x => new Setting { Value = value.ToString() });
+            }
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.Truncate<Setting>();
+            }
         }
     }
 }

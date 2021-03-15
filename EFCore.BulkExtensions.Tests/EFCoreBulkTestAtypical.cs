@@ -60,6 +60,7 @@ namespace EFCore.BulkExtensions.Tests
             ContextUtil.DbServer = databaseType;
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
+                context.Truncate<UserRole>();
                 var entities = new List<UserRole>();
                 for (int i = 0; i < EntitiesNumber; i++)
                 {
@@ -262,7 +263,7 @@ namespace EFCore.BulkExtensions.Tests
 
         [Theory]
         [InlineData(DbServer.SqlServer)]
-        [InlineData(DbServer.Sqlite)]
+        //[InlineData(DbServer.Sqlite)] Not supported
         private void InsertWithForeignKeyShadowProperties(DbServer databaseType)
         {
             ContextUtil.DbServer = databaseType;
@@ -340,7 +341,7 @@ namespace EFCore.BulkExtensions.Tests
                     }
                 };
 
-                context.BulkInsert(entities);
+                context.BulkInsertOrUpdate(entities);
             }
         }
     }

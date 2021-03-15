@@ -21,6 +21,7 @@ namespace EFCore.BulkExtensions.Tests
         [InlineData(true)]
         public void OperationsTest(bool isBulkOperation)
         {
+            RunDelete(isBulkOperation);
             RunInsert(isBulkOperation);
             RunDelete(isBulkOperation);
         }
@@ -32,7 +33,7 @@ namespace EFCore.BulkExtensions.Tests
             var connectionString = ContextUtil.GetSqlServerConnectionString(databaseName);
             var connection = new SqlConnection(connectionString) as DbConnection;
             connection = new MyConnection(connection);
-            builder.UseSqlServer(connection);
+            builder.UseSqlServer(connection, opt => opt.UseNetTopologySuite());
             return builder.Options;
         }
 

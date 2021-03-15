@@ -85,9 +85,9 @@ More info in the [Example](https://github.com/borisdj/EFCore.BulkExtensions#read
 ## BulkConfig arguments
 
 **BulkInsert_/OrUpdate/OrDelete** methods can have optional argument **BulkConfig** with properties (bool, int, object, List<string>):<br>
-{ *PreserveInsertOrder, SetOutputIdentity, BatchSize, NotifyAfter, BulkCopyTimeout, EnableStreaming, UseTempDB, TrackingEntities, WithHoldlock, CalculateStats, StatsInfo, PropertiesToInclude, PropertiesToIncludeOnCompare, PropertiesToExclude, PropertiesToIncludeOnUpdate, PropertiesToExcludeOnCompare, PropertiesToExcludeOnUpdate, UpdateByProperties, EnableShadowProperties, SRID, SqlBulkCopyOptions }*<br>
+{ *PreserveInsertOrder, SetOutputIdentity, BatchSize, NotifyAfter, BulkCopyTimeout, EnableStreaming, UseTempDB, UniqueTableNameTempDb, CustomDestinationTableName, TrackingEntities, WithHoldlock, CalculateStats, StatsInfo, PropertiesToInclude, PropertiesToIncludeOnCompare, PropertiesToExclude, PropertiesToIncludeOnUpdate, PropertiesToExcludeOnCompare, PropertiesToExcludeOnUpdate, UpdateByProperties, EnableShadowProperties, SRID, SqlBulkCopyOptions }*<br>
 Default behaviour is <br>
-{ *PreserveInsertOrder*: false, *SetOutputIdentity*: false, *BatchSize*: 2000, *NotifyAfter*: null, *BulkCopyTimeout*: null,<br> *EnableStreaming*: false, *UseTempDB*: false, *TrackingEntities*: false, *WithHoldlock*: true,<br> *CalculateStats*: false, *StatsInfo*: null, *PropertiesToInclude*: null, *PropertiesToIncludeOnCompare* : null, *PropertiesToIncludeOnUpdate* : null, *PropertiesToExclude*: null, *PropertiesToExcludeOnCompare*: null, *PropertiesToExcludeOnUpdate*: null, *UpdateByProperties*: null, *EnableShadowProperties*: false, *SRID*: 4326, *SqlBulkCopyOptions*: Default }<br><br>
+{ *PreserveInsertOrder*: false, *SetOutputIdentity*: false, *BatchSize*: 2000, *NotifyAfter*: null, *BulkCopyTimeout*: null,<br> *EnableStreaming*: false, *UseTempDB*: false, *UniqueTableNameTempDb*: true, *CustomDestinationTableName*: null, *TrackingEntities*: false, *WithHoldlock*: true,<br> *CalculateStats*: false, *StatsInfo*: null, *PropertiesToInclude*: null, *PropertiesToIncludeOnCompare* : null, *PropertiesToIncludeOnUpdate* : null, *PropertiesToExclude*: null, *PropertiesToExcludeOnCompare*: null, *PropertiesToExcludeOnUpdate*: null, *UpdateByProperties*: null, *EnableShadowProperties*: false, *SRID*: 4326, *SqlBulkCopyOptions*: Default }<br><br>
 If we want to change defaults, BulkConfig should be added explicitly with one or more bool properties set to true, and/or int props like **BatchSize** to different number.<br> Config also has DelegateFunc for setting *Underlying-Connection/Transaction*, e.g. in UnderlyingTest.<br>
 When doing update we can chose to exclude one or more properties by adding their names into **PropertiesToExclude**, or if we need to update less then half column then **PropertiesToInclude** can be used. Setting both Lists are not allowed.
 
@@ -109,19 +109,14 @@ context.BulkInsertOrUpdate(entList, b => b.SetOutputIdentity = true); //example 
 ```
 
 **PreserveInsertOrder** makes sure that entites are inserted to Db as they are ordered in entitiesList.<br>
-However for this to work Id column needs to be set for the proper order.<br>
-For example if table already has rows, let's say it has 1000 rows with Id-s (1:1000), and we now want to add 300 more.<br>
-Since Id-s are generated in Db we could not set them, they would all be 0 (int default) in list.<br>
-But if we want to keep the order as they are ordered in list then those Id-s should be set say 1 to 300 (for BulkInsert).<br>
-Here single Id value itself doesn't matter, db will change it to (1001:1300), what matters is their mutual relationship for sorting.<br>
+When table has Identity column (int autoincrement) with 0 values in list they will temporary be automatically changed from 0s into range -N:-1.<br>
+Or it can be manually set with proper values for order (Negative values used to skip  conflict with existing ones in Db).<br>
+Here single Id value itself doesn't matter, db will change it to next in sequence, what matters is their mutual relationship for sorting.<br>
 Insertion order is implemented with [TOP](https://docs.microsoft.com/en-us/sql/t-sql/queries/top-transact-sql) in conjuction with ORDER BY. [stackoverflow:merge-into-insertion-order](https://stackoverflow.com/questions/884187/merge-into-insertion-order).<br>
 This config should also be used when we have set *SetOutputIdentity* on Entity containing NotMapped Property. [issues/76](https://github.com/borisdj/EFCore.BulkExtensions/issues/76)
 
-When using **PreserveInsertOrder** with **SetOutputIdentity** Id value does matter.<br>
-If it's BulkInsertOrUpdate method for those that will be updated it has to match Id.<br>
-And if we need to sort those for insert(BulkInsert/OrUpdate) and not have conflict with existing Id-s, there are 2 ways:<br>
-One is set Id to really high values, order of magnitude 10^10, and another even better setting them to negative values.<br>
-So if we have list of 8000, say 3000 for update (they keep the real Id) and 5000 for insert then Id-s could be (-5000:-1).
+When using **PreserveInsertOrder** with **SetOutputIdentity** Id values will be updated to new ones from database.<br>
+When using BulkInsertOrUpdate method for those that will be updated Id has to match it prior or some other unique colum if using UpdateByProperties.<br>
 
 **SetOutputIdentity** is useful when BulkInsert is done to multiple related tables, that have Identity column.<br>
 After Insert is done to first table, we need Id-s that were generated in Db because they are FK(ForeignKey) in second table.<br>
@@ -160,6 +155,8 @@ When **CalculateStats** is set to True the result is return in `BulkConfig.Stats
 If used for pure Insert (with Batching) then SetOutputIdentity should also be configured because Merge have to be used.<br>
 **TrackingEntities** can be set to True if we want to have tracking of entities from BulkRead or when SetOutputIdentity is set.<br>
 **UseTempDB** when set then BulkOperation has to be [inside Transaction](https://github.com/borisdj/EFCore.BulkExtensions/issues/49)<br>
+**UniqueTableNameTempDb** when changed to true temp table name will be only 'Temp' without random numbers.<br>
+**CustomDestinationTableName** can be set with 'TableName' only or with 'Schema.TableName'.<br>
 **EnableShadowProperties** to add (normal) Shadow Property and persist value. Disables automatic discrimator, use manual method.<br>
 **SRID** Spatial Reference Identifier - for SQL Server with NetTopologySuite.
 
@@ -171,7 +168,7 @@ Last optional argument is **Action progress** (Example in *EfOperationTest.cs* *
 context.BulkInsert(entitiesList, null, (a) => WriteProgress(a));
 ```
 
-Library supports [Global Query Filters](https://docs.microsoft.com/en-us/ef/core/querying/filters) and [Value Conversions](https://docs.microsoft.com/en-us/ef/core/modeling/value-conversions) as well.</br>
+Library supports [Global Query Filters](https://docs.microsoft.com/en-us/ef/core/querying/filters) and [Value Conversions](https://docs.microsoft.com/en-us/ef/core/modeling/value-conversions) as well. BatchUpdate and named Property with [EnumToString Conversion](https://github.com/borisdj/EFCore.BulkExtensions/issues/397).</br>
 It also maps [OwnedTypes](https://docs.microsoft.com/en-us/ef/core/modeling/owned-entities), which is implemented with `DataTable` class.</br>
 With [Computed](https://docs.microsoft.com/en-us/ef/core/modeling/relational/computed-columns) and [Timestamp](https://docs.microsoft.com/en-us/ef/core/modeling/concurrency) Columns it will work in a way that they are automatically excluded from Insert. And when combined with *SetOutputIdentity* they will be Selected.<br>
 Bulk Extension methods can be [Overridden](https://github.com/borisdj/EFCore.BulkExtensions/issues/56) if required, for example to set AuditInfo.<br>
