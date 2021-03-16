@@ -137,6 +137,8 @@ for (int i = 1; i <= numberOfEntites; i++)
     };
     entities.Add(entity);
 }
+
+// Option 1
 using (var transaction = context.Database.BeginTransaction())
 {
     var bulkConfig = new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true };
@@ -150,6 +152,9 @@ using (var transaction = context.Database.BeginTransaction())
     context.BulkInsert(subEntities);
     transaction.Commit();
 }
+
+// Option 2 using Graph (only for SQL Server) - all entities in relationship with main in list are BulkInsertUpdated
+context.BulkInsert(entities, new BulkConfig { IncludeGraph = true });
 ```
 When **CalculateStats** is set to True the result is return in `BulkConfig.StatsInfo` (*StatsNumber-Inserted/Updated*).<br>
 If used for pure Insert (with Batching) then SetOutputIdentity should also be configured because Merge have to be used.<br>
