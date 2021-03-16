@@ -32,7 +32,7 @@ namespace EFCore.BulkExtensions
                 string columnType = column.Value;
                 if (columnName == tableInfo.TimeStampColumnName)
                     columnType = tableInfo.TimeStampOutColumnType;
-                q += $"ALTER TABLE {tableName} ALTER COLUMN {columnName} {columnType}; ";
+                q += $"ALTER TABLE {tableName} ALTER COLUMN [{columnName}] {columnType}; ";
             }
             return q;
         }
@@ -235,7 +235,8 @@ namespace EFCore.BulkExtensions
             return q;
         }
 
-        public static string GetCommaSeparatedColumns(List<string> columnsNames, string prefixTable = null, string equalsTable = null)
+        // propertColumnsNamesDict used with Sqlite for @parameter to be save from non valid charaters ('', '!', ...) that are allowed as column Names in Sqlite
+        public static string GetCommaSeparatedColumns(List<string> columnsNames, string prefixTable = null, string equalsTable = null, Dictionary<string, string> propertColumnsNamesDict = null)
         {
             prefixTable += (prefixTable != null && prefixTable != "@") ? "." : "";
             equalsTable += (equalsTable != null && equalsTable != "@") ? "." : "";
@@ -243,8 +244,9 @@ namespace EFCore.BulkExtensions
             string commaSeparatedColumns = "";
             foreach (var columnName in columnsNames)
             {
+                var equalsParameter = propertColumnsNamesDict == null ? columnName : propertColumnsNamesDict.SingleOrDefault(a => a.Value == columnName).Key;
                 commaSeparatedColumns += prefixTable != "" ? $"{prefixTable}[{columnName}]" : $"[{columnName}]";
-                commaSeparatedColumns += equalsTable != "" ? $" = {equalsTable}[{columnName}]" : "";
+                commaSeparatedColumns += equalsTable != "" ? $" = {equalsTable}[{equalsParameter}]" : "";
                 commaSeparatedColumns += ", ";
             }
             if (commaSeparatedColumns != "")
@@ -268,9 +270,9 @@ namespace EFCore.BulkExtensions
             return commaSeparatedColumns;
         }
 
-        public static string GetANDSeparatedColumns(List<string> columnsNames, string prefixTable = null, string equalsTable = null, bool updateByPropertiesAreNullable = false)
+        public static string GetANDSeparatedColumns(List<string> columnsNames, string prefixTable = null, string equalsTable = null, bool updateByPropertiesAreNullable = false, Dictionary<string, string> propertColumnsNamesDict = null)
         {
-            string commaSeparatedColumns = GetCommaSeparatedColumns(columnsNames, prefixTable, equalsTable);
+            string commaSeparatedColumns = GetCommaSeparatedColumns(columnsNames, prefixTable, equalsTable, propertColumnsNamesDict);
 
             if (updateByPropertiesAreNullable)
             {

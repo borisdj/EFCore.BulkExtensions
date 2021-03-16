@@ -386,7 +386,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
                     if (propertyType.Name == "Guid" )
                         sqliteType = SqliteType.Blob; */
 
-                    var parameter = new SqliteParameter($"@{columnName}", propertyType); // ,sqliteType // ,null
+                    var parameter = new SqliteParameter($"@{property.Name}", propertyType); // ,sqliteType // ,null
                     command.Parameters.Add(parameter);
                 }
             }
@@ -398,7 +398,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
                 command.Parameters.Add(parameter);
             }
 
-            command.Prepare(); // Not Required (check if same efficiency when removed)
+            //command.Prepare(); // Not Required (check if same efficiency when removed)
             return command;
         }
 
@@ -408,7 +408,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
             foreach (var propertyColumn in propertyColumnsDict)
             {
                 var isShadowProperty = tableInfo.ShadowProperties.Contains(propertyColumn.Key);
-
+                string parameterName = propertyColumn.Key.Replace(".", "_");
                 object value;
                 if (!isShadowProperty)
                 {
@@ -421,9 +421,9 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
                         var ownedProperty = ownedFastProperty.Property;
 
                         var propertyType = Nullable.GetUnderlyingType(ownedProperty.GetType()) ?? ownedProperty.GetType();
-                        if (!command.Parameters.Contains("@" + propertyColumn.Value))
+                        if (!command.Parameters.Contains("@" + parameterName))
                         {
-                            var parameter = new SqliteParameter($"@{propertyColumn.Value}", propertyType);
+                            var parameter = new SqliteParameter($"@{parameterName}", propertyType);
                             command.Parameters.Add(parameter);
                         }
 
@@ -462,7 +462,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
                     value = tableInfo.ConvertibleProperties[propertyColumn.Key].ConvertToProvider.Invoke(value);
                 }
 
-                command.Parameters[$"@{propertyColumn.Value}"].Value = value ?? DBNull.Value;
+                command.Parameters[$"@{parameterName}"].Value = value ?? DBNull.Value;
             }
         }
         

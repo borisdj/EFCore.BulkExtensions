@@ -15,16 +15,18 @@ namespace EFCore.BulkExtensions
         {
             tableName = tableName ?? tableInfo.TableName;
             List<string> columnsList = tableInfo.PropertyColumnNamesDict.Values.ToList();
+            List<string> propertiesList = tableInfo.PropertyColumnNamesDict.Keys.ToList();
 
             bool keepIdentity = tableInfo.BulkConfig.SqlBulkCopyOptions.HasFlag(SqlBulkCopyOptions.KeepIdentity);
             if(operationType == OperationType.Insert && !keepIdentity && tableInfo.HasIdentity)
             {
-                var identityColumnName = tableInfo.PropertyColumnNamesDict[tableInfo.IdentityColumnName];
-                columnsList = columnsList.Where(a => a != identityColumnName).ToList();
+                var identityPropertyName = tableInfo.PropertyColumnNamesDict.SingleOrDefault(a => a.Value == tableInfo.IdentityColumnName).Key;
+                columnsList = columnsList.Where(a => a != tableInfo.IdentityColumnName).ToList();
+                propertiesList = propertiesList.Where(a => a != identityPropertyName).ToList();
             }
 
             var commaSeparatedColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsList);
-            var commaSeparatedColumnsParams = SqlQueryBuilder.GetCommaSeparatedColumns(columnsList, "@").Replace("[", "").Replace("]", "");
+            var commaSeparatedColumnsParams = SqlQueryBuilder.GetCommaSeparatedColumns(propertiesList, "@").Replace("[", "").Replace("]", "").Replace(".", "_");
 
             var q = $"INSERT INTO [{tableName}] " +
                     $"({commaSeparatedColumns}) " +
@@ -34,8 +36,8 @@ namespace EFCore.BulkExtensions
             {
                 List<string> primaryKeys = tableInfo.PrimaryKeys.Select(k => tableInfo.PropertyColumnNamesDict[k]).ToList();
                 var commaSeparatedPrimaryKeys = SqlQueryBuilder.GetCommaSeparatedColumns(primaryKeys);
-                var commaANDSeparatedPrimaryKeys = SqlQueryBuilder.GetANDSeparatedColumns(primaryKeys, equalsTable: "@").Replace("]", "").Replace(" = @[", "] = @");
-                var commaSeparatedColumnsEquals = SqlQueryBuilder.GetCommaSeparatedColumns(columnsList, equalsTable: "").Replace("]", "").Replace(" = .[", "] = @");
+                var commaSeparatedColumnsEquals = SqlQueryBuilder.GetCommaSeparatedColumns(columnsList, equalsTable: "", propertColumnsNamesDict: tableInfo.PropertyColumnNamesDict).Replace("]", "").Replace(" = .[", "] = @").Replace(".", "_");
+                var commaANDSeparatedPrimaryKeys = SqlQueryBuilder.GetANDSeparatedColumns(primaryKeys, equalsTable: "@", propertColumnsNamesDict: tableInfo.PropertyColumnNamesDict).Replace("]", "").Replace(" = @[", "] = @").Replace(".", "_");
 
                 q += $" ON CONFLICT({commaSeparatedPrimaryKeys}) DO UPDATE" +
                      $" SET {commaSeparatedColumnsEquals}" +
@@ -49,8 +51,8 @@ namespace EFCore.BulkExtensions
             tableName = tableName ?? tableInfo.TableName;
             List<string> columnsList = tableInfo.PropertyColumnNamesDict.Values.ToList();
             List<string> primaryKeys = tableInfo.PrimaryKeys.Select(k => tableInfo.PropertyColumnNamesDict[k]).ToList();
-            var commaSeparatedColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsList, equalsTable: "@").Replace("]", "").Replace(" = @[", "] = @");
-            var commaSeparatedPrimaryKeys = SqlQueryBuilder.GetANDSeparatedColumns(primaryKeys, equalsTable: "@").Replace("]", "").Replace(" = @[", "] = @");
+            var commaSeparatedColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsList, equalsTable: "@", propertColumnsNamesDict: tableInfo.PropertyColumnNamesDict).Replace("]", "").Replace(" = @[", "] = @").Replace(".", "_"); ;
+            var commaSeparatedPrimaryKeys = SqlQueryBuilder.GetANDSeparatedColumns(primaryKeys, equalsTable: "@", propertColumnsNamesDict: tableInfo.PropertyColumnNamesDict).Replace("]", "").Replace(" = @[", "] = @").Replace(".", "_"); ;
 
             var q = $"UPDATE [{tableName}] " +
                     $"SET {commaSeparatedColumns} " +
@@ -62,7 +64,7 @@ namespace EFCore.BulkExtensions
         {
             tableName = tableName ?? tableInfo.TableName;
             List<string> primaryKeys = tableInfo.PrimaryKeys.Select(k => tableInfo.PropertyColumnNamesDict[k]).ToList();
-            var commaSeparatedPrimaryKeys = SqlQueryBuilder.GetANDSeparatedColumns(primaryKeys, equalsTable: "@").Replace("]", "").Replace(" = @[", "] = @");
+            var commaSeparatedPrimaryKeys = SqlQueryBuilder.GetANDSeparatedColumns(primaryKeys, equalsTable: "@", propertColumnsNamesDict: tableInfo.PropertyColumnNamesDict).Replace("]", "").Replace(" = @[", "] = @").Replace(".", "_");
 
             var q = $"DELETE FROM [{tableName}] " +
                     $"WHERE {commaSeparatedPrimaryKeys};";
