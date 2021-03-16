@@ -153,7 +153,7 @@ using (var transaction = context.Database.BeginTransaction())
     transaction.Commit();
 }
 
-// Option 2 using Graph (only for SQL Server) - all entities in relationship with main in list are BulkInsertUpdated
+// Option 2 using Graph (only for SQL Server) - all entities in relationship with main ones in list are BulkInsertUpdated
 context.BulkInsert(entities, new BulkConfig { IncludeGraph = true });
 ```
 When **CalculateStats** is set to True the result is return in `BulkConfig.StatsInfo` (*StatsNumber-Inserted/Updated*).<br>
