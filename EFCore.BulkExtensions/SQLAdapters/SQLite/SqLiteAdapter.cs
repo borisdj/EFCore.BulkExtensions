@@ -398,7 +398,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
                 command.Parameters.Add(parameter);
             }
 
-            //command.Prepare(); // Not Required (check if same efficiency when removed)
+            command.Prepare(); // Not Required but called for efficiency (prepared should be little faster)
             return command;
         }
 
@@ -447,7 +447,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
                 {
                     if (tableInfo.BulkConfig.EnableShadowProperties)
                     {
-                        // Get the sahdow property value
+                        // Get the shadow property value
                         value = dbContext.Entry(entity).Property(propertyColumn.Key).CurrentValue;
                     }
                     else
