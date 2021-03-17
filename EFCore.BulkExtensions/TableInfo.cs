@@ -404,7 +404,7 @@ namespace EFCore.BulkExtensions
         {
             foreach (var configSpecifiedPropertyName in specifiedPropertiesList)
             {
-                if (! ColumnNamesTypesDict.Any(a => a.Key == configSpecifiedPropertyName))
+                if (!FastPropertyDict.Any(a => a.Key == configSpecifiedPropertyName))
                 {
                     throw new InvalidOperationException($"PropertyName '{configSpecifiedPropertyName}' specified in '{specifiedPropertiesListName}' not found in Properties.");
                 }
@@ -735,18 +735,36 @@ namespace EFCore.BulkExtensions
         {
             string identityPropertyName = PropertyColumnNamesDict.SingleOrDefault(a => a.Value == IdentityColumnName).Key;
 
+
+
             bool doSetIdentityColumnsForInsertOrder = BulkConfig.PreserveInsertOrder &&
                                                       entities.Count() > 1 &&
                                                       PrimaryKeys.Count() == 1 &&
                                                       PrimaryKeys[0] == IdentityColumnName &&
-                                                      (int)FastPropertyDict[identityPropertyName].Get(entities[0]) == 0 &&
-                                                      (int)FastPropertyDict[identityPropertyName].Get(entities[1]) == 0;
+                                                      Convert.ToInt64(FastPropertyDict[identityPropertyName].Get(entities[0])) == 0 &&
+                                                      Convert.ToInt64(FastPropertyDict[identityPropertyName].Get(entities[1])) == 0;
             if (doSetIdentityColumnsForInsertOrder)
             {
-                int i = -entities.Count();
+                long i = -entities.Count();
                 foreach (var entity in entities)
                 {
-                    int idValue = reset ? 0 : i;
+                    long value = reset ? 0 : i;
+
+                    object idValue;
+                    var idType = FastPropertyDict[identityPropertyName].Property.PropertyType;
+                    if (idType == typeof(ushort))
+                        idValue = (ushort)value;
+                    if (idType == typeof(short))
+                        idValue = (short)value;
+                    else if (idType == typeof(uint))
+                        idValue = (uint)value;
+                    else if (idType == typeof(int))
+                        idValue = (int)value;
+                    else if (idType == typeof(ulong))
+                        idValue = (ulong)value;
+                    else 
+                        idValue = (long)value;
+
                     FastPropertyDict[identityPropertyName].Set(entity, idValue);
                     i++;
                 }

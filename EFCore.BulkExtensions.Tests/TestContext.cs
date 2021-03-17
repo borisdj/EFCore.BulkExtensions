@@ -258,7 +258,7 @@ namespace EFCore.BulkExtensions.Tests
     // For testring ValueConversion
     public class Info
     {
-        public int InfoId { get; set; }
+        public long InfoId { get; set; }
 
         public string Message { get; set; }
 
