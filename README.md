@@ -100,11 +100,11 @@ If we want only to Insert new ones and to skip those that exist in Db then we ca
 Additionaly there is **UpdateByProperties** for specifying custom properties, by which we want update to be done.<br>
 Using UpdateByProperties while also having Identity column requires that Id property be [Excluded](https://github.com/borisdj/EFCore.BulkExtensions/issues/131).<br>
 If **NotifyAfter** is not set it will have same value as _BatchSize_ while **BulkCopyTimeout** when not set has SqlBulkCopy default which is 30 seconds and if set to 0 it indicates no limit.<br><br>
-_PreserveInsertOrder_ and _SetOutputIdentity_ have purpose only when PK has Identity (usually *int* type with AutoIncrement), while if PK is Guid(sequential) created in Application there is no need for them.<br> Also Tables with Composite Keys have no Identity column so no functionality for them in that case either.
+_SetOutputIdentity_ have purpose only when PK has Identity (usually *int* type with AutoIncrement), while if PK is Guid(sequential) created in Application there is no need for them.<br> Also Tables with Composite Keys have no Identity column so no functionality for them in that case either.
 ```C#
-var bulkConfig = new BulkConfig {PreserveInsertOrder = true, SetOutputIdentity = true, BatchSize = 4000 };
+var bulkConfig = new BulkConfig {SetOutputIdentity = true, BatchSize = 4000 };
 context.BulkInsert(entList, bulkConfig);
-context.BulkInsertOrUpdate(entList, new BulkConfig { PreserveInsertOrder = true });
+context.BulkInsertOrUpdate(entList, new BulkConfig { SetOutputIdentity = true });
 context.BulkInsertOrUpdate(entList, b => b.SetOutputIdentity = true); //example BulkConfig set with Action arg.
 ```
 
