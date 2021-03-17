@@ -13,7 +13,7 @@ namespace EFCore.BulkExtensions.Tests
             tableInfo.IdentityColumnName = "ItemId";
             string result = SqlQueryBuilder.MergeTable(tableInfo, OperationType.Insert);
 
-            string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING [dbo].[ItemTemp1234] AS S " +
+            string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
                               "ON T.[ItemId] = S.[ItemId] " +
                               "WHEN NOT MATCHED BY TARGET THEN INSERT ([Name]) VALUES (S.[Name]);";
 
@@ -27,7 +27,7 @@ namespace EFCore.BulkExtensions.Tests
             tableInfo.IdentityColumnName = "ItemId";
             string result = SqlQueryBuilder.MergeTable(tableInfo, OperationType.InsertOrUpdate);
 
-            string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING [dbo].[ItemTemp1234] AS S " +
+            string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
                               "ON T.[ItemId] = S.[ItemId] " +
                               "WHEN NOT MATCHED BY TARGET THEN INSERT ([Name]) VALUES (S.[Name]) " +
                               "WHEN MATCHED AND EXISTS (SELECT S.[Name] " +
@@ -44,7 +44,7 @@ namespace EFCore.BulkExtensions.Tests
             tableInfo.IdentityColumnName = "ItemId";
             string result = SqlQueryBuilder.MergeTable(tableInfo, OperationType.InsertOrUpdate);
 
-            string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING [dbo].[ItemTemp1234] AS S " +
+            string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
                               "ON T.[ItemId] = S.[ItemId] " +
                               "WHEN NOT MATCHED BY TARGET THEN INSERT ([Name], [TimeUpdated]) VALUES (S.[Name], S.[TimeUpdated]) " +
                               "WHEN MATCHED AND EXISTS (SELECT S.[Name] " +
@@ -60,7 +60,7 @@ namespace EFCore.BulkExtensions.Tests
             tableInfo.IdentityColumnName = "ItemId";
             string result = SqlQueryBuilder.MergeTable(tableInfo, OperationType.InsertOrUpdate);
 
-            string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING [dbo].[ItemTemp1234] AS S " +
+            string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
                               "ON T.[ItemId] = S.[ItemId] " +
                               "WHEN NOT MATCHED BY TARGET THEN INSERT ([Name], [TimeUpdated]) VALUES (S.[Name], S.[TimeUpdated]) " +
                               "WHEN MATCHED AND EXISTS (SELECT S.[Name], S.[TimeUpdated] " +
@@ -77,7 +77,7 @@ namespace EFCore.BulkExtensions.Tests
             tableInfo.IdentityColumnName = "ItemId";
             string result = SqlQueryBuilder.MergeTable(tableInfo, OperationType.Update);
 
-            string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING [dbo].[ItemTemp1234] AS S " +
+            string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
                               "ON T.[ItemId] = S.[ItemId] " +
                               "WHEN MATCHED AND EXISTS (SELECT S.[Name] " +
                               "EXCEPT SELECT T.[Name]) " +
@@ -106,7 +106,7 @@ namespace EFCore.BulkExtensions.Tests
             var tableInfo = GetTestTableInfo();
             string result = SqlQueryBuilder.MergeTable(tableInfo, OperationType.Delete);
 
-            string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING [dbo].[ItemTemp1234] AS S " +
+            string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
                               "ON T.[ItemId] = S.[ItemId] " +
                               "WHEN MATCHED THEN DELETE;";
 

@@ -736,7 +736,7 @@ namespace EFCore.BulkExtensions
             string identityPropertyName = PropertyColumnNamesDict.SingleOrDefault(a => a.Value == IdentityColumnName).Key;
 
             bool doSetIdentityColumnsForInsertOrder = BulkConfig.PreserveInsertOrder &&
-                                                      entities.Count() > 0 &&
+                                                      entities.Count() > 1 &&
                                                       PrimaryKeys.Count() == 1 &&
                                                       PrimaryKeys[0] == IdentityColumnName &&
                                                       (int)FastPropertyDict[identityPropertyName].Get(entities[0]) == 0 &&
@@ -813,6 +813,7 @@ namespace EFCore.BulkExtensions
         internal void LoadOutputData<T>(DbContext context, Type type, IList<T> entities) where T : class
         {
             bool hasIdentity = OutputPropertyColumnNamesDict.Any(a => a.Value == IdentityColumnName);
+            int totallNumber = entities.Count;
             if (BulkConfig.SetOutputIdentity && hasIdentity)
             {
                 string sqlQuery = SqlQueryBuilder.SelectFromOutputTable(this);
@@ -820,6 +821,7 @@ namespace EFCore.BulkExtensions
                     QueryOutputTable(context, type, sqlQuery).Cast<T>().ToList();
 
                 UpdateEntitiesIdentity(context, type, entities, entitiesWithOutputIdentity);
+                totallNumber = entitiesWithOutputIdentity.Count;
             }
             if (BulkConfig.CalculateStats)
             {
@@ -829,7 +831,7 @@ namespace EFCore.BulkExtensions
                 {
                     StatsNumberUpdated = numberUpdated,
                     StatsNumberDeleted = numberDeleted,
-                    StatsNumberInserted = entities.Count - numberUpdated - numberDeleted
+                    StatsNumberInserted = totallNumber - numberUpdated - numberDeleted
                 };
             }
         }
@@ -847,6 +849,7 @@ namespace EFCore.BulkExtensions
         internal async Task LoadOutputDataAsync<T>(DbContext context, Type type, IList<T> entities, CancellationToken cancellationToken) where T : class
         {
             bool hasIdentity = OutputPropertyColumnNamesDict.Any(a => a.Value == IdentityColumnName);
+            int totallNumber = entities.Count;
             if (BulkConfig.SetOutputIdentity && hasIdentity)
             {
                 string sqlQuery = SqlQueryBuilder.SelectFromOutputTable(this);
@@ -854,6 +857,7 @@ namespace EFCore.BulkExtensions
                 var entitiesWithOutputIdentity = (typeof(T) == type) ? QueryOutputTable<T>(context, sqlQuery).ToList() :
                     QueryOutputTable(context, type, sqlQuery).Cast<T>().ToList();
                 UpdateEntitiesIdentity(context, type, entities, entitiesWithOutputIdentity);
+                totallNumber = entitiesWithOutputIdentity.Count;
             }
             if (BulkConfig.CalculateStats)
             {
@@ -863,7 +867,7 @@ namespace EFCore.BulkExtensions
                 {
                     StatsNumberUpdated = numberUpdated,
                     StatsNumberDeleted = numberDeleted,
-                    StatsNumberInserted = entities.Count - numberUpdated - numberDeleted
+                    StatsNumberInserted = totallNumber - numberUpdated - numberDeleted
                 };
             }
         }

@@ -6,7 +6,7 @@ namespace EFCore.BulkExtensions
 {
     public class BulkConfig
     {
-        public bool PreserveInsertOrder { get; set; }
+        public bool PreserveInsertOrder { get; set; } = true;
 
         public bool SetOutputIdentity { get; set; }
 

@@ -138,7 +138,7 @@ namespace EFCore.BulkExtensions.Tests
                         {
                             var bulkConfig = new BulkConfig
                             {
-                                PreserveInsertOrder = true,
+                                //PreserveInsertOrder = true, // true is default
                                 SetOutputIdentity = true,
                                 BatchSize = 4000,
                                 CalculateStats = true
