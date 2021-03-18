@@ -40,7 +40,7 @@ namespace EFCore.BulkExtensions
             var tableInfo = TableInfo.CreateInstance(dbContext, rootType, Array.Empty<object>(), OperationType.Read, _tableInfoBulkConfig);
             _tableInfoLookup.Add(rootType, tableInfo);
 
-            CheckAndSetParametesForConvertibles(innerParameters, tableInfo);
+            CheckAndSetParametersForConvertibles(innerParameters, tableInfo);
             SqlParameters = new List<object>(innerParameters);
 
             foreach (Match match in BatchUtil.TableAliasPattern.Matches(baseSql))
@@ -61,7 +61,7 @@ namespace EFCore.BulkExtensions
         public StringBuilder UpdateColumnsSql { get; }
         public LambdaExpression UpdateExpression { get; }
 
-        protected void CheckAndSetParametesForConvertibles(IEnumerable<object> innerParameters, TableInfo tableInfo) // fix for enum 'int' Conversion to nvarchar
+        protected void CheckAndSetParametersForConvertibles(IEnumerable<object> innerParameters, TableInfo tableInfo) // fix for enum 'int' Conversion to nvarchar
         {
             foreach (var innerParameter in innerParameters)
             {
