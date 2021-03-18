@@ -170,6 +170,7 @@ namespace EFCore.BulkExtensions.Tests
 
         public decimal? Price { get; set; }
 
+        //[Column(TypeName = (nameof(DateTime)))] // Column to be of DbType 'datetime' instead of default 'datetime2'
         public DateTime TimeUpdated { get; set; }
 
         public ICollection<ItemHistory> ItemHistories { get; set; }

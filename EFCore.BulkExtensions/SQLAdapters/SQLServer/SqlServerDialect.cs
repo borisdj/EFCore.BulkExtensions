@@ -20,6 +20,10 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
             foreach (var parameter in sqlParameters)
             {
                 var sqlParameter = (IDbDataParameter)parameter;
+                if (sqlParameter.DbType == DbType.DateTime)
+                {
+                    sqlParameter.DbType = DbType.DateTime2; // sets most specific parameter DbType possible for so that precision is not lost
+                }
                 sqlParametersReloaded.Add(SqlClientHelper.CorrectParameterType(c, sqlParameter));
             }
             return sqlParametersReloaded;
