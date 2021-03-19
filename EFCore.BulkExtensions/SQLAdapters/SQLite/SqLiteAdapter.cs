@@ -330,12 +330,14 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
 
         public void Truncate(DbContext context, TableInfo tableInfo)
         {
-            context.Database.ExecuteSqlRaw(SqlQueryBuilder.DeleteTable(tableInfo.FullTableName));
+            string sql = SqlQueryBuilder.DeleteTable(tableInfo.FullTableName));
+            context.Database.ExecuteSqlRaw(sql);
         }
 
         public async Task TruncateAsync(DbContext context, TableInfo tableInfo)
         {
-            await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.DeleteTable(tableInfo.FullTableName));
+            string sql = SqlQueryBuilder.DeleteTable(tableInfo.FullTableName);
+            await context.Database.ExecuteSqlRawAsync(sql);
         }
         
           #region SqliteData

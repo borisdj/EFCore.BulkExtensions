@@ -195,7 +195,8 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                     context.Database.ExecuteSqlRaw(SqlQueryBuilder.SetIdentityInsert(tableInfo.FullTableName, true));
                 }
 
-                context.Database.ExecuteSqlRaw(SqlQueryBuilder.MergeTable(tableInfo, operationType));
+                string sql = SqlQueryBuilder.MergeTable(tableInfo, operationType);
+                context.Database.ExecuteSqlRaw(sql);
 
                 if (tableInfo.CreatedOutputTable)
                 {
