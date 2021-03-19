@@ -37,6 +37,37 @@ namespace EFCore.BulkExtensions.Tests.ValueConverters
             Assert.Equal(VcEnum.Hello.ToString(), enumStr);
         }
 
+        [Theory]
+        [InlineData(DbServer.SqlServer)]
+        [InlineData(DbServer.Sqlite)]
+        public void BatchUpdate_EntityUsingBuiltInEnumToStringConverter_UpdatesDatabaseWithEnumStringValue(DbServer databaseType)
+        {
+            ContextUtil.DbServer = databaseType;
+
+            using var db = new VcDbContext(ContextUtil.GetOptions<VcDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_ValueConverters"));
+
+            db.BulkInsertOrUpdate(this.GetTestData(db).ToList());
+
+            db.VcModels.BatchUpdate(x => new VcModel
+            {
+                Enum = VcEnum.Why
+            });
+
+            var connection = db.Database.GetDbConnection();
+            connection.Open();
+
+            using var cmd = connection.CreateCommand();
+            cmd.CommandText = "SELECT * FROM VcModels ORDER BY Id DESC";
+            cmd.CommandType = System.Data.CommandType.Text;
+
+            using var reader = cmd.ExecuteReader();
+            reader.Read();
+
+            var enumStr = reader.Field<string>("Enum");
+
+            Assert.Equal(VcEnum.Why.ToString(), enumStr);
+        }
+
         private IEnumerable<VcModel> GetTestData(DbContext db)
         {
             var one = new VcModel();
