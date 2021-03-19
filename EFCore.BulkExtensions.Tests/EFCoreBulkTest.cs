@@ -39,7 +39,7 @@ namespace EFCore.BulkExtensions.Tests
                 RunRead(isBulkOperation); // Not Yet supported for Sqlite
                 RunInsertOrUpdateOrDelete(isBulkOperation); // Not Yet supported for Sqlite
             }
-            RunDelete(isBulkOperation, databaseType);
+            //RunDelete(isBulkOperation, databaseType);
 
             //CheckQueryCache();
         }
@@ -131,7 +131,7 @@ namespace EFCore.BulkExtensions.Tests
                 {
                     var entity = new Item
                     {
-                        ItemId = 0, //isBulkOperation ? j : 0, // no loger used since order(Identity temporary filled with negative values from -N to -1) is set automaticaly with default config PreserveInsertOrder=TRUE
+                        ItemId = 0, //isBulkOperation ? j : 0, // no longer used since order(Identity temporary filled with negative values from -N to -1) is set automaticaly with default config PreserveInsertOrder=TRUE
                         Name = "name " + i,
                         Description = "info " + Guid.NewGuid().ToString().Substring(0, 3),
                         Quantity = i % 10,

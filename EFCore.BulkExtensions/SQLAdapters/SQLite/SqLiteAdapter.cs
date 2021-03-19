@@ -116,9 +116,9 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
 
                 if (operationType != OperationType.Delete && tableInfo.BulkConfig.SetOutputIdentity && tableInfo.IdentityColumnName != null)
                 {
+                    string identityPropertyName = tableInfo.PrimaryKeys.SingleOrDefault(a => a.Value == tableInfo.IdentityColumnName).Key;
                     command.CommandText = SqlQueryBuilderSqlite.SelectLastInsertRowId();
                     long lastRowIdScalar = (long)command.ExecuteScalar();
-                    string identityPropertyName = tableInfo.IdentityColumnName;
                     var identityPropertyInteger = false;
                     var identityPropertyUnsigned = false;
                     var identityPropertyByte = false;

@@ -740,7 +740,7 @@ namespace EFCore.BulkExtensions
             bool doSetIdentityColumnsForInsertOrder = BulkConfig.PreserveInsertOrder &&
                                                       entities.Count() > 1 &&
                                                       PrimaryKeys.Count() == 1 &&
-                                                      PrimaryKeys.Select(x => x.Key).First() == IdentityColumnName &&
+                                                      PrimaryKeys.Select(x => x.Value).First() == IdentityColumnName &&
                                                       Convert.ToInt64(FastPropertyDict[identityPropertyName].Get(entities[0])) == 0 &&
                                                       Convert.ToInt64(FastPropertyDict[identityPropertyName].Get(entities[1])) == 0;
             if (doSetIdentityColumnsForInsertOrder)

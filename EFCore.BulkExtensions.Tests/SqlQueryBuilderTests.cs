@@ -119,13 +119,13 @@ namespace EFCore.BulkExtensions.Tests
             {
                 Schema = "dbo",
                 TableName = nameof(Item),
-                PrimaryKeys = new List<string> { nameof(Item.ItemId) },
+                PrimaryKeys = new Dictionary<string, string> { { nameof(Item.ItemId), nameof(Item.ItemId) } },
                 TempTableSufix = "Temp1234",
                 BulkConfig = new BulkConfig()
             };
             const string nameText = nameof(Item.Name);
 
-            tableInfo.PropertyColumnNamesDict.Add(tableInfo.PrimaryKeys[0], tableInfo.PrimaryKeys[0]);
+            tableInfo.PropertyColumnNamesDict.Add(tableInfo.PrimaryKeys.Keys.FirstOrDefault(), tableInfo.PrimaryKeys.Values.FirstOrDefault());
             tableInfo.PropertyColumnNamesDict.Add(nameText, nameText);
             //compare on all columns (default)
             tableInfo.PropertyColumnNamesCompareDict = tableInfo.PropertyColumnNamesDict;
@@ -140,14 +140,14 @@ namespace EFCore.BulkExtensions.Tests
             {
                 Schema = "dbo",
                 TableName = nameof(Item),
-                PrimaryKeys = new List<string> { nameof(Item.ItemId) },
+                PrimaryKeys = new Dictionary<string, string> { { nameof(Item.ItemId), nameof(Item.ItemId) } },
                 TempTableSufix = "Temp1234",
                 BulkConfig = new BulkConfig()
             };
             const string nameText = nameof(Item.Name);
             const string timeUpdatedText = nameof(Item.TimeUpdated);
 
-            tableInfo.PropertyColumnNamesDict.Add(tableInfo.PrimaryKeys[0], tableInfo.PrimaryKeys[0]);
+            tableInfo.PropertyColumnNamesDict.Add(tableInfo.PrimaryKeys.Keys.FirstOrDefault(), tableInfo.PrimaryKeys.Values.FirstOrDefault());
             tableInfo.PropertyColumnNamesDict.Add(nameText, nameText);
             tableInfo.PropertyColumnNamesDict.Add(timeUpdatedText, timeUpdatedText);
 
@@ -165,14 +165,14 @@ namespace EFCore.BulkExtensions.Tests
             {
                 Schema = "dbo",
                 TableName = nameof(Item),
-                PrimaryKeys = new List<string> { nameof(Item.ItemId) },
+                PrimaryKeys = new Dictionary<string, string> { { nameof(Item.ItemId), nameof(Item.ItemId) } },
                 TempTableSufix = "Temp1234",
                 BulkConfig = new BulkConfig()
             };
             const string nameText = nameof(Item.Name);
             const string timeUpdatedText = nameof(Item.TimeUpdated);
 
-            tableInfo.PropertyColumnNamesDict.Add(tableInfo.PrimaryKeys[0], tableInfo.PrimaryKeys[0]);
+            tableInfo.PropertyColumnNamesDict.Add(tableInfo.PrimaryKeys.Keys.FirstOrDefault(), tableInfo.PrimaryKeys.Values.FirstOrDefault());
             tableInfo.PropertyColumnNamesDict.Add(nameText, nameText);
             tableInfo.PropertyColumnNamesDict.Add(timeUpdatedText, timeUpdatedText);
 
