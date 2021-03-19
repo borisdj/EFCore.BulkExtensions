@@ -330,7 +330,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
 
         public void Truncate(DbContext context, TableInfo tableInfo)
         {
-            string sql = SqlQueryBuilder.DeleteTable(tableInfo.FullTableName));
+            string sql = SqlQueryBuilder.DeleteTable(tableInfo.FullTableName);
             context.Database.ExecuteSqlRaw(sql);
         }
 

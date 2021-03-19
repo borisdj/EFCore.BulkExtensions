@@ -153,7 +153,7 @@ namespace EFCore.BulkExtensions
             string targetTable = tableInfo.FullTableName;
             string sourceTable = tableInfo.FullTempTableName;
             bool keepIdentity = tableInfo.BulkConfig.SqlBulkCopyOptions.HasFlag(SqlBulkCopyOptions.KeepIdentity);
-            List<string> primaryKeys = tableInfo.PrimaryKeys.Select(k => tableInfo.PropertyColumnNamesDict[k.Key]).ToList();
+            List<string> primaryKeys = tableInfo.PrimaryKeys.Values.ToList();
             List<string> columnsNames = tableInfo.PropertyColumnNamesDict.Values.ToList();
             List<string> columnsNamesOnCompare = tableInfo.PropertyColumnNamesCompareDict.Values.ToList();
             List<string> columnsNamesOnUpdate = tableInfo.PropertyColumnNamesUpdateDict.Values.ToList();
@@ -166,13 +166,17 @@ namespace EFCore.BulkExtensions
             string isUpdateStatsValue = (tableInfo.BulkConfig.CalculateStats) ? ",(CASE $action WHEN 'UPDATE' THEN 1 Else 0 END),(CASE $action WHEN 'DELETE' THEN 1 Else 0 END)" : "";
 
             if (tableInfo.BulkConfig.PreserveInsertOrder)
-                sourceTable = $"(SELECT TOP {tableInfo.NumberOfEntities} * FROM {sourceTable} ORDER BY {GetCommaSeparatedColumns(primaryKeys)})";
+            {
+                var orderBy = (primaryKeys.Count() == 0) ? "" : $"ORDER BY {GetCommaSeparatedColumns(primaryKeys)}";
+                sourceTable = $"(SELECT TOP {tableInfo.NumberOfEntities} * FROM {sourceTable} {orderBy})";
+            }
 
             string textWITH_HOLDLOCK = tableInfo.BulkConfig.WithHoldlock ? " WITH (HOLDLOCK)" : "";
 
             var q = $"MERGE {targetTable}{textWITH_HOLDLOCK} AS T " +
                     $"USING {sourceTable} AS S " +
                     $"ON {GetANDSeparatedColumns(primaryKeys, "T", "S", tableInfo.UpdateByPropertiesAreNullable)}";
+            q += (primaryKeys.Count() == 0) ? "1=0" : "";
 
             if (operationType == OperationType.Insert || operationType == OperationType.InsertOrUpdate || operationType == OperationType.InsertOrUpdateDelete)
             {

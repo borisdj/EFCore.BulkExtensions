@@ -186,6 +186,22 @@ namespace EFCore.BulkExtensions
             TimeStampColumnName = timeStampProperties.FirstOrDefault()?.GetColumnName(); // can be only One
             var allPropertiesExceptTimeStamp = allProperties.Except(timeStampProperties);
             var properties = allPropertiesExceptTimeStamp.Where(a => a.GetComputedColumnSql() == null);
+
+            var propertiesWithDefaultValues = allPropertiesExceptTimeStamp.Where(a => a.GetDefaultValueSql() != null);
+            foreach (var defaultValueProperty in propertiesWithDefaultValues)
+            {
+                var propertyType = defaultValueProperty.ClrType;
+                var instance = Activator.CreateInstance(propertyType);
+                bool listHasAllDefaultValues = !entities.Any(x => x.GetType().GetProperty(defaultValueProperty.Name).GetValue(x, null)?.ToString() != instance?.ToString());
+                if (listHasAllDefaultValues)
+                {
+                    if (BulkConfig.PropertiesToExclude == null)
+                        BulkConfig.PropertiesToExclude = new List<string>();
+                    if (!BulkConfig.PropertiesToExclude.Contains(defaultValueProperty.Name))
+                        BulkConfig.PropertiesToExclude.Add(defaultValueProperty.Name);
+                }
+            }
+
             var propertiesOnCompare = allPropertiesExceptTimeStamp.Where(a => a.GetComputedColumnSql() == null);
             var propertiesOnUpdate = allPropertiesExceptTimeStamp.Where(a => a.GetComputedColumnSql() == null);
 
