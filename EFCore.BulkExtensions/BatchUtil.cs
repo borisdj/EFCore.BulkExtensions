@@ -241,7 +241,7 @@ namespace EFCore.BulkExtensions
         /// <param name="expression"></param>
         /// <param name="sqlColumns"></param>
         /// <param name="sqlParameters"></param>
-        public static void CreateUpdateBody(BatchUpdateCreateBodyData createBodyData, Expression expression)
+        public static void CreateUpdateBody(BatchUpdateCreateBodyData createBodyData, Expression expression, string columnName = null)
         {
             var rootTypeTableInfo = createBodyData.GetTableInfoForType(createBodyData.RootType);
             var columnNameValueDict = rootTypeTableInfo.PropertyColumnNamesDict;
@@ -255,16 +255,18 @@ namespace EFCore.BulkExtensions
                 {
                     if (item is MemberAssignment assignment)
                     {
+                        string currentColumnName;
                         if (columnNameValueDict.TryGetValue(assignment.Member.Name, out string value))
-                            sqlColumns.Append($" [{tableAlias}].[{value}]");
+                            currentColumnName = value;
                         else
-                            sqlColumns.Append($" [{tableAlias}].[{assignment.Member.Name}]");
+                            currentColumnName = assignment.Member.Name;
 
+                        sqlColumns.Append($" [{tableAlias}].[{currentColumnName}]");
                         sqlColumns.Append(" =");
 
                         if (!TryCreateUpdateBodyNestedQuery(createBodyData, assignment.Expression, assignment))
                         {
-                            CreateUpdateBody(createBodyData, assignment.Expression);
+                            CreateUpdateBody(createBodyData, assignment.Expression, currentColumnName);
                         }
 
                         if (memberInitExpression.Bindings.IndexOf(item) < (memberInitExpression.Bindings.Count - 1))
@@ -293,10 +295,7 @@ namespace EFCore.BulkExtensions
 
             if (expression is ConstantExpression constantExpression)
             {
-                var constantParamName = $"param_{sqlParameters.Count}";
-                // will rely on SqlClientHelper.CorrectParameterType to fix the type before executing
-                sqlParameters.Add(new Microsoft.Data.SqlClient.SqlParameter(constantParamName, constantExpression.Value ?? DBNull.Value));
-                sqlColumns.Append($" @{constantParamName}");
+                AddSqlParameter(sqlColumns, sqlParameters, rootTypeTableInfo, columnName, constantExpression.Value);
                 return;
             }
 
@@ -305,11 +304,11 @@ namespace EFCore.BulkExtensions
                 switch (unaryExpression.NodeType)
                 {
                     case ExpressionType.Convert:
-                        CreateUpdateBody(createBodyData, unaryExpression.Operand);
+                        CreateUpdateBody(createBodyData, unaryExpression.Operand, columnName);
                         break;
                     case ExpressionType.Not:
                         sqlColumns.Append(" ~");//this way only for SQL Server 
-                        CreateUpdateBody(createBodyData, unaryExpression.Operand);
+                        CreateUpdateBody(createBodyData, unaryExpression.Operand, columnName);
                         break;
                     default: break;
                 }
@@ -322,54 +321,54 @@ namespace EFCore.BulkExtensions
                 switch (binaryExpression.NodeType)
                 {
                     case ExpressionType.Add:
-                        CreateUpdateBody(createBodyData, binaryExpression.Left);
+                        CreateUpdateBody(createBodyData, binaryExpression.Left, columnName);
                         var sqlOperator = SqlAdaptersMapping.GetAdapterDialect(createBodyData.DatabaseType)
                             .GetBinaryExpressionAddOperation(binaryExpression);
                         sqlColumns.Append(" " + sqlOperator);
-                        CreateUpdateBody(createBodyData, binaryExpression.Right);
+                        CreateUpdateBody(createBodyData, binaryExpression.Right, columnName);
                         break;
 
                     case ExpressionType.Divide:
-                        CreateUpdateBody(createBodyData, binaryExpression.Left);
+                        CreateUpdateBody(createBodyData, binaryExpression.Left, columnName);
                         sqlColumns.Append(" /");
-                        CreateUpdateBody(createBodyData, binaryExpression.Right);
+                        CreateUpdateBody(createBodyData, binaryExpression.Right, columnName);
                         break;
 
                     case ExpressionType.Multiply:
-                        CreateUpdateBody(createBodyData, binaryExpression.Left);
+                        CreateUpdateBody(createBodyData, binaryExpression.Left, columnName);
                         sqlColumns.Append(" *");
-                        CreateUpdateBody(createBodyData, binaryExpression.Right);
+                        CreateUpdateBody(createBodyData, binaryExpression.Right, columnName);
                         break;
 
                     case ExpressionType.Subtract:
-                        CreateUpdateBody(createBodyData, binaryExpression.Left);
+                        CreateUpdateBody(createBodyData, binaryExpression.Left, columnName);
                         sqlColumns.Append(" -");
-                        CreateUpdateBody(createBodyData, binaryExpression.Right);
+                        CreateUpdateBody(createBodyData, binaryExpression.Right, columnName);
                         break;
 
                     case ExpressionType.And:
-                        CreateUpdateBody(createBodyData, binaryExpression.Left);
+                        CreateUpdateBody(createBodyData, binaryExpression.Left, columnName);
                         sqlColumns.Append(" &");
-                        CreateUpdateBody(createBodyData, binaryExpression.Right);
+                        CreateUpdateBody(createBodyData, binaryExpression.Right, columnName);
                         break;
 
                     case ExpressionType.Or:
-                        CreateUpdateBody(createBodyData, binaryExpression.Left);
+                        CreateUpdateBody(createBodyData, binaryExpression.Left, columnName);
                         sqlColumns.Append(" |");
-                        CreateUpdateBody(createBodyData, binaryExpression.Right);
+                        CreateUpdateBody(createBodyData, binaryExpression.Right, columnName);
                         break;
 
                     case ExpressionType.ExclusiveOr:
-                        CreateUpdateBody(createBodyData, binaryExpression.Left);
+                        CreateUpdateBody(createBodyData, binaryExpression.Left, columnName);
                         sqlColumns.Append(" ^");
-                        CreateUpdateBody(createBodyData, binaryExpression.Right);
+                        CreateUpdateBody(createBodyData, binaryExpression.Right, columnName);
                         break;
 
                     case ExpressionType.Coalesce:
                         sqlColumns.Append("COALESCE(");
-                        CreateUpdateBody(createBodyData, binaryExpression.Left);
+                        CreateUpdateBody(createBodyData, binaryExpression.Left, columnName);
                         sqlColumns.Append(", ");
-                        CreateUpdateBody(createBodyData, binaryExpression.Right);
+                        CreateUpdateBody(createBodyData, binaryExpression.Right, columnName);
                         break;
 
                     default: 
@@ -381,10 +380,7 @@ namespace EFCore.BulkExtensions
 
             // For any other case fallback on compiling and executing the expression
             var compiledExpressionValue = Expression.Lambda(expression).Compile().DynamicInvoke();
-            var parmName = $"param_{sqlParameters.Count}";
-            // will rely on SqlClientHelper.CorrectParameterType to fix the type before executing
-            sqlParameters.Add(new Microsoft.Data.SqlClient.SqlParameter(parmName, compiledExpressionValue ?? DBNull.Value));
-            sqlColumns.Append($" @{parmName}");
+            AddSqlParameter(sqlColumns, sqlParameters, rootTypeTableInfo, columnName, compiledExpressionValue);
         }
 
         public static DbContext GetDbContext(IQueryable query)
@@ -456,6 +452,18 @@ namespace EFCore.BulkExtensions
             }
 
             return (leadingCommentsBuilder.ToString(), mainSqlQuery);
+        }
+
+        private static void AddSqlParameter(StringBuilder sqlColumns, List<object> sqlParameters, TableInfo tableInfo, string columnName, object value)
+        {
+            var parmName = $"param_{sqlParameters.Count}";
+            if (columnName != null && tableInfo.ConvertibleProperties.TryGetValue(columnName, out var valueConverter))
+            {
+                value = valueConverter.ConvertToProvider.Invoke(value);
+            }
+            // will rely on SqlClientHelper.CorrectParameterType to fix the type before executing
+            sqlParameters.Add(new Microsoft.Data.SqlClient.SqlParameter(parmName, value ?? DBNull.Value));
+            sqlColumns.Append($" @{parmName}");
         }
 
         private static readonly MethodInfo DbContextSetMethodInfo = typeof(DbContext)
