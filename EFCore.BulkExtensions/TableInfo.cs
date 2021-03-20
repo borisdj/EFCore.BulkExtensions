@@ -395,23 +395,24 @@ namespace EFCore.BulkExtensions
                         {
                             if (ownedEntityPropertyNameColumnNameDict.ContainsKey(ownedProperty.Name))
                             {
-                                string columnName = ownedEntityPropertyNameColumnNameDict[ownedProperty.Name];
+                                string ownedPropertyFullName = property.Name + "." + ownedProperty.Name;
                                 var ownedPropertyType = Nullable.GetUnderlyingType(ownedProperty.PropertyType) ?? ownedProperty.PropertyType;
 
                                 bool doAddProperty = true;
-                                if (AreSpecifiedPropertiesToInclude && !BulkConfig.PropertiesToInclude.Contains(columnName))
+                                if (AreSpecifiedPropertiesToInclude && !BulkConfig.PropertiesToInclude.Contains(ownedPropertyFullName))
                                 {
                                     doAddProperty = false;
                                 }
-                                if (AreSpecifiedPropertiesToExclude && BulkConfig.PropertiesToExclude.Contains(columnName))
+                                if (AreSpecifiedPropertiesToExclude && BulkConfig.PropertiesToExclude.Contains(ownedPropertyFullName))
                                 {
                                     doAddProperty = false;
                                 }
 
                                 if (doAddProperty)
                                 {
-                                    PropertyColumnNamesDict.Add(property.Name + "." + ownedProperty.Name, columnName);
-                                    OutputPropertyColumnNamesDict.Add(property.Name + "." + ownedProperty.Name, columnName);
+                                    string columnName = ownedEntityPropertyNameColumnNameDict[ownedProperty.Name];
+                                    PropertyColumnNamesDict.Add(ownedPropertyFullName, columnName);
+                                    OutputPropertyColumnNamesDict.Add(ownedPropertyFullName, columnName);
                                 }
                             }
                         }
@@ -424,7 +425,8 @@ namespace EFCore.BulkExtensions
         {
             foreach (var configSpecifiedPropertyName in specifiedPropertiesList)
             {
-                if (!FastPropertyDict.Any(a => a.Key == configSpecifiedPropertyName))
+
+                if (!configSpecifiedPropertyName.Contains(".") && !FastPropertyDict.Any(a => a.Key == configSpecifiedPropertyName)) // Those with dot "." skiped from validating for now since FastPropertyDict here does not contain them
                 {
                     throw new InvalidOperationException($"PropertyName '{configSpecifiedPropertyName}' specified in '{specifiedPropertiesListName}' not found in Properties.");
                 }
