@@ -128,7 +128,7 @@ var entities = new List<Item>();
 var subEntities = new List<ItemHistory>();
 for (int i = 1; i <= numberOfEntites; i++)
 {
-    var entity = new Item { ItemId = i, Name = $"Name {i}" }; //ItemId set by Db,here only to keep Insert order
+    var entity = new Item { Name = $"Name {i}" };
     entity.ItemHistories = new List<ItemHistory>()
     {
         new ItemHistory { Remark = $"Info {i}.1" },
@@ -140,8 +140,7 @@ for (int i = 1; i <= numberOfEntites; i++)
 // Option 1
 using (var transaction = context.Database.BeginTransaction())
 {
-    var bulkConfig = new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true };
-    context.BulkInsert(entities, bulkConfig);
+    context.BulkInsert(entities, new BulkConfig { SetOutputIdentity = true });
     foreach (var entity in entities) {
         foreach (var subEntity in entity.ItemHistories) {
             subEntity.ItemId = entity.ItemId; // setting FK to match its linked PK that was generated in DB
@@ -153,7 +152,7 @@ using (var transaction = context.Database.BeginTransaction())
 }
 
 // Option 2 using Graph (only for SQL Server) - all entities in relationship with main ones in list are BulkInsertUpdated
-context.BulkInsert(entities, new BulkConfig { IncludeGraph = true });
+context.BulkInsert(entities, b => b.IncludeGraph = true);
 ```
 When **CalculateStats** is set to True the result is return in `BulkConfig.StatsInfo` (*StatsNumber-Inserted/Updated*).<br>
 If used for pure Insert (with Batching) then SetOutputIdentity should also be configured because Merge have to be used.<br>
