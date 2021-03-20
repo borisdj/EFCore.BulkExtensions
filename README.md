@@ -62,13 +62,12 @@ int affected = q.BatchUpdate(new Item { Description = "Updated" }, updateColumns
 If Windows Authentication is used then in ConnectionString there should be *Trusted_Connection=True;* because Sql credentials are required to stay in connection.<br>
 
 When used directly each of these operations are separate transactions and are automatically committed.<br>
-And if we need multiple operations in single procedure then explicit transaction should be used.<br>
-For example since child tables are not automatically inserted with parent we need explicit second call:
+And if we need multiple operations in single procedure then explicit transaction should be used, for example:<br>
 ```C#
 using (var transaction = context.Database.BeginTransaction())
 {
-    context.BulkInsert(entitiesList);
-    context.BulkInsert(subEntitiesList);
+    context.BulkInsert(entities1List);
+    context.BulkInsert(entities2List);
     transaction.Commit();
 }
 ```
@@ -85,9 +84,9 @@ More info in the [Example](https://github.com/borisdj/EFCore.BulkExtensions#read
 ## BulkConfig arguments
 
 **BulkInsert_/OrUpdate/OrDelete** methods can have optional argument **BulkConfig** with properties (bool, int, object, List<string>):<br>
-{ *PreserveInsertOrder, SetOutputIdentity, BatchSize, NotifyAfter, BulkCopyTimeout, EnableStreaming, UseTempDB, UniqueTableNameTempDb, CustomDestinationTableName, TrackingEntities, WithHoldlock, CalculateStats, StatsInfo, PropertiesToInclude, PropertiesToIncludeOnCompare, PropertiesToExclude, PropertiesToIncludeOnUpdate, PropertiesToExcludeOnCompare, PropertiesToExcludeOnUpdate, UpdateByProperties, EnableShadowProperties, IncludeGraph, SRID, SqlBulkCopyOptions }*<br>
+{ *PreserveInsertOrder, SetOutputIdentity, BatchSize, NotifyAfter, BulkCopyTimeout, EnableStreaming, UseTempDB, UniqueTableNameTempDb, CustomDestinationTableName, TrackingEntities, WithHoldlock, CalculateStats, StatsInfo, PropertiesToInclude, PropertiesToIncludeOnCompare, PropertiesToExclude, PropertiesToIncludeOnUpdate, PropertiesToExcludeOnCompare, PropertiesToExcludeOnUpdate, UpdateByProperties, EnableShadowProperties, IncludeGraph, SkipClauseExistsExcept, SRID, SqlBulkCopyOptions }*<br>
 Default behaviour is <br>
-{ *PreserveInsertOrder*: true, *SetOutputIdentity*: false, *BatchSize*: 2000, *NotifyAfter*: null, *BulkCopyTimeout*: null,<br> *EnableStreaming*: false, *UseTempDB*: false, *UniqueTableNameTempDb*: true, *CustomDestinationTableName*: null, *TrackingEntities*: false, *WithHoldlock*: true,<br> *CalculateStats*: false, *StatsInfo*: null, *PropertiesToInclude*: null, *PropertiesToIncludeOnCompare* : null, *PropertiesToIncludeOnUpdate* : null, *PropertiesToExclude*: null, *PropertiesToExcludeOnCompare*: null, *PropertiesToExcludeOnUpdate*: null, *UpdateByProperties*: null, *EnableShadowProperties*: false, , *IncludeGraph*: false, *SRID*: 4326, *SqlBulkCopyOptions*: Default }<br><br>
+{ *PreserveInsertOrder*: true, *SetOutputIdentity*: false, *BatchSize*: 2000, *NotifyAfter*: null, *BulkCopyTimeout*: null,<br> *EnableStreaming*: false, *UseTempDB*: false, *UniqueTableNameTempDb*: true, *CustomDestinationTableName*: null, *TrackingEntities*: false, *WithHoldlock*: true,<br> *CalculateStats*: false, *StatsInfo*: null, *PropertiesToInclude*: null, *PropertiesToIncludeOnCompare* : null, *PropertiesToIncludeOnUpdate* : null, *PropertiesToExclude*: null, *PropertiesToExcludeOnCompare*: null, *PropertiesToExcludeOnUpdate*: null, *UpdateByProperties*: null, *EnableShadowProperties*: false, *IncludeGraph*: false, *SkipClauseExistsExcept*: false, *SRID*: 4326, *SqlBulkCopyOptions*: Default }<br><br>
 If we want to change defaults, BulkConfig should be added explicitly with one or more bool properties set to true, and/or int props like **BatchSize** to different number.<br> Config also has DelegateFunc for setting *Underlying-Connection/Transaction*, e.g. in UnderlyingTest.<br>
 When doing update we can chose to exclude one or more properties by adding their names into **PropertiesToExclude**, or if we need to update less then half column then **PropertiesToInclude** can be used. Setting both Lists are not allowed.
 
@@ -102,10 +101,10 @@ Using UpdateByProperties while also having Identity column requires that Id prop
 If **NotifyAfter** is not set it will have same value as _BatchSize_ while **BulkCopyTimeout** when not set has SqlBulkCopy default which is 30 seconds and if set to 0 it indicates no limit.<br><br>
 _SetOutputIdentity_ have purpose only when PK has Identity (usually *int* type with AutoIncrement), while if PK is Guid(sequential) created in Application there is no need for them.<br> Also Tables with Composite Keys have no Identity column so no functionality for them in that case either.
 ```C#
-var bulkConfig = new BulkConfig {SetOutputIdentity = true, BatchSize = 4000 };
+var bulkConfig = new BulkConfig { SetOutputIdentity = true, BatchSize = 4000 };
 context.BulkInsert(entList, bulkConfig);
 context.BulkInsertOrUpdate(entList, new BulkConfig { SetOutputIdentity = true });
-context.BulkInsertOrUpdate(entList, b => b.SetOutputIdentity = true); //example BulkConfig set with Action arg.
+context.BulkInsertOrUpdate(entList, b => b.SetOutputIdentity = true); // example of BulkConfig set with Action arg.
 ```
 
 **PreserveInsertOrder** is **true** by default and makes sure that entites are inserted to Db as ordered in entitiesList.<br>
@@ -128,7 +127,7 @@ var entities = new List<Item>();
 var subEntities = new List<ItemHistory>();
 for (int i = 1; i <= numberOfEntites; i++)
 {
-    var entity = new Item { ItemId = i, Name = $"Name {i}" }; //ItemId set by Db,here only to keep Insert order
+    var entity = new Item { Name = $"Name {i}" };
     entity.ItemHistories = new List<ItemHistory>()
     {
         new ItemHistory { Remark = $"Info {i}.1" },
@@ -140,8 +139,7 @@ for (int i = 1; i <= numberOfEntites; i++)
 // Option 1
 using (var transaction = context.Database.BeginTransaction())
 {
-    var bulkConfig = new BulkConfig { PreserveInsertOrder = true, SetOutputIdentity = true };
-    context.BulkInsert(entities, bulkConfig);
+    context.BulkInsert(entities, new BulkConfig { SetOutputIdentity = true });
     foreach (var entity in entities) {
         foreach (var subEntity in entity.ItemHistories) {
             subEntity.ItemId = entity.ItemId; // setting FK to match its linked PK that was generated in DB
@@ -153,7 +151,7 @@ using (var transaction = context.Database.BeginTransaction())
 }
 
 // Option 2 using Graph (only for SQL Server) - all entities in relationship with main ones in list are BulkInsertUpdated
-context.BulkInsert(entities, new BulkConfig { IncludeGraph = true });
+context.BulkInsert(entities, b => b.IncludeGraph = true);
 ```
 When **CalculateStats** is set to True the result is return in `BulkConfig.StatsInfo` (*StatsNumber-Inserted/Updated*).<br>
 If used for pure Insert (with Batching) then SetOutputIdentity should also be configured because Merge have to be used.<br>
@@ -163,6 +161,7 @@ If used for pure Insert (with Batching) then SetOutputIdentity should also be co
 **CustomDestinationTableName** can be set with 'TableName' only or with 'Schema.TableName'.<br>
 **EnableShadowProperties** to add (normal) Shadow Property and persist value. Disables automatic discrimator, use manual method.<br>
 **IncludeGraph** when set all entites that have relations with main ones from the list are also merged into theirs tables.<br>
+**SkipClauseExistsExcept** removes the clause from Merge statement, useful when need to active triggers even for same data.<br>
 **SRID** Spatial Reference Identifier - for SQL Server with NetTopologySuite.
 
 **SqlBulkCopyOptions** is Enum with [[Flags]](https://stackoverflow.com/questions/8447/what-does-the-flags-enum-attribute-mean-in-c) attribute which enables specifying one or more options:<br>
@@ -176,6 +175,7 @@ context.BulkInsert(entitiesList, null, (a) => WriteProgress(a));
 Library supports [Global Query Filters](https://docs.microsoft.com/en-us/ef/core/querying/filters) and [Value Conversions](https://docs.microsoft.com/en-us/ef/core/modeling/value-conversions) as well. BatchUpdate and named Property with [EnumToString Conversion](https://github.com/borisdj/EFCore.BulkExtensions/issues/397).</br>
 It also maps [OwnedTypes](https://docs.microsoft.com/en-us/ef/core/modeling/owned-entities), which is implemented with `DataTable` class.</br>
 With [Computed](https://docs.microsoft.com/en-us/ef/core/modeling/relational/computed-columns) and [Timestamp](https://docs.microsoft.com/en-us/ef/core/modeling/concurrency) Columns it will work in a way that they are automatically excluded from Insert. And when combined with *SetOutputIdentity* they will be Selected.<br>
+[Spatial](https://docs.microsoft.com/en-us/sql/relational-databases/spatial/spatial-data-types-overview?view=sql-server-ver15) types, like Geometry, are also supported and when Entity has one it skips clause *EXIST ... EXCEPT* because it is not comparable.<br>
 Bulk Extension methods can be [Overridden](https://github.com/borisdj/EFCore.BulkExtensions/issues/56) if required, for example to set AuditInfo.<br>
 If having problems with Deadlock there is useful info in [issue/46](https://github.com/borisdj/EFCore.BulkExtensions/issues/46).
 
