@@ -200,7 +200,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
 
                 if (tableInfo.CreatedOutputTable)
                 {
-                    tableInfo.LoadOutputData(context, type, entities);
+                    tableInfo.LoadOutputData(context, type, entities, tableInfo);
                 }
             }
             finally
@@ -259,7 +259,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
 
                 if (tableInfo.CreatedOutputTable)
                 {
-                    await tableInfo.LoadOutputDataAsync(context, type, entities, cancellationToken).ConfigureAwait(false);
+                    await tableInfo.LoadOutputDataAsync(context, type, entities, tableInfo, cancellationToken).ConfigureAwait(false);
                 }
             }
             finally
@@ -284,8 +284,9 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
         public void Read<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress) where T : class
         {
             Dictionary<string, string> previousPropertyColumnNamesDict = tableInfo.ConfigureBulkReadTableInfo(context);
-            
-            context.Database.ExecuteSqlRaw(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo));
+
+            string sql = SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo);
+            context.Database.ExecuteSqlRaw(sql);
             try
             {
                 Insert(context, type, entities, tableInfo, progress);

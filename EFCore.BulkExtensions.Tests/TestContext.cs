@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using NetTopologySuite.Geometries;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
@@ -60,6 +61,8 @@ namespace EFCore.BulkExtensions.Tests
 
             if (Database.IsSqlServer())
             {
+                modelBuilder.Entity<Document>().Property(p => p.DocumentId).HasDefaultValueSql("NEWID()");
+                modelBuilder.Entity<Document>().Property(p => p.IsActive).HasDefaultValue(true);
                 modelBuilder.Entity<Document>().Property(p => p.ContentLength).HasComputedColumnSql($"(CONVERT([int], len([{nameof(Document.Content)}])))");
 
                 modelBuilder.Entity<UdttIntInt>(entity => { entity.HasNoKey(); });
@@ -236,18 +239,23 @@ namespace EFCore.BulkExtensions.Tests
     // For testing Computed Columns
     public class Document
     {
-        public int DocumentId { get; set; }
+        //[DefaultValueSql("NEWID()")] // no native [DefaultValueSql] annotation so this is configured via FluentAPI in modelBuilder
+        [Column("Id")] // test different column Name, PK in this case
+        public Guid DocumentId { get; set; }
+
+        //[DefaultValue(true)] // EF doesn't use DefaultValue attribute, not annotation, so this is configured via FluentAPI as well
+        public bool? IsActive { get; set; }
 
         [Required]
         public string Content { get; set; }
+
+        [DatabaseGenerated(DatabaseGeneratedOption.Computed)] // Computed columns also have to be configured with FluentAPI
+        public int ContentLength { get; set; }
 
         [Timestamp]
         public byte[] VersionChange { get; set; }
 
         //public ulong RowVersion { get; set; }
-
-        [DatabaseGenerated(DatabaseGeneratedOption.Computed)] // Computed columns have to be configured with Fluent API
-        public int ContentLength { get; set; }
     }
 
     public enum InfoType

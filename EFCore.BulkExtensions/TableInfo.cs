@@ -23,7 +23,7 @@ namespace EFCore.BulkExtensions
         public string SchemaFormated => Schema != null ? $"[{Schema}]." : "";
         public string TableName { get; set; }
         public string FullTableName => $"{SchemaFormated}[{TableName}]";
-        public Dictionary<string, string> PrimaryKeys { get; set; }
+        public Dictionary<string, string> PrimaryKeysPropertyColumnNameDict { get; set; }
         public bool HasSinglePrimaryKey { get; set; }
         public bool UpdateByPropertiesAreNullable { get; set; }
 
@@ -144,7 +144,7 @@ namespace EFCore.BulkExtensions
             var primaryKeys = entityType.FindPrimaryKey()?.Properties?.ToDictionary(a => a.Name, b => b.GetColumnName());
 
             HasSinglePrimaryKey = primaryKeys?.Count == 1;
-            PrimaryKeys = AreSpecifiedUpdateByProperties ? BulkConfig.UpdateByProperties.ToDictionary(a => a, b => b) : primaryKeys;
+            PrimaryKeysPropertyColumnNameDict = AreSpecifiedUpdateByProperties ? BulkConfig.UpdateByProperties.ToDictionary(a => a, b => b) : primaryKeys;
 
             var allProperties = entityType.GetProperties().AsEnumerable();
 
@@ -187,18 +187,22 @@ namespace EFCore.BulkExtensions
             var allPropertiesExceptTimeStamp = allProperties.Except(timeStampProperties);
             var properties = allPropertiesExceptTimeStamp.Where(a => a.GetComputedColumnSql() == null);
 
-            var propertiesWithDefaultValues = allPropertiesExceptTimeStamp.Where(a => a.GetDefaultValueSql() != null);
-            foreach (var defaultValueProperty in propertiesWithDefaultValues)
+            var propertiesWithDefaultValues = allPropertiesExceptTimeStamp.Where(a => a.GetDefaultValue() != null || a.GetDefaultValueSql() != null);
+            foreach (var propertyWithDefaultValue in propertiesWithDefaultValues)
             {
-                var propertyType = defaultValueProperty.ClrType;
+                var propertyType = propertyWithDefaultValue.ClrType;
                 var instance = Activator.CreateInstance(propertyType);
-                bool listHasAllDefaultValues = !entities.Any(x => x.GetType().GetProperty(defaultValueProperty.Name).GetValue(x, null)?.ToString() != instance?.ToString());
+                bool listHasAllDefaultValues = !entities.Any(x => x.GetType().GetProperty(propertyWithDefaultValue.Name).GetValue(x, null)?.ToString() != instance?.ToString());
                 if (listHasAllDefaultValues)
                 {
                     if (BulkConfig.PropertiesToExclude == null)
+                    {
                         BulkConfig.PropertiesToExclude = new List<string>();
-                    if (!BulkConfig.PropertiesToExclude.Contains(defaultValueProperty.Name))
-                        BulkConfig.PropertiesToExclude.Add(defaultValueProperty.Name);
+                    }
+                    if (!BulkConfig.PropertiesToExclude.Contains(propertyWithDefaultValue.Name))
+                    {
+                        BulkConfig.PropertiesToExclude.Add(propertyWithDefaultValue.Name);
+                    }
                 }
             }
 
@@ -232,7 +236,7 @@ namespace EFCore.BulkExtensions
                 }
                 else // Adds PrimaryKeys to PropertyToInclude if they are not already explicitly listed
                 {
-                    foreach (var primaryKey in PrimaryKeys)
+                    foreach (var primaryKey in PrimaryKeysPropertyColumnNameDict)
                     {
                         if (!BulkConfig.PropertiesToInclude.Contains(primaryKey.Key))
                         {
@@ -250,7 +254,7 @@ namespace EFCore.BulkExtensions
                 }
             }
 
-            UpdateByPropertiesAreNullable = properties.Any(a => PrimaryKeys != null && PrimaryKeys.ContainsKey(a.Name) && a.IsNullable);
+            UpdateByPropertiesAreNullable = properties.Any(a => PrimaryKeysPropertyColumnNameDict != null && PrimaryKeysPropertyColumnNameDict.ContainsKey(a.Name) && a.IsNullable);
 
             if (AreSpecifiedPropertiesToInclude || AreSpecifiedPropertiesToExclude)
             {
@@ -327,7 +331,7 @@ namespace EFCore.BulkExtensions
 
             if (loadOnlyPKColumn)
             {
-                PropertyColumnNamesDict = properties.Where(a => PrimaryKeys.ContainsKey(a.Name)).ToDictionary(a => a.Name, b => b.GetColumnName().Replace("]", "]]"));
+                PropertyColumnNamesDict = properties.Where(a => PrimaryKeysPropertyColumnNameDict.ContainsKey(a.Name)).ToDictionary(a => a.Name, b => b.GetColumnName().Replace("]", "]]"));
             }
             else
             {
@@ -690,8 +694,8 @@ namespace EFCore.BulkExtensions
             InsertToTempTable = true;
 
             var previousPropertyColumnNamesDict = PropertyColumnNamesDict;
-            BulkConfig.PropertiesToInclude = PrimaryKeys.Select(x => x.Key).ToList();
-            PropertyColumnNamesDict = PropertyColumnNamesDict.Where(a => PrimaryKeys.ContainsKey(a.Key)).ToDictionary(i => i.Key, i => i.Value);
+            BulkConfig.PropertiesToInclude = PrimaryKeysPropertyColumnNameDict.Select(x => x.Key).ToList();
+            PropertyColumnNamesDict = PropertyColumnNamesDict.Where(a => PrimaryKeysPropertyColumnNameDict.ContainsKey(a.Key)).ToDictionary(i => i.Key, i => i.Value);
             return previousPropertyColumnNamesDict;
         }
 
@@ -721,7 +725,7 @@ namespace EFCore.BulkExtensions
                 }
             }
 
-            List<string> selectByPropertyNames = PropertyColumnNamesDict.Keys.Where(a => PrimaryKeys.ContainsKey(a)).ToList();
+            List<string> selectByPropertyNames = PropertyColumnNamesDict.Keys.Where(a => PrimaryKeysPropertyColumnNameDict.ContainsKey(a)).ToList();
 
             Dictionary<string, T> existingEntitiesDict = new Dictionary<string, T>();
             foreach (var existingEntity in existingEntities)
@@ -755,8 +759,8 @@ namespace EFCore.BulkExtensions
 
             bool doSetIdentityColumnsForInsertOrder = BulkConfig.PreserveInsertOrder &&
                                                       entities.Count() > 1 &&
-                                                      PrimaryKeys.Count() == 1 &&
-                                                      PrimaryKeys.Select(x => x.Value).First() == IdentityColumnName &&
+                                                      PrimaryKeysPropertyColumnNameDict.Count() == 1 &&
+                                                      PrimaryKeysPropertyColumnNameDict.Select(x => x.Value).First() == IdentityColumnName &&
                                                       Convert.ToInt64(FastPropertyDict[identityPropertyName].Get(entities[0])) == 0 &&
                                                       Convert.ToInt64(FastPropertyDict[identityPropertyName].Get(entities[1])) == 0;
             if (doSetIdentityColumnsForInsertOrder)
@@ -787,7 +791,7 @@ namespace EFCore.BulkExtensions
             }
         }
       
-        protected void UpdateEntitiesIdentity<T>(DbContext context, Type type, IList<T> entities, IList<T> entitiesWithOutputIdentity)
+        protected void UpdateEntitiesIdentity<T>(DbContext context, Type type, TableInfo tableInfo, IList<T> entities, IList<T> entitiesWithOutputIdentity)
         {
             var identityPropertyName = OutputPropertyColumnNamesDict.SingleOrDefault(a => a.Value == IdentityColumnName).Key;
 
@@ -795,14 +799,25 @@ namespace EFCore.BulkExtensions
             {
                 for (int i = 0; i < NumberOfEntities; i++)
                 {
-                    var propertyValue = FastPropertyDict[identityPropertyName].Get(entitiesWithOutputIdentity[i]);
-                    FastPropertyDict[identityPropertyName].Set(entities[i], propertyValue);
+                    if (identityPropertyName != null)
+                    {
+                        var identityPropertyValue = FastPropertyDict[identityPropertyName].Get(entitiesWithOutputIdentity[i]);
+                        FastPropertyDict[identityPropertyName].Set(entities[i], identityPropertyValue);
+                    }
 
                     if (TimeStampColumnName != null) // timestamp/rowversion is also generated by the SqlServer so if exist should ba updated as well
                     {
                         string timeStampPropertyName = OutputPropertyColumnNamesDict.SingleOrDefault(a => a.Value == TimeStampColumnName).Key;
                         var timeStampPropertyValue = FastPropertyDict[timeStampPropertyName].Get(entitiesWithOutputIdentity[i]);
                         FastPropertyDict[timeStampPropertyName].Set(entities[i], timeStampPropertyValue);
+                    }
+
+                    var propertiesToLoad = tableInfo.OutputPropertyColumnNamesDict.Keys.Where(a => a != identityPropertyName && a != TimeStampColumnName && // already loaded in segmet above
+                                                                                                   !tableInfo.PropertyColumnNamesDict.ContainsKey(a)); // add Computed and DefaultValues
+                    foreach (var outputPropertyName in propertiesToLoad)
+                    {
+                        var propertyValue = FastPropertyDict[outputPropertyName].Get(entitiesWithOutputIdentity[i]);
+                        FastPropertyDict[outputPropertyName].Set(entities[i], propertyValue);
                     }
                 }
             }
@@ -834,28 +849,28 @@ namespace EFCore.BulkExtensions
         // Once the following Issue gets fixed(expected in EF 3.0) this can be replaced with code segment: DirectQuery
         // https://github.com/aspnet/EntityFrameworkCore/issues/12905
         #region CompiledQuery
-        public void LoadOutputData<T>(DbContext context, IList<T> entities) where T : class
+        public void LoadOutputData<T>(DbContext context, IList<T> entities, TableInfo tableInfo) where T : class
         {
-            LoadOutputData<T>(context, typeof(T), entities);
+            LoadOutputData<T>(context, typeof(T), entities, tableInfo);
         }
 
-        public void LoadOutputData(DbContext context, Type type, IList<object> entities)
+        public void LoadOutputData(DbContext context, Type type, IList<object> entities, TableInfo tableInfo)
         {
-            LoadOutputData<object>(context, type, entities);
+            LoadOutputData<object>(context, type, entities, tableInfo);
         }
 
-        internal void LoadOutputData<T>(DbContext context, Type type, IList<T> entities) where T : class
+        internal void LoadOutputData<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo) where T : class
         {
             bool hasIdentity = OutputPropertyColumnNamesDict.Any(a => a.Value == IdentityColumnName);
-            int totallNumber = entities.Count;
-            if (BulkConfig.SetOutputIdentity && hasIdentity)
+            int totalNumber = entities.Count;
+            if (BulkConfig.SetOutputIdentity && tableInfo.HasSinglePrimaryKey)
             {
                 string sqlQuery = SqlQueryBuilder.SelectFromOutputTable(this);
                 var entitiesWithOutputIdentity = (typeof(T) == type) ? QueryOutputTable<T>(context, sqlQuery).ToList() :
                     QueryOutputTable(context, type, sqlQuery).Cast<T>().ToList();
 
-                UpdateEntitiesIdentity(context, type, entities, entitiesWithOutputIdentity);
-                totallNumber = entitiesWithOutputIdentity.Count;
+                UpdateEntitiesIdentity(context, type, tableInfo, entities, entitiesWithOutputIdentity);
+                totalNumber = entitiesWithOutputIdentity.Count;
             }
             if (BulkConfig.CalculateStats)
             {
@@ -865,22 +880,22 @@ namespace EFCore.BulkExtensions
                 {
                     StatsNumberUpdated = numberUpdated,
                     StatsNumberDeleted = numberDeleted,
-                    StatsNumberInserted = totallNumber - numberUpdated - numberDeleted
+                    StatsNumberInserted = totalNumber - numberUpdated - numberDeleted
                 };
             }
         }
 
-        public async Task LoadOutputDataAsync<T>(DbContext context, IList<T> entities, CancellationToken cancellationToken) where T : class
+        public async Task LoadOutputDataAsync<T>(DbContext context, IList<T> entities, TableInfo tableInfo, CancellationToken cancellationToken) where T : class
         {
-            await LoadOutputDataAsync<T>(context, typeof(T), entities, cancellationToken).ConfigureAwait(false);
+            await LoadOutputDataAsync<T>(context, typeof(T), entities, tableInfo, cancellationToken).ConfigureAwait(false);
         }
 
-        public async Task LoadOutputDataAsync(DbContext context, Type type, IList<object> entities, CancellationToken cancellationToken)
+        public async Task LoadOutputDataAsync(DbContext context, Type type, IList<object> entities, TableInfo tableInfo, CancellationToken cancellationToken)
         {
-            await LoadOutputDataAsync<object>(context, type, entities, cancellationToken).ConfigureAwait(false);
+            await LoadOutputDataAsync<object>(context, type, entities, tableInfo, cancellationToken).ConfigureAwait(false);
         }
 
-        internal async Task LoadOutputDataAsync<T>(DbContext context, Type type, IList<T> entities, CancellationToken cancellationToken) where T : class
+        internal async Task LoadOutputDataAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, CancellationToken cancellationToken) where T : class
         {
             bool hasIdentity = OutputPropertyColumnNamesDict.Any(a => a.Value == IdentityColumnName);
             int totallNumber = entities.Count;
@@ -888,9 +903,10 @@ namespace EFCore.BulkExtensions
             {
                 string sqlQuery = SqlQueryBuilder.SelectFromOutputTable(this);
                 //var entitiesWithOutputIdentity = await QueryOutputTableAsync<T>(context, sqlQuery).ToListAsync(cancellationToken).ConfigureAwait(false); // TempFIX
-                var entitiesWithOutputIdentity = (typeof(T) == type) ? QueryOutputTable<T>(context, sqlQuery).ToList() :
-                    QueryOutputTable(context, type, sqlQuery).Cast<T>().ToList();
-                UpdateEntitiesIdentity(context, type, entities, entitiesWithOutputIdentity);
+                var entitiesWithOutputIdentity = (typeof(T) == type) ?
+                                                    QueryOutputTable<T>(context, sqlQuery).ToList() :
+                                                    QueryOutputTable(context, type, sqlQuery).Cast<T>().ToList();
+                UpdateEntitiesIdentity(context, type, tableInfo, entities, entitiesWithOutputIdentity);
                 totallNumber = entitiesWithOutputIdentity.Count;
             }
             if (BulkConfig.CalculateStats)
@@ -938,7 +954,7 @@ namespace EFCore.BulkExtensions
             {
                 expression = (ctx) => ctx.Set<T>().FromSqlRaw(sqlQuery).AsNoTracking();
             }
-            return ordered ? Expression.Lambda<Func<DbContext, IQueryable<T>>>(OrderBy(typeof(T), expression.Body, PrimaryKeys.Select(x => x.Key).First()), expression.Parameters) : expression;
+            return ordered ? Expression.Lambda<Func<DbContext, IQueryable<T>>>(OrderBy(typeof(T), expression.Body, PrimaryKeysPropertyColumnNameDict.Select(x => x.Key).First()), expression.Parameters) : expression;
 
             // ALTERNATIVELY OrderBy with DynamicLinq ('using System.Linq.Dynamic.Core;' NuGet required) that eliminates need for custom OrderBy<T> method with Expression.
             //var queryOrdered = query.OrderBy(PrimaryKeys[0]);
@@ -956,7 +972,7 @@ namespace EFCore.BulkExtensions
             {
                 expression = Expression.Call(typeof(EntityFrameworkQueryableExtensions), "AsNoTracking", new Type[] { entityType }, expression);
             }
-            expression = ordered ? OrderBy(entityType, expression, PrimaryKeys.Select(x => x.Key).First()) : expression;
+            expression = ordered ? OrderBy(entityType, expression, PrimaryKeysPropertyColumnNameDict.Select(x => x.Key).First()) : expression;
             return Expression.Lambda<Func<DbContext, IEnumerable>>(expression, parameter);
 
             // ALTERNATIVELY OrderBy with DynamicLinq ('using System.Linq.Dynamic.Core;' NuGet required) that eliminates need for custom OrderBy<T> method with Expression.

@@ -21,10 +21,10 @@ namespace EFCore.BulkExtensions.Tests
             ContextUtil.DbServer = databaseType;
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
-                context.BulkDelete(context.Documents.ToList());
+                context.Truncate<Document>();
 
                 var entities = new List<Document>();
-                for (int i = 0; i < EntitiesNumber; i++)
+                for (int i = 1; i <= EntitiesNumber; i++)
                 {
                     var entity = new Document
                     {
@@ -32,6 +32,7 @@ namespace EFCore.BulkExtensions.Tests
                     };
                     if (databaseType == DbServer.Sqlite)
                     {
+                        entity.DocumentId = Guid.NewGuid(); // Sqlite has no AutoIncrement for Guid that is stored as type 'Text'
                         entity.ContentLength = entity.Content.Length;
                     }
                     entities.Add(entity);
@@ -40,10 +41,11 @@ namespace EFCore.BulkExtensions.Tests
                 //context.BulkInsert(entities, new BulkConfig { SetOutputIdentity = true });
                 context.BulkInsert(entities, bulkAction => bulkAction.SetOutputIdentity = true); // example of setting BulkConfig with Action argument
 
+                /*var entitiesRead = new List<Document>();
                 if (databaseType == DbServer.SqlServer)
                 {
-                    context.BulkRead(entities, new BulkConfig() { SetOutputIdentity = true }); //  Not Yet supported for Sqlite (To Test BulkRead with ComputedColumns)
-                }
+                    context.BulkRead(entitiesRead, new BulkConfig() { SetOutputIdentity = true }); //  Not Yet supported for Sqlite (To Test BulkRead with ComputedColumns)
+                }*/
             }
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {

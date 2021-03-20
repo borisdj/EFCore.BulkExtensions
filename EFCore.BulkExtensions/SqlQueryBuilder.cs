@@ -72,7 +72,7 @@ namespace EFCore.BulkExtensions
         public static string SelectFromOutputTable(TableInfo tableInfo)
         {
             List<string> columnsNames = tableInfo.OutputPropertyColumnNamesDict.Values.ToList();
-            var q = $"SELECT {GetCommaSeparatedColumns(columnsNames)} FROM {tableInfo.FullTempOutputTableName} WHERE [{tableInfo.PrimaryKeys.Select(x => x.Value).FirstOrDefault()}] IS NOT NULL";
+            var q = $"SELECT {GetCommaSeparatedColumns(columnsNames)} FROM {tableInfo.FullTempOutputTableName} WHERE [{tableInfo.PrimaryKeysPropertyColumnNameDict.Select(x => x.Value).FirstOrDefault()}] IS NOT NULL";
             return q;
         }
 
@@ -133,7 +133,7 @@ namespace EFCore.BulkExtensions
             string sourceTable = tableInfo.FullTableName;
             string joinTable = tableInfo.FullTempTableName;
             List<string> columnsNames = tableInfo.PropertyColumnNamesDict.Values.ToList();
-            List<string> selectByPropertyNames = tableInfo.PropertyColumnNamesDict.Where(a => tableInfo.PrimaryKeys.ContainsKey(a.Key)).Select(a => a.Value).ToList();
+            List<string> selectByPropertyNames = tableInfo.PropertyColumnNamesDict.Where(a => tableInfo.PrimaryKeysPropertyColumnNameDict.ContainsKey(a.Key)).Select(a => a.Value).ToList();
 
             var q = $"SELECT {GetCommaSeparatedColumns(columnsNames, "S")} FROM {sourceTable} AS S " +
                     $"JOIN {joinTable} AS J " +
@@ -153,7 +153,7 @@ namespace EFCore.BulkExtensions
             string targetTable = tableInfo.FullTableName;
             string sourceTable = tableInfo.FullTempTableName;
             bool keepIdentity = tableInfo.BulkConfig.SqlBulkCopyOptions.HasFlag(SqlBulkCopyOptions.KeepIdentity);
-            List<string> primaryKeys = tableInfo.PrimaryKeys.Values.ToList();
+            List<string> primaryKeys = tableInfo.PrimaryKeysPropertyColumnNameDict.Where(a => tableInfo.PropertyColumnNamesDict.ContainsKey(a.Key)).Select(a => a.Value).ToList();
             List<string> columnsNames = tableInfo.PropertyColumnNamesDict.Values.ToList();
             List<string> columnsNamesOnCompare = tableInfo.PropertyColumnNamesCompareDict.Values.ToList();
             List<string> columnsNamesOnUpdate = tableInfo.PropertyColumnNamesUpdateDict.Values.ToList();
@@ -189,7 +189,7 @@ namespace EFCore.BulkExtensions
             {
 
                 q += $" WHEN MATCHED" +
-                     (tableInfo.HasSpatialType ? "" : // The data type geography cannot be used as an operand to the UNION, INTERSECT or EXCEPT operators because it is not comparable
+                     (tableInfo.BulkConfig.SkipClauseExistsExcept || tableInfo.HasSpatialType ? "" : // The data type Geography (Spatial) cannot be used as an operand to the UNION, INTERSECT or EXCEPT operators because it is not comparable
                       $" AND EXISTS (SELECT {GetCommaSeparatedColumns(compareColumnNames, "S")}" + // EXISTS better handles nulls
                       $" EXCEPT SELECT {GetCommaSeparatedColumns(compareColumnNames, "T")})"       // EXCEPT does not update if all values are same
                      )+
