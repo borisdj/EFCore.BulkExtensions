@@ -101,10 +101,10 @@ Using UpdateByProperties while also having Identity column requires that Id prop
 If **NotifyAfter** is not set it will have same value as _BatchSize_ while **BulkCopyTimeout** when not set has SqlBulkCopy default which is 30 seconds and if set to 0 it indicates no limit.<br><br>
 _SetOutputIdentity_ have purpose only when PK has Identity (usually *int* type with AutoIncrement), while if PK is Guid(sequential) created in Application there is no need for them.<br> Also Tables with Composite Keys have no Identity column so no functionality for them in that case either.
 ```C#
-var bulkConfig = new BulkConfig {SetOutputIdentity = true, BatchSize = 4000 };
+var bulkConfig = new BulkConfig { SetOutputIdentity = true, BatchSize = 4000 };
 context.BulkInsert(entList, bulkConfig);
 context.BulkInsertOrUpdate(entList, new BulkConfig { SetOutputIdentity = true });
-context.BulkInsertOrUpdate(entList, b => b.SetOutputIdentity = true); //example BulkConfig set with Action arg.
+context.BulkInsertOrUpdate(entList, b => b.SetOutputIdentity = true); // example of BulkConfig set with Action arg.
 ```
 
 **PreserveInsertOrder** is **true** by default and makes sure that entites are inserted to Db as ordered in entitiesList.<br>
