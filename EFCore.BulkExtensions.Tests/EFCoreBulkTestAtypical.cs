@@ -16,9 +16,9 @@ namespace EFCore.BulkExtensions.Tests
         [Theory]
         [InlineData(DbServer.SqlServer)]
         [InlineData(DbServer.Sqlite)] // Does NOT have Computed Columns
-        private void ComputedAndDefaultValuesTest(DbServer databaseType)
+        private void ComputedAndDefaultValuesTest(DbServer dbServer)
         {
-            ContextUtil.DbServer = databaseType;
+            ContextUtil.DbServer = dbServer;
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 context.Truncate<Document>();
@@ -30,7 +30,7 @@ namespace EFCore.BulkExtensions.Tests
                     {
                         Content = "Info " + i
                     };
-                    if (databaseType == DbServer.Sqlite)
+                    if (dbServer == DbServer.Sqlite)
                     {
                         entity.DocumentId = Guid.NewGuid();
                         entity.ContentLength = entity.Content.Length;
@@ -54,9 +54,9 @@ namespace EFCore.BulkExtensions.Tests
         [Theory]
         [InlineData(DbServer.SqlServer)]
         //[InlineData(DbServer.Sqlite)] // No TimeStamp column type but can be set with DefaultValueSql: "CURRENT_TIMESTAMP" as it is in OnModelCreating() method.
-        private void TimeStampTest(DbServer databaseType)
+        private void TimeStampTest(DbServer dbServer)
         {
-            ContextUtil.DbServer = databaseType;
+            ContextUtil.DbServer = dbServer;
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 context.Truncate<File>();
@@ -105,9 +105,9 @@ namespace EFCore.BulkExtensions.Tests
         [Theory]
         [InlineData(DbServer.SqlServer)]
         [InlineData(DbServer.Sqlite)]
-        private void CompositeKeyTest(DbServer databaseType)
+        private void CompositeKeyTest(DbServer dbServer)
         {
-            ContextUtil.DbServer = databaseType;
+            ContextUtil.DbServer = dbServer;
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 context.Truncate<UserRole>();
@@ -144,9 +144,9 @@ namespace EFCore.BulkExtensions.Tests
         [Theory]
         [InlineData(DbServer.SqlServer)]
         [InlineData(DbServer.Sqlite)]
-        private void DiscriminatorShadowTest(DbServer databaseType)
+        private void DiscriminatorShadowTest(DbServer dbServer)
         {
-            ContextUtil.DbServer = databaseType;
+            ContextUtil.DbServer = dbServer;
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 context.BulkDelete(context.Students.ToList());
@@ -198,9 +198,9 @@ namespace EFCore.BulkExtensions.Tests
         [Theory]
         [InlineData(DbServer.SqlServer)]
         [InlineData(DbServer.Sqlite)]
-        private void ValueConversionTest(DbServer databaseType)
+        private void ValueConversionTest(DbServer dbServer)
         {
-            ContextUtil.DbServer = databaseType;
+            ContextUtil.DbServer = dbServer;
             var dateTime = DateTime.Today;
 
             using (var context = new TestContext(ContextUtil.GetOptions()))
@@ -223,7 +223,7 @@ namespace EFCore.BulkExtensions.Tests
                 context.BulkInsert(entities);
             }
 
-            if (databaseType == DbServer.SqlServer)
+            if (dbServer == DbServer.SqlServer)
             {
                 using (var context = new TestContext(ContextUtil.GetOptions()))
                 {
@@ -253,12 +253,12 @@ namespace EFCore.BulkExtensions.Tests
         [Theory]
         [InlineData(DbServer.SqlServer)]
         [InlineData(DbServer.Sqlite)]
-        private void OwnedTypesTest(DbServer databaseType)
+        private void OwnedTypesTest(DbServer dbServer)
         {
-            ContextUtil.DbServer = databaseType;
+            ContextUtil.DbServer = dbServer;
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
-                if (databaseType == DbServer.SqlServer)
+                if (dbServer == DbServer.SqlServer)
                 {
                     context.Truncate<ChangeLog>();
                     context.Database.ExecuteSqlRaw("TRUNCATE TABLE [" + nameof(ChangeLog) + "]");
@@ -297,7 +297,7 @@ namespace EFCore.BulkExtensions.Tests
                 }
                 context.BulkInsert(entities);
 
-                if (databaseType == DbServer.SqlServer)
+                if (dbServer == DbServer.SqlServer)
                 {
                     context.BulkRead(
                         entities,
@@ -314,12 +314,12 @@ namespace EFCore.BulkExtensions.Tests
         [Theory]
         [InlineData(DbServer.SqlServer)]
         //[InlineData(DbServer.Sqlite)] Not supported
-        private void ShadowFKPropertiesTest(DbServer databaseType) // with Foreign Key as Shadow Property
+        private void ShadowFKPropertiesTest(DbServer dbServer) // with Foreign Key as Shadow Property
         {
-            ContextUtil.DbServer = databaseType;
+            ContextUtil.DbServer = dbServer;
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
-                if (databaseType == DbServer.SqlServer)
+                if (dbServer == DbServer.SqlServer)
                 {
                     context.Truncate<ItemLink>();
                     context.Database.ExecuteSqlRaw("TRUNCATE TABLE [" + nameof(ItemLink) + "]");
@@ -360,7 +360,7 @@ namespace EFCore.BulkExtensions.Tests
                 }
                 context.BulkInsert(entities);
 
-                if (databaseType == DbServer.SqlServer)
+                if (dbServer == DbServer.SqlServer)
                 {
                     context.BulkRead(entities);
                     foreach (var entity in entities)

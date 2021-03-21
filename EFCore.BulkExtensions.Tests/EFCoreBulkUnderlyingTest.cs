@@ -19,11 +19,11 @@ namespace EFCore.BulkExtensions.Tests
 
         [Theory]
         [InlineData(true)]
-        public void OperationsTest(bool isBulkOperation)
+        public void OperationsTest(bool isBulk)
         {
-            RunDelete(isBulkOperation);
-            RunInsert(isBulkOperation);
-            RunDelete(isBulkOperation);
+            RunDelete(isBulk);
+            RunInsert(isBulk);
+            RunDelete(isBulk);
         }
 
         public static DbContextOptions GetOptions()
@@ -37,7 +37,7 @@ namespace EFCore.BulkExtensions.Tests
             return builder.Options;
         }
 
-        private void RunInsert(bool isBulkOperation)
+        private void RunInsert(bool isBulk)
         {
             using (var context = new TestContext(GetOptions()))
             {
@@ -47,7 +47,7 @@ namespace EFCore.BulkExtensions.Tests
                 {
                     var entity = new Item
                     {
-                        ItemId = isBulkOperation ? i : 0,
+                        ItemId = isBulk ? i : 0,
                         Name = "name " + i,
                         Description = "info " + Guid.NewGuid().ToString().Substring(0, 3),
                         Quantity = i % 10,
@@ -72,7 +72,7 @@ namespace EFCore.BulkExtensions.Tests
                     entities.Add(entity);
                 }
 
-                if (isBulkOperation)
+                if (isBulk)
                 {
                     using (var transaction = context.Database.BeginTransaction())
                     {
@@ -123,13 +123,13 @@ namespace EFCore.BulkExtensions.Tests
             }
         }
 
-        private void RunDelete(bool isBulkOperation)
+        private void RunDelete(bool isBulk)
         {
             using (var context = new TestContext(GetOptions()))
             {
                 var entities = AllItemsQuery(context).ToList();
                 // ItemHistories will also be deleted because of Relationship - ItemId (Delete Rule: Cascade)
-                if (isBulkOperation)
+                if (isBulk)
                 {
                     context.BulkDelete(entities, new BulkConfig()
                     {

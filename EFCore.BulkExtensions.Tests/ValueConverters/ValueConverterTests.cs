@@ -14,9 +14,9 @@ namespace EFCore.BulkExtensions.Tests.ValueConverters
         [Theory]
         [InlineData(DbServer.SqlServer)]
         [InlineData(DbServer.Sqlite)]
-        public void BulkInsertOrUpdate_EntityUsingBuiltInEnumToStringConverter_SavesToDatabase(DbServer databaseType)
+        public void BulkInsertOrUpdate_EntityUsingBuiltInEnumToStringConverter_SavesToDatabase(DbServer dbServer)
         {
-            ContextUtil.DbServer = databaseType;
+            ContextUtil.DbServer = dbServer;
 
             using var db = new VcDbContext(ContextUtil.GetOptions<VcDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_ValueConverters"));
 
@@ -40,9 +40,9 @@ namespace EFCore.BulkExtensions.Tests.ValueConverters
         [Theory]
         [InlineData(DbServer.SqlServer)]
         [InlineData(DbServer.Sqlite)]
-        public void BatchUpdate_EntityUsingBuiltInEnumToStringConverter_UpdatesDatabaseWithEnumStringValue(DbServer databaseType)
+        public void BatchUpdate_EntityUsingBuiltInEnumToStringConverter_UpdatesDatabaseWithEnumStringValue(DbServer dbServer)
         {
-            ContextUtil.DbServer = databaseType;
+            ContextUtil.DbServer = dbServer;
 
             using var db = new VcDbContext(ContextUtil.GetOptions<VcDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_ValueConverters"));
 

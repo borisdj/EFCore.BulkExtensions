@@ -15,16 +15,16 @@ namespace EFCore.BulkExtensions.Tests
         [Theory]
         [InlineData(DbServer.SqlServer)]
         [InlineData(DbServer.Sqlite)]
-        public async Task BatchTestAsync(DbServer databaseType)
+        public async Task BatchTestAsync(DbServer dbServer)
         {
-            ContextUtil.DbServer = databaseType;
+            ContextUtil.DbServer = dbServer;
 
-            await RunDeleteAllAsync(databaseType);
+            await RunDeleteAllAsync(dbServer);
             await RunInsertAsync();
-            await RunBatchUpdateAsync(databaseType);
+            await RunBatchUpdateAsync(dbServer);
 
             int deletedEntities = 1;
-            if (databaseType == DbServer.SqlServer)
+            if (dbServer == DbServer.SqlServer)
             {
                 deletedEntities = await RunTopBatchDeleteAsync();
             }
@@ -44,14 +44,14 @@ namespace EFCore.BulkExtensions.Tests
                 Assert.StartsWith("name ", lastItem.Name);
                 Assert.EndsWith(" Concatenated", lastItem.Name);
 
-                if (databaseType == DbServer.SqlServer)
+                if (dbServer == DbServer.SqlServer)
                 {
                     Assert.EndsWith(" TOP(1)", firstItem.Name);
                 }
             }
         }
 
-        internal async Task RunDeleteAllAsync(DbServer databaseType)
+        internal async Task RunDeleteAllAsync(DbServer dbServer)
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
@@ -61,11 +61,11 @@ namespace EFCore.BulkExtensions.Tests
                 //await context.Items.BatchDeleteAsync(); // TODO: Use after BatchDelete gets implemented for v3.0 
                 await context.BulkDeleteAsync(context.Items.ToList());
 
-                if (databaseType == DbServer.SqlServer)
+                if (dbServer == DbServer.SqlServer)
                 {
                     await context.Database.ExecuteSqlRawAsync("DBCC CHECKIDENT('[dbo].[Item]', RESEED, 0);").ConfigureAwait(false);
                 }
-                if (databaseType == DbServer.Sqlite)
+                if (dbServer == DbServer.Sqlite)
                 {
                     await context.Database.ExecuteSqlRawAsync("DELETE FROM sqlite_sequence WHERE name = 'Item';").ConfigureAwait(false);
                 }
@@ -96,7 +96,7 @@ namespace EFCore.BulkExtensions.Tests
             }
         }
 
-        private async Task RunBatchUpdateAsync(DbServer databaseType)
+        private async Task RunBatchUpdateAsync(DbServer dbServer)
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
@@ -105,11 +105,11 @@ namespace EFCore.BulkExtensions.Tests
                 decimal price = 0;
 
                 var query = context.Items.AsQueryable();
-                if (databaseType == DbServer.SqlServer)
+                if (dbServer == DbServer.SqlServer)
                 {
                     query = query.Where(a => a.ItemId <= 500 && a.Price >= price);
                 }
-                if (databaseType == DbServer.Sqlite)
+                if (dbServer == DbServer.Sqlite)
                 {
                     query = query.Where(a => a.ItemId <= 500); // Sqlite currently does Not support multiple conditions
                 }
@@ -118,7 +118,7 @@ namespace EFCore.BulkExtensions.Tests
 
                 await query.BatchUpdateAsync(a => new Item { Name = a.Name + " Concatenated", Quantity = a.Quantity + 100, Price = null }); // example of BatchUpdate value Increment/Decrement
 
-                if (databaseType == DbServer.SqlServer) // Sqlite currently does Not support Take(): LIMIT
+                if (dbServer == DbServer.SqlServer) // Sqlite currently does Not support Take(): LIMIT
                 {
                     query = context.Items.Where(a => a.ItemId <= 500 && a.Price == null);
                     await query.Take(1).BatchUpdateAsync(a => new Item { Name = a.Name + " TOP(1)", Quantity = a.Quantity + 100 }); // example of BatchUpdate with TOP(1)
@@ -132,7 +132,7 @@ namespace EFCore.BulkExtensions.Tests
                                                 .BatchUpdateAsync(a => new Item() { TimeUpdated = DateTime.Now })
                                                 .ConfigureAwait(false);
 
-                if (databaseType == DbServer.SqlServer) // Sqlite Not supported
+                if (dbServer == DbServer.SqlServer) // Sqlite Not supported
                 {
                     var newValue = 5;
                     await context.Parents.Where(parent => parent.ParentId == 1)

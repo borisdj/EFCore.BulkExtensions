@@ -16,16 +16,16 @@ namespace EFCore.BulkExtensions.Tests
         [Theory]
         [InlineData(DbServer.SqlServer)]
         [InlineData(DbServer.Sqlite)]
-        public void BatchTest(DbServer databaseType)
+        public void BatchTest(DbServer dbServer)
         {
-            ContextUtil.DbServer = databaseType;
+            ContextUtil.DbServer = dbServer;
 
-            RunDeleteAll(databaseType);
+            RunDeleteAll(dbServer);
             RunInsert();
-            RunBatchUpdate(databaseType);
+            RunBatchUpdate(dbServer);
 
             int deletedEntities = 1;
-            if (databaseType == DbServer.SqlServer)
+            if (dbServer == DbServer.SqlServer)
             {
                 RunBatchUpdate_UsingNavigationPropertiesThatTranslateToAnInnerQuery();
                 deletedEntities = RunTopBatchDelete();
@@ -51,18 +51,18 @@ namespace EFCore.BulkExtensions.Tests
                 Assert.StartsWith("name ", lastItem.Name);
                 Assert.EndsWith(" Concatenated", lastItem.Name);
 
-                if (databaseType == DbServer.SqlServer)
+                if (dbServer == DbServer.SqlServer)
                 {
                     Assert.EndsWith(" TOP(1)", firstItem.Name);
                 }
             }
 
-            if (databaseType == DbServer.SqlServer)
+            if (dbServer == DbServer.SqlServer)
             {
                 RunUdttBatch();
             }
 
-            if (databaseType == DbServer.SqlServer)
+            if (dbServer == DbServer.SqlServer)
             {
                 // Removing ORDER BY and CTE's are not implemented for SQLite.
                 RunOrderByDeletes();
@@ -70,7 +70,7 @@ namespace EFCore.BulkExtensions.Tests
             }
         }
 
-        internal void RunDeleteAll(DbServer databaseType)
+        internal void RunDeleteAll(DbServer dbServer)
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
@@ -80,18 +80,18 @@ namespace EFCore.BulkExtensions.Tests
                 context.Items.BatchDelete();
                 context.BulkDelete(context.Items.ToList());
 
-                if (databaseType == DbServer.SqlServer)
+                if (dbServer == DbServer.SqlServer)
                 {
                     context.Database.ExecuteSqlRaw("DBCC CHECKIDENT('[dbo].[Item]', RESEED, 0);");
                 }
-                if (databaseType == DbServer.Sqlite)
+                if (dbServer == DbServer.Sqlite)
                 {
                     context.Database.ExecuteSqlRaw("DELETE FROM sqlite_sequence WHERE name = 'Item';");
                 }
             }
         }
 
-        private void RunBatchUpdate(DbServer databaseType)
+        private void RunBatchUpdate(DbServer dbServer)
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
@@ -100,7 +100,7 @@ namespace EFCore.BulkExtensions.Tests
                 decimal price = 0;
 
                 var query = context.Items.AsQueryable();
-                if (databaseType == DbServer.SqlServer)
+                if (dbServer == DbServer.SqlServer)
                 {
                     query = query.Where(a => a.ItemId <= 500 && a.Price >= price);
                 }
@@ -113,7 +113,7 @@ namespace EFCore.BulkExtensions.Tests
                 //   Either rewrite the query in a form that can be translated, or switch to client evaluation explicitly by inserting a call to either AsEnumerable(), AsAsyncEnumerable(), ToList(), or ToListAsync().
                 //   See https://go.microsoft.com/fwlink/?linkid=2101038 for more information.
                 //   QueryableMethodTranslatingExpressionVisitor.<VisitMethodCall>g__CheckTranslated|8_0(ShapedQueryExpression translated, <>c__DisplayClass8_0& )
-                if (databaseType == DbServer.Sqlite)
+                if (dbServer == DbServer.Sqlite)
                 {
                     query = query.Where(a => a.ItemId <= 500); // Sqlite currently does Not support multiple conditions
                 }
@@ -124,7 +124,7 @@ namespace EFCore.BulkExtensions.Tests
                 var suffix = " Concatenated";
                 query.BatchUpdate(a => new Item { Name = a.Name + suffix, Quantity = a.Quantity + incrementStep }); // example of BatchUpdate Increment/Decrement value in variable
 
-                if (databaseType == DbServer.SqlServer) // Sqlite currently does Not support Take(): LIMIT
+                if (dbServer == DbServer.SqlServer) // Sqlite currently does Not support Take(): LIMIT
                 {
                     query.Take(1).BatchUpdate(a => new Item { Name = a.Name + " TOP(1)", Quantity = a.Quantity + incrementStep }); // example of BatchUpdate with TOP(1)
                 }

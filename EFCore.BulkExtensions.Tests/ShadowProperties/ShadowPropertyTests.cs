@@ -14,9 +14,9 @@ namespace EFCore.BulkExtensions.Tests.ShadowProperties
         [Theory]
         [InlineData(DbServer.SqlServer)]
         [InlineData(DbServer.Sqlite)]
-        public void BulkInsertOrUpdate_EntityWithShadowProperties_SavesToDatabase(DbServer databaseType)
+        public void BulkInsertOrUpdate_EntityWithShadowProperties_SavesToDatabase(DbServer dbServer)
         {
-            ContextUtil.DbServer = databaseType;
+            ContextUtil.DbServer = dbServer;
 
             using var db = new SpDbContext(ContextUtil.GetOptions<SpDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_ShadowProperties"));
 
