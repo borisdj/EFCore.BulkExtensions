@@ -162,7 +162,7 @@ If used for pure Insert (with Batching) then SetOutputIdentity should also be co
 **EnableShadowProperties** to add (normal) Shadow Property and persist value. Disables automatic discrimator, use manual method.<br>
 **IncludeGraph** when set all entites that have relations with main ones from the list are also merged into theirs tables.<br>
 **SkipClauseExistsExcept** removes the clause from Merge statement, useful when need to active triggers even for same data.<br>
-**DoNotUpdateIfTimeStampChanged** when set will check TimeStamp for Concurrency and ones with conflict will (not be updated)[https://github.com/borisdj/EFCore.BulkExtensions/issues/469#issuecomment-803662721].<br>
+**DoNotUpdateIfTimeStampChanged** when set will check TimeStamp for Concurrency and ones with conflict will [not be updated](https://github.com/borisdj/EFCore.BulkExtensions/issues/469#issuecomment-803662721).<br>
 **SRID** Spatial Reference Identifier - for SQL Server with NetTopologySuite.
 
 **SqlBulkCopyOptions** is Enum with [[Flags]](https://stackoverflow.com/questions/8447/what-does-the-flags-enum-attribute-mean-in-c) attribute which enables specifying one or more options:<br>
