@@ -92,7 +92,18 @@ namespace EFCore.BulkExtensions.Tests
 
                     if (bulkConfig.TimeStampInfo?.NumberOfSkippedForUpdate > 0)
                     {
-                        transaction.Rollback();
+                        //Options, based on needs:
+
+                        // 1. rollback entire Update
+                        transaction.Rollback(); // 1. rollback entire Update
+
+                        // 2. throw Exception
+                        //throw new DbUpdateConcurrencyException()
+
+                        // 3. Update them again
+
+                        // 4. Skipped them
+
                     }
                     else
                     {
