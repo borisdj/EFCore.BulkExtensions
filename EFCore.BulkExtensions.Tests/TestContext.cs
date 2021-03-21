@@ -22,6 +22,7 @@ namespace EFCore.BulkExtensions.Tests
         public DbSet<UserRole> UserRoles { get; set; }
 
         public DbSet<Document> Documents { get; set; }
+        public DbSet<File> Files { get; set; }
         public DbSet<Person> Persons { get; set; }
         public DbSet<Student> Students { get; set; }
         public DbSet<Teacher> Teachers { get; set; }
@@ -55,6 +56,7 @@ namespace EFCore.BulkExtensions.Tests
 
             modelBuilder.Entity<Info>(e => { e.Property(p => p.ConvertedTime).HasConversion((value) => value.AddDays(1), (value) => value.AddDays(-1)); });
             modelBuilder.Entity<Info>().Property(e => e.InfoType).HasConversion(new EnumToStringConverter<InfoType>());
+
             modelBuilder.Entity<ChangeLog>().OwnsOne(e => e.Audit, b => b.Property(e => e.InfoType).HasConversion(new EnumToStringConverter<InfoType>()));
 
             modelBuilder.Entity<Person>().HasIndex(a => a.Name).IsUnique(); // In SQLite UpdateByColumn(nonPK) requires it has UniqueIndex
@@ -69,7 +71,7 @@ namespace EFCore.BulkExtensions.Tests
             }
             else if (Database.IsSqlite())
             {
-                modelBuilder.Entity<Document>().Property(p => p.VersionChange).ValueGeneratedOnAddOrUpdate().IsConcurrencyToken().HasDefaultValueSql("CURRENT_TIMESTAMP");
+                modelBuilder.Entity<File>().Property(p => p.VersionChange).ValueGeneratedOnAddOrUpdate().IsConcurrencyToken().HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 modelBuilder.Entity<Address>().Ignore(p => p.Location);
             }
@@ -236,11 +238,10 @@ namespace EFCore.BulkExtensions.Tests
         public string Class { get; set; }
     }
 
-    // For testing Computed Columns
+    // For testing Computed columns Default values
     public class Document
     {
         //[DefaultValueSql("NEWID()")] // no native [DefaultValueSql] annotation so this is configured via FluentAPI in modelBuilder
-        [Column("Id")] // test different column Name, PK in this case
         public Guid DocumentId { get; set; }
 
         //[DefaultValue(true)] // EF doesn't use DefaultValue attribute, not annotation, so this is configured via FluentAPI as well
@@ -251,10 +252,19 @@ namespace EFCore.BulkExtensions.Tests
 
         [DatabaseGenerated(DatabaseGeneratedOption.Computed)] // Computed columns also have to be configured with FluentAPI
         public int ContentLength { get; set; }
+    }
+
+    // For testing TimeStamp Property and Column with Concurrency Lock
+    public class File
+    {
+        [Column("Id")] // test different column Name, PK in this case
+        public int FileId { get; set; }
+
+        [Required]
+        public string Data { get; set; }
 
         [Timestamp]
         public byte[] VersionChange { get; set; }
-
         //public ulong RowVersion { get; set; }
     }
 

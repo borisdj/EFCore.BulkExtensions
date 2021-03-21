@@ -30,6 +30,8 @@ namespace EFCore.BulkExtensions
 
         public bool CalculateStats { get; set; }
         public StatsInfo StatsInfo { get; set; }
+        public TimeStampInfo TimeStampInfo { get; internal set; }
+
         public List<string> PropertiesToInclude { get; set; }
         public List<string> PropertiesToIncludeOnCompare { get; set; }
         public List<string> PropertiesToIncludeOnUpdate { get; set; }
@@ -43,7 +45,7 @@ namespace EFCore.BulkExtensions
         public bool EnableShadowProperties { get; set; }
         public bool IncludeGraph { get; set; }
         public bool SkipClauseExistsExcept { get; set; }
-
+        public bool DoNotUpdateIfTimeStampChanged { get; set; }
         public int SRID { get; set; } = 4326; // Spatial Reference Identifier // https://docs.microsoft.com/en-us/sql/relational-databases/spatial/spatial-reference-identifiers-srids
 
         // since Microsoft.Data.SqlClient.SqlBulkCopyOptions is a superset of 
@@ -64,5 +66,11 @@ namespace EFCore.BulkExtensions
         public int StatsNumberUpdated { get; set; }
 
         public int StatsNumberDeleted { get; set; }
+    }
+
+    public class TimeStampInfo
+    {
+        public int NumberOfSkippedForUpdate { get; set; }
+        public List<object> EntitiesOutput { get; set; }
     }
 }

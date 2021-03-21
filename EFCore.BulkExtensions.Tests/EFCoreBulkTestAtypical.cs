@@ -15,8 +15,8 @@ namespace EFCore.BulkExtensions.Tests
 
         [Theory]
         [InlineData(DbServer.SqlServer)]
-        [InlineData(DbServer.Sqlite)] // Does NOT have Computed Columns and TimeStamp can be set with DefaultValueSql: "CURRENT_TIMESTAMP" as it is in OnModelCreating() method.
-        private void InsertWithDbComputedColumnsAndOutput(DbServer databaseType)
+        [InlineData(DbServer.Sqlite)] // Does NOT have Computed Columns
+        private void ComputedAndDefaultValuesTest(DbServer databaseType)
         {
             ContextUtil.DbServer = databaseType;
             using (var context = new TestContext(ContextUtil.GetOptions()))
@@ -28,36 +28,84 @@ namespace EFCore.BulkExtensions.Tests
                 {
                     var entity = new Document
                     {
-                        Content = "Some data " + i
+                        Content = "Info " + i
                     };
                     if (databaseType == DbServer.Sqlite)
                     {
-                        entity.DocumentId = Guid.NewGuid(); // Sqlite has no AutoIncrement for Guid that is stored as type 'Text'
+                        entity.DocumentId = Guid.NewGuid();
                         entity.ContentLength = entity.Content.Length;
+                        entity.IsActive = true;
                     }
                     entities.Add(entity);
                 }
-
-                //context.BulkInsert(entities, new BulkConfig { SetOutputIdentity = true });
                 context.BulkInsert(entities, bulkAction => bulkAction.SetOutputIdentity = true); // example of setting BulkConfig with Action argument
-
-                /*var entitiesRead = new List<Document>();
-                if (databaseType == DbServer.SqlServer)
-                {
-                    context.BulkRead(entitiesRead, new BulkConfig() { SetOutputIdentity = true }); //  Not Yet supported for Sqlite (To Test BulkRead with ComputedColumns)
-                }*/
             }
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 var entities = context.Documents.ToList();
                 Assert.Equal(EntitiesNumber, entities.Count());
+                var firstDocument = entities[0];
+                Assert.NotEqual(Guid.Empty, firstDocument.DocumentId);
+                Assert.Equal(firstDocument.Content.Length, firstDocument.ContentLength);
+                Assert.Equal(true, firstDocument.IsActive);
+            }
+        }
+
+        [Theory]
+        [InlineData(DbServer.SqlServer)]
+        //[InlineData(DbServer.Sqlite)] // No TimeStamp column type but can be set with DefaultValueSql: "CURRENT_TIMESTAMP" as it is in OnModelCreating() method.
+        private void TimeStampTest(DbServer databaseType)
+        {
+            ContextUtil.DbServer = databaseType;
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.Truncate<File>();
+
+                var entities = new List<File>();
+                for (int i = 1; i <= EntitiesNumber; i++)
+                {
+                    var entity = new File
+                    {
+                        Data = "Some data " + i
+                    };
+                    entities.Add(entity);
+                }
+                context.BulkInsert(entities, bulkAction => bulkAction.SetOutputIdentity = true); // example of setting BulkConfig with Action argument
+
+                // For testing concurrency conflict (UPDATE changes RowVersion which is TimeStamp column)
+                context.Database.ExecuteSqlRaw("UPDATE dbo.[File] SET Data = 'Some data 1 PRE CHANGE' WHERE [Id] = 1;");
+
+                var entitiesToUpdate = entities.Take(10).ToList();
+                foreach (var entityToUpdate in entitiesToUpdate)
+                {
+                    entityToUpdate.Data += " UPDATED";
+                }
+
+                using (var transaction = context.Database.BeginTransaction())
+                {
+                    var bulkConfig = new BulkConfig { SetOutputIdentity = true, DoNotUpdateIfTimeStampChanged = true };
+                    context.BulkUpdate(entitiesToUpdate, bulkConfig);
+
+                    var list = bulkConfig.TimeStampInfo?.EntitiesOutput.Cast<File>().ToList();
+                    Assert.Equal(9, list.Count());
+                    Assert.Equal(1, bulkConfig.TimeStampInfo.NumberOfSkippedForUpdate);
+
+                    if (bulkConfig.TimeStampInfo?.NumberOfSkippedForUpdate > 0)
+                    {
+                        transaction.Rollback();
+                    }
+                    else
+                    {
+                        transaction.Commit();
+                    }
+                }
             }
         }
 
         [Theory]
         [InlineData(DbServer.SqlServer)]
         [InlineData(DbServer.Sqlite)]
-        private void InsertAndUpdateWithCompositeKey(DbServer databaseType)
+        private void CompositeKeyTest(DbServer databaseType)
         {
             ContextUtil.DbServer = databaseType;
             using (var context = new TestContext(ContextUtil.GetOptions()))
@@ -96,7 +144,7 @@ namespace EFCore.BulkExtensions.Tests
         [Theory]
         [InlineData(DbServer.SqlServer)]
         [InlineData(DbServer.Sqlite)]
-        private void InsertWithDiscriminatorShadow(DbServer databaseType)
+        private void DiscriminatorShadowTest(DbServer databaseType)
         {
             ContextUtil.DbServer = databaseType;
             using (var context = new TestContext(ContextUtil.GetOptions()))
@@ -150,7 +198,7 @@ namespace EFCore.BulkExtensions.Tests
         [Theory]
         [InlineData(DbServer.SqlServer)]
         [InlineData(DbServer.Sqlite)]
-        private void InsertWithValueConversion(DbServer databaseType)
+        private void ValueConversionTest(DbServer databaseType)
         {
             ContextUtil.DbServer = databaseType;
             var dateTime = DateTime.Today;
@@ -205,7 +253,7 @@ namespace EFCore.BulkExtensions.Tests
         [Theory]
         [InlineData(DbServer.SqlServer)]
         [InlineData(DbServer.Sqlite)]
-        private void InsertWithOwnedTypes(DbServer databaseType)
+        private void OwnedTypesTest(DbServer databaseType)
         {
             ContextUtil.DbServer = databaseType;
             using (var context = new TestContext(ContextUtil.GetOptions()))
@@ -266,7 +314,7 @@ namespace EFCore.BulkExtensions.Tests
         [Theory]
         [InlineData(DbServer.SqlServer)]
         //[InlineData(DbServer.Sqlite)] Not supported
-        private void InsertWithForeignKeyShadowProperties(DbServer databaseType)
+        private void ShadowFKPropertiesTest(DbServer databaseType) // with Foreign Key as Shadow Property
         {
             ContextUtil.DbServer = databaseType;
             using (var context = new TestContext(ContextUtil.GetOptions()))
@@ -326,7 +374,7 @@ namespace EFCore.BulkExtensions.Tests
         }
 
         [Fact]
-        private void InsertWithGeometryColumn()
+        private void GeometryColumnTest()
         {
             ContextUtil.DbServer = DbServer.SqlServer;
             using (var context = new TestContext(ContextUtil.GetOptions()))

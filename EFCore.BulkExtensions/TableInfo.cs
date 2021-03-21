@@ -57,6 +57,7 @@ namespace EFCore.BulkExtensions
         public HashSet<string> ShadowProperties { get; set; } = new HashSet<string>();
         public Dictionary<string, ValueConverter> ConvertibleProperties { get; set; } = new Dictionary<string, ValueConverter>();
         public string TimeStampOutColumnType => "varbinary(8)";
+        public string TimeStampPropertyName { get; set; }
         public string TimeStampColumnName { get; set; }
 
         public static TableInfo CreateInstance<T>(DbContext context, IList<T> entities, OperationType operationType, BulkConfig bulkConfig)
@@ -184,6 +185,7 @@ namespace EFCore.BulkExtensions
             string timestampDbTypeName = nameof(TimestampAttribute).Replace("Attribute", "").ToLower(); // = "timestamp";
             var timeStampProperties = allProperties.Where(a => (a.IsConcurrencyToken && a.ValueGenerated == ValueGenerated.OnAddOrUpdate) || a.GetColumnType() == timestampDbTypeName);
             TimeStampColumnName = timeStampProperties.FirstOrDefault()?.GetColumnName(); // can be only One
+            TimeStampPropertyName = timeStampProperties.FirstOrDefault()?.Name; // can be only One
             var allPropertiesExceptTimeStamp = allProperties.Except(timeStampProperties);
             var properties = allPropertiesExceptTimeStamp.Where(a => a.GetComputedColumnSql() == null);
 
@@ -797,10 +799,21 @@ namespace EFCore.BulkExtensions
         {
             var identityPropertyName = OutputPropertyColumnNamesDict.SingleOrDefault(a => a.Value == IdentityColumnName).Key;
 
-            if (BulkConfig.PreserveInsertOrder) // Updates PK in entityList
+            if (BulkConfig.PreserveInsertOrder) // Updates Db changed Columns in entityList
             {
+                int countDiff = entities.Count - entitiesWithOutputIdentity.Count;
+                if (countDiff > 0) // When some ommited from Merge because of TimeStamp conflict then changes are not loaded but output is set in TimeStampInfo
+                {
+                    tableInfo.BulkConfig.TimeStampInfo = new TimeStampInfo {
+                        NumberOfSkippedForUpdate = countDiff,
+                        EntitiesOutput = entitiesWithOutputIdentity.Cast<object>().ToList()
+                };
+                    return;
+                }
                 for (int i = 0; i < NumberOfEntities; i++)
                 {
+                    if (i == entitiesWithOutputIdentity.Count)
+                        break;
                     if (identityPropertyName != null)
                     {
                         var identityPropertyValue = FastPropertyDict[identityPropertyName].Get(entitiesWithOutputIdentity[i]);

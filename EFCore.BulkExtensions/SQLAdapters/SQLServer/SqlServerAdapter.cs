@@ -174,6 +174,10 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
             }
 
             context.Database.ExecuteSqlRaw(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo));
+            if (tableInfo.TimeStampColumnName != null)
+            {
+                context.Database.ExecuteSqlRaw(SqlQueryBuilder.AddColumn(tableInfo.FullTempTableName, tableInfo.TimeStampColumnName, tableInfo.TimeStampOutColumnType));
+            }
             if (tableInfo.CreatedOutputTable)
             {
                 context.Database.ExecuteSqlRaw(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempOutputTableName, tableInfo, true));
@@ -478,7 +482,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
             type = tableInfo.HasAbstractList ? entities[0].GetType() : type;
             var entityType = context.Model.FindEntityType(type);
             var entityTypeProperties = entityType.GetProperties();
-            var entityPropertiesDict = entityTypeProperties.Where(a => tableInfo.PropertyColumnNamesDict.ContainsKey(a.Name)).ToDictionary(a => a.Name, a => a);
+            var entityPropertiesDict = entityTypeProperties.Where(a => tableInfo.PropertyColumnNamesDict.ContainsKey(a.Name) || a.Name == tableInfo.TimeStampPropertyName).ToDictionary(a => a.Name, a => a);
             var entityNavigationOwnedDict = entityType.GetNavigations().Where(a => a.GetTargetType().IsOwned()).ToDictionary(a => a.Name, a => a);
             var entityShadowFkPropertiesDict = entityTypeProperties.Where(a => 
                 a.IsShadowProperty() && 
