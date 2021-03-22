@@ -104,18 +104,17 @@ namespace EFCore.BulkExtensions.Tests
                 {
                     query = query.Where(a => a.ItemId <= 500 && a.Price >= price);
                 }
-
-                // BATCH for Sqlite does Not work with multiple Conditions since switching to 3.0.0
-                // Method ToParametrizedSql with Sqlite throws Exception on line:
-                //   var enumerator = query.Provider.Execute<IEnumerable>(query.Expression).GetEnumerator();
-                // Message:
-                //   System.InvalidOperationException : The LINQ expression 'DbSet<Item>.Where(i => i.ItemId <= 500 && i.Price >= __price_0)' could not be translated.
-                //   Either rewrite the query in a form that can be translated, or switch to client evaluation explicitly by inserting a call to either AsEnumerable(), AsAsyncEnumerable(), ToList(), or ToListAsync().
-                //   See https://go.microsoft.com/fwlink/?linkid=2101038 for more information.
-                //   QueryableMethodTranslatingExpressionVisitor.<VisitMethodCall>g__CheckTranslated|8_0(ShapedQueryExpression translated, <>c__DisplayClass8_0& )
                 if (dbServer == DbServer.Sqlite)
                 {
-                    query = query.Where(a => a.ItemId <= 500); // Sqlite currently does Not support multiple conditions
+                    query = query.Where(a => a.ItemId <= 500 && a.Price != null && a.Quantity >= 0);
+
+                    //query = query.Where(a => a.ItemId <= 500 && a.Price >= price);
+                    // -----
+                    // Sqlite currently (since switching to 3.0.0) does Not work for '&& a.Price >= price' neither for '&& a.Price >= 0', probable because of nullable cast
+                    // Method ToParametrizedSql with Sqlite throws Exception on line:
+                    //   var enumerator = query.Provider.Execute<IEnumerable>(query.Expression).GetEnumerator();
+                    // Message:
+                    //   System.InvalidOperationException : The LINQ expression 'DbSet<Item>.Where(i => i.ItemId <= 500 && i.Price >= __price_0)' could not be translated.
                 }
 
                 query.BatchUpdate(new Item { Description = "Updated", Price = 1.5m }/*, updateColumns*/);
