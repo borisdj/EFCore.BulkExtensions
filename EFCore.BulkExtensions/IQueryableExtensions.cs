@@ -33,9 +33,19 @@ namespace EFCore.BulkExtensions
 #pragma warning disable EF1001 // Internal EF Core API usage.
                 var command = relationalCommandCache.GetRelationalCommand(parameterValues);
 #pragma warning restore EF1001 // Internal EF Core API usage.
-                var parameterNames = new HashSet<string>(command.Parameters.Select(p => p.InvariantName));
                 sql = command.CommandText;
-                parameters = parameterValues.Where(pv => parameterNames.Contains(pv.Key)).Select(ToSqlParameter).ToList();
+                // Use a DbCommand to convert parameter values using ValueConverters to the correct type.
+                using (var dbCommand = new SqlCommand())
+                {
+                    foreach (var param in command.Parameters)
+                    {
+                        var values = parameterValues[param.InvariantName];
+                        param.AddDbParameter(dbCommand, values);
+                    }
+
+                    parameters = new List<SqlParameter>(dbCommand.Parameters.OfType<SqlParameter>());
+                    dbCommand.Parameters.Clear();
+                }
             }
             else
             {

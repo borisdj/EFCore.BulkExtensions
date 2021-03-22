@@ -20,7 +20,7 @@ namespace EFCore.BulkExtensions.Tests.ValueConverters
 
             using var db = new VcDbContext(ContextUtil.GetOptions<VcDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_ValueConverters"));
 
-            db.BulkInsertOrUpdate(this.GetTestData(db).ToList());
+            db.BulkInsertOrUpdate(this.GetTestData().ToList());
 
             var connection = db.Database.GetDbConnection();
             connection.Open();
@@ -46,9 +46,10 @@ namespace EFCore.BulkExtensions.Tests.ValueConverters
 
             using var db = new VcDbContext(ContextUtil.GetOptions<VcDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_ValueConverters"));
 
-            db.BulkInsertOrUpdate(this.GetTestData(db).ToList());
+            db.BulkInsertOrUpdate(this.GetTestData().ToList());
 
-            db.VcModels.BatchUpdate(x => new VcModel
+            var date = new LocalDate(2020, 3, 21);
+            db.VcModels.Where(x => x.LocalDate > date).BatchUpdate(x => new VcModel
             {
                 Enum = VcEnum.Why
             });
@@ -68,10 +69,31 @@ namespace EFCore.BulkExtensions.Tests.ValueConverters
             Assert.Equal(VcEnum.Why.ToString(), enumStr);
         }
 
-        private IEnumerable<VcModel> GetTestData(DbContext db)
+        [Theory]
+        [InlineData(DbServer.SqlServer)]
+        [InlineData(DbServer.Sqlite)]
+        public void BatchDelete_UsingWhereExpressionWithValueConverter_Deletes(DbServer dbServer)
         {
-            var one = new VcModel();
-            one.Enum = VcEnum.Hello;
+            ContextUtil.DbServer = dbServer;
+
+            using var db = new VcDbContext(ContextUtil.GetOptions<VcDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_ValueConverters"));
+
+            db.BulkInsertOrUpdate(this.GetTestData().ToList());
+
+            var date = new LocalDate(2020, 3, 21);
+            db.VcModels.Where(x => x.LocalDate > date).BatchDelete();
+
+            var models = db.VcModels.Count();
+            Assert.Equal(0, models);
+        }
+
+        private IEnumerable<VcModel> GetTestData()
+        {
+            var one = new VcModel
+            {
+                Enum = VcEnum.Hello,
+                LocalDate = new LocalDate(2021, 3, 22)
+            };
 
             yield return one;
         }

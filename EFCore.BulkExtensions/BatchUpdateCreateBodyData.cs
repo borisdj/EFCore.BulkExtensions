@@ -40,7 +40,6 @@ namespace EFCore.BulkExtensions
             var tableInfo = TableInfo.CreateInstance(dbContext, rootType, Array.Empty<object>(), OperationType.Read, _tableInfoBulkConfig);
             _tableInfoLookup.Add(rootType, tableInfo);
 
-            CheckAndSetParametersForConvertibles(dbContext, innerParameters, tableInfo);
             SqlParameters = new List<object>(innerParameters);
 
             foreach (Match match in BatchUtil.TableAliasPattern.Matches(baseSql))
@@ -60,34 +59,6 @@ namespace EFCore.BulkExtensions
         public List<string> TableAliasesInUse { get; }
         public StringBuilder UpdateColumnsSql { get; }
         public LambdaExpression UpdateExpression { get; }
-
-        protected void CheckAndSetParametersForConvertibles(DbContext context, IEnumerable<object> innerParameters, TableInfo tableInfo) // fix for enum 'int' Conversion to nvarchar
-        {
-            foreach (var innerParameter in innerParameters)
-            {
-                string parameterColumnName = ((Microsoft.Data.SqlClient.SqlParameter)innerParameter).ParameterName.Replace("@__", ""); // @__column_N..
-                parameterColumnName = parameterColumnName.Contains("_") ? parameterColumnName.Substring(0, parameterColumnName.IndexOf("_")) : parameterColumnName; // column
-                parameterColumnName = parameterColumnName.ToLower();
-
-                foreach (var convertibleProperty in tableInfo.ConvertibleProperties)
-                {
-                    if (convertibleProperty.Key.ToLower() == parameterColumnName)
-                    {
-                        if (convertibleProperty.Value.ProviderClrType.Name == nameof(String))
-                        {
-                            if (SqlClientHelper.IsSystemConnection(context.Database.GetDbConnection()))
-                            {
-                                ((System.Data.SqlClient.SqlParameter)innerParameter).DbType = System.Data.DbType.String;
-                            }
-                            else
-                            {
-                                ((Microsoft.Data.SqlClient.SqlParameter)innerParameter).DbType = System.Data.DbType.String;
-                            }
-                        }
-                    }
-                }
-            }
-        }
 
         public TableInfo GetTableInfoForType(Type typeToLookup)
         {
