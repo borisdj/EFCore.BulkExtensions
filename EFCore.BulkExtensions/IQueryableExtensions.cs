@@ -7,6 +7,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.Internal;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace EFCore.BulkExtensions
 {
@@ -28,34 +29,33 @@ namespace EFCore.BulkExtensions
 
             string sql;
             IList<SqlParameter> parameters;
+            IRelationalCommand command;
             if (relationalCommandCache != null)
             {
 #pragma warning disable EF1001 // Internal EF Core API usage.
-                var command = relationalCommandCache.GetRelationalCommand(parameterValues);
+                command = relationalCommandCache.GetRelationalCommand(parameterValues);
 #pragma warning restore EF1001 // Internal EF Core API usage.
-                sql = command.CommandText;
-                // Use a DbCommand to convert parameter values using ValueConverters to the correct type.
-                using (var dbCommand = new SqlCommand())
-                {
-                    foreach (var param in command.Parameters)
-                    {
-                        var values = parameterValues[param.InvariantName];
-                        param.AddDbParameter(dbCommand, values);
-                    }
-
-                    parameters = new List<SqlParameter>(dbCommand.Parameters.OfType<SqlParameter>());
-                    dbCommand.Parameters.Clear();
-                }
             }
             else
             {
                 SelectExpression selectExpression = enumerator.Private<SelectExpression>(selectExpressionText) ?? throw new InvalidOperationException($"{cannotGetText} {selectExpressionText}");
                 IQuerySqlGeneratorFactory factory = enumerator.Private<IQuerySqlGeneratorFactory>(querySqlGeneratorFactoryText) ?? throw new InvalidOperationException($"{cannotGetText} {querySqlGeneratorFactoryText}");
+                command = factory.Create().GetCommand(selectExpression);
+            }
 
-                var sqlGenerator = factory.Create();
-                var command = sqlGenerator.GetCommand(selectExpression);
-                sql = command.CommandText;
-                parameters = parameterValues.Select(ToSqlParameter).ToList();
+            sql = command.CommandText;
+
+            // Use a DbCommand to convert parameter values using ValueConverters to the correct type.
+            using (var dbCommand = new SqlCommand())
+            {
+                foreach (var param in command.Parameters)
+                {
+                    var values = parameterValues[param.InvariantName];
+                    param.AddDbParameter(dbCommand, values);
+                }
+
+                parameters = new List<SqlParameter>(dbCommand.Parameters.OfType<SqlParameter>());
+                dbCommand.Parameters.Clear();
             }
 
             return (sql, parameters);
