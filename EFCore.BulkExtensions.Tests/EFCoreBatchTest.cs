@@ -110,7 +110,7 @@ namespace EFCore.BulkExtensions.Tests
 
                     //query = query.Where(a => a.ItemId <= 500 && a.Price >= price);
                     // -----
-                    // Sqlite currently (since switching to 3.0.0) does Not work for '&& a.Price >= price' neither for '&& a.Price >= 0', probable because of nullable cast
+                    // Sqlite currently (since switching to 3.0.0) does Not work for '&& a.Price >= price' neither for '&& a.Price >= 0', because of 'decimal' type
                     // Method ToParametrizedSql with Sqlite throws Exception on line:
                     //   var enumerator = query.Provider.Execute<IEnumerable>(query.Expression).GetEnumerator();
                     // Message:
