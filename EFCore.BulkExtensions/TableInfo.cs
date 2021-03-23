@@ -193,7 +193,7 @@ namespace EFCore.BulkExtensions
             foreach (var propertyWithDefaultValue in propertiesWithDefaultValues)
             {
                 var propertyType = propertyWithDefaultValue.ClrType;
-                var instance = Activator.CreateInstance(propertyType);
+                var instance = (propertyType == typeof(string)) ? (null as string) : Activator.CreateInstance(propertyType);
                 bool listHasAllDefaultValues = !entities.Any(x => x.GetType().GetProperty(propertyWithDefaultValue.Name).GetValue(x, null)?.ToString() != instance?.ToString());
                 if (listHasAllDefaultValues)
                 {
@@ -428,7 +428,10 @@ namespace EFCore.BulkExtensions
             foreach (var configSpecifiedPropertyName in specifiedPropertiesList)
             {
 
-                if (!configSpecifiedPropertyName.Contains(".") && !FastPropertyDict.Any(a => a.Key == configSpecifiedPropertyName)) // Those with dot "." skiped from validating for now since FastPropertyDict here does not contain them
+                if (!FastPropertyDict.Any(a => a.Key == configSpecifiedPropertyName) &&
+                    !configSpecifiedPropertyName.Contains(".") && // Those with dot "." skiped from validating for now since FastPropertyDict here does not contain them
+                    !(specifiedPropertiesListName == nameof(BulkConfig.PropertiesToIncludeOnUpdate) && configSpecifiedPropertyName == "") // In PropsToIncludeOnUpdate empty is allowed as config for skipping Update
+                   )
                 {
                     throw new InvalidOperationException($"PropertyName '{configSpecifiedPropertyName}' specified in '{specifiedPropertiesListName}' not found in Properties.");
                 }
