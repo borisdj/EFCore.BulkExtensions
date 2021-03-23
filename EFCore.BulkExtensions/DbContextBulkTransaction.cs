@@ -47,43 +47,6 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        public static void Execute(DbContext context, Type type, IList<object> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress)
-        {
-            using (ActivitySources.StartExecuteActivity(operationType, entities.Count))
-            {
-                if (operationType != OperationType.Truncate && entities.Count == 0)
-                {
-                    return;
-                }
-
-                if (bulkConfig?.IncludeGraph == true)
-                {
-                    DbContextBulkTransactionGraphUtil.ExecuteWithGraph(context, entities, operationType, bulkConfig, progress);
-                }
-                else
-                {
-                    TableInfo tableInfo = TableInfo.CreateInstance(context, type, entities, operationType, bulkConfig);
-
-                    if (operationType == OperationType.Insert && !tableInfo.BulkConfig.SetOutputIdentity)
-                    {
-                        SqlBulkOperation.Insert(context, type, entities, tableInfo, progress);
-                    }
-                    else if (operationType == OperationType.Read)
-                    {
-                        SqlBulkOperation.Read(context, type, entities, tableInfo, progress);
-                    }
-                    else if (operationType == OperationType.Truncate)
-                    {
-                        SqlBulkOperation.Truncate(context, tableInfo);
-                    }
-                    else
-                    {
-                        SqlBulkOperation.Merge(context, type, entities, tableInfo, operationType, progress);
-                    }
-                }
-            }
-        }
-
         public static async Task ExecuteAsync<T>(DbContext context, IList<T> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress, CancellationToken cancellationToken) where T : class
         {
             using (ActivitySources.StartExecuteActivity(operationType, entities.Count))
@@ -116,6 +79,43 @@ namespace EFCore.BulkExtensions
                     else
                     {
                         await SqlBulkOperation.MergeAsync(context, entities, tableInfo, operationType, progress, cancellationToken);
+                    }
+                }
+            }
+        }
+
+        public static void Execute(DbContext context, Type type, IList<object> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress)
+        {
+            using (ActivitySources.StartExecuteActivity(operationType, entities.Count))
+            {
+                if (operationType != OperationType.Truncate && entities.Count == 0)
+                {
+                    return;
+                }
+
+                if (bulkConfig?.IncludeGraph == true)
+                {
+                    DbContextBulkTransactionGraphUtil.ExecuteWithGraph(context, entities, operationType, bulkConfig, progress);
+                }
+                else
+                {
+                    TableInfo tableInfo = TableInfo.CreateInstance(context, type, entities, operationType, bulkConfig);
+
+                    if (operationType == OperationType.Insert && !tableInfo.BulkConfig.SetOutputIdentity)
+                    {
+                        SqlBulkOperation.Insert(context, type, entities, tableInfo, progress);
+                    }
+                    else if (operationType == OperationType.Read)
+                    {
+                        SqlBulkOperation.Read(context, type, entities, tableInfo, progress);
+                    }
+                    else if (operationType == OperationType.Truncate)
+                    {
+                        SqlBulkOperation.Truncate(context, tableInfo);
+                    }
+                    else
+                    {
+                        SqlBulkOperation.Merge(context, type, entities, tableInfo, operationType, progress);
                     }
                 }
             }
