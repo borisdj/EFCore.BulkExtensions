@@ -57,6 +57,30 @@ namespace EFCore.BulkExtensions
             DbContextBulkTransaction.Execute(context, entityType, entities, OperationType.InsertOrUpdate, bulkConfig, progress);
         }
 
+        public static void BulkInsertIfNotExists<T>(this DbContext context, IList<T> entities, BulkConfig bulkConfig = null, Action<decimal> progress = null) where T : class
+        {
+            DbContextBulkTransaction.Execute(context, entities, OperationType.InsertIfNotExists, bulkConfig, progress);
+        }
+
+        public static void BulkInsertIfNotExists(this DbContext context, Type entityType, IList<object> entities, BulkConfig bulkConfig = null, Action<decimal> progress = null)
+        {
+            DbContextBulkTransaction.Execute(context, entityType, entities, OperationType.InsertIfNotExists, bulkConfig, progress);
+        }
+
+        public static void BulkInsertIfNotExists<T>(this DbContext context, IList<T> entities, Action<BulkConfig> bulkAction, Action<decimal> progress = null) where T : class
+        {
+            BulkConfig bulkConfig = new BulkConfig();
+            bulkAction?.Invoke(bulkConfig);
+            DbContextBulkTransaction.Execute(context, entities, OperationType.InsertIfNotExists, bulkConfig, progress);
+        }
+
+        public static void BulkInsertIfNotExists(this DbContext context, Type entityType, IList<object> entities, Action<BulkConfig> bulkAction, Action<decimal> progress = null)
+        {
+            BulkConfig bulkConfig = new BulkConfig();
+            bulkAction?.Invoke(bulkConfig);
+            DbContextBulkTransaction.Execute(context, entityType, entities, OperationType.InsertIfNotExists, bulkConfig, progress);
+        }
+
         public static void BulkInsertOrUpdateOrDelete<T>(this DbContext context, IList<T> entities, BulkConfig bulkConfig = null, Action<decimal> progress = null) where T : class
         {
             DbContextBulkTransaction.Execute(context, entities, OperationType.InsertOrUpdateDelete, bulkConfig, progress);
@@ -211,6 +235,30 @@ namespace EFCore.BulkExtensions
             BulkConfig bulkConfig = new BulkConfig();
             bulkAction?.Invoke(bulkConfig);
             return DbContextBulkTransaction.ExecuteAsync(context, entityType, entities, OperationType.InsertOrUpdate, bulkConfig, progress, cancellationToken);
+        }
+
+        public static Task BulkInsertIfNotExistsAsync<T>(this DbContext context, IList<T> entities, BulkConfig bulkConfig = null, Action<decimal> progress = null, CancellationToken cancellationToken = default) where T : class
+        {
+            return DbContextBulkTransaction.ExecuteAsync(context, entities, OperationType.InsertIfNotExists, bulkConfig, progress, cancellationToken);
+        }
+
+        public static Task BulkInsertIfNotExistsAsync(this DbContext context, Type entityType, IList<object> entities, BulkConfig bulkConfig = null, Action<decimal> progress = null, CancellationToken cancellationToken = default)
+        {
+            return DbContextBulkTransaction.ExecuteAsync(context, entityType, entities, OperationType.InsertIfNotExists, bulkConfig, progress, cancellationToken);
+        }
+
+        public static Task BulkInsertIfNotExistsAsync<T>(this DbContext context, IList<T> entities, Action<BulkConfig> bulkAction, Action<decimal> progress = null, CancellationToken cancellationToken = default) where T : class
+        {
+            BulkConfig bulkConfig = new BulkConfig();
+            bulkAction?.Invoke(bulkConfig);
+            return DbContextBulkTransaction.ExecuteAsync(context, entities, OperationType.InsertIfNotExists, bulkConfig, progress, cancellationToken);
+        }
+
+        public static Task BulkInsertIfNotExistsAsync(this DbContext context, Type entityType, IList<object> entities, Action<BulkConfig> bulkAction, Action<decimal> progress = null, CancellationToken cancellationToken = default)
+        {
+            BulkConfig bulkConfig = new BulkConfig();
+            bulkAction?.Invoke(bulkConfig);
+            return DbContextBulkTransaction.ExecuteAsync(context, entityType, entities, OperationType.InsertIfNotExists, bulkConfig, progress, cancellationToken);
         }
 
         public static Task BulkInsertOrUpdateOrDeleteAsync<T>(this DbContext context, IList<T> entities, BulkConfig bulkConfig = null, Action<decimal> progress = null, CancellationToken cancellationToken = default) where T : class

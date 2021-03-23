@@ -178,7 +178,7 @@ namespace EFCore.BulkExtensions
                     $"ON {GetANDSeparatedColumns(primaryKeys, "T", "S", tableInfo.UpdateByPropertiesAreNullable)}";
             q += (primaryKeys.Count() == 0) ? "1=0" : "";
 
-            if (operationType == OperationType.Insert || operationType == OperationType.InsertOrUpdate || operationType == OperationType.InsertOrUpdateDelete)
+            if (operationType == OperationType.Insert || operationType == OperationType.InsertOrUpdate || operationType == OperationType.InsertOrUpdateDelete || operationType == OperationType.InsertIfNotExists)
             {
                 q += $" WHEN NOT MATCHED BY TARGET THEN INSERT ({GetCommaSeparatedColumns(insertColumnsNames)})" +
                      $" VALUES ({GetCommaSeparatedColumns(insertColumnsNames, "S")})";
@@ -210,7 +210,7 @@ namespace EFCore.BulkExtensions
             if (tableInfo.CreatedOutputTable)
             {
                 string commaSeparatedColumnsNames;
-                if (operationType == OperationType.InsertOrUpdateDelete || operationType == OperationType.Delete)
+                if (operationType == OperationType.InsertOrUpdateDelete || operationType == OperationType.Delete || operationType == OperationType.InsertIfNotExists)
                 {
                     commaSeparatedColumnsNames = string.Join(", ", outputColumnsNames.Select(x => $"COALESCE(INSERTED.[{x}], DELETED.[{x}])"));
                 }
