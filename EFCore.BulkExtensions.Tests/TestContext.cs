@@ -61,10 +61,11 @@ namespace EFCore.BulkExtensions.Tests
 
             modelBuilder.Entity<Person>().HasIndex(a => a.Name).IsUnique(); // In SQLite UpdateByColumn(nonPK) requires it has UniqueIndex
 
+            modelBuilder.Entity<Document>().Property(p => p.IsActive).HasDefaultValue(true);
+
             if (Database.IsSqlServer())
             {
                 modelBuilder.Entity<Document>().Property(p => p.DocumentId).HasDefaultValueSql("NEWID()");
-                modelBuilder.Entity<Document>().Property(p => p.IsActive).HasDefaultValue(true);
                 modelBuilder.Entity<Document>().Property(p => p.ContentLength).HasComputedColumnSql($"(CONVERT([int], len([{nameof(Document.Content)}])))");
 
                 modelBuilder.Entity<UdttIntInt>(entity => { entity.HasNoKey(); });

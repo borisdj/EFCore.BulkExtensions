@@ -34,7 +34,6 @@ namespace EFCore.BulkExtensions.Tests
                     {
                         entity.DocumentId = Guid.NewGuid();
                         entity.ContentLength = entity.Content.Length;
-                        entity.IsActive = true;
                     }
                     entities.Add(entity);
                 }
