@@ -762,8 +762,6 @@ namespace EFCore.BulkExtensions
         {
             string identityPropertyName = PropertyColumnNamesDict.SingleOrDefault(a => a.Value == IdentityColumnName).Key;
 
-
-
             bool doSetIdentityColumnsForInsertOrder = BulkConfig.PreserveInsertOrder &&
                                                       entities.Count() > 1 &&
                                                       PrimaryKeysPropertyColumnNameDict.Count() == 1 &&
