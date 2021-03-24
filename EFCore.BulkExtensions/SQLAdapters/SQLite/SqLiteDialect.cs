@@ -1,11 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using EFCore.BulkExtensions.SqlAdapters;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
 using System.Data;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text.RegularExpressions;
-using EFCore.BulkExtensions.SqlAdapters;
-using Microsoft.Data.Sqlite;
-using Microsoft.EntityFrameworkCore;
 
 namespace EFCore.BulkExtensions.SQLAdapters.SQLite
 {

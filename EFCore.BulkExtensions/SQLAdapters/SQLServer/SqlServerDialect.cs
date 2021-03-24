@@ -1,9 +1,9 @@
-﻿using System;
+﻿using EFCore.BulkExtensions.SqlAdapters;
+using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq.Expressions;
-using EFCore.BulkExtensions.SqlAdapters;
-using Microsoft.EntityFrameworkCore;
 
 namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
 {

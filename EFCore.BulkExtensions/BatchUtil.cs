@@ -15,7 +15,6 @@ namespace EFCore.BulkExtensions
 {
     public static class BatchUtil
     {
-
         // In comment are Examples of how SqlQuery is changed for Sql Batch
 
         // SELECT [a].[Column1], [a].[Column2], .../r/n
@@ -398,8 +397,6 @@ namespace EFCore.BulkExtensions
             return stateManager.Context;
 #pragma warning restore EF1001 // Internal EF Core API usage.
         }
-
-      
 
         public static (string, string) SplitLeadingCommentsAndMainSqlQuery(string sqlQuery)
         {

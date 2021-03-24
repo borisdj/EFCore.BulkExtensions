@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace EFCore.BulkExtensions.Tests.ShadowProperties
+﻿namespace EFCore.BulkExtensions.Tests.ShadowProperties
 {
     public class SpModel
     {

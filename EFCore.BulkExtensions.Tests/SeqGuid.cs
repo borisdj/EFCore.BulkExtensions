@@ -1,5 +1,5 @@
-﻿using System;
-using RT.Comb;
+﻿using RT.Comb;
+using System;
 
 namespace EFCore.BulkExtensions.Tests
 {

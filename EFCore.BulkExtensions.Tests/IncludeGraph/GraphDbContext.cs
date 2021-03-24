@@ -1,6 +1,5 @@
 ﻿using EFCore.BulkExtensions.Tests.IncludeGraph.Model;
 using Microsoft.EntityFrameworkCore;
-using System;
 using System.Diagnostics.CodeAnalysis;
 
 namespace EFCore.BulkExtensions.Tests.ShadowProperties

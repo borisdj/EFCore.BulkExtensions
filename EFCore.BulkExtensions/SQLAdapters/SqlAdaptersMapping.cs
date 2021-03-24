@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using EFCore.BulkExtensions.SQLAdapters.SQLite;
+﻿using EFCore.BulkExtensions.SQLAdapters.SQLite;
 using EFCore.BulkExtensions.SQLAdapters.SQLServer;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
 
 namespace EFCore.BulkExtensions.SqlAdapters
 {

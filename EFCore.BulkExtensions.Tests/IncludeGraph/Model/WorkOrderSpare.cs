@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace EFCore.BulkExtensions.Tests.IncludeGraph.Model
+﻿namespace EFCore.BulkExtensions.Tests.IncludeGraph.Model
 {
     public class WorkOrderSpare
     {

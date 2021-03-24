@@ -1,3 +1,4 @@
+using EFCore.BulkExtensions.SqlAdapters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -13,7 +14,6 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using EFCore.BulkExtensions.SqlAdapters;
 
 namespace EFCore.BulkExtensions
 {

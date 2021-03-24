@@ -1,4 +1,9 @@
-﻿using System;
+﻿using EFCore.BulkExtensions.SqlAdapters;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+using NetTopologySuite.Geometries;
+using NetTopologySuite.IO;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
@@ -6,15 +11,8 @@ using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
-using EFCore.BulkExtensions.SqlAdapters;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Storage;
-using NetTopologySuite.Geometries;
-using NetTopologySuite.IO;
 
 namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
 {
