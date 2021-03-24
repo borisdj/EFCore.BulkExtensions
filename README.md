@@ -31,10 +31,10 @@ It's pretty simple and straightforward.<br>
 **Bulk** Extensions are made on *DbContext* class and can be used like this (both regular and Async methods are supported):
 ```C#
 context.BulkInsert(entitiesList);                 context.BulkInsertAsync(entitiesList);
-context.BulkUpdate(entitiesList);                 context.BulkUpdateAsync(entitiesList);
-context.BulkDelete(entitiesList);                 context.BulkDeleteAsync(entitiesList);
 context.BulkInsertOrUpdate(entitiesList);         context.BulkInsertOrUpdateAsync(entitiesList);      //Upsert
 context.BulkInsertOrUpdateOrDelete(entitiesList); context.BulkInsertOrUpdateOrDeleteAsync(entitiesList);//Sync
+context.BulkUpdate(entitiesList);                 context.BulkUpdateAsync(entitiesList);
+context.BulkDelete(entitiesList);                 context.BulkDeleteAsync(entitiesList);
 context.BulkRead(entitiesList);                   context.BulkReadAsync(entitiesList);
 context.Truncate<Entity>();                       context.TruncateAsync<Entity>();
 ```
