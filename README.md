@@ -177,7 +177,7 @@ Library supports [Global Query Filters](https://docs.microsoft.com/en-us/ef/core
 It also maps [OwnedTypes](https://docs.microsoft.com/en-us/ef/core/modeling/owned-entities), which is implemented with `DataTable` class.</br>
 With [Computed](https://docs.microsoft.com/en-us/ef/core/modeling/relational/computed-columns) and [Timestamp](https://docs.microsoft.com/en-us/ef/core/modeling/concurrency) Columns it will work in a way that they are automatically excluded from Insert. And when combined with *SetOutputIdentity* they will be Selected.<br>
 [Spatial](https://docs.microsoft.com/en-us/sql/relational-databases/spatial/spatial-data-types-overview?view=sql-server-ver15) types, like Geometry, are also supported and when Entity has one it skips clause *EXIST ... EXCEPT* because it is not comparable.<br>
-Performance for bulk ops measured with `ActivitySources` named: '*EFCore.BulkExtensions.BulkExecute*' (tags: *operationType*', '*entitiesCount*')<br>
+Performance for bulk ops measured with `ActivitySources` named: '*EFCore.BulkExtensions.BulkExecute*' (tags: '*operationType*', '*entitiesCount*')<br>
 Bulk Extension methods can be [Overridden](https://github.com/borisdj/EFCore.BulkExtensions/issues/56) if required, for example to set AuditInfo.<br>
 If having problems with Deadlock there is useful info in [issue/46](https://github.com/borisdj/EFCore.BulkExtensions/issues/46).
 
