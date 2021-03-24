@@ -57,6 +57,9 @@ namespace EFCore.BulkExtensions.Tests
             modelBuilder.Entity<Info>(e => { e.Property(p => p.ConvertedTime).HasConversion((value) => value.AddDays(1), (value) => value.AddDays(-1)); });
             modelBuilder.Entity<Info>().Property(e => e.InfoType).HasConversion(new EnumToStringConverter<InfoType>());
 
+            modelBuilder.Entity<Info>(e => { e.Property("LogData").HasColumnName("LogData"); });
+            modelBuilder.Entity<Info>(e => { e.Property("TimeCreated").HasColumnName("TimeCreated"); });
+
             modelBuilder.Entity<ChangeLog>().OwnsOne(e => e.Audit, b => b.Property(e => e.InfoType).HasConversion(new EnumToStringConverter<InfoType>()));
 
             modelBuilder.Entity<Person>().HasIndex(a => a.Name).IsUnique(); // In SQLite UpdateByColumn(nonPK) requires it has UniqueIndex
@@ -278,15 +281,31 @@ namespace EFCore.BulkExtensions.Tests
     // For testring ValueConversion
     public class Info
     {
+        public Info()
+        {
+            logData = "logged";
+            TimeCreated = DateTime.Now;
+        }
+        [Required]
+        private string logData; // To test private Field with protected explicit getter/setter
+
         public long InfoId { get; set; }
 
         public string Message { get; set; }
 
-        public string Note { get; protected set; } // To test protected Setter
-
         public DateTime ConvertedTime { get; set; }
 
         public InfoType InfoType { get; set; }
+
+        public string Note { get; protected set; } // To test protected Setter
+
+        private DateTime TimeCreated { get; set; } // To test private Property
+
+        [Required]
+        private string LogData { get { return logData; } set { logData = value; } }
+
+        public string GetLogData() { return logData; }
+        public DateTime GetDateCreated() { return TimeCreated.Date; }
     }
 
     public enum SettingsEnum

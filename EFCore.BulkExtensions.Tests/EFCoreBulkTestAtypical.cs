@@ -241,6 +241,8 @@ namespace EFCore.BulkExtensions.Tests
                     var entity = entities.FirstOrDefault();
 
                     Assert.Equal(entity.ConvertedTime, dateTime);
+                    Assert.Equal("logged", entity.GetLogData());
+                    Assert.Equal(DateTime.Today, entity.GetDateCreated());
 
                     var conn = context.Database.GetDbConnection();
                     if (conn.State != ConnectionState.Open)

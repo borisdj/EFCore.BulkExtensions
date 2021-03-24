@@ -47,11 +47,7 @@ namespace EFCore.BulkExtensions
         public bool SkipClauseExistsExcept { get; set; }
         public bool DoNotUpdateIfTimeStampChanged { get; set; }
         public int SRID { get; set; } = 4326; // Spatial Reference Identifier // https://docs.microsoft.com/en-us/sql/relational-databases/spatial/spatial-reference-identifiers-srids
-
-        // since Microsoft.Data.SqlClient.SqlBulkCopyOptions is a superset of 
-        // System.Data.SqlClient.SqlBulkCopyOptions, allow user to always specify
-        // Microsoft.Data.SqlClient and we will convert it to the desired type
-        public Microsoft.Data.SqlClient.SqlBulkCopyOptions SqlBulkCopyOptions { get; set; }
+        public Microsoft.Data.SqlClient.SqlBulkCopyOptions SqlBulkCopyOptions { get; set; } // is superset of System.Data.SqlClient.SqlBulkCopyOptions, gets converted to the desired type
 
         public Func<DbConnection, DbConnection> UnderlyingConnection { get; set; }
         public Func<DbTransaction, DbTransaction> UnderlyingTransaction { get; set; }
