@@ -60,17 +60,7 @@ namespace EFCore.BulkExtensions
         public string TimeStampPropertyName { get; set; }
         public string TimeStampColumnName { get; set; }
 
-        public static TableInfo CreateInstance<T>(DbContext context, IList<T> entities, OperationType operationType, BulkConfig bulkConfig)
-        {
-            return CreateInstance<T>(context, typeof(T), entities, operationType, bulkConfig);
-        }
-
-        public static TableInfo CreateInstance(DbContext context, Type type, IList<object> entities, OperationType operationType, BulkConfig bulkConfig)
-        {
-            return CreateInstance<object>(context, type, entities, operationType, bulkConfig);
-        }
-
-        private static TableInfo CreateInstance<T>(DbContext context, Type type, IList<T> entities, OperationType operationType, BulkConfig bulkConfig)
+        public static TableInfo CreateInstance<T>(DbContext context, Type type, IList<T> entities, OperationType operationType, BulkConfig bulkConfig)
         {
             var tableInfo = new TableInfo
             {
@@ -87,22 +77,12 @@ namespace EFCore.BulkExtensions
             }
 
             var isDeleteOperation = operationType == OperationType.Delete;
-            tableInfo.LoadData<T>(context, type, entities, isDeleteOperation);
+            tableInfo.LoadData(context, type, entities, isDeleteOperation);
             return tableInfo;
         }
 
         #region Main
-        public void LoadData<T>(DbContext context, IList<T> entities, bool loadOnlyPKColumn)
-        {
-            LoadData<T>(context, typeof(T), entities, loadOnlyPKColumn);
-        }
-
-        public void LoadData(DbContext context, Type type, IList<object> entities, bool loadOnlyPKColumn)
-        {
-            LoadData<object>(context, type, entities, loadOnlyPKColumn);
-        }
-
-        private void LoadData<T>(DbContext context, Type type, IList<T> entities, bool loadOnlyPKColumn)
+        public void LoadData<T>(DbContext context, Type type, IList<T> entities, bool loadOnlyPKColumn)
         {
             LoadOnlyPKColumn = loadOnlyPKColumn;
             var entityType = context.Model.FindEntityType(type);
@@ -796,7 +776,7 @@ namespace EFCore.BulkExtensions
             }
         }
       
-        protected void UpdateEntitiesIdentity<T>(DbContext context, Type type, TableInfo tableInfo, IList<T> entities, IList<T> entitiesWithOutputIdentity)
+        protected void UpdateEntitiesIdentity<T>(DbContext context, TableInfo tableInfo, IList<T> entities, IList<T> entitiesWithOutputIdentity)
         {
             var identityPropertyName = OutputPropertyColumnNamesDict.SingleOrDefault(a => a.Value == IdentityColumnName).Key;
 
@@ -865,17 +845,7 @@ namespace EFCore.BulkExtensions
         // Once the following Issue gets fixed(expected in EF 3.0) this can be replaced with code segment: DirectQuery
         // https://github.com/aspnet/EntityFrameworkCore/issues/12905
         #region CompiledQuery
-        public void LoadOutputData<T>(DbContext context, IList<T> entities, TableInfo tableInfo) where T : class
-        {
-            LoadOutputData<T>(context, typeof(T), entities, tableInfo);
-        }
-
-        public void LoadOutputData(DbContext context, Type type, IList<object> entities, TableInfo tableInfo)
-        {
-            LoadOutputData<object>(context, type, entities, tableInfo);
-        }
-
-        internal void LoadOutputData<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo) where T : class
+        public void LoadOutputData<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo) where T : class
         {
             bool hasIdentity = OutputPropertyColumnNamesDict.Any(a => a.Value == IdentityColumnName);
             int totalNumber = entities.Count;
@@ -885,7 +855,7 @@ namespace EFCore.BulkExtensions
                 var entitiesWithOutputIdentity = (typeof(T) == type) ? QueryOutputTable<T>(context, sqlQuery).ToList() :
                     QueryOutputTable(context, type, sqlQuery).Cast<T>().ToList();
 
-                UpdateEntitiesIdentity(context, type, tableInfo, entities, entitiesWithOutputIdentity);
+                UpdateEntitiesIdentity(context, tableInfo, entities, entitiesWithOutputIdentity);
                 totalNumber = entitiesWithOutputIdentity.Count;
             }
             if (BulkConfig.CalculateStats)
@@ -901,17 +871,7 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        public async Task LoadOutputDataAsync<T>(DbContext context, IList<T> entities, TableInfo tableInfo, CancellationToken cancellationToken) where T : class
-        {
-            await LoadOutputDataAsync<T>(context, typeof(T), entities, tableInfo, cancellationToken).ConfigureAwait(false);
-        }
-
-        public async Task LoadOutputDataAsync(DbContext context, Type type, IList<object> entities, TableInfo tableInfo, CancellationToken cancellationToken)
-        {
-            await LoadOutputDataAsync<object>(context, type, entities, tableInfo, cancellationToken).ConfigureAwait(false);
-        }
-
-        internal async Task LoadOutputDataAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, CancellationToken cancellationToken) where T : class
+        public async Task LoadOutputDataAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, CancellationToken cancellationToken) where T : class
         {
             bool hasIdentity = OutputPropertyColumnNamesDict.Any(a => a.Value == IdentityColumnName);
             int totallNumber = entities.Count;
@@ -922,7 +882,7 @@ namespace EFCore.BulkExtensions
                 var entitiesWithOutputIdentity = (typeof(T) == type) ?
                                                     QueryOutputTable<T>(context, sqlQuery).ToList() :
                                                     QueryOutputTable(context, type, sqlQuery).Cast<T>().ToList();
-                UpdateEntitiesIdentity(context, type, tableInfo, entities, entitiesWithOutputIdentity);
+                UpdateEntitiesIdentity(context, tableInfo, entities, entitiesWithOutputIdentity);
                 totallNumber = entitiesWithOutputIdentity.Count;
             }
             if (BulkConfig.CalculateStats)

@@ -111,16 +111,7 @@ namespace EFCore.BulkExtensions
         /// <param name="query"></param>
         /// <param name="expression"></param>
         /// <returns></returns>
-        public static (string, List<object>) GetSqlUpdate<T>(IQueryable<T> query, DbContext context, Expression<Func<T, T>> expression) where T : class
-        {
-            return GetSqlUpdate<T>(query, context, typeof(T), expression);
-        }
-        public static (string, List<object>) GetSqlUpdate(IQueryable query, DbContext context, Type type, Expression<Func<object, object>> expression)
-        {
-            return GetSqlUpdate<object>(query, context, type, expression);
-        }
-
-        private static (string, List<object>) GetSqlUpdate<T>(IQueryable query, DbContext context, Type type, Expression<Func<T, T>> expression) where T : class
+        public static (string, List<object>) GetSqlUpdate<T>(IQueryable<T> query, DbContext context, Type type, Expression<Func<T, T>> expression) where T : class
         {
             (string sql, string tableAlias, string tableAliasSufixAs, string topStatement, string leadingComments, IEnumerable<object> innerParameters) = GetBatchSql(query, context, isUpdate: true);
 
@@ -171,12 +162,6 @@ namespace EFCore.BulkExtensions
             }
 
             return (sql, tableAlias, tableAliasSufixAs, topStatement, leadingComments, innerParameters);
-        }
-
-        public static string GetSqlSetSegment<T>(DbContext context, T updateValues, List<string> updateColumns, List<object> parameters) where T : class, new()
-        {
-            var tableInfo = TableInfo.CreateInstance<T>(context, new List<T>(), OperationType.Read, new BulkConfig());
-            return GetSqlSetSegment(context, tableInfo, typeof(T), updateValues, new T(), updateColumns, parameters);
         }
 
         public static string GetSqlSetSegment(DbContext context, Type updateValuesType, object updateValues, List<string> updateColumns, List<object> parameters)
