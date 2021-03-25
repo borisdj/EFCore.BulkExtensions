@@ -46,8 +46,10 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                             {
                                 if (!tableInfo.CheckTableExist(context, tableInfo))
                                 {
-                                    context.Database.ExecuteSqlRaw(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo)); // Will throw Exception specify missing db column: Invalid column name ''
-                                    context.Database.ExecuteSqlRaw(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB));
+                                    var sqlCreateTableCopy = SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo);
+                                    var sqlDropTable = SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
+                                    context.Database.ExecuteSqlRaw(sqlCreateTableCopy); // Will throw Exception specify missing db column: Invalid column name ''
+                                    context.Database.ExecuteSqlRaw(sqlDropTable);
                                 }
                             }
                             throw;
@@ -71,8 +73,10 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                             {
                                 if (!tableInfo.CheckTableExist(context, tableInfo))
                                 {
-                                    context.Database.ExecuteSqlRaw(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo)); // Will throw Exception specify missing db column: Invalid column name ''
-                                    context.Database.ExecuteSqlRaw(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB));
+                                    var sqlCreateTableCopy = SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo);
+                                    var sqlDropTable = SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
+                                    context.Database.ExecuteSqlRaw(sqlCreateTableCopy); // Will throw Exception specify missing db column: Invalid column name ''
+                                    context.Database.ExecuteSqlRaw(sqlDropTable);
                                 }
                             }
                             throw;
@@ -116,8 +120,10 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                             {
                                 if (!await tableInfo.CheckTableExistAsync(context, tableInfo, cancellationToken).ConfigureAwait(false))
                                 {
-                                    await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo), cancellationToken).ConfigureAwait(false);
-                                    await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB), cancellationToken).ConfigureAwait(false);
+                                    var sqlCreateTableCopy = SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo);
+                                    var sqlDropTable = SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
+                                    await context.Database.ExecuteSqlRawAsync(sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
+                                    await context.Database.ExecuteSqlRawAsync(sqlDropTable, cancellationToken).ConfigureAwait(false);
                                 }
                             }
                             throw;
@@ -141,8 +147,10 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                             {
                                 if (!await tableInfo.CheckTableExistAsync(context, tableInfo, cancellationToken).ConfigureAwait(false))
                                 {
-                                    await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo), cancellationToken).ConfigureAwait(false);
-                                    await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB), cancellationToken).ConfigureAwait(false);
+                                    var sqlCreateTableCopy = SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo);
+                                    var sqlDropTable = SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
+                                    await context.Database.ExecuteSqlRawAsync(sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
+                                    await context.Database.ExecuteSqlRawAsync(sqlDropTable, cancellationToken).ConfigureAwait(false);
                                 }
                             }
                             throw;
@@ -312,7 +320,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
         {
             Dictionary<string, string> previousPropertyColumnNamesDict = tableInfo.ConfigureBulkReadTableInfo(context);
 
-            string sql = SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo);
+            var sql = SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo);
             context.Database.ExecuteSqlRaw(sql);
             try
             {
@@ -320,20 +328,20 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
 
                 tableInfo.PropertyColumnNamesDict = tableInfo.OutputPropertyColumnNamesDict;
 
-                var sqlQuery = SqlQueryBuilder.SelectJoinTable(tableInfo);
+                var sqlSelectJoinTable = SqlQueryBuilder.SelectJoinTable(tableInfo);
 
                 tableInfo.PropertyColumnNamesDict = previousPropertyColumnNamesDict;
 
                 List<T> existingEntities;
                 if (typeof(T) == type)
                 {
-                    Expression<Func<DbContext, IQueryable<T>>> expression = tableInfo.GetQueryExpression<T>(sqlQuery, false);
+                    Expression<Func<DbContext, IQueryable<T>>> expression = tableInfo.GetQueryExpression<T>(sqlSelectJoinTable, false);
                     var compiled = EF.CompileQuery(expression); // instead using Compiled queries
                     existingEntities = compiled(context).ToList();
                 }
                 else
                 {
-                    Expression<Func<DbContext, IEnumerable>> expression = tableInfo.GetQueryExpression(type, sqlQuery, false);
+                    Expression<Func<DbContext, IEnumerable>> expression = tableInfo.GetQueryExpression(type, sqlSelectJoinTable, false);
                     var compiled = EF.CompileQuery(expression); // instead using Compiled queries
                     existingEntities = compiled(context).Cast<T>().ToList();
                 }
@@ -343,7 +351,10 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
             finally
             {
                 if (!tableInfo.BulkConfig.UseTempDB)
-                    context.Database.ExecuteSqlRaw(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB));
+                {
+                    var sqlDropTable = SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
+                    context.Database.ExecuteSqlRaw(sqlDropTable);
+                }
             }
         }
 
@@ -358,20 +369,20 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
 
                 tableInfo.PropertyColumnNamesDict = tableInfo.OutputPropertyColumnNamesDict;
 
-                var sqlQuery = SqlQueryBuilder.SelectJoinTable(tableInfo);
+                var sqlSelectJoinTable = SqlQueryBuilder.SelectJoinTable(tableInfo);
 
                 tableInfo.PropertyColumnNamesDict = previousPropertyColumnNamesDict;
 
                 List<T> existingEntities;
                 if (typeof(T) == type)
                 {
-                    Expression<Func<DbContext, IQueryable<T>>> expression = tableInfo.GetQueryExpression<T>(sqlQuery, false);
+                    Expression<Func<DbContext, IQueryable<T>>> expression = tableInfo.GetQueryExpression<T>(sqlSelectJoinTable, false);
                     var compiled = EF.CompileQuery(expression); // instead using Compiled queries
                     existingEntities = compiled(context).ToList();
                 }
                 else
                 {
-                    Expression<Func<DbContext, IEnumerable>> expression = tableInfo.GetQueryExpression(type, sqlQuery, false);
+                    Expression<Func<DbContext, IEnumerable>> expression = tableInfo.GetQueryExpression(type, sqlSelectJoinTable, false);
                     var compiled = EF.CompileQuery(expression); // instead using Compiled queries
                     existingEntities = compiled(context).Cast<T>().ToList();
                 }
@@ -381,18 +392,23 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
             finally
             {
                 if (!tableInfo.BulkConfig.UseTempDB)
-                    await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB), cancellationToken).ConfigureAwait(false);
+                {
+                    var sqlDropTable = SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
+                    await context.Database.ExecuteSqlRawAsync(sqlDropTable, cancellationToken).ConfigureAwait(false);
+                }
             }
         }
 
         public void Truncate(DbContext context, TableInfo tableInfo)
         {
-            context.Database.ExecuteSqlRaw(SqlQueryBuilder.TruncateTable(tableInfo.FullTableName));
+            var sqlTruncateTable = SqlQueryBuilder.TruncateTable(tableInfo.FullTableName);
+            context.Database.ExecuteSqlRaw(sqlTruncateTable);
         }
 
         public async Task TruncateAsync(DbContext context, TableInfo tableInfo)
         {
-            await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.TruncateTable(tableInfo.FullTableName));
+            var sqlTruncateTable = SqlQueryBuilder.TruncateTable(tableInfo.FullTableName);
+            await context.Database.ExecuteSqlRawAsync(sqlTruncateTable);
         }
         
         #region Connection
