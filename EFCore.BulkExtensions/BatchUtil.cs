@@ -469,7 +469,7 @@ namespace EFCore.BulkExtensions
             var rootParameterExpressionNodes = new List<ExpressionNode>();
             expressionStack.Push(new ExpressionNode(expression, null));
 
-            // Perform a depth first traversal of the the expression tree and see if there is a
+            // Perform a depth first traversal of the expression tree and see if there is a
             // leaf node in the format rootLambdaParameter.NavigationProperty indicating a nested
             // query is needed
             while (expressionStack.Count > 0)
