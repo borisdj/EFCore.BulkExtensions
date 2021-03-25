@@ -527,7 +527,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                 a.IsShadowProperty() && 
                 a.IsForeignKey() &&
                 a.GetContainingForeignKeys().FirstOrDefault()?.DependentToPrincipal?.Name != null)
-                .ToDictionary(x => x.Name, a => a);
+                .ToDictionary(a => a.Name, a => a);
 
             var properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             var discriminatorColumn = GetDiscriminatorColumn(tableInfo);

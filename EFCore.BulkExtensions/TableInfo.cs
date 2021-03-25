@@ -174,7 +174,7 @@ namespace EFCore.BulkExtensions
             {
                 var propertyType = propertyWithDefaultValue.ClrType;
                 var instance = (propertyType == typeof(string)) ? (null as string) : Activator.CreateInstance(propertyType);
-                bool listHasAllDefaultValues = !entities.Any(x => x.GetType().GetProperty(propertyWithDefaultValue.Name).GetValue(x, null)?.ToString() != instance?.ToString());
+                bool listHasAllDefaultValues = !entities.Any(a => a.GetType().GetProperty(propertyWithDefaultValue.Name).GetValue(a, null)?.ToString() != instance?.ToString());
                 if (listHasAllDefaultValues)
                 {
                     if (BulkConfig.PropertiesToExclude == null)
@@ -332,7 +332,7 @@ namespace EFCore.BulkExtensions
                     ConvertibleProperties.Add(columnName, converter);
                 }
 
-                foreach (var navigation in entityType.GetNavigations().Where(x => !x.IsCollection() && !x.GetTargetType().IsOwned()))
+                foreach (var navigation in entityType.GetNavigations().Where(a => !a.IsCollection() && !a.GetTargetType().IsOwned()))
                 {
                     FastPropertyDict.Add(navigation.Name, new FastProperty(navigation.PropertyInfo));
                 }
@@ -681,8 +681,8 @@ namespace EFCore.BulkExtensions
             InsertToTempTable = true;
 
             var previousPropertyColumnNamesDict = PropertyColumnNamesDict;
-            BulkConfig.PropertiesToInclude = PrimaryKeysPropertyColumnNameDict.Select(x => x.Key).ToList();
-            PropertyColumnNamesDict = PropertyColumnNamesDict.Where(a => PrimaryKeysPropertyColumnNameDict.ContainsKey(a.Key)).ToDictionary(i => i.Key, i => i.Value);
+            BulkConfig.PropertiesToInclude = PrimaryKeysPropertyColumnNameDict.Select(a => a.Key).ToList();
+            PropertyColumnNamesDict = PropertyColumnNamesDict.Where(a => PrimaryKeysPropertyColumnNameDict.ContainsKey(a.Key)).ToDictionary(a => a.Key, a => a.Value);
             return previousPropertyColumnNamesDict;
         }
 
@@ -745,7 +745,7 @@ namespace EFCore.BulkExtensions
             bool doSetIdentityColumnsForInsertOrder = BulkConfig.PreserveInsertOrder &&
                                                       entities.Count() > 1 &&
                                                       PrimaryKeysPropertyColumnNameDict.Count() == 1 &&
-                                                      PrimaryKeysPropertyColumnNameDict.Select(x => x.Value).First() == IdentityColumnName &&
+                                                      PrimaryKeysPropertyColumnNameDict.Select(a => a.Value).First() == IdentityColumnName &&
                                                       (reset == true || (Convert.ToInt64(FastPropertyDict[identityPropertyName].Get(entities[0])) == 0 &&
                                                                          Convert.ToInt64(FastPropertyDict[identityPropertyName].Get(entities[1])) == 0));
             if (doSetIdentityColumnsForInsertOrder)
@@ -930,7 +930,7 @@ namespace EFCore.BulkExtensions
             {
                 expression = (ctx) => ctx.Set<T>().FromSqlRaw(sqlQuery).AsNoTracking();
             }
-            return ordered ? Expression.Lambda<Func<DbContext, IQueryable<T>>>(OrderBy(typeof(T), expression.Body, PrimaryKeysPropertyColumnNameDict.Select(x => x.Key).First()), expression.Parameters) : expression;
+            return ordered ? Expression.Lambda<Func<DbContext, IQueryable<T>>>(OrderBy(typeof(T), expression.Body, PrimaryKeysPropertyColumnNameDict.Select(a => a.Key).First()), expression.Parameters) : expression;
 
             // ALTERNATIVELY OrderBy with DynamicLinq ('using System.Linq.Dynamic.Core;' NuGet required) that eliminates need for custom OrderBy<T> method with Expression.
             //var queryOrdered = query.OrderBy(PrimaryKeys[0]);
@@ -948,7 +948,7 @@ namespace EFCore.BulkExtensions
             {
                 expression = Expression.Call(typeof(EntityFrameworkQueryableExtensions), "AsNoTracking", new Type[] { entityType }, expression);
             }
-            expression = ordered ? OrderBy(entityType, expression, PrimaryKeysPropertyColumnNameDict.Select(x => x.Key).First()) : expression;
+            expression = ordered ? OrderBy(entityType, expression, PrimaryKeysPropertyColumnNameDict.Select(a => a.Key).First()) : expression;
             return Expression.Lambda<Func<DbContext, IEnumerable>>(expression, parameter);
 
             // ALTERNATIVELY OrderBy with DynamicLinq ('using System.Linq.Dynamic.Core;' NuGet required) that eliminates need for custom OrderBy<T> method with Expression.
