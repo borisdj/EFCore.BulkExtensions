@@ -72,7 +72,7 @@ namespace EFCore.BulkExtensions
             bool isExplicitTransaction = context.Database.GetDbConnection().State == ConnectionState.Open;
             if (tableInfo.BulkConfig.UseTempDB == true && !isExplicitTransaction && (operationType != OperationType.Insert || tableInfo.BulkConfig.SetOutputIdentity))
             {
-                throw new InvalidOperationException("UseTempDB when set then BulkOperation has to be inside Transaction. More info in README of the library in GitHub.");
+                throw new InvalidOperationException("When 'UseTempDB' is set then BulkOperation has to be inside Transaction. More info in README of the library in GitHub.");
                 // Otherwise throws exception: 'Cannot access destination table' (gets Dropped too early because transaction ends before operation is finished)
             }
 
@@ -770,7 +770,7 @@ namespace EFCore.BulkExtensions
             }
         }
       
-        protected void UpdateEntitiesIdentity<T>(DbContext context, TableInfo tableInfo, IList<T> entities, IList<T> entitiesWithOutputIdentity)
+        protected void UpdateEntitiesIdentity(DbContext context, TableInfo tableInfo, IList<object> entities, IList<object> entitiesWithOutputIdentity)
         {
             var identityPropertyName = OutputPropertyColumnNamesDict.SingleOrDefault(a => a.Value == IdentityColumnName).Key;
 
@@ -830,7 +830,7 @@ namespace EFCore.BulkExtensions
             else // Clears entityList and then refills it with loaded entites from Db
             {
                 entities.Clear();
-                ((List<T>)entities).AddRange(entitiesWithOutputIdentity);
+                ((List<object>)entities).AddRange(entitiesWithOutputIdentity);
             }
         }
 
@@ -846,11 +846,11 @@ namespace EFCore.BulkExtensions
             if (BulkConfig.SetOutputIdentity && tableInfo.HasSinglePrimaryKey)
             {
                 string sqlQuery = SqlQueryBuilder.SelectFromOutputTable(this);
-                var entitiesWithOutputIdentity = (typeof(T) == type)
-                                                 ? QueryOutputTable<T>(context, sqlQuery).ToList()
-                                                 : QueryOutputTable(context, type, sqlQuery).Cast<T>().ToList();
+                var entitiesWithOutputIdentity = QueryOutputTable(context, type, sqlQuery).Cast<object>().ToList();
+                //var entitiesWithOutputIdentity = (typeof(T) == type) ? QueryOutputTable<object>(context, sqlQuery).ToList(): QueryOutputTable(context, type, sqlQuery).Cast<object>().ToList();
 
-                UpdateEntitiesIdentity(context, tableInfo, entities, entitiesWithOutputIdentity);
+                var entitiesObjects = entities.Cast<object>().ToList();
+                UpdateEntitiesIdentity(context, tableInfo, entitiesObjects, entitiesWithOutputIdentity);
                 totalNumber = entitiesWithOutputIdentity.Count;
             }
             if (BulkConfig.CalculateStats)
@@ -874,10 +874,11 @@ namespace EFCore.BulkExtensions
             {
                 string sqlQuery = SqlQueryBuilder.SelectFromOutputTable(this);
                 //var entitiesWithOutputIdentity = await QueryOutputTableAsync<T>(context, sqlQuery).ToListAsync(cancellationToken).ConfigureAwait(false); // TempFIX
-                var entitiesWithOutputIdentity = (typeof(T) == type)
-                                                 ? QueryOutputTable<T>(context, sqlQuery).ToList()
-                                                 : QueryOutputTable(context, type, sqlQuery).Cast<T>().ToList();
-                UpdateEntitiesIdentity(context, tableInfo, entities, entitiesWithOutputIdentity);
+                var entitiesWithOutputIdentity = QueryOutputTable(context, type, sqlQuery).Cast<object>().ToList();
+                //var entitiesWithOutputIdentity = (typeof(T) == type) ? QueryOutputTable<object>(context, sqlQuery).ToList() : QueryOutputTable(context, type, sqlQuery).Cast<object>().ToList();
+
+                var entitiesObjects = entities.Cast<object>().ToList();
+                UpdateEntitiesIdentity(context, tableInfo, entitiesObjects, entitiesWithOutputIdentity);
                 totallNumber = entitiesWithOutputIdentity.Count;
             }
             if (BulkConfig.CalculateStats)
@@ -893,13 +894,6 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        protected IEnumerable<T> QueryOutputTable<T>(DbContext context, string sqlQuery) where T : class
-        {
-            var compiled = EF.CompileQuery(GetQueryExpression<T>(sqlQuery));
-            var result = compiled(context);
-            return result;
-        }
-
         protected IEnumerable QueryOutputTable(DbContext context, Type type, string sqlQuery)
         {
             var compiled = EF.CompileQuery(GetQueryExpression(type, sqlQuery));
@@ -907,12 +901,19 @@ namespace EFCore.BulkExtensions
             return result;
         }
 
-        protected IAsyncEnumerable<T> QueryOutputTableAsync<T>(DbContext context, string sqlQuery) where T : class
+        /*protected IEnumerable<T> QueryOutputTable<T>(DbContext context, string sqlQuery) where T : class
+        {
+            var compiled = EF.CompileQuery(GetQueryExpression<T>(sqlQuery));
+            var result = compiled(context);
+            return result;
+        }*/
+
+        /*protected IAsyncEnumerable<T> QueryOutputTableAsync<T>(DbContext context, string sqlQuery) where T : class
         {
             var compiled = EF.CompileAsyncQuery(GetQueryExpression<T>(sqlQuery));
             var result = compiled(context);
             return result;
-        }
+        }*/
 
         public Expression<Func<DbContext, IQueryable<T>>> GetQueryExpression<T>(string sqlQuery, bool ordered = true) where T : class
         {

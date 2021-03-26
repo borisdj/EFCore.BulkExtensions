@@ -399,7 +399,7 @@ namespace EFCore.BulkExtensions.Tests
             {
                 var list = context.Moduls.ToList();
                 var bulkConfig = new BulkConfig { UpdateByProperties = new List<string> { nameof(Modul.Code) } };
-                context.BulkDelete(context.Moduls.ToList(), bulkConfig);
+                context.BulkDelete(list, bulkConfig);
 
                 var list1 = new List<Modul>();
                 var list2 = new List<Modul>();
@@ -427,6 +427,33 @@ namespace EFCore.BulkExtensions.Tests
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 Assert.Equal(20, context.Moduls.ToList().Count());
+            }
+        }
+
+        [Theory]
+        [InlineData(DbServer.SqlServer)]
+        [InlineData(DbServer.Sqlite)]
+        private void NonEntityChildTest(DbServer dbServer)
+        {
+            ContextUtil.DbServer = dbServer;
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                var list = context.Animals.ToList();
+                context.BulkDelete(list);
+
+                var mammalList = new List<Mammal>()
+                {
+                    new Mammal { Name = "Cat" },
+                    new Mammal { Name = "Dog" }
+                };
+                var bulkConfig = new BulkConfig { SetOutputIdentity = true };
+                context.BulkInsert(mammalList, bulkConfig, type: typeof(Animal));
+            }
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                Assert.Equal(2, context.Animals.ToList().Count());
             }
         }
 

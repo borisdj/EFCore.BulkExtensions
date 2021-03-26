@@ -25,6 +25,7 @@ namespace EFCore.BulkExtensions.Tests
         public DbSet<Person> Persons { get; set; }
         public DbSet<Student> Students { get; set; }
         public DbSet<Teacher> Teachers { get; set; }
+        public DbSet<Modul> Moduls { get; set; }
         public DbSet<Info> Infos { get; set; }
         public DbSet<ChangeLog> ChangeLogs { get; set; }
         public DbSet<ItemLink> ItemLinks { get; set; }
@@ -34,9 +35,9 @@ namespace EFCore.BulkExtensions.Tests
         public DbSet<ParentDetail> ParentDetails { get; set; }
         public DbSet<Child> Children { get; set; }
 
-        public DbSet<Setting> Settings { get; set; }
+        public DbSet<Animal> Animals { get; set; }
 
-        public DbSet<Modul> Moduls { get; set; }
+        public DbSet<Setting> Settings { get; set; }
 
         public TestContext(DbContextOptions options) : base(options)
         {
@@ -319,6 +320,20 @@ namespace EFCore.BulkExtensions.Tests
 
         public string GetLogData() { return logData; }
         public DateTime GetDateCreated() { return TimeCreated.Date; }
+    }
+
+
+    public class Animal
+    {
+        public int AnimalId { get; set; }
+
+        [Required]
+        public string Name { get; set; }
+    }
+
+    public class Mammal : Animal
+    {
+        public string Category { get; set; }
     }
 
     public enum SettingsEnum
