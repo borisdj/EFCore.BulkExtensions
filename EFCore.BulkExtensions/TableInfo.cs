@@ -689,16 +689,6 @@ namespace EFCore.BulkExtensions
             return previousPropertyColumnNamesDict;
         }
 
-        public void UpdateReadEntities<T>(IList<T> entities, IList<T> existingEntities)
-        {
-            UpdateReadEntities<T>(typeof(T), entities, existingEntities);
-        }
-
-        public void UpdateReadEntities(Type type, IList<object> entities, IList<object> existingEntities)
-        {
-            UpdateReadEntities<object>(type, entities, existingEntities);
-        }
-
         internal void UpdateReadEntities<T>(Type type, IList<T> entities, IList<T> existingEntities)
         {
             List<string> propertyNames = PropertyColumnNamesDict.Keys.ToList();
@@ -856,8 +846,9 @@ namespace EFCore.BulkExtensions
             if (BulkConfig.SetOutputIdentity && tableInfo.HasSinglePrimaryKey)
             {
                 string sqlQuery = SqlQueryBuilder.SelectFromOutputTable(this);
-                var entitiesWithOutputIdentity = (typeof(T) == type) ? QueryOutputTable<T>(context, sqlQuery).ToList() :
-                    QueryOutputTable(context, type, sqlQuery).Cast<T>().ToList();
+                var entitiesWithOutputIdentity = (typeof(T) == type)
+                                                 ? QueryOutputTable<T>(context, sqlQuery).ToList()
+                                                 : QueryOutputTable(context, type, sqlQuery).Cast<T>().ToList();
 
                 UpdateEntitiesIdentity(context, tableInfo, entities, entitiesWithOutputIdentity);
                 totalNumber = entitiesWithOutputIdentity.Count;
@@ -883,9 +874,9 @@ namespace EFCore.BulkExtensions
             {
                 string sqlQuery = SqlQueryBuilder.SelectFromOutputTable(this);
                 //var entitiesWithOutputIdentity = await QueryOutputTableAsync<T>(context, sqlQuery).ToListAsync(cancellationToken).ConfigureAwait(false); // TempFIX
-                var entitiesWithOutputIdentity = (typeof(T) == type) ?
-                                                    QueryOutputTable<T>(context, sqlQuery).ToList() :
-                                                    QueryOutputTable(context, type, sqlQuery).Cast<T>().ToList();
+                var entitiesWithOutputIdentity = (typeof(T) == type)
+                                                 ? QueryOutputTable<T>(context, sqlQuery).ToList()
+                                                 : QueryOutputTable(context, type, sqlQuery).Cast<T>().ToList();
                 UpdateEntitiesIdentity(context, tableInfo, entities, entitiesWithOutputIdentity);
                 totallNumber = entitiesWithOutputIdentity.Count;
             }
@@ -916,12 +907,12 @@ namespace EFCore.BulkExtensions
             return result;
         }
 
-        /*protected IAsyncEnumerable<T> QueryOutputTableAsync<T>(DbContext context, string sqlQuery) where T : class
+        protected IAsyncEnumerable<T> QueryOutputTableAsync<T>(DbContext context, string sqlQuery) where T : class
         {
             var compiled = EF.CompileAsyncQuery(GetQueryExpression<T>(sqlQuery));
             var result = compiled(context);
             return result;
-        }*/
+        }
 
         public Expression<Func<DbContext, IQueryable<T>>> GetQueryExpression<T>(string sqlQuery, bool ordered = true) where T : class
         {
