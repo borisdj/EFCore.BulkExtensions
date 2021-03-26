@@ -125,7 +125,8 @@ namespace EFCore.BulkExtensions
             var primaryKeys = entityType.FindPrimaryKey()?.Properties?.ToDictionary(a => a.Name, b => b.GetColumnName());
 
             HasSinglePrimaryKey = primaryKeys?.Count == 1;
-            PrimaryKeysPropertyColumnNameDict = AreSpecifiedUpdateByProperties ? BulkConfig.UpdateByProperties.ToDictionary(a => a, b => b) : primaryKeys;
+            PrimaryKeysPropertyColumnNameDict = AreSpecifiedUpdateByProperties ? BulkConfig.UpdateByProperties.ToDictionary(a => a, b => b)
+                                                                               : (primaryKeys ?? new Dictionary<string, string>());
 
             var allProperties = entityType.GetProperties().AsEnumerable();
 
@@ -236,7 +237,7 @@ namespace EFCore.BulkExtensions
                 }
             }
 
-            UpdateByPropertiesAreNullable = properties.Any(a => PrimaryKeysPropertyColumnNameDict != null && PrimaryKeysPropertyColumnNameDict.ContainsKey(a.Name) && a.IsNullable);
+            UpdateByPropertiesAreNullable = properties.Any(a => PrimaryKeysPropertyColumnNameDict.ContainsKey(a.Name) && a.IsNullable);
 
             if (AreSpecifiedPropertiesToInclude || AreSpecifiedPropertiesToExclude)
             {
@@ -313,6 +314,8 @@ namespace EFCore.BulkExtensions
 
             if (loadOnlyPKColumn)
             {
+                if (PrimaryKeysPropertyColumnNameDict.Count() == 0)
+                    throw new InvalidBulkConfigException("If no PrimaryKey is defined operation requres bulkConfig set with 'UpdatedByProperties'.");
                 PropertyColumnNamesDict = properties.Where(a => PrimaryKeysPropertyColumnNameDict.ContainsKey(a.Name)).ToDictionary(a => a.Name, b => b.GetColumnName().Replace("]", "]]"));
             }
             else
@@ -744,8 +747,8 @@ namespace EFCore.BulkExtensions
 
             bool doSetIdentityColumnsForInsertOrder = BulkConfig.PreserveInsertOrder &&
                                                       entities.Count() > 1 &&
-                                                      PrimaryKeysPropertyColumnNameDict.Count() == 1 &&
-                                                      PrimaryKeysPropertyColumnNameDict.Select(a => a.Value).First() == IdentityColumnName &&
+                                                      PrimaryKeysPropertyColumnNameDict?.Count() == 1 &&
+                                                      PrimaryKeysPropertyColumnNameDict?.Select(a => a.Value).First() == IdentityColumnName &&
                                                       (reset == true || (Convert.ToInt64(FastPropertyDict[identityPropertyName].Get(entities[0])) == 0 &&
                                                                          Convert.ToInt64(FastPropertyDict[identityPropertyName].Get(entities[1])) == 0));
             if (doSetIdentityColumnsForInsertOrder)

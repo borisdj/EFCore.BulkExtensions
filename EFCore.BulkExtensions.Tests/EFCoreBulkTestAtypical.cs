@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace EFCore.BulkExtensions.Tests
@@ -342,7 +343,9 @@ namespace EFCore.BulkExtensions.Tests
                     context.BulkDelete(context.ItemLinks.ToList());
                 }
                 context.BulkDelete(context.Items.ToList()); // On table with FK Truncate does not work
-
+            }
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
                 for (int i = 1; i < 10; ++i)
                 {
                     var entity = new Item
@@ -382,6 +385,48 @@ namespace EFCore.BulkExtensions.Tests
                 }
 
                 context.BulkDelete(context.ItemLinks.ToList());
+            }
+        }
+
+        [Theory]
+        [InlineData(DbServer.SqlServer)]
+        [InlineData(DbServer.Sqlite)]
+        private void NoPrimaryKeyTest(DbServer dbServer)
+        {
+            ContextUtil.DbServer = dbServer;
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                var list = context.Moduls.ToList();
+                var bulkConfig = new BulkConfig { UpdateByProperties = new List<string> { nameof(Modul.Code) } };
+                context.BulkDelete(context.Moduls.ToList(), bulkConfig);
+
+                var list1 = new List<Modul>();
+                var list2 = new List<Modul>();
+                for (int i = 1; i <= 20; i++)
+                {
+                    if (i <= 10)
+                    {
+                        list1.Add(new Modul
+                        {
+                            Code = i.ToString(),
+                            Name = "Name " + i.ToString("00"),
+                        });
+                    }
+                    list2.Add(new Modul
+                    {
+                        Code = i.ToString(),
+                        Name = "Name " + i.ToString("00"),
+                    });
+                }
+                context.BulkInsert(list1);
+                list2[0].Name = "UPD";
+                context.BulkInsertOrUpdate(list2);
+            }
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                Assert.Equal(20, context.Moduls.ToList().Count());
             }
         }
 

@@ -36,6 +36,8 @@ namespace EFCore.BulkExtensions.Tests
 
         public DbSet<Setting> Settings { get; set; }
 
+        public DbSet<Modul> Moduls { get; set; }
+
         public TestContext(DbContextOptions options) : base(options)
         {
             Database.EnsureCreated();
@@ -78,6 +80,10 @@ namespace EFCore.BulkExtensions.Tests
 
                 modelBuilder.Entity<Address>().Ignore(p => p.Location);
             }
+
+            //modelBuilder.Entity<Modul>(buildAction => { buildAction.HasNoKey(); });
+            modelBuilder.Entity<Modul>().Property(et => et.Code).ValueGeneratedNever();
+
 
             modelBuilder.Entity<Setting>().Property(e => e.Settings).HasConversion<string>();
 
@@ -275,6 +281,14 @@ namespace EFCore.BulkExtensions.Tests
     {
         InfoTypeA,
         InfoTypeB
+    }
+
+    public class Modul
+    {
+        [Key]
+        [Required]
+        public string Code { get; set; }
+        public string Name { get; set; }
     }
 
     // For testring ValueConversion
