@@ -749,8 +749,9 @@ namespace EFCore.BulkExtensions
                                                       entities.Count() > 1 &&
                                                       PrimaryKeysPropertyColumnNameDict?.Count() == 1 &&
                                                       PrimaryKeysPropertyColumnNameDict?.Select(a => a.Value).First() == IdentityColumnName &&
-                                                      (reset == true || (Convert.ToInt64(FastPropertyDict[identityPropertyName].Get(entities[0])) == 0 &&
-                                                                         Convert.ToInt64(FastPropertyDict[identityPropertyName].Get(entities[1])) == 0));
+                                                      ((reset == true && Convert.ToInt64(FastPropertyDict[identityPropertyName].Get(entities[0])) < 0)
+                                                        || (Convert.ToInt64(FastPropertyDict[identityPropertyName].Get(entities[0])) == 0 &&
+                                                            Convert.ToInt64(FastPropertyDict[identityPropertyName].Get(entities[1])) == 0));
             if (doSetIdentityColumnsForInsertOrder)
             {
                 long i = -entities.Count();
