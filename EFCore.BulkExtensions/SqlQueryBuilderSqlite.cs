@@ -1,4 +1,5 @@
 ﻿using Microsoft.Data.SqlClient;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -11,6 +12,7 @@ namespace EFCore.BulkExtensions
             return "SELECT last_insert_rowid();";
         }
 
+        // Sqlite insertOrUpdate does not support in one call, if there is autoincrement, simultanious Insert wihtout PK and update with PK
         public static string InsertIntoTable(TableInfo tableInfo, OperationType operationType, string tableName = null)
         {
             tableName = tableName ?? tableInfo.TableName;
@@ -18,7 +20,7 @@ namespace EFCore.BulkExtensions
             List<string> propertiesList = tableInfo.PropertyColumnNamesDict.Keys.ToList();
 
             bool keepIdentity = tableInfo.BulkConfig.SqlBulkCopyOptions.HasFlag(SqlBulkCopyOptions.KeepIdentity);
-            if(operationType == OperationType.Insert && !keepIdentity && tableInfo.HasIdentity)
+            if (operationType == OperationType.Insert && !keepIdentity && tableInfo.HasIdentity)
             {
                 var identityPropertyName = tableInfo.PropertyColumnNamesDict.SingleOrDefault(a => a.Value == tableInfo.IdentityColumnName).Key;
                 columnsList = columnsList.Where(a => a != tableInfo.IdentityColumnName).ToList();
