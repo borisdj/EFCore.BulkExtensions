@@ -174,7 +174,10 @@ namespace EFCore.BulkExtensions
             foreach (var propertyWithDefaultValue in propertiesWithDefaultValues)
             {
                 var propertyType = propertyWithDefaultValue.ClrType;
-                var instance = (propertyType == typeof(string)) ? (null as string) : Activator.CreateInstance(propertyType);
+                var instance = propertyType.IsValueType || propertyType.GetConstructor(Type.EmptyTypes) != null
+                                  ? Activator.CreateInstance(propertyType)
+                                  : null; // when type does not have parameterless constructor, like String for example, then default value is 'null'
+
                 bool listHasAllDefaultValues = !entities.Any(a => a.GetType().GetProperty(propertyWithDefaultValue.Name).GetValue(a, null)?.ToString() != instance?.ToString());
                 if (listHasAllDefaultValues)
                 {

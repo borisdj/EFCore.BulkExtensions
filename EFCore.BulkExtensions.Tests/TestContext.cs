@@ -67,6 +67,7 @@ namespace EFCore.BulkExtensions.Tests
             modelBuilder.Entity<Person>().HasIndex(a => a.Name).IsUnique(); // In SQLite UpdateByColumn(nonPK) requires it has UniqueIndex
 
             modelBuilder.Entity<Document>().Property(p => p.IsActive).HasDefaultValue(true);
+            modelBuilder.Entity<Document>().Property(p => p.Tag).HasDefaultValue("DefaultData");
 
             if (Database.IsSqlServer())
             {
@@ -259,6 +260,8 @@ namespace EFCore.BulkExtensions.Tests
 
         [Required]
         public string Content { get; set; }
+
+        public string Tag { get; set; }
 
         [DatabaseGenerated(DatabaseGeneratedOption.Computed)] // Computed columns also have to be configured with FluentAPI
         public int ContentLength { get; set; }
