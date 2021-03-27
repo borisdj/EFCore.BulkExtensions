@@ -12,7 +12,8 @@ namespace EFCore.BulkExtensions
             return "SELECT last_insert_rowid();";
         }
 
-        // Sqlite insertOrUpdate does not support in one call, if there is autoincrement, simultanious Insert wihtout PK and update with PK
+        // In Sqlite if table has AutoIncrement then InsertOrUpdate is not supported in one call,
+        // we can not simultaneously Insert without PK(being 0,0,...) and Update with PK(1,2,...), separate calls Insert, Update are required.
         public static string InsertIntoTable(TableInfo tableInfo, OperationType operationType, string tableName = null)
         {
             tableName = tableName ?? tableInfo.TableName;
