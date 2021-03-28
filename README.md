@@ -81,6 +81,8 @@ Those in Db that are not found in the list will be deleted.<br>
 **BulkRead** does SELECT and JOIN based on one or more Unique columns that are specified in Config `UpdateByProperties`.<br>
 More info in the [Example](https://github.com/borisdj/EFCore.BulkExtensions#read-example) at the bottom.<br>
 
+Note: Bulk ops have optional argument *Type type* that can be set to type of Entity if list has dynamic runtime objects or is inhereted from Entity class.
+
 ## BulkConfig arguments
 
 **BulkInsert_/OrUpdate/OrDelete** methods can have optional argument **BulkConfig** with properties (bool, int, object, List<string>):<br>
