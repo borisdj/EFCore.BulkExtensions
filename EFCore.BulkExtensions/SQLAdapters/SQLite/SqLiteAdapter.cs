@@ -357,8 +357,8 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
                     command.CommandText = SqlQueryBuilderSqlite.InsertIntoTable(tableInfo, OperationType.InsertOrUpdate);
                     break;
                 case OperationType.InsertOrUpdateDelete:
-                    throw new NotSupportedException("Sqlite supports only UPSERT(analog for MERGE WHEN MATCHED) but does not have functionality to do: 'WHEN NOT MATCHED BY SOURCE THEN DELETE'" +
-                                                    "What can be done is to read all Data, find rows that are not in input List, then with those do the BulkDelete.");
+                    throw new NotSupportedException("'BulkInsertOrUpdateDelete' not supported for Sqlite. Sqlite has only UPSERT statement (analog for MERGE WHEN MATCHED) but no functionality for: 'WHEN NOT MATCHED BY SOURCE THEN DELETE'." +
+                                                    " Another way to achieve this is to BulkRead existing data from DB, split list into sublists ans call separately Bulk methods for Insert, Update, Delete.");
                 case OperationType.Update:
                     command.CommandText = SqlQueryBuilderSqlite.UpdateSetTable(tableInfo);
                     break;
