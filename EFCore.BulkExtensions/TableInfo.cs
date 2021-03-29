@@ -750,25 +750,30 @@ namespace EFCore.BulkExtensions
                 long i = -entities.Count();
                 foreach (var entity in entities)
                 {
-                    long value = reset ? 0 : i;
+                    var identityFastProperty = FastPropertyDict[identityPropertyName];
+                    if (Convert.ToInt64(identityFastProperty.Get(entity)) == 0 ||           // set only zero(0) values
+                        (Convert.ToInt64(identityFastProperty.Get(entity)) <  0 && reset))  // set only negative(-N) values if reset
+                    {
+                        long value = reset ? 0 : i;
 
-                    object idValue;
-                    var idType = FastPropertyDict[identityPropertyName].Property.PropertyType;
-                    if (idType == typeof(ushort))
-                        idValue = (ushort)value;
-                    if (idType == typeof(short))
-                        idValue = (short)value;
-                    else if (idType == typeof(uint))
-                        idValue = (uint)value;
-                    else if (idType == typeof(int))
-                        idValue = (int)value;
-                    else if (idType == typeof(ulong))
-                        idValue = (ulong)value;
-                    else 
-                        idValue = (long)value;
+                        object idValue;
+                        var idType = identityFastProperty.Property.PropertyType;
+                        if (idType == typeof(ushort))
+                            idValue = (ushort)value;
+                        if (idType == typeof(short))
+                            idValue = (short)value;
+                        else if (idType == typeof(uint))
+                            idValue = (uint)value;
+                        else if (idType == typeof(int))
+                            idValue = (int)value;
+                        else if (idType == typeof(ulong))
+                            idValue = (ulong)value;
+                        else
+                            idValue = (long)value;
 
-                    FastPropertyDict[identityPropertyName].Set(entity, idValue);
-                    i++;
+                        identityFastProperty.Set(entity, idValue);
+                        i++;
+                    }
                 }
             }
         }
