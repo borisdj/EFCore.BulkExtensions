@@ -189,7 +189,7 @@ namespace EFCore.BulkExtensions
             {
 
                 q += $" WHEN MATCHED" +
-                     (tableInfo.BulkConfig.SkipClauseExistsExcept || tableInfo.HasSpatialType ? "" : // The data type Geography (Spatial) cannot be used as an operand to the UNION, INTERSECT or EXCEPT operators because it is not comparable
+                     (tableInfo.BulkConfig.OmitClauseExistsExcept || tableInfo.HasSpatialType ? "" : // The data type Geography (Spatial) cannot be used as an operand to the UNION, INTERSECT or EXCEPT operators because it is not comparable
                       $" AND EXISTS (SELECT {GetCommaSeparatedColumns(compareColumnNames, "S")}" + // EXISTS better handles nulls
                       $" EXCEPT SELECT {GetCommaSeparatedColumns(compareColumnNames, "T")})"       // EXCEPT does not update if all values are same
                      ) +
