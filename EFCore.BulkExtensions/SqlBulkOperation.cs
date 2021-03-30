@@ -48,27 +48,20 @@ namespace EFCore.BulkExtensions
 
         public static void Read<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress) where T : class
         {
-            var dropTempTableIfExists = tableInfo.BulkConfig.UseTempDB;
-
-            if (dropTempTableIfExists)
+            if (tableInfo.BulkConfig.UseTempDB) // dropTempTableIfExists
             {
                 context.Database.ExecuteSqlRaw(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB));
             }
-
             var adapter = SqlAdaptersMapping.CreateBulkOperationsAdapter(context);
             adapter.Read(context, type, entities, tableInfo, progress);
         }
 
         public static async Task ReadAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, CancellationToken cancellationToken) where T : class
         {
-           
-            var dropTempTableIfExists = tableInfo.BulkConfig.UseTempDB;
-
-            if (dropTempTableIfExists)
+            if (tableInfo.BulkConfig.UseTempDB) // dropTempTableIfExists
             {
                 await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB), cancellationToken).ConfigureAwait(false);
             }
-
             var adapter = SqlAdaptersMapping.CreateBulkOperationsAdapter(context);
             await adapter.ReadAsync(context, type, entities, tableInfo, progress, cancellationToken);
         }
@@ -82,7 +75,7 @@ namespace EFCore.BulkExtensions
         public static async Task TruncateAsync(DbContext context, TableInfo tableInfo, CancellationToken cancellationToken)
         {
             var adapter = SqlAdaptersMapping.CreateBulkOperationsAdapter(context);
-            await adapter.TruncateAsync(context, tableInfo);
+            await adapter.TruncateAsync(context, tableInfo, cancellationToken).ConfigureAwait(false);
         }
     }
 }

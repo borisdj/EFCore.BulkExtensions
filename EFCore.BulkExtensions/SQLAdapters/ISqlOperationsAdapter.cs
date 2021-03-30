@@ -21,6 +21,6 @@ namespace EFCore.BulkExtensions.SqlAdapters
         Task ReadAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, CancellationToken cancellationToken) where T : class;
 
         void Truncate(DbContext context, TableInfo tableInfo);
-        Task TruncateAsync(DbContext context, TableInfo tableInfo);
+        Task TruncateAsync(DbContext context, TableInfo tableInfo, CancellationToken cancellationToken);
     }
 }

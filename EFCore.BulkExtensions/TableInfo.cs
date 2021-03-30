@@ -72,8 +72,8 @@ namespace EFCore.BulkExtensions
             bool isExplicitTransaction = context.Database.GetDbConnection().State == ConnectionState.Open;
             if (tableInfo.BulkConfig.UseTempDB == true && !isExplicitTransaction && (operationType != OperationType.Insert || tableInfo.BulkConfig.SetOutputIdentity))
             {
-                throw new InvalidOperationException("When 'UseTempDB' is set then BulkOperation has to be inside Transaction. More info in README of the library in GitHub.");
-                // Otherwise throws exception: 'Cannot access destination table' (gets Dropped too early because transaction ends before operation is finished)
+                throw new InvalidOperationException("When 'UseTempDB' is set then BulkOperation has to be inside Transaction. " +
+                                                    "Otherwise destination table gets dropped too early because transaction ends before operation is finished."); // throws: 'Cannot access destination table'
             }
 
             var isDeleteOperation = operationType == OperationType.Delete;
@@ -93,7 +93,9 @@ namespace EFCore.BulkExtensions
                 HasAbstractList = true;
             }
             if (entityType == null)
+            {
                 throw new InvalidOperationException($"DbContext does not contain EntitySet for Type: { type.Name }");
+            }
 
             //var relationalData = entityType.Relational(); relationalData.Schema relationalData.TableName // DEPRECATED in Core3.0
             bool isSqlServer = context.Database.ProviderName.EndsWith(DbServer.SqlServer.ToString());
@@ -484,110 +486,18 @@ namespace EFCore.BulkExtensions
         #endregion
 
         #region SqlCommands
-        public void CheckHasIdentity(DbContext context) // No longer used
+        public async Task<bool> CheckTableExistAsync(DbContext context, TableInfo tableInfo, CancellationToken cancellationToken, bool isAsync)
         {
-            context.Database.OpenConnection();
-            try
+            if (isAsync)
             {
-                var sqlConnection = context.Database.GetDbConnection();
-                var currentTransaction = context.Database.CurrentTransaction;
-
-                using (var command = sqlConnection.CreateCommand())
-                {
-                    if (currentTransaction != null)
-                        command.Transaction = currentTransaction.GetDbTransaction();
-                    command.CommandText = SqlQueryBuilder.SelectIdentityColumnName(TableName, Schema);
-                    using (var reader = command.ExecuteReader())
-                    {
-                        if (reader.HasRows)
-                        {
-                            while (reader.Read())
-                            {
-                                IdentityColumnName = reader.GetString(0);
-                            }
-                        }
-                    }
-                }
+                await context.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
             }
-            finally
+            else
             {
-                context.Database.CloseConnection();
+                context.Database.OpenConnection();
             }
-        }
 
-        public async Task CheckHasIdentityAsync(DbContext context, CancellationToken cancellationToken) // No longer used
-        {
-            await context.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
-
-            var sqlConnection = context.Database.GetDbConnection();
-            var currentTransaction = context.Database.CurrentTransaction;
-            try
-            {
-                using (var command = sqlConnection.CreateCommand())
-                {
-                    if (currentTransaction != null)
-                        command.Transaction = currentTransaction.GetDbTransaction();
-                    command.CommandText = SqlQueryBuilder.SelectIdentityColumnName(TableName, Schema);
-                    using (var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false))
-                    {
-                        if (reader.HasRows)
-                        {
-                            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
-                            {
-                                IdentityColumnName = reader.GetString(0);
-                            }
-                        }
-                    }
-                }
-            }
-            finally
-            {
-                await context.Database.CloseConnectionAsync().ConfigureAwait(false);
-            }
-        }
-
-        public bool CheckTableExist(DbContext context, TableInfo tableInfo)
-        {
             bool tableExist = false;
-            var sqlConnection = context.Database.GetDbConnection();
-            var currentTransaction = context.Database.CurrentTransaction;
-            try
-            {
-                if (currentTransaction == null)
-                {
-                    if (sqlConnection.State != ConnectionState.Open)
-                        sqlConnection.Open();
-                }
-                using (var command = sqlConnection.CreateCommand())
-                {
-                    if (currentTransaction != null)
-                        command.Transaction = currentTransaction.GetDbTransaction();
-                    command.CommandText = SqlQueryBuilder.CheckTableExist(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
-                    using (var reader = command.ExecuteReader())
-                    {
-                        if (reader.HasRows)
-                        {
-                            while (reader.Read())
-                            {
-                                tableExist = (int)reader[0] == 1;
-                            }
-                        }
-                    }
-                }
-            }
-            finally
-            {
-                if (currentTransaction == null)
-                    sqlConnection.Close();
-            }
-            return tableExist;
-        }
-
-        public async Task<bool> CheckTableExistAsync(DbContext context, TableInfo tableInfo, CancellationToken cancellationToken)
-        {
-            bool tableExist = false;
-            await context.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
-
             try
             {
                 var sqlConnection = context.Database.GetDbConnection();
@@ -598,13 +508,30 @@ namespace EFCore.BulkExtensions
                     if (currentTransaction != null)
                         command.Transaction = currentTransaction.GetDbTransaction();
                     command.CommandText = SqlQueryBuilder.CheckTableExist(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
-                    using (var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false))
+
+                    if (isAsync)
                     {
-                        if (reader.HasRows)
+                        using (var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false))
                         {
-                            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                            if (reader.HasRows)
                             {
-                                tableExist = (int)reader[0] == 1;
+                                while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                                {
+                                    tableExist = (int)reader[0] == 1;
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        using (var reader = command.ExecuteReader())
+                        {
+                            if (reader.HasRows)
+                            {
+                                while (reader.Read())
+                                {
+                                    tableExist = (int)reader[0] == 1;
+                                }
                             }
                         }
                     }
@@ -612,57 +539,56 @@ namespace EFCore.BulkExtensions
             }
             finally
             {
-                await context.Database.CloseConnectionAsync().ConfigureAwait(false);
+                if (isAsync)
+                {
+                    await context.Database.CloseConnectionAsync().ConfigureAwait(false);
+                }
+                else
+                {
+                    context.Database.CloseConnection();
+                }
             }
             return tableExist;
         }
 
-        protected int GetNumberUpdated(DbContext context)
+        protected async Task<int> GetNumberUpdatedAsync(DbContext context, CancellationToken cancellationToken, bool isAsync)
         {
             var resultParameter = SqlClientHelper.CreateParameter(context.Database.GetDbConnection());
             resultParameter.ParameterName = "@result";
             resultParameter.DbType = DbType.Int32;
             resultParameter.Direction = ParameterDirection.Output;
             string sqlQueryCount = SqlQueryBuilder.SelectCountIsUpdateFromOutputTable(this);
-            context.Database.ExecuteSqlRaw($"SET @result = ({sqlQueryCount});", resultParameter);
+
+            var sqlSetResult = $"SET @result = ({sqlQueryCount});";
+            if (isAsync)
+            {
+                await context.Database.ExecuteSqlRawAsync(sqlSetResult, new object[] { resultParameter }, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                context.Database.ExecuteSqlRaw(sqlSetResult, resultParameter);
+            }
             return (int)resultParameter.Value;
         }
 
-        protected int GetNumberDeleted(DbContext context)
+        protected async Task<int> GetNumberDeletedAsync(DbContext context, CancellationToken cancellationToken, bool isAsync)
         {
             var resultParameter = SqlClientHelper.CreateParameter(context.Database.GetDbConnection());
             resultParameter.ParameterName = "@result";
             resultParameter.DbType = DbType.Int32;
             resultParameter.Direction = ParameterDirection.Output;
             string sqlQueryCount = SqlQueryBuilder.SelectCountIsDeleteFromOutputTable(this);
-            context.Database.ExecuteSqlRaw($"SET @result = ({sqlQueryCount});", resultParameter);
+
+            var sqlSetResult = $"SET @result = ({sqlQueryCount});";
+            if (isAsync)
+            {
+                await context.Database.ExecuteSqlRawAsync(sqlSetResult, new object[] { resultParameter }, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                context.Database.ExecuteSqlRaw(sqlSetResult, resultParameter);
+            }
             return (int)resultParameter.Value;
-        }
-
-        protected async Task<int> GetNumberUpdatedAsync(DbContext context, CancellationToken cancellationToken)
-        {
-            var resultParameters = new List<IDbDataParameter>();
-            var p = SqlClientHelper.CreateParameter(context.Database.GetDbConnection());
-            p.ParameterName = "@result";
-            p.DbType = DbType.Int32;
-            p.Direction = ParameterDirection.Output;
-            resultParameters.Add(p);
-            string sqlQueryCount = SqlQueryBuilder.SelectCountIsUpdateFromOutputTable(this);
-            await context.Database.ExecuteSqlRawAsync($"SET @result = ({sqlQueryCount});", resultParameters, cancellationToken).ConfigureAwait(false); // TODO cancellationToken if Not
-            return (int)resultParameters.FirstOrDefault().Value;
-        }
-
-        protected async Task<int> GetNumberDeletedAsync(DbContext context, CancellationToken cancellationToken)
-        {
-            var resultParameters = new List<IDbDataParameter>();
-            var p = SqlClientHelper.CreateParameter(context.Database.GetDbConnection());
-            p.ParameterName = "@result";
-            p.DbType = DbType.Int32;
-            p.Direction = ParameterDirection.Output;
-            resultParameters.Add(p);
-            string sqlQueryCount = SqlQueryBuilder.SelectCountIsDeleteFromOutputTable(this);
-            await context.Database.ExecuteSqlRawAsync($"SET @result = ({sqlQueryCount});", resultParameters, cancellationToken).ConfigureAwait(false); // TODO cancellationToken if Not
-            return (int)resultParameters.FirstOrDefault().Value;
         }
 
         #endregion
@@ -682,7 +608,7 @@ namespace EFCore.BulkExtensions
         }
 
         #region ReadProcedures
-        public Dictionary<string, string> ConfigureBulkReadTableInfo(DbContext context)
+        public Dictionary<string, string> ConfigureBulkReadTableInfo()
         {
             InsertToTempTable = true;
 
@@ -797,6 +723,7 @@ namespace EFCore.BulkExtensions
                 {
                     if (i == entitiesWithOutputIdentity.Count)
                         break;
+
                     if (identityPropertyName != null)
                     {
                         var identityPropertyValue = FastPropertyDict[identityPropertyName].Get(entitiesWithOutputIdentity[i]);
@@ -847,34 +774,7 @@ namespace EFCore.BulkExtensions
         // Once the following Issue gets fixed(expected in EF 3.0) this can be replaced with code segment: DirectQuery
         // https://github.com/aspnet/EntityFrameworkCore/issues/12905
         #region CompiledQuery
-        public void LoadOutputData<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo) where T : class
-        {
-            bool hasIdentity = OutputPropertyColumnNamesDict.Any(a => a.Value == IdentityColumnName);
-            int totalNumber = entities.Count;
-            if (BulkConfig.SetOutputIdentity && tableInfo.HasSinglePrimaryKey)
-            {
-                string sqlQuery = SqlQueryBuilder.SelectFromOutputTable(this);
-                var entitiesWithOutputIdentity = QueryOutputTable(context, type, sqlQuery).Cast<object>().ToList();
-                //var entitiesWithOutputIdentity = (typeof(T) == type) ? QueryOutputTable<object>(context, sqlQuery).ToList(): QueryOutputTable(context, type, sqlQuery).Cast<object>().ToList();
-
-                var entitiesObjects = entities.Cast<object>().ToList();
-                UpdateEntitiesIdentity(context, tableInfo, entitiesObjects, entitiesWithOutputIdentity);
-                totalNumber = entitiesWithOutputIdentity.Count;
-            }
-            if (BulkConfig.CalculateStats)
-            {
-                int numberUpdated = GetNumberUpdated(context);
-                int numberDeleted = GetNumberDeleted(context);
-                BulkConfig.StatsInfo = new StatsInfo
-                {
-                    StatsNumberUpdated = numberUpdated,
-                    StatsNumberDeleted = numberDeleted,
-                    StatsNumberInserted = totalNumber - numberUpdated - numberDeleted
-                };
-            }
-        }
-
-        public async Task LoadOutputDataAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, CancellationToken cancellationToken) where T : class
+        public async Task LoadOutputDataAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, CancellationToken cancellationToken, bool isAsync) where T : class
         {
             bool hasIdentity = OutputPropertyColumnNamesDict.Any(a => a.Value == IdentityColumnName);
             int totallNumber = entities.Count;
@@ -891,8 +791,18 @@ namespace EFCore.BulkExtensions
             }
             if (BulkConfig.CalculateStats)
             {
-                int numberUpdated = await GetNumberUpdatedAsync(context, cancellationToken).ConfigureAwait(false);
-                int numberDeleted = await GetNumberDeletedAsync(context, cancellationToken).ConfigureAwait(false);
+                int numberUpdated;
+                int numberDeleted;
+                if (isAsync)
+                {
+                    numberUpdated = await GetNumberUpdatedAsync(context, cancellationToken, isAsync: true).ConfigureAwait(false);
+                    numberDeleted = await GetNumberDeletedAsync(context, cancellationToken, isAsync: true).ConfigureAwait(false);
+                }
+                else
+                {
+                    numberUpdated = GetNumberUpdatedAsync(context, cancellationToken, isAsync: false).GetAwaiter().GetResult();
+                    numberDeleted = GetNumberDeletedAsync(context, cancellationToken, isAsync: false).GetAwaiter().GetResult();
+                }
                 BulkConfig.StatsInfo = new StatsInfo
                 {
                     StatsNumberUpdated = numberUpdated,

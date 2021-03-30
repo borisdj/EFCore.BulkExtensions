@@ -12,46 +12,22 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
 {
     public class SqLiteOperationsAdapter: ISqlOperationsAdapter
     {
+        #region Methods
+        // Insert
         public void Insert<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress)
         {
-            var connection = OpenAndGetSqliteConnection(context, tableInfo.BulkConfig);
-            bool doExplicitCommit = false;
-
-            try
-            {
-                if (context.Database.CurrentTransaction == null)
-                {
-                    //context.Database.UseTransaction(connection.BeginTransaction());
-                    doExplicitCommit = true;
-                }
-                var transaction = (SqliteTransaction)(context.Database.CurrentTransaction == null ?
-                    connection.BeginTransaction() :
-                    context.Database.CurrentTransaction.GetUnderlyingTransaction(tableInfo.BulkConfig));
-
-                var command = GetSqliteCommand(context, type, entities, tableInfo, connection, transaction);
-
-                type = tableInfo.HasAbstractList ? entities[0].GetType() : type;
-                int rowsCopied = 0;
-                foreach (var item in entities)
-                {
-                    LoadSqliteValues(tableInfo, item, command, context);
-                    command.ExecuteNonQuery();
-                    ProgressHelper.SetProgress(ref rowsCopied, entities.Count, tableInfo.BulkConfig, progress);
-                }
-                if (doExplicitCommit)
-                {
-                    transaction.Commit();
-                }
-            }
-            finally
-            {
-                context.Database.CloseConnection();
-            }
+            InsertAsync(context, type, entities, tableInfo, progress, CancellationToken.None, isAsync: false).GetAwaiter().GetResult();
         }
 
         public async Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, CancellationToken cancellationToken)
         {
-            var connection = await OpenAndGetSqliteConnectionAsync(context, tableInfo.BulkConfig, cancellationToken).ConfigureAwait(false);
+            await InsertAsync(context, type, entities, tableInfo, progress, cancellationToken, isAsync: true).ConfigureAwait(false);
+        }
+            
+        public async Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, CancellationToken cancellationToken, bool isAsync)
+        {
+            SqliteConnection connection = isAsync ? await OpenAndGetSqliteConnectionAsync(context, tableInfo.BulkConfig, cancellationToken).ConfigureAwait(false)
+                                                        : OpenAndGetSqliteConnection(context, tableInfo.BulkConfig);
             bool doExplicitCommit = false;
 
             try
@@ -73,7 +49,14 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
                 foreach (var item in entities)
                 {
                     LoadSqliteValues(tableInfo, item, command, context);
-                    await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                    if (isAsync)
+                    {
+                        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        command.ExecuteNonQuery();
+                    }
                     ProgressHelper.SetProgress(ref rowsCopied, entities.Count, tableInfo.BulkConfig, progress);
                 }
                 if (doExplicitCommit)
@@ -83,127 +66,32 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
             }
             finally
             {
-                await context.Database.CloseConnectionAsync().ConfigureAwait(false);
+                if (isAsync)
+                {
+                    await context.Database.CloseConnectionAsync().ConfigureAwait(false);
+                }
+                else
+                {
+                    context.Database.CloseConnection();
+                }
             }
         }
 
+        // Merge
         public void Merge<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress) where T : class
         {
-            var connection = OpenAndGetSqliteConnection(context, tableInfo.BulkConfig);
-            bool doExplicitCommit = false;
-
-            try
-            {
-                if (context.Database.CurrentTransaction == null)
-                {
-                    //context.Database.UseTransaction(connection.BeginTransaction());
-                    doExplicitCommit = true;
-                }
-                var transaction = (SqliteTransaction)(context.Database.CurrentTransaction == null ?
-                                                        connection.BeginTransaction() :
-                                                        context.Database.CurrentTransaction.GetUnderlyingTransaction(tableInfo.BulkConfig));
-
-                var command = GetSqliteCommand(context, type, entities, tableInfo, connection, transaction);
-
-                type = tableInfo.HasAbstractList ? entities[0].GetType() : type;
-                int rowsCopied = 0;
-                foreach (var item in entities)
-                {
-                    LoadSqliteValues(tableInfo, item, command, context);
-                    command.ExecuteNonQuery();
-                    ProgressHelper.SetProgress(ref rowsCopied, entities.Count, tableInfo.BulkConfig, progress);
-                }
-
-                if (operationType != OperationType.Delete && tableInfo.BulkConfig.SetOutputIdentity && tableInfo.IdentityColumnName != null)
-                {
-                    string identityPropertyName = tableInfo.PrimaryKeysPropertyColumnNameDict.SingleOrDefault(a => a.Value == tableInfo.IdentityColumnName).Key;
-                    command.CommandText = SqlQueryBuilderSqlite.SelectLastInsertRowId();
-                    long lastRowIdScalar = (long)command.ExecuteScalar();
-                    var identityPropertyInteger = false;
-                    var identityPropertyUnsigned = false;
-                    var identityPropertyByte = false;
-                    var identityPropertyShort = false;
-
-                    if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(ulong))
-                    {
-                        identityPropertyUnsigned = true;
-                    }
-                    else if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(uint))
-                    {
-                        identityPropertyInteger = true;
-                        identityPropertyUnsigned = true;
-                    }
-                    else if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(int))
-                    {
-                        identityPropertyInteger = true;
-                    }
-                    else if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(ushort))
-                    {
-                        identityPropertyShort = true;
-                        identityPropertyUnsigned = true;
-                    }
-                    else if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(short))
-                    {
-                        identityPropertyShort = true;
-                    }
-                    else if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(byte))
-                    {
-                        identityPropertyByte = true;
-                        identityPropertyUnsigned = true;
-                    }
-                    else if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(sbyte))
-                    {
-                        identityPropertyByte = true;
-                    }
-
-                    for (int i = entities.Count - 1; i >= 0; i--)
-                    {
-                        if (identityPropertyByte)
-                        {
-                            if (identityPropertyUnsigned)
-                                tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (byte)lastRowIdScalar);
-                            else
-                                tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (sbyte)lastRowIdScalar);
-                        }
-                        else if (identityPropertyShort)
-                        {
-                            if (identityPropertyUnsigned)
-                                tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (ushort)lastRowIdScalar);
-                            else
-                                tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (short)lastRowIdScalar);
-                        }
-                        else if (identityPropertyInteger)
-                        {
-                            if (identityPropertyUnsigned)
-                                tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (uint)lastRowIdScalar);
-                            else
-                                tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (int)lastRowIdScalar);
-                        }
-                        else
-                        {
-                            if (identityPropertyUnsigned)
-                                tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (ulong)lastRowIdScalar);
-                            else
-                                tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], lastRowIdScalar);
-                        }
-
-                        lastRowIdScalar--;
-                    }
-                }
-                if (doExplicitCommit)
-                {
-                    transaction.Commit();
-                }
-            }
-            finally
-            {
-                context.Database.CloseConnection();
-            }
+            MergeAsync(context, type, entities, tableInfo, operationType, progress, CancellationToken.None, isAsync: false).GetAwaiter().GetResult();
         }
 
         public async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, CancellationToken cancellationToken) where T : class
         {
-            var connection = await OpenAndGetSqliteConnectionAsync(context, tableInfo.BulkConfig, cancellationToken).ConfigureAwait(false);
+            await MergeAsync(context, type, entities, tableInfo, operationType, progress, cancellationToken, isAsync: true);
+        }
+
+        protected async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, CancellationToken cancellationToken, bool isAsync) where T : class
+        {
+            SqliteConnection connection = isAsync ? await OpenAndGetSqliteConnectionAsync(context, tableInfo.BulkConfig, cancellationToken).ConfigureAwait(false)
+                                                        : OpenAndGetSqliteConnection(context, tableInfo.BulkConfig);
             bool doExplicitCommit = false;
 
             try
@@ -213,9 +101,9 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
                     //context.Database.UseTransaction(connection.BeginTransaction());
                     doExplicitCommit = true;
                 }
-                var transaction = (SqliteTransaction)(context.Database.CurrentTransaction == null ?
-                                                        connection.BeginTransaction() :
-                                                        context.Database.CurrentTransaction.GetUnderlyingTransaction(tableInfo.BulkConfig));
+                var dbTransaction = context.Database.CurrentTransaction == null ? connection.BeginTransaction()
+                                                                                : context.Database.CurrentTransaction.GetUnderlyingTransaction(tableInfo.BulkConfig);
+                var transaction = (SqliteTransaction)dbTransaction;
 
                 var command = GetSqliteCommand(context, type, entities, tableInfo, connection, transaction);
 
@@ -225,87 +113,27 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
                 foreach (var item in entities)
                 {
                     LoadSqliteValues(tableInfo, item, command, context);
-                    await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                    if (isAsync)
+                    {
+                        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        command.ExecuteNonQuery();
+                    }
                     ProgressHelper.SetProgress(ref rowsCopied, entities.Count, tableInfo.BulkConfig, progress);
                 }
 
-                if (operationType != OperationType.Delete && tableInfo.BulkConfig.SetOutputIdentity && tableInfo.IdentityColumnName != null)
+                if (operationType == OperationType.Insert && tableInfo.BulkConfig.SetOutputIdentity && tableInfo.IdentityColumnName != null) // For Sqlite Identity can be set by Db only with pure Insert method
                 {
                     command.CommandText = SqlQueryBuilderSqlite.SelectLastInsertRowId();
-                    long lastRowIdScalar = (long)await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
-                    string identityPropertyName = tableInfo.PropertyColumnNamesDict.SingleOrDefault(a => a.Value == tableInfo.IdentityColumnName).Key;
 
-                    var identityPropertyInteger = false;
-                    var identityPropertyUnsigned = false;
-                    var identityPropertyByte = false;
-                    var identityPropertyShort = false;
+                    object lastRowIdScalar = isAsync ? await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false)
+                                                           : command.ExecuteScalar();
 
-                    if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(ulong))
-                    {
-                        identityPropertyUnsigned = true;
-                    }
-                    else if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(uint))
-                    {
-                        identityPropertyInteger = true;
-                        identityPropertyUnsigned = true;
-                    }
-                    else if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(int))
-                    {
-                        identityPropertyInteger = true;
-                    }
-                    else if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(ushort))
-                    {
-                        identityPropertyShort = true;
-                        identityPropertyUnsigned = true;
-                    }
-                    else if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(short))
-                    {
-                        identityPropertyShort = true;
-                    }
-                    else if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(byte))
-                    {
-                        identityPropertyByte = true;
-                        identityPropertyUnsigned = true;
-                    }
-                    else if (tableInfo.FastPropertyDict[identityPropertyName].Property.PropertyType == typeof(sbyte))
-                    {
-                        identityPropertyByte = true;
-                    }
-
-                    for (int i = entities.Count - 1; i >= 0; i--)
-                    {
-                        if (identityPropertyByte)
-                        {
-                            if (identityPropertyUnsigned)
-                                tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (byte)lastRowIdScalar);
-                            else
-                                tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (sbyte)lastRowIdScalar);
-                        }
-                        else if (identityPropertyShort)
-                        {
-                            if (identityPropertyUnsigned)
-                                tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (ushort)lastRowIdScalar);
-                            else
-                                tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (short)lastRowIdScalar);
-                        }
-                        else if (identityPropertyInteger)
-                        {
-                            if (identityPropertyUnsigned)
-                                tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (uint)lastRowIdScalar);
-                            else
-                                tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (int)lastRowIdScalar);
-                        }
-                        else
-                        {
-                            if (identityPropertyUnsigned)
-                                tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], (ulong)lastRowIdScalar);
-                            else
-                                tableInfo.FastPropertyDict[identityPropertyName].Set(entities[i], lastRowIdScalar);
-                        }
-
-                        lastRowIdScalar--;
-                    }
+                    SetIdentityForOutput(entities, tableInfo, lastRowIdScalar);
                 }
+
                 if (doExplicitCommit)
                 {
                     transaction.Commit();
@@ -313,34 +141,58 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
             }
             finally
             {
-                await context.Database.CloseConnectionAsync().ConfigureAwait(false);
+                if (isAsync)
+                {
+                    await context.Database.CloseConnectionAsync().ConfigureAwait(false);
+                }
+                else
+                {
+                    context.Database.CloseConnection();
+                }
             }
         }
 
+        // Read
         public void Read<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress) where T : class
         {
             throw new NotImplementedException();
         }
 
-        public Task ReadAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress,
-            CancellationToken cancellationToken) where T : class
+        public Task ReadAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, CancellationToken cancellationToken) where T : class
         {
             throw new NotImplementedException();
         }
 
+        // Truncate
         public void Truncate(DbContext context, TableInfo tableInfo)
         {
             string sql = SqlQueryBuilder.DeleteTable(tableInfo.FullTableName);
             context.Database.ExecuteSqlRaw(sql);
         }
 
-        public async Task TruncateAsync(DbContext context, TableInfo tableInfo)
+        public async Task TruncateAsync(DbContext context, TableInfo tableInfo, CancellationToken cancellationToken)
         {
             string sql = SqlQueryBuilder.DeleteTable(tableInfo.FullTableName);
-            await context.Database.ExecuteSqlRawAsync(sql);
+            await context.Database.ExecuteSqlRawAsync(sql, cancellationToken).ConfigureAwait(false);
         }
-        
-          #region SqliteData
+        #endregion
+
+        #region Connection
+        internal static async Task<SqliteConnection> OpenAndGetSqliteConnectionAsync(DbContext context, BulkConfig bulkConfig, CancellationToken cancellationToken)
+        {
+            await context.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+            return (SqliteConnection)context.Database.GetDbConnection();
+        }
+
+        internal static SqliteConnection OpenAndGetSqliteConnection(DbContext context, BulkConfig bulkConfig)
+        {
+            context.Database.OpenConnection();
+
+            return (SqliteConnection)context.Database.GetDbConnection();
+        }
+        #endregion
+
+        #region SqliteData
         internal static SqliteCommand GetSqliteCommand<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, SqliteConnection connection, SqliteTransaction transaction)
         {
             SqliteCommand command = connection.CreateCommand();
@@ -380,15 +232,8 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
                     string columnName = propertyEntityType.GetColumnName();
                     var propertyType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
 
-                    /*var sqliteType = SqliteType.Text; // "String" || "Decimal" || "DateTime"
-                    if (propertyType.Name == "Int16" || propertyType.Name == "Int32" || propertyType.Name == "Int64")
-                        sqliteType = SqliteType.Integer;
-                    if (propertyType.Name == "Float" || propertyType.Name == "Double")
-                        sqliteType = SqliteType.Real;
-                    if (propertyType.Name == "Guid" )
-                        sqliteType = SqliteType.Blob; */
-
-                    var parameter = new SqliteParameter($"@{property.Name}", propertyType); // ,sqliteType // ,null
+                    //SqliteType(CpropertyType.Name): Text(String, Decimal, DateTime); Integer(Int16, Int32, Int64) Real(Float, Double) Blob(Guid)
+                    var parameter = new SqliteParameter($"@{property.Name}", propertyType); // ,sqliteType // ,null //()
                     command.Parameters.Add(parameter);
                 }
             }
@@ -449,13 +294,11 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
                 {
                     if (tableInfo.BulkConfig.EnableShadowProperties)
                     {
-                        // Get the shadow property value
-                        value = dbContext.Entry(entity).Property(propertyColumn.Key).CurrentValue;
+                        value = dbContext.Entry(entity).Property(propertyColumn.Key).CurrentValue; // Get the shadow property value
                     }
                     else
                     {
-                        // Set the value for the discriminator column
-                        value = entity.GetType().Name;
+                        value = entity.GetType().Name; // Set the value for the discriminator column
                     }
                 }
 
@@ -467,18 +310,32 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
                 command.Parameters[$"@{parameterName}"].Value = value ?? DBNull.Value;
             }
         }
-        
-        internal static async Task<SqliteConnection> OpenAndGetSqliteConnectionAsync(DbContext context, BulkConfig bulkConfig, CancellationToken cancellationToken)
-        {
-            await context.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
-            return (SqliteConnection)context.Database.GetDbConnection();
-        }
-        
-        internal static SqliteConnection OpenAndGetSqliteConnection(DbContext context, BulkConfig bulkConfig)
-        {
-            context.Database.OpenConnection();
 
-            return (SqliteConnection)context.Database.GetDbConnection();
+        public void SetIdentityForOutput<T>(IList<T> entities, TableInfo tableInfo, object lastRowIdScalar)
+        {
+            long counter = (long)lastRowIdScalar;
+
+            string identityPropertyName = tableInfo.PropertyColumnNamesDict.SingleOrDefault(a => a.Value == tableInfo.IdentityColumnName).Key;
+            FastProperty identityFastProperty = tableInfo.FastPropertyDict[identityPropertyName];
+
+            string idTypeName = identityFastProperty.Property.PropertyType.Name;
+            object idValue = null;
+            for (int i = entities.Count - 1; i >= 0; i--)
+            {
+                switch (idTypeName)
+                {
+                    case "Int64": idValue = counter; break; // 'long' is default since it's largest
+                    case "UInt64": idValue = (ulong)counter; break;
+                    case "Int32": idValue = (int)counter; break;
+                    case "UInt32": idValue = (uint)counter; break;
+                    case "Int16": idValue = (short)counter; break;
+                    case "UInt16": idValue = (ushort)counter; break;
+                    case "Byte": idValue = (byte)counter; break;
+                    case "SByte": idValue = (sbyte)counter; break;
+                }
+                identityFastProperty.Set(entities[i], idValue);
+                counter--;
+            }
         }
         #endregion
     }
