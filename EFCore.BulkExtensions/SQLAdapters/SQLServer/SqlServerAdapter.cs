@@ -29,7 +29,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
         {
             await InsertAsync(context, type, entities, tableInfo, progress, cancellationToken, isAsync: true).ConfigureAwait(false);
         }
-
+        // Publish Async and NonAsync are merged into single operation flow with protected method using arg: bool isAsync, to keep it DRY
         protected async Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, CancellationToken cancellationToken, bool isAsync)
         {
             tableInfo.CheckToSetIdentityForPreserveOrder(entities);

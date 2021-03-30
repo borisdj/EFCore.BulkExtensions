@@ -12,12 +12,16 @@ namespace EFCore.BulkExtensions
     internal static class DbContextBulkTransactionGraphUtil
     {
         public static void ExecuteWithGraph(DbContext context, IEnumerable<object> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress)
-            => ExecuteWithGraphAsync_Impl(context, entities, operationType, bulkConfig, progress, null, isAsync: false).GetAwaiter().GetResult();
+        {
+            ExecuteWithGraphAsync(context, entities, operationType, bulkConfig, progress, CancellationToken.None, isAsync: false).GetAwaiter().GetResult();
+        }
 
-        public static Task ExecuteWithGraphAsync(DbContext context, IEnumerable<object> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress, CancellationToken cancellationToken)
-            => ExecuteWithGraphAsync_Impl(context, entities, operationType, bulkConfig, progress, cancellationToken, isAsync: true);
+        public static async Task ExecuteWithGraphAsync(DbContext context, IEnumerable<object> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress, CancellationToken cancellationToken)
+        {
+            await ExecuteWithGraphAsync(context, entities, operationType, bulkConfig, progress, cancellationToken, isAsync: true);
+        }
 
-        private static async Task ExecuteWithGraphAsync_Impl(DbContext context, IEnumerable<object> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress, CancellationToken? cancellationToken, bool isAsync = true)
+        private static async Task ExecuteWithGraphAsync(DbContext context, IEnumerable<object> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress, CancellationToken cancellationToken, bool isAsync)
         {
             if (operationType != OperationType.Insert
                        && operationType != OperationType.InsertOrUpdate
@@ -53,7 +57,7 @@ namespace EFCore.BulkExtensions
 
                     if (isAsync)
                     {
-                        await SqlBulkOperation.MergeAsync(context, actionGraphItem.EntityClrType, entitiesToAction, tableInfo, operationType, progress, cancellationToken.Value);
+                        await SqlBulkOperation.MergeAsync(context, actionGraphItem.EntityClrType, entitiesToAction, tableInfo, operationType, progress, cancellationToken);
                     }
                     else
                     {
