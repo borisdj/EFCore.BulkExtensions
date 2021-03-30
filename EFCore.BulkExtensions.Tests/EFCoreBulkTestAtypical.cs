@@ -321,6 +321,13 @@ namespace EFCore.BulkExtensions.Tests
                     );
                     Assert.Equal(2, entities[1].ChangeLogId);
                 }
+
+                entities[0].Description += " UPD";
+                entities[0].Audit.InfoType = InfoType.InfoTypeB;
+                context.BulkUpdate(entities);
+                context.BulkRead(entities);
+                Assert.Equal("Dsc 1 UPD", entities[0].Description);
+                Assert.Equal(InfoType.InfoTypeB, entities[0].Audit.InfoType);
             }
         }
 

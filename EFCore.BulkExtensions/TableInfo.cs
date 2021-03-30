@@ -402,6 +402,7 @@ namespace EFCore.BulkExtensions
                                 {
                                     string columnName = ownedEntityPropertyNameColumnNameDict[ownedProperty.Name];
                                     PropertyColumnNamesDict.Add(ownedPropertyFullName, columnName);
+                                    PropertyColumnNamesUpdateDict.Add(ownedPropertyFullName, columnName);
                                     OutputPropertyColumnNamesDict.Add(ownedPropertyFullName, columnName);
                                 }
                             }
