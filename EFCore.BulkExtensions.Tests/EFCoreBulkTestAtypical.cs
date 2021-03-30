@@ -325,7 +325,10 @@ namespace EFCore.BulkExtensions.Tests
                 entities[0].Description += " UPD";
                 entities[0].Audit.InfoType = InfoType.InfoTypeB;
                 context.BulkUpdate(entities);
-                context.BulkRead(entities);
+                if (dbServer == DbServer.SqlServer)
+                {
+                    context.BulkRead(entities);
+                }
                 Assert.Equal("Dsc 1 UPD", entities[0].Description);
                 Assert.Equal(InfoType.InfoTypeB, entities[0].Audit.InfoType);
             }
