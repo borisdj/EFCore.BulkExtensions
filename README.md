@@ -155,7 +155,7 @@ using (var transaction = context.Database.BeginTransaction())
 // Option 2 using Graph (only for SQL Server) - all entities in relationship with main ones in list are BulkInsertUpdated
 context.BulkInsert(entities, b => b.IncludeGraph = true);
 ```
-When **CalculateStats** is set to True the result is return in `BulkConfig.StatsInfo` (*StatsNumber-Inserted/Updated*).<br>
+When **CalculateStats** is set to True the result is return in `BulkConfig.StatsInfo` (*StatsNumber-Inserted/Updated/Deleted*).<br>
 If used for pure Insert (with Batching) then SetOutputIdentity should also be configured because Merge have to be used.<br>
 **TrackingEntities** can be set to True if we want to have tracking of entities from BulkRead or if SetOutputIdentity is set.<br>
 **UseTempDB** when set then BulkOperation has to be [inside Transaction](https://github.com/borisdj/EFCore.BulkExtensions/issues/49)<br>
