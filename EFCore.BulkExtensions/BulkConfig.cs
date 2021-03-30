@@ -90,6 +90,9 @@ namespace EFCore.BulkExtensions
         /// <summary>
         ///     Used as object for returning Stats Info when <c>BulkConfig.CalculateStats = true</c>
         /// </summary>
+        /// <value>
+        ///     Contains info in Properties: <c>StatsNumberInserted, StatsNumberUpdated, StatsNumberDeleted</c>
+        /// </value>
         public StatsInfo StatsInfo { get; internal set; }
 
         /// <summary>
@@ -201,34 +204,17 @@ namespace EFCore.BulkExtensions
 
     public class StatsInfo
     {
-        /// <summary>
-        ///     ToDo
-        /// </summary>
         public int StatsNumberInserted { get; set; }
 
-        /// <summary>
-        ///     ToDo
-        /// </summary>
-
         public int StatsNumberUpdated { get; set; }
-
-        /// <summary>
-        ///     ToDo
-        /// </summary>
 
         public int StatsNumberDeleted { get; set; }
     }
 
     public class TimeStampInfo
     {
-        /// <summary>
-        ///     ToDo
-        /// </summary>
         public int NumberOfSkippedForUpdate { get; set; }
 
-        /// <summary>
-        ///     ToDo
-        /// </summary>
         public List<object> EntitiesOutput { get; set; }
     }
 }
