@@ -60,6 +60,8 @@ namespace EFCore.BulkExtensions
         public string TimeStampPropertyName { get; set; }
         public string TimeStampColumnName { get; set; }
 
+        public StoreObjectIdentifier ObjectIdentifier { get; set; }
+
         public static TableInfo CreateInstance<T>(DbContext context, Type type, IList<T> entities, OperationType operationType, BulkConfig bulkConfig)
         {
             var tableInfo = new TableInfo
@@ -115,6 +117,7 @@ namespace EFCore.BulkExtensions
             }
             Schema = customSchema ?? entityType.GetSchema() ?? defaultSchema;
             TableName = customTableName ?? entityType.GetTableName();
+            ObjectIdentifier = StoreObjectIdentifier.Table(TableName, entityType.GetSchema());
 
             TempTableSufix = "Temp";
 
@@ -124,7 +127,7 @@ namespace EFCore.BulkExtensions
             }
 
             bool AreSpecifiedUpdateByProperties = BulkConfig.UpdateByProperties?.Count() > 0;
-            var primaryKeys = entityType.FindPrimaryKey()?.Properties?.ToDictionary(a => a.Name, b => b.GetColumnName());
+            var primaryKeys = entityType.FindPrimaryKey()?.Properties?.ToDictionary(a => a.Name, b => b.GetColumnName(ObjectIdentifier));
 
             HasSinglePrimaryKey = primaryKeys?.Count == 1;
             PrimaryKeysPropertyColumnNameDict = AreSpecifiedUpdateByProperties ? BulkConfig.UpdateByProperties.ToDictionary(a => a, b => b)
@@ -132,7 +135,7 @@ namespace EFCore.BulkExtensions
 
             var allProperties = entityType.GetProperties().AsEnumerable();
 
-            ColumnNamesTypesDict = allProperties.ToDictionary(a => a.GetColumnName(), a => a.GetColumnType());
+            ColumnNamesTypesDict = allProperties.ToDictionary(a => a.GetColumnName(ObjectIdentifier), a => a.GetColumnType());
 
             // load all derived type properties
             if (entityType.IsAbstract())
@@ -149,7 +152,7 @@ namespace EFCore.BulkExtensions
             var navigations = entityType.GetNavigations();
             AllNavigationsDictionary = navigations.ToDictionary(nav => nav.Name, nav => nav);
 
-            var ownedTypes = navigations.Where(a => a.GetTargetType().IsOwned());
+            var ownedTypes = navigations.Where(a => a.TargetEntityType.IsOwned());
             HasOwnedTypes = ownedTypes.Any();
             OwnedTypesDict = ownedTypes.ToDictionary(a => a.Name, a => a);
 
@@ -161,13 +164,13 @@ namespace EFCore.BulkExtensions
                                                                       (isSqlServer && a.ClrType.Name.StartsWith("Decimal"))) &&
                                                                     !a.ClrType.Name.EndsWith("[]") && 
                                                                     a.ValueGenerated == ValueGenerated.OnAdd
-                                                              )?.GetColumnName(); // ValueGenerated equals OnAdd even for nonIdentity column like Guid so we only type int as second condition
+                                                              )?.GetColumnName(ObjectIdentifier); // ValueGenerated equals OnAdd even for nonIdentity column like Guid so we only type int as second condition
 
             // timestamp/row version properties are only set by the Db, the property has a [Timestamp] Attribute or is configured in FluentAPI with .IsRowVersion()
             // They can be identified by the columne type "timestamp" or .IsConcurrencyToken in combination with .ValueGenerated == ValueGenerated.OnAddOrUpdate
             string timestampDbTypeName = nameof(TimestampAttribute).Replace("Attribute", "").ToLower(); // = "timestamp";
             var timeStampProperties = allProperties.Where(a => (a.IsConcurrencyToken && a.ValueGenerated == ValueGenerated.OnAddOrUpdate) || a.GetColumnType() == timestampDbTypeName);
-            TimeStampColumnName = timeStampProperties.FirstOrDefault()?.GetColumnName(); // can be only One
+            TimeStampColumnName = timeStampProperties.FirstOrDefault()?.GetColumnName(ObjectIdentifier); // can be only One
             TimeStampPropertyName = timeStampProperties.FirstOrDefault()?.Name; // can be only One
             var allPropertiesExceptTimeStamp = allProperties.Except(timeStampProperties);
             var properties = allPropertiesExceptTimeStamp.Where(a => a.GetComputedColumnSql() == null);
@@ -198,8 +201,8 @@ namespace EFCore.BulkExtensions
             var propertiesOnUpdate = allPropertiesExceptTimeStamp.Where(a => a.GetComputedColumnSql() == null);
 
             // TimeStamp prop. is last column in OutputTable since it is added later with varbinary(8) type in which Output can be inserted
-            OutputPropertyColumnNamesDict = allPropertiesExceptTimeStamp.Concat(timeStampProperties).ToDictionary(a => a.Name, b => b.GetColumnName().Replace("]", "]]")); // square brackets have to be escaped
-            ColumnNameContainsSquareBracket = allPropertiesExceptTimeStamp.Concat(timeStampProperties).Any(a => a.GetColumnName().Contains("]"));
+            OutputPropertyColumnNamesDict = allPropertiesExceptTimeStamp.Concat(timeStampProperties).ToDictionary(a => a.Name, b => b.GetColumnName(ObjectIdentifier).Replace("]", "]]")); // square brackets have to be escaped
+            ColumnNameContainsSquareBracket = allPropertiesExceptTimeStamp.Concat(timeStampProperties).Any(a => a.GetColumnName(ObjectIdentifier).Contains("]"));
 
             bool AreSpecifiedPropertiesToInclude = BulkConfig.PropertiesToInclude?.Count() > 0;
             bool AreSpecifiedPropertiesToExclude = BulkConfig.PropertiesToExclude?.Count() > 0;
@@ -314,19 +317,19 @@ namespace EFCore.BulkExtensions
                 }
             }
 
-            PropertyColumnNamesCompareDict = propertiesOnCompare.ToDictionary(a => a.Name, b => b.GetColumnName().Replace("]", "]]"));
-            PropertyColumnNamesUpdateDict = propertiesOnUpdate.ToDictionary(a => a.Name, b => b.GetColumnName().Replace("]", "]]"));
+            PropertyColumnNamesCompareDict = propertiesOnCompare.ToDictionary(a => a.Name, b => b.GetColumnName(ObjectIdentifier).Replace("]", "]]"));
+            PropertyColumnNamesUpdateDict = propertiesOnUpdate.ToDictionary(a => a.Name, b => b.GetColumnName(ObjectIdentifier).Replace("]", "]]"));
 
             if (loadOnlyPKColumn)
             {
                 if (PrimaryKeysPropertyColumnNameDict.Count() == 0)
                     throw new InvalidBulkConfigException("If no PrimaryKey is defined operation requres bulkConfig set with 'UpdatedByProperties'.");
-                PropertyColumnNamesDict = properties.Where(a => PrimaryKeysPropertyColumnNameDict.ContainsKey(a.Name)).ToDictionary(a => a.Name, b => b.GetColumnName().Replace("]", "]]"));
+                PropertyColumnNamesDict = properties.Where(a => PrimaryKeysPropertyColumnNameDict.ContainsKey(a.Name)).ToDictionary(a => a.Name, b => b.GetColumnName(ObjectIdentifier).Replace("]", "]]"));
             }
             else
             {
-                PropertyColumnNamesDict = properties.ToDictionary(a => a.Name, b => b.GetColumnName().Replace("]", "]]"));
-                ShadowProperties = new HashSet<string>(properties.Where(p => p.IsShadowProperty() && !p.IsForeignKey()).Select(p => p.GetColumnName()));
+                PropertyColumnNamesDict = properties.ToDictionary(a => a.Name, b => b.GetColumnName(ObjectIdentifier).Replace("]", "]]"));
+                ShadowProperties = new HashSet<string>(properties.Where(p => p.IsShadowProperty() && !p.IsForeignKey()).Select(p => p.GetColumnName(ObjectIdentifier)));
                 foreach (var property in properties)
                 {
                     var converter = property.GetTypeMapping().Converter;
@@ -336,11 +339,11 @@ namespace EFCore.BulkExtensions
                         continue;
                     }
 
-                    var columnName = property.GetColumnName();
+                    var columnName = property.GetColumnName(ObjectIdentifier);
                     ConvertibleProperties.Add(columnName, converter);
                 }
 
-                foreach (var navigation in entityType.GetNavigations().Where(a => !a.IsCollection() && !a.GetTargetType().IsOwned()))
+                foreach (var navigation in entityType.GetNavigations().Where(a => !a.IsCollection && !a.TargetEntityType.IsOwned()))
                 {
                     FastPropertyDict.Add(navigation.Name, new FastProperty(navigation.PropertyInfo));
                 }
@@ -365,7 +368,7 @@ namespace EFCore.BulkExtensions
                         {
                             if (!ownedEntityProperty.IsPrimaryKey())
                             {
-                                string columnName = ownedEntityProperty.GetColumnName();
+                                string columnName = ownedEntityProperty.GetColumnName(ObjectIdentifier);
                                 ownedEntityPropertyNameColumnNameDict.Add(ownedEntityProperty.Name, columnName);
                                 var ownedEntityPropertyFullName = property.Name + "_" + ownedEntityProperty.Name;
                                 if (!FastPropertyDict.ContainsKey(ownedEntityPropertyFullName))
@@ -504,36 +507,30 @@ namespace EFCore.BulkExtensions
                 var sqlConnection = context.Database.GetDbConnection();
                 var currentTransaction = context.Database.CurrentTransaction;
 
-                using (var command = sqlConnection.CreateCommand())
-                {
-                    if (currentTransaction != null)
-                        command.Transaction = currentTransaction.GetDbTransaction();
-                    command.CommandText = SqlQueryBuilder.CheckTableExist(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
+                using var command = sqlConnection.CreateCommand();
+                if (currentTransaction != null)
+                    command.Transaction = currentTransaction.GetDbTransaction();
+                command.CommandText = SqlQueryBuilder.CheckTableExist(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
 
-                    if (isAsync)
+                if (isAsync)
+                {
+                    using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+                    if (reader.HasRows)
                     {
-                        using (var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false))
+                        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                         {
-                            if (reader.HasRows)
-                            {
-                                while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
-                                {
-                                    tableExist = (int)reader[0] == 1;
-                                }
-                            }
+                            tableExist = (int)reader[0] == 1;
                         }
                     }
-                    else
+                }
+                else
+                {
+                    using var reader = command.ExecuteReader();
+                    if (reader.HasRows)
                     {
-                        using (var reader = command.ExecuteReader())
+                        while (reader.Read())
                         {
-                            if (reader.HasRows)
-                            {
-                                while (reader.Read())
-                                {
-                                    tableExist = (int)reader[0] == 1;
-                                }
-                            }
+                            tableExist = (int)reader[0] == 1;
                         }
                     }
                 }
@@ -646,10 +643,9 @@ namespace EFCore.BulkExtensions
 
             for (int i = 0; i < NumberOfEntities; i++)
             {
-                T existingEntity;
                 T entity = entities[i];
                 string uniqueProperyValues = GetUniquePropertyValues(entity, selectByPropertyNames, FastPropertyDict);
-                if (existingEntitiesDict.TryGetValue(uniqueProperyValues, out existingEntity))
+                if (existingEntitiesDict.TryGetValue(uniqueProperyValues, out T existingEntity))
                 {
                     foreach (var propertyName in propertyNames)
                     {

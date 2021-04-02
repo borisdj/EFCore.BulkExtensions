@@ -52,7 +52,7 @@ namespace EFCore.BulkExtensions
                         var r = x.Relationships.ElementAt(i);
 
                         // If x's side of the relationship is dependent on the other side of the relationship
-                        if (r.ParentNavigation.IsDependentToPrincipal())
+                        if (r.ParentNavigation.IsOnDependent)
                             // Return true to push it further down the list
                             return true;
                     }
@@ -62,7 +62,7 @@ namespace EFCore.BulkExtensions
                 }
 
                 // If the other side of the relationship is dependent on x
-                if (x.ParentNavigation.IsDependentToPrincipal())
+                if (x.ParentNavigation.IsOnDependent)
                 {
                     // return false to push it up the list
                     return false;
@@ -131,7 +131,7 @@ namespace EFCore.BulkExtensions
 
             foreach (var navigation in entityNavigations)
             {
-                if (navigation.IsCollection())
+                if (navigation.IsCollection)
                 {
                     var navigationValue = dbContext.Entry(entryEntity).Collection(navigation.Name).CurrentValue;
 

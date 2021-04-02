@@ -229,7 +229,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
                 if (entityPropertiesDict.ContainsKey(property.Name))
                 {
                     var propertyEntityType = entityPropertiesDict[property.Name];
-                    string columnName = propertyEntityType.GetColumnName();
+                    string columnName = propertyEntityType.GetColumnName(tableInfo.ObjectIdentifier);
                     var propertyType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
 
                     //SqliteType(CpropertyType.Name): Text(String, Decimal, DateTime); Integer(Int16, Int32, Int64) Real(Float, Double) Blob(Guid)

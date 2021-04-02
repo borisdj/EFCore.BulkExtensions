@@ -24,7 +24,7 @@ namespace EFCore.BulkExtensions.Tests
             return base.NonQueryExecuted(command, eventData, result);
         }
 
-        public override Task<int> NonQueryExecutedAsync(DbCommand command, CommandExecutedEventData eventData, int result, CancellationToken cancellationToken = default)
+        public override ValueTask<int> NonQueryExecutedAsync(DbCommand command, CommandExecutedEventData eventData, int result, CancellationToken cancellationToken = default)
         {
             if (command?.CommandText != null)
             {
@@ -44,7 +44,7 @@ namespace EFCore.BulkExtensions.Tests
             return base.NonQueryExecuting(command, eventData, result);
         }
 
-        public override Task<InterceptionResult<int>> NonQueryExecutingAsync(DbCommand command, CommandEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
+        public override ValueTask<InterceptionResult<int>> NonQueryExecutingAsync(DbCommand command, CommandEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
         {
             if (command?.CommandText != null)
             {
@@ -64,7 +64,7 @@ namespace EFCore.BulkExtensions.Tests
             return base.ReaderExecuted(command, eventData, result);
         }
 
-        public override Task<DbDataReader> ReaderExecutedAsync(DbCommand command, CommandExecutedEventData eventData, DbDataReader result, CancellationToken cancellationToken = default)
+        public override ValueTask<DbDataReader> ReaderExecutedAsync(DbCommand command, CommandExecutedEventData eventData, DbDataReader result, CancellationToken cancellationToken = default)
         {
             if (command?.CommandText != null)
             {
@@ -84,7 +84,7 @@ namespace EFCore.BulkExtensions.Tests
             return base.ReaderExecuting(command, eventData, result);
         }
 
-        public override Task<InterceptionResult<DbDataReader>> ReaderExecutingAsync(DbCommand command, CommandEventData eventData, InterceptionResult<DbDataReader> result, CancellationToken cancellationToken = default)
+        public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(DbCommand command, CommandEventData eventData, InterceptionResult<DbDataReader> result, CancellationToken cancellationToken = default)
         {
             if (command?.CommandText != null)
             {
@@ -104,7 +104,7 @@ namespace EFCore.BulkExtensions.Tests
             return base.ScalarExecuted(command, eventData, result);
         }
 
-        public override Task<object> ScalarExecutedAsync(DbCommand command, CommandExecutedEventData eventData, object result, CancellationToken cancellationToken = default)
+        public override ValueTask<object> ScalarExecutedAsync(DbCommand command, CommandExecutedEventData eventData, object result, CancellationToken cancellationToken = default)
         {
             if (command?.CommandText != null)
             {
@@ -124,7 +124,7 @@ namespace EFCore.BulkExtensions.Tests
             return base.ScalarExecuting(command, eventData, result);
         }
 
-        public override Task<InterceptionResult<object>> ScalarExecutingAsync(DbCommand command, CommandEventData eventData, InterceptionResult<object> result, CancellationToken cancellationToken = default)
+        public override ValueTask<InterceptionResult<object>> ScalarExecutingAsync(DbCommand command, CommandEventData eventData, InterceptionResult<object> result, CancellationToken cancellationToken = default)
         {
             if (command?.CommandText != null)
             {

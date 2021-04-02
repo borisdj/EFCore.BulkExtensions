@@ -116,7 +116,7 @@ namespace EFCore.BulkExtensions
 
         public static string CheckTableExist(string fullTableName, bool isTempTable)
         {
-            string q = "";
+            string q;
             if (isTempTable)
             {
                 q = $"IF OBJECT_ID ('tempdb..[#{fullTableName.Split('#')[1]}', 'U') IS NOT NULL SELECT 1 AS res ELSE SELECT 0 AS res;";

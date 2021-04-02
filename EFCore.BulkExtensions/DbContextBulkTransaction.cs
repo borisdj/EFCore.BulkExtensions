@@ -10,7 +10,7 @@ namespace EFCore.BulkExtensions
     {
         public static void Execute<T>(DbContext context, Type type, IList<T> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress) where T : class
         {
-            type = type ?? typeof(T);
+            type ??= typeof(T);
             using (ActivitySources.StartExecuteActivity(operationType, entities.Count))
             {
                 if (operationType != OperationType.Truncate && entities.Count == 0)
@@ -48,7 +48,7 @@ namespace EFCore.BulkExtensions
 
         public static async Task ExecuteAsync<T>(DbContext context, Type type, IList<T> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress, CancellationToken cancellationToken) where T : class
         {
-            type = type ?? typeof(T);
+            type ??= typeof(T);
             using (ActivitySources.StartExecuteActivity(operationType, entities.Count))
             {
                 if (operationType != OperationType.Truncate && entities.Count == 0)

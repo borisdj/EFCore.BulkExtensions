@@ -11,6 +11,7 @@ namespace EFCore.BulkExtensions.SqlAdapters
         public string TableAliasSuffixAs { get; set; }
         public string Sql { get; set; }
     }
+
     public interface IQueryBuilderSpecialization
     {
         List<object> ReloadSqlParameters(DbContext context, List<object> sqlParameters);
@@ -19,7 +20,6 @@ namespace EFCore.BulkExtensions.SqlAdapters
 
         (string, string) GetBatchSqlReformatTableAliasAndTopStatement(string sqlQuery);
 
-        ExtractedTableAlias GetBatchSqlExtractTableAliasFromQuery(string fullQuery, string tableAlias,
-            string tableAliasSuffixAs);
+        ExtractedTableAlias GetBatchSqlExtractTableAliasFromQuery(string fullQuery, string tableAlias, string tableAliasSuffixAs);
     }
 }

@@ -369,6 +369,7 @@ namespace EFCore.BulkExtensions
 
         public static DbContext GetDbContext(IQueryable query)
         {
+#pragma warning disable EF1001 // Internal EF Core API usage.
             const BindingFlags bindingFlags = BindingFlags.NonPublic | BindingFlags.Instance;
             var queryCompiler = typeof(EntityQueryProvider).GetField("_queryCompiler", bindingFlags).GetValue(query.Provider);
             var queryContextFactory = queryCompiler.GetType().GetField("_queryContextFactory", bindingFlags).GetValue(queryCompiler);
@@ -378,9 +379,8 @@ namespace EFCore.BulkExtensions
             var stateManagerProperty = queryContextDependencies.GetProperty("StateManager", bindingFlags | BindingFlags.Public).GetValue(dependencies);
             var stateManager = (IStateManager)stateManagerProperty;
 
-#pragma warning disable EF1001 // Internal EF Core API usage.
             return stateManager.Context;
-#pragma warning restore EF1001 // Internal EF Core API usage.
+#pragma warning restore EF1001
         }
 
         public static (string, string) SplitLeadingCommentsAndMainSqlQuery(string sqlQuery)
@@ -448,8 +448,8 @@ namespace EFCore.BulkExtensions
             sqlColumns.Append($" @{parmName}");
         }
 
-        private static readonly MethodInfo DbContextSetMethodInfo = typeof(DbContext)
-            .GetMethod(nameof(DbContext.Set), BindingFlags.Public | BindingFlags.Instance, null, Array.Empty<Type>(), null);
+        private static readonly MethodInfo DbContextSetMethodInfo = 
+            typeof(DbContext).GetMethod(nameof(DbContext.Set), BindingFlags.Public | BindingFlags.Instance, null, Array.Empty<Type>(), null);
 
         public static readonly Regex TableAliasPattern = new Regex(@"(?:FROM|JOIN)\s+(\[\S+\]) AS (\[\S+\])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
@@ -551,9 +551,9 @@ namespace EFCore.BulkExtensions
             var firstNavigationNode = originalParameterNode.Parent;
             var firstMemberExpression = (MemberExpression)firstNavigationNode.Expression;
             var firstNavigation = rootTypeTableInfo.AllNavigationsDictionary[firstMemberExpression.Member.Name];
-            var isFirstNavigationACollectionType = firstNavigation.IsCollection();
+            var isFirstNavigationACollectionType = firstNavigation.IsCollection;
 
-            var firstNavigationTargetType = firstNavigation.GetTargetType();
+            var firstNavigationTargetType = firstNavigation.TargetEntityType;
             var firstNavigationType = firstNavigationTargetType.ClrType;
             var firstNavigationTableName = firstNavigationTargetType.GetTableName();
 
@@ -764,7 +764,7 @@ namespace EFCore.BulkExtensions
             var navigationColumnFastLookup = createBodyData.GetTableInfoForType(firstNavigationType).PropertyColumnNamesDict;
             var columnNameValueDict = rootTypeTableInfo.PropertyColumnNamesDict;
             var rootTableAlias = createBodyData.TableAlias;
-            if (firstNavigation.IsDependentToPrincipal())
+            if (firstNavigation.IsOnDependent)
             {
                 for (int keyIndex = 0; keyIndex < dependencyKeyProperties.Count; ++keyIndex)
                 {

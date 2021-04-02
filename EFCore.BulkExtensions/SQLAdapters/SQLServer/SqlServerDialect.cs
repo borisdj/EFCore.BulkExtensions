@@ -46,8 +46,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
             return (tableAlias, topStatement);
         }
 
-        public ExtractedTableAlias GetBatchSqlExtractTableAliasFromQuery(string fullQuery, string tableAlias,
-            string tableAliasSuffixAs)
+        public ExtractedTableAlias GetBatchSqlExtractTableAliasFromQuery(string fullQuery, string tableAlias, string tableAliasSuffixAs)
         {
             return new ExtractedTableAlias
             {

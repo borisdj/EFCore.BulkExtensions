@@ -157,7 +157,7 @@ WHERE ([p].[ParentId] < 5) AND ([p0].[Notes] IS NOT NULL AND (([p0].[Notes] <> N
                 actualSqlExecuted = testDbCommandInterceptor.ExecutedNonQueryCommands?.LastOrDefault();
                 expectedSql =
 @"UPDATE p SET  [p].[Value] = (
-    SELECT SUM([c].[Value])
+    SELECT COALESCE(SUM([c].[Value]), 0.0)
     FROM [Child] AS [c]
     WHERE ([p].[ParentId] = [c].[ParentId]) AND ([c].[IsEnabled] = CAST(1 AS bit))) 
 FROM [Parent] AS [p]
@@ -176,7 +176,7 @@ WHERE [p].[ParentId] = 1";
                 actualSqlExecuted = testDbCommandInterceptor.ExecutedNonQueryCommands?.LastOrDefault();
                 expectedSql =
 @"UPDATE p SET  [p].[Description] = (CONVERT(VARCHAR(100), (
-    SELECT SUM([c].[Value])
+    SELECT COALESCE(SUM([c].[Value]), 0.0)
     FROM [Child] AS [c]
     WHERE ([p].[ParentId] = [c].[ParentId]) AND (([c].[IsEnabled] = CAST(1 AS bit)) AND ([c].[Value] = @__p_0))))) , [p].[Value] = @param_1 
 FROM [Parent] AS [p]

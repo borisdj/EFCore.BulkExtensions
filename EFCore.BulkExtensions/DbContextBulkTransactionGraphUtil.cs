@@ -76,7 +76,7 @@ namespace EFCore.BulkExtensions
                             foreach (var navigation in actionGraphItem.Relationships)
                             {
                                 // If this relationship requires the parents value to exist
-                                if (navigation.ParentNavigation.IsDependentToPrincipal() == false)
+                                if (navigation.ParentNavigation.IsOnDependent == false)
                                 {
                                     foreach (var navGraphEntity in navigation.Entities)
                                     {
@@ -93,7 +93,7 @@ namespace EFCore.BulkExtensions
                         {
                             var navigation = actionGraphItem.ParentNavigation;
 
-                            if (navigation.IsDependentToPrincipal())
+                            if (navigation.IsOnDependent)
                             {
                                 SetForeignKeyForRelationship(context, navigation,
                                     dependent: parentEntity,

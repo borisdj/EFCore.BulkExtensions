@@ -58,61 +58,55 @@ namespace EFCore.BulkExtensions.Tests
         {
             ContextUtil.DbServer = dbServer;
 
-            using (var context = new TestContext(ContextUtil.GetOptions()))
+            using var context = new TestContext(ContextUtil.GetOptions());
+            var sqlHelper = context.GetService<ISqlGenerationHelper>();
+            context.Database.OpenConnection();
+
+            try
             {
-                var sqlHelper = context.GetService<ISqlGenerationHelper>();
-                context.Database.OpenConnection();
+                // we use a temp table to verify whether the connection has been closed (and re-opened) inside BulkUpdate(Async)
+                var columnName = sqlHelper.DelimitIdentifier("Id");
+                var tableName = sqlHelper.DelimitIdentifier("#MyTempTable");
+                var createTableSql = $" TABLE {tableName} ({columnName} INTEGER);";
 
-                try
+                switch (dbServer)
                 {
-                    // we use a temp table to verify whether the connection has been closed (and re-opened) inside BulkUpdate(Async)
-                    var columnName = sqlHelper.DelimitIdentifier("Id");
-                    var tableName = sqlHelper.DelimitIdentifier("#MyTempTable");
-                    var createTableSql = $" TABLE {tableName} ({columnName} INTEGER);";
+                    case DbServer.Sqlite:
+                        createTableSql = $"CREATE TEMPORARY {createTableSql}";
+                        break;
 
-                    switch (dbServer)
-                    {
-                        case DbServer.Sqlite:
-                            createTableSql = $"CREATE TEMPORARY {createTableSql}";
-                            break;
+                    case DbServer.SqlServer:
+                        createTableSql = $"CREATE {createTableSql}";
+                        break;
 
-                        case DbServer.SqlServer:
-                            createTableSql = $"CREATE {createTableSql}";
-                            break;
-
-                        default:
-                            throw new ArgumentException($"Unknown database type: '{dbServer}'.", nameof(dbServer));
-                    }
-
-                    context.Database.ExecuteSqlRaw(createTableSql);
-
-                    bulkOperation(context);
-
-                    context.Database.ExecuteSqlRaw($"SELECT {columnName} FROM {tableName}");
+                    default:
+                        throw new ArgumentException($"Unknown database type: '{dbServer}'.", nameof(dbServer));
                 }
-                finally
-                {
-                    context.Database.CloseConnection();
-                }
+
+                context.Database.ExecuteSqlRaw(createTableSql);
+
+                bulkOperation(context);
+
+                context.Database.ExecuteSqlRaw($"SELECT {columnName} FROM {tableName}");
+            }
+            finally
+            {
+                context.Database.CloseConnection();
             }
         }
 
         private void DeletePreviousDatabase()
         {
-            using (var context = new TestContext(ContextUtil.GetOptions()))
-            {
-                context.Database.EnsureDeleted();
-            }
+            using var context = new TestContext(ContextUtil.GetOptions());
+            context.Database.EnsureDeleted();
         }
 
         private void CheckQueryCache()
         {
-            using (var context = new TestContext(ContextUtil.GetOptions()))
-            {
-                var compiledQueryCache = ((MemoryCache)context.GetService<IMemoryCache>());
+            using var context = new TestContext(ContextUtil.GetOptions());
+            var compiledQueryCache = ((MemoryCache)context.GetService<IMemoryCache>());
 
-                Assert.Equal(0, compiledQueryCache.Count);
-            }
+            Assert.Equal(0, compiledQueryCache.Count);
         }
 
         private void WriteProgress(decimal percentage)
@@ -159,42 +153,37 @@ namespace EFCore.BulkExtensions.Tests
                 {
                     if (ContextUtil.DbServer == DbServer.SqlServer)
                     {
-                        using (var transaction = context.Database.BeginTransaction())
+                        using var transaction = context.Database.BeginTransaction();
+                        var bulkConfig = new BulkConfig
                         {
-                            var bulkConfig = new BulkConfig
-                            {
-                                //PreserveInsertOrder = true, // true is default
-                                SetOutputIdentity = true,
-                                BatchSize = 4000,
-                                UseTempDB = true,
-                                CalculateStats = true
-                            };
-                            context.BulkInsert(entities, bulkConfig, (a) => WriteProgress(a));
-                            Assert.Equal(EntitiesNumber - 1, bulkConfig.StatsInfo.StatsNumberInserted);
-                            Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberUpdated);
-                            Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberDeleted);
+                            //PreserveInsertOrder = true, // true is default
+                            SetOutputIdentity = true,
+                            BatchSize = 4000,
+                            UseTempDB = true,
+                            CalculateStats = true
+                        };
+                        context.BulkInsert(entities, bulkConfig, (a) => WriteProgress(a));
+                        Assert.Equal(EntitiesNumber - 1, bulkConfig.StatsInfo.StatsNumberInserted);
+                        Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberUpdated);
+                        Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberDeleted);
 
-                            foreach (var entity in entities)
+                        foreach (var entity in entities)
+                        {
+                            foreach (var subEntity in entity.ItemHistories)
                             {
-                                foreach (var subEntity in entity.ItemHistories)
-                                {
-                                    subEntity.ItemId = entity.ItemId; // setting FK to match its linked PK that was generated in DB
-                                }
-                                subEntities.AddRange(entity.ItemHistories);
+                                subEntity.ItemId = entity.ItemId; // setting FK to match its linked PK that was generated in DB
                             }
-                            context.BulkInsert(subEntities);
-
-                            transaction.Commit();
+                            subEntities.AddRange(entity.ItemHistories);
                         }
+                        context.BulkInsert(subEntities);
+
+                        transaction.Commit();
                     }
                     else if (ContextUtil.DbServer == DbServer.Sqlite)
                     {
                         using (var transaction = context.Database.BeginTransaction())
                         {
-                            var bulkConfig = new BulkConfig()
-                            {
-                                SetOutputIdentity = true,
-                            };
+                            var bulkConfig = new BulkConfig() { SetOutputIdentity = true };
                             context.BulkInsert(entities, bulkConfig);
 
                             foreach (var entity in entities)

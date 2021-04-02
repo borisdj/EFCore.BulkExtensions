@@ -16,7 +16,7 @@ namespace EFCore.BulkExtensions
         // we can not simultaneously Insert without PK(being 0,0,...) and Update with PK(1,2,...), separate calls Insert, Update are required.
         public static string InsertIntoTable(TableInfo tableInfo, OperationType operationType, string tableName = null)
         {
-            tableName = tableName ?? tableInfo.TableName;
+            tableName ??= tableInfo.TableName;
             List<string> columnsList = tableInfo.PropertyColumnNamesDict.Values.ToList();
             List<string> propertiesList = tableInfo.PropertyColumnNamesDict.Keys.ToList();
 
@@ -51,7 +51,7 @@ namespace EFCore.BulkExtensions
 
         public static string UpdateSetTable(TableInfo tableInfo, string tableName = null)
         {
-            tableName = tableName ?? tableInfo.TableName;
+            tableName ??= tableInfo.TableName;
             List<string> columnsList = tableInfo.PropertyColumnNamesDict.Values.ToList();
             List<string> primaryKeys = tableInfo.PrimaryKeysPropertyColumnNameDict.Select(k => tableInfo.PropertyColumnNamesDict[k.Key]).ToList();
             var commaSeparatedColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsList, equalsTable: "@", propertColumnsNamesDict: tableInfo.PropertyColumnNamesDict).Replace("]", "").Replace(" = @[", "] = @").Replace(".", "_"); ;
@@ -65,7 +65,7 @@ namespace EFCore.BulkExtensions
 
         public static string DeleteFromTable(TableInfo tableInfo, string tableName = null)
         {
-            tableName = tableName ?? tableInfo.TableName;
+            tableName ??= tableInfo.TableName;
             List<string> primaryKeys = tableInfo.PrimaryKeysPropertyColumnNameDict.Select(k => tableInfo.PropertyColumnNamesDict[k.Key]).ToList();
             var commaSeparatedPrimaryKeys = SqlQueryBuilder.GetANDSeparatedColumns(primaryKeys, equalsTable: "@", propertColumnsNamesDict: tableInfo.PropertyColumnNamesDict).Replace("]", "").Replace(" = @[", "] = @").Replace(".", "_");
 

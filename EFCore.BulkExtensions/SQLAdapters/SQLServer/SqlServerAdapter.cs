@@ -42,93 +42,89 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                 // separate logic for System.Data.SqlClient and Microsoft.Data.SqlClient
                 if (SqlClientHelper.IsSystemConnection(connection))
                 {
-                    using (var sqlBulkCopy = GetSqlBulkCopy((System.Data.SqlClient.SqlConnection)connection, transaction, tableInfo.BulkConfig))
+                    using var sqlBulkCopy = GetSqlBulkCopy((System.Data.SqlClient.SqlConnection)connection, transaction, tableInfo.BulkConfig);
+                    bool setColumnMapping = false;
+                    tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, setColumnMapping, progress);
+                    try
                     {
-                        bool setColumnMapping = false;
-                        tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, setColumnMapping, progress);
-                        try
+                        var dataTable = GetDataTable(context, type, entities, sqlBulkCopy, tableInfo);
+                        if (isAsync)
                         {
-                            var dataTable = GetDataTable(context, type, entities, sqlBulkCopy, tableInfo);
-                            if (isAsync)
-                            {
-                                await sqlBulkCopy.WriteToServerAsync(dataTable, cancellationToken).ConfigureAwait(false);
-                            }
-                            else
-                            {
-                                sqlBulkCopy.WriteToServer(dataTable);
-                            }
+                            await sqlBulkCopy.WriteToServerAsync(dataTable, cancellationToken).ConfigureAwait(false);
                         }
-                        catch (InvalidOperationException ex)
+                        else
                         {
-                            if (ex.Message.Contains(BulkExceptionMessage.ColumnMappingNotMatch))
+                            sqlBulkCopy.WriteToServer(dataTable);
+                        }
+                    }
+                    catch (InvalidOperationException ex)
+                    {
+                        if (ex.Message.Contains(BulkExceptionMessage.ColumnMappingNotMatch))
+                        {
+                            bool tableExist = isAsync ? await tableInfo.CheckTableExistAsync(context, tableInfo, cancellationToken, isAsync: true).ConfigureAwait(false)
+                                                            : tableInfo.CheckTableExistAsync(context, tableInfo, cancellationToken, isAsync: false).GetAwaiter().GetResult();
+                            if (!tableExist)
                             {
-                                bool tableExist = isAsync ? await tableInfo.CheckTableExistAsync(context, tableInfo, cancellationToken, isAsync: true).ConfigureAwait(false)
-                                                                : tableInfo.CheckTableExistAsync(context, tableInfo, cancellationToken, isAsync: false).GetAwaiter().GetResult();
-                                if (!tableExist)
-                                {
-                                    var sqlCreateTableCopy = SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo);
-                                    var sqlDropTable = SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
+                                var sqlCreateTableCopy = SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo);
+                                var sqlDropTable = SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
 
-                                    if (isAsync)
-                                    {
-                                        await context.Database.ExecuteSqlRawAsync(sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
-                                        await context.Database.ExecuteSqlRawAsync(sqlDropTable, cancellationToken).ConfigureAwait(false);
-                                    }
-                                    else
-                                    {
-                                        context.Database.ExecuteSqlRaw(sqlCreateTableCopy);
-                                        context.Database.ExecuteSqlRaw(sqlDropTable);
-                                    }
+                                if (isAsync)
+                                {
+                                    await context.Database.ExecuteSqlRawAsync(sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
+                                    await context.Database.ExecuteSqlRawAsync(sqlDropTable, cancellationToken).ConfigureAwait(false);
+                                }
+                                else
+                                {
+                                    context.Database.ExecuteSqlRaw(sqlCreateTableCopy);
+                                    context.Database.ExecuteSqlRaw(sqlDropTable);
                                 }
                             }
-                            throw;
                         }
+                        throw;
                     }
                 }
                 else
                 {
-                    using (var sqlBulkCopy = GetSqlBulkCopy((Microsoft.Data.SqlClient.SqlConnection)connection, transaction, tableInfo.BulkConfig))
+                    using var sqlBulkCopy = GetSqlBulkCopy((Microsoft.Data.SqlClient.SqlConnection)connection, transaction, tableInfo.BulkConfig);
+                    bool setColumnMapping = false;
+                    tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, setColumnMapping, progress);
+                    try
                     {
-                        bool setColumnMapping = false;
-                        tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, setColumnMapping, progress);
-                        try
+                        var dataTable = GetDataTable(context, type, entities, sqlBulkCopy, tableInfo);
+                        if (isAsync)
                         {
-                            var dataTable = GetDataTable(context, type, entities, sqlBulkCopy, tableInfo);
-                            if (isAsync)
-                            {
-                                await sqlBulkCopy.WriteToServerAsync(dataTable, cancellationToken).ConfigureAwait(false);
-                            }
-                            else
-                            {
-                                sqlBulkCopy.WriteToServer(dataTable);
-                            }
+                            await sqlBulkCopy.WriteToServerAsync(dataTable, cancellationToken).ConfigureAwait(false);
                         }
-                        catch (InvalidOperationException ex)
+                        else
                         {
-                            if (ex.Message.Contains(BulkExceptionMessage.ColumnMappingNotMatch))
+                            sqlBulkCopy.WriteToServer(dataTable);
+                        }
+                    }
+                    catch (InvalidOperationException ex)
+                    {
+                        if (ex.Message.Contains(BulkExceptionMessage.ColumnMappingNotMatch))
+                        {
+                            bool tableExist = isAsync ? await tableInfo.CheckTableExistAsync(context, tableInfo, cancellationToken, isAsync: true).ConfigureAwait(false)
+                                                            : tableInfo.CheckTableExistAsync(context, tableInfo, cancellationToken, isAsync: false).GetAwaiter().GetResult();
+
+                            if (!tableExist)
                             {
-                                bool tableExist = isAsync ? await tableInfo.CheckTableExistAsync(context, tableInfo, cancellationToken, isAsync: true).ConfigureAwait(false)
-                                                                : tableInfo.CheckTableExistAsync(context, tableInfo, cancellationToken, isAsync: false).GetAwaiter().GetResult();
+                                var sqlCreateTableCopy = SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo);
+                                var sqlDropTable = SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
 
-                                if (!tableExist)
+                                if (isAsync)
                                 {
-                                    var sqlCreateTableCopy = SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo);
-                                    var sqlDropTable = SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
-
-                                    if (isAsync)
-                                    {
-                                        await context.Database.ExecuteSqlRawAsync(sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
-                                        await context.Database.ExecuteSqlRawAsync(sqlDropTable, cancellationToken).ConfigureAwait(false);
-                                    }
-                                    else
-                                    {
-                                        context.Database.ExecuteSqlRaw(sqlCreateTableCopy);
-                                        context.Database.ExecuteSqlRaw(sqlDropTable);
-                                    }
+                                    await context.Database.ExecuteSqlRawAsync(sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
+                                    await context.Database.ExecuteSqlRawAsync(sqlDropTable, cancellationToken).ConfigureAwait(false);
+                                }
+                                else
+                                {
+                                    context.Database.ExecuteSqlRaw(sqlCreateTableCopy);
+                                    context.Database.ExecuteSqlRaw(sqlDropTable);
                                 }
                             }
-                            throw;
                         }
+                        throw;
                     }
                 }
             }
@@ -523,11 +519,12 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                 IsGeography = true
             };
 
+            var objectIdentifier = tableInfo.ObjectIdentifier;
             type = tableInfo.HasAbstractList ? entities[0].GetType() : type;
             var entityType = context.Model.FindEntityType(type);
             var entityTypeProperties = entityType.GetProperties();
             var entityPropertiesDict = entityTypeProperties.Where(a => tableInfo.PropertyColumnNamesDict.ContainsKey(a.Name) || a.Name == tableInfo.TimeStampPropertyName).ToDictionary(a => a.Name, a => a);
-            var entityNavigationOwnedDict = entityType.GetNavigations().Where(a => a.GetTargetType().IsOwned()).ToDictionary(a => a.Name, a => a);
+            var entityNavigationOwnedDict = entityType.GetNavigations().Where(a => a.TargetEntityType.IsOwned()).ToDictionary(a => a.Name, a => a);
             var entityShadowFkPropertiesDict = entityTypeProperties.Where(a => a.IsShadowProperty() &&
                                                                                a.IsForeignKey() &&
                                                                                a.GetContainingForeignKeys().FirstOrDefault()?.DependentToPrincipal?.Name != null)
@@ -541,7 +538,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                 if (entityPropertiesDict.ContainsKey(property.Name))
                 {
                     var propertyEntityType = entityPropertiesDict[property.Name];
-                    string columnName = propertyEntityType.GetColumnName();
+                    string columnName = propertyEntityType.GetColumnName(objectIdentifier);
 
                     var isConvertible = tableInfo.ConvertibleProperties.ContainsKey(columnName);
                     var propertyType = isConvertible ? tableInfo.ConvertibleProperties[columnName].ProviderClrType : property.PropertyType;
@@ -571,11 +568,11 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                 else if (entityShadowFkPropertiesDict.ContainsKey(property.Name))
                 {
                     var fk = entityShadowFkPropertiesDict[property.Name];
-                    entityPropertiesDict.TryGetValue(fk.GetColumnName(), out var entityProperty);
+                    entityPropertiesDict.TryGetValue(fk.GetColumnName(objectIdentifier), out var entityProperty);
                     if (entityProperty == null) // BulkRead
                         continue;
 
-                    var columnName = entityProperty.GetColumnName();
+                    var columnName = entityProperty.GetColumnName(objectIdentifier);
                     var propertyType = entityProperty.ClrType;
                     var underlyingType = Nullable.GetUnderlyingType(propertyType);
                     if (underlyingType != null)
@@ -610,7 +607,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                     {
                         if (!ownedEntityProperty.IsPrimaryKey())
                         {
-                            string columnName = ownedEntityProperty.GetColumnName();
+                            string columnName = ownedEntityProperty.GetColumnName(objectIdentifier);
                             if (tableInfo.PropertyColumnNamesDict.ContainsValue(columnName))
                             {
                                 ownedEntityPropertyNameColumnNameDict.Add(ownedEntityProperty.Name, columnName);
@@ -652,7 +649,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
             {
                 foreach (var shadowProperty in entityPropertiesDict.Values.Where(a => a.IsShadowProperty()))
                 {
-                    var columnName = shadowProperty.GetColumnName();
+                    var columnName = shadowProperty.GetColumnName(objectIdentifier);
 
                     // If a model has an entity which has a relationship without an explicity defined FK, the data table will already contain the foreign key shadow property
                     if (dataTable.Columns.Contains(columnName))
@@ -691,7 +688,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
 
                     if (entityPropertiesDict.ContainsKey(property.Name))
                     {
-                        string columnName = entityPropertiesDict[property.Name].GetColumnName();
+                        string columnName = entityPropertiesDict[property.Name].GetColumnName(objectIdentifier);
                         if (tableInfo.ConvertibleProperties.ContainsKey(columnName))
                         {
                             propertyValue = tableInfo.ConvertibleProperties[columnName].ConvertToProvider.Invoke(propertyValue);
@@ -711,8 +708,8 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                     else if (entityShadowFkPropertiesDict.ContainsKey(property.Name))
                     {
                         var foreignKeyShadowProperty = entityShadowFkPropertiesDict[property.Name];
-                        var columnName = foreignKeyShadowProperty.GetColumnName();
-                        entityPropertiesDict.TryGetValue(foreignKeyShadowProperty.GetColumnName(), out var entityProperty);
+                        var columnName = foreignKeyShadowProperty.GetColumnName(objectIdentifier);
+                        entityPropertiesDict.TryGetValue(foreignKeyShadowProperty.GetColumnName(objectIdentifier), out var entityProperty);
                         if (entityProperty == null) // BulkRead
                             continue;
 
@@ -744,7 +741,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                     foreach (var shadowProperty in entityPropertiesDict.Values.Where(y => y.IsShadowProperty()))
                     {
                         var propertyValue = context.Entry(entity).Property(shadowProperty.Name).CurrentValue;
-                        var columnName = shadowProperty.GetColumnName();
+                        var columnName = shadowProperty.GetColumnName(objectIdentifier);
 
                         if (tableInfo.ConvertibleProperties.ContainsKey(columnName))
                         {

@@ -57,7 +57,7 @@ namespace EFCore.BulkExtensions
 
         private static (DbContext, string, List<object>) GetBatchUpdateArguments<T>(IQueryable<T> query, object updateValues = null, List<string> updateColumns = null, Expression<Func<T, T>> updateExpression = null, Type type = null) where T : class
         {
-            type = type ?? typeof(T);
+            type ??= typeof(T);
             var context = BatchUtil.GetDbContext(query);
             var (sql, sqlParameters) = updateExpression == null ? BatchUtil.GetSqlUpdate(query, context, updateValues, updateColumns)
                                                                 : BatchUtil.GetSqlUpdate(query, context, type, updateExpression);
