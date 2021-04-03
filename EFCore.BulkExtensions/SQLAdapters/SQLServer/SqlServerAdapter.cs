@@ -34,8 +34,16 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
         protected async Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, CancellationToken cancellationToken, bool isAsync)
         {
             tableInfo.CheckToSetIdentityForPreserveOrder(entities);
-            var connection = isAsync ? await OpenAndGetSqlConnectionAsync(context, tableInfo.BulkConfig, cancellationToken).ConfigureAwait(false)
-                                           : OpenAndGetSqlConnection(context, tableInfo.BulkConfig);
+            if (isAsync)
+            {
+                await context.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                context.Database.OpenConnection();
+            }
+            var connection = context.GetUnderlyingConnection(tableInfo.BulkConfig);
+
             try
             {
                 var transaction = context.Database.CurrentTransaction;
@@ -369,18 +377,6 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
         #endregion
 
         #region Connection
-        internal static DbConnection OpenAndGetSqlConnection(DbContext context, BulkConfig config)
-        {
-            context.Database.OpenConnection();
-            return context.GetUnderlyingConnection(config);
-        }
-
-        internal static async Task<DbConnection> OpenAndGetSqlConnectionAsync(DbContext context, BulkConfig config, CancellationToken cancellationToken)
-        {
-            await context.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
-            return context.GetUnderlyingConnection(config);
-        }
-
         private static SqlBulkCopy GetSqlBulkCopy(SqlConnection sqlConnection, IDbContextTransaction transaction, BulkConfig config)
         {
             var sqlTransaction = transaction == null ? null : (SqlTransaction)transaction.GetUnderlyingTransaction(config);

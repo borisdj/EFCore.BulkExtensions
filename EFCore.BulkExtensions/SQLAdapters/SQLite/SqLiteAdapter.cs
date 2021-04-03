@@ -37,9 +37,9 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
                     //context.Database.UseTransaction(connection.BeginTransaction());
                     doExplicitCommit = true;
                 }
-                var transaction = (SqliteTransaction)(context.Database.CurrentTransaction == null ?
-                    connection.BeginTransaction() :
-                    context.Database.CurrentTransaction.GetUnderlyingTransaction(tableInfo.BulkConfig));
+                var dbTransaction = doExplicitCommit ? connection.BeginTransaction()
+                                                     : context.Database.CurrentTransaction.GetUnderlyingTransaction(tableInfo.BulkConfig);
+                var transaction = (SqliteTransaction)dbTransaction;
 
                 var command = GetSqliteCommand(context, type, entities, tableInfo, connection, transaction);
 
@@ -101,8 +101,8 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
                     //context.Database.UseTransaction(connection.BeginTransaction());
                     doExplicitCommit = true;
                 }
-                var dbTransaction = context.Database.CurrentTransaction == null ? connection.BeginTransaction()
-                                                                                : context.Database.CurrentTransaction.GetUnderlyingTransaction(tableInfo.BulkConfig);
+                var dbTransaction = doExplicitCommit ? connection.BeginTransaction()
+                                                     : context.Database.CurrentTransaction.GetUnderlyingTransaction(tableInfo.BulkConfig);
                 var transaction = (SqliteTransaction)dbTransaction;
 
                 var command = GetSqliteCommand(context, type, entities, tableInfo, connection, transaction);
