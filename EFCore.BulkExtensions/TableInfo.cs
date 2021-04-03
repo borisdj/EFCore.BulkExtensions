@@ -55,7 +55,9 @@ namespace EFCore.BulkExtensions
         public Dictionary<string, INavigation> AllNavigationsDictionary { get; private set; }
         public Dictionary<string, INavigation> OwnedTypesDict { get; set; } = new Dictionary<string, INavigation>();
         public HashSet<string> ShadowProperties { get; set; } = new HashSet<string>();
-        public Dictionary<string, ValueConverter> ConvertibleProperties { get; set; } = new Dictionary<string, ValueConverter>();
+
+        public Dictionary<string, string> ConvertiblePropertyColumnDict { get; set; } = new Dictionary<string, string>();
+        public Dictionary<string, ValueConverter> ConvertibleColumnConverterDict { get; set; } = new Dictionary<string, ValueConverter>();
         public string TimeStampOutColumnType => "varbinary(8)";
         public string TimeStampPropertyName { get; set; }
         public string TimeStampColumnName { get; set; }
@@ -340,7 +342,8 @@ namespace EFCore.BulkExtensions
                     }
 
                     var columnName = property.GetColumnName(ObjectIdentifier);
-                    ConvertibleProperties.Add(columnName, converter);
+                    ConvertiblePropertyColumnDict.Add(property.Name, columnName);
+                    ConvertibleColumnConverterDict.Add(columnName, converter);
                 }
 
                 foreach (var navigation in entityType.GetNavigations().Where(a => !a.IsCollection && !a.TargetEntityType.IsOwned()))
@@ -350,9 +353,9 @@ namespace EFCore.BulkExtensions
 
                 if (HasOwnedTypes)  // Support owned entity property update. TODO: Optimize
                 {
-                    foreach (var navgationProperty in ownedTypes)
+                    foreach (var navigationProperty in ownedTypes)
                     {
-                        var property = navgationProperty.PropertyInfo;
+                        var property = navigationProperty.PropertyInfo;
                         FastPropertyDict.Add(property.Name, new FastProperty(property));
 
                         Type navOwnedType = type.Assembly.GetType(property.PropertyType.FullName);
@@ -380,7 +383,7 @@ namespace EFCore.BulkExtensions
                             var converter = ownedEntityProperty.GetValueConverter();
                             if (converter != null)
                             {
-                                ConvertibleProperties.Add($"{navgationProperty.Name}_{ownedEntityProperty.Name}", converter);
+                                ConvertibleColumnConverterDict.Add($"{navigationProperty.Name}_{ownedEntityProperty.Name}", converter);
                             }
                         }
                         var ownedProperties = property.PropertyType.GetProperties();

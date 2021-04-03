@@ -193,9 +193,9 @@ namespace EFCore.BulkExtensions
                         propertyDefaultValue = property.GetValue(lastDefaultValues);
                     }
 
-                    if (tableInfo.ConvertibleProperties.ContainsKey(columnName))
+                    if (tableInfo.ConvertibleColumnConverterDict.ContainsKey(columnName))
                     {
-                        propertyUpdateValue = tableInfo.ConvertibleProperties[columnName].ConvertToProvider.Invoke(propertyUpdateValue);
+                        propertyUpdateValue = tableInfo.ConvertibleColumnConverterDict[columnName].ConvertToProvider.Invoke(propertyUpdateValue);
                     }
 
                     bool isDifferentFromDefault = propertyUpdateValue != null && propertyUpdateValue?.ToString() != propertyDefaultValue?.ToString();
@@ -439,7 +439,7 @@ namespace EFCore.BulkExtensions
         private static void AddSqlParameter(StringBuilder sqlColumns, List<object> sqlParameters, TableInfo tableInfo, string columnName, object value)
         {
             var parmName = $"param_{sqlParameters.Count}";
-            if (columnName != null && tableInfo.ConvertibleProperties.TryGetValue(columnName, out var valueConverter))
+            if (columnName != null && tableInfo.ConvertibleColumnConverterDict.TryGetValue(columnName, out var valueConverter))
             {
                 value = valueConverter.ConvertToProvider.Invoke(value);
             }
