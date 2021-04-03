@@ -24,7 +24,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                 {
                     sqlParameter.DbType = DbType.DateTime2; // sets most specific parameter DbType possible for so that precision is not lost
                 }
-                sqlParametersReloaded.Add(SqlClientHelper.CorrectParameterType(c, sqlParameter));
+                sqlParametersReloaded.Add(sqlParameter);
             }
             return sqlParametersReloaded;
         }

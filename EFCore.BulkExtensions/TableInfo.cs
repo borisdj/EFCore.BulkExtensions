@@ -431,35 +431,6 @@ namespace EFCore.BulkExtensions
         }
 
         /// <summary>
-        /// Supports <see cref="System.Data.SqlClient.SqlBulkCopy"/>
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="sqlBulkCopy"></param>
-        /// <param name="entities"></param>
-        /// <param name="setColumnMapping"></param>
-        /// <param name="progress"></param>
-        public void SetSqlBulkCopyConfig<T>(System.Data.SqlClient.SqlBulkCopy sqlBulkCopy, IList<T> entities, bool setColumnMapping, Action<decimal> progress)
-        {
-            sqlBulkCopy.DestinationTableName = InsertToTempTable ? FullTempTableName : FullTableName;
-            sqlBulkCopy.BatchSize = BulkConfig.BatchSize;
-            sqlBulkCopy.NotifyAfter = BulkConfig.NotifyAfter ?? BulkConfig.BatchSize;
-            sqlBulkCopy.SqlRowsCopied += (sender, e) =>
-            {
-                progress?.Invoke(ProgressHelper.GetProgress(entities.Count, e.RowsCopied)); // round to 4 decimal places
-            };
-            sqlBulkCopy.BulkCopyTimeout = BulkConfig.BulkCopyTimeout ?? sqlBulkCopy.BulkCopyTimeout;
-            sqlBulkCopy.EnableStreaming = BulkConfig.EnableStreaming;
-
-            if (setColumnMapping)
-            {
-                foreach (var element in PropertyColumnNamesDict)
-                {
-                    sqlBulkCopy.ColumnMappings.Add(element.Key, element.Value);
-                }
-            }
-        }
-
-        /// <summary>
         /// Supports <see cref="Microsoft.Data.SqlClient.SqlBulkCopy"/>
         /// </summary>
         /// <typeparam name="T"></typeparam>

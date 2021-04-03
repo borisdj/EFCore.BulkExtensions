@@ -39,93 +39,46 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
             {
                 var transaction = context.Database.CurrentTransaction;
 
-                // separate logic for System.Data.SqlClient and Microsoft.Data.SqlClient
-                if (SqlClientHelper.IsSystemConnection(connection))
+                using var sqlBulkCopy = GetSqlBulkCopy((Microsoft.Data.SqlClient.SqlConnection)connection, transaction, tableInfo.BulkConfig);
+                bool setColumnMapping = false;
+                tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, setColumnMapping, progress);
+                try
                 {
-                    using var sqlBulkCopy = GetSqlBulkCopy((System.Data.SqlClient.SqlConnection)connection, transaction, tableInfo.BulkConfig);
-                    bool setColumnMapping = false;
-                    tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, setColumnMapping, progress);
-                    try
+                    var dataTable = GetDataTable(context, type, entities, sqlBulkCopy, tableInfo);
+                    if (isAsync)
                     {
-                        var dataTable = GetDataTable(context, type, entities, sqlBulkCopy, tableInfo);
-                        if (isAsync)
-                        {
-                            await sqlBulkCopy.WriteToServerAsync(dataTable, cancellationToken).ConfigureAwait(false);
-                        }
-                        else
-                        {
-                            sqlBulkCopy.WriteToServer(dataTable);
-                        }
+                        await sqlBulkCopy.WriteToServerAsync(dataTable, cancellationToken).ConfigureAwait(false);
                     }
-                    catch (InvalidOperationException ex)
+                    else
                     {
-                        if (ex.Message.Contains(BulkExceptionMessage.ColumnMappingNotMatch))
-                        {
-                            bool tableExist = isAsync ? await tableInfo.CheckTableExistAsync(context, tableInfo, cancellationToken, isAsync: true).ConfigureAwait(false)
-                                                            : tableInfo.CheckTableExistAsync(context, tableInfo, cancellationToken, isAsync: false).GetAwaiter().GetResult();
-                            if (!tableExist)
-                            {
-                                var sqlCreateTableCopy = SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo);
-                                var sqlDropTable = SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
-
-                                if (isAsync)
-                                {
-                                    await context.Database.ExecuteSqlRawAsync(sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
-                                    await context.Database.ExecuteSqlRawAsync(sqlDropTable, cancellationToken).ConfigureAwait(false);
-                                }
-                                else
-                                {
-                                    context.Database.ExecuteSqlRaw(sqlCreateTableCopy);
-                                    context.Database.ExecuteSqlRaw(sqlDropTable);
-                                }
-                            }
-                        }
-                        throw;
+                        sqlBulkCopy.WriteToServer(dataTable);
                     }
                 }
-                else
+                catch (InvalidOperationException ex)
                 {
-                    using var sqlBulkCopy = GetSqlBulkCopy((Microsoft.Data.SqlClient.SqlConnection)connection, transaction, tableInfo.BulkConfig);
-                    bool setColumnMapping = false;
-                    tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, setColumnMapping, progress);
-                    try
+                    if (ex.Message.Contains(BulkExceptionMessage.ColumnMappingNotMatch))
                     {
-                        var dataTable = GetDataTable(context, type, entities, sqlBulkCopy, tableInfo);
-                        if (isAsync)
-                        {
-                            await sqlBulkCopy.WriteToServerAsync(dataTable, cancellationToken).ConfigureAwait(false);
-                        }
-                        else
-                        {
-                            sqlBulkCopy.WriteToServer(dataTable);
-                        }
-                    }
-                    catch (InvalidOperationException ex)
-                    {
-                        if (ex.Message.Contains(BulkExceptionMessage.ColumnMappingNotMatch))
-                        {
-                            bool tableExist = isAsync ? await tableInfo.CheckTableExistAsync(context, tableInfo, cancellationToken, isAsync: true).ConfigureAwait(false)
-                                                            : tableInfo.CheckTableExistAsync(context, tableInfo, cancellationToken, isAsync: false).GetAwaiter().GetResult();
+                        bool tableExist = isAsync ? await tableInfo.CheckTableExistAsync(context, tableInfo, cancellationToken, isAsync: true).ConfigureAwait(false)
+                                                        : tableInfo.CheckTableExistAsync(context, tableInfo, cancellationToken, isAsync: false).GetAwaiter().GetResult();
 
-                            if (!tableExist)
+                        if (!tableExist)
+                        {
+                            var sqlCreateTableCopy = SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo);
+                            var sqlDropTable = SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
+
+                            if (isAsync)
                             {
-                                var sqlCreateTableCopy = SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo);
-                                var sqlDropTable = SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
-
-                                if (isAsync)
-                                {
-                                    await context.Database.ExecuteSqlRawAsync(sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
-                                    await context.Database.ExecuteSqlRawAsync(sqlDropTable, cancellationToken).ConfigureAwait(false);
-                                }
-                                else
-                                {
-                                    context.Database.ExecuteSqlRaw(sqlCreateTableCopy);
-                                    context.Database.ExecuteSqlRaw(sqlDropTable);
-                                }
+                                await context.Database.ExecuteSqlRawAsync(sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
+                                await context.Database.ExecuteSqlRawAsync(sqlDropTable, cancellationToken).ConfigureAwait(false);
+                            }
+                            else
+                            {
+                                context.Database.ExecuteSqlRaw(sqlCreateTableCopy);
+                                context.Database.ExecuteSqlRaw(sqlDropTable);
                             }
                         }
-                        throw;
                     }
+                    throw;
                 }
             }
             finally
@@ -440,18 +393,6 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                 return new Microsoft.Data.SqlClient.SqlBulkCopy(sqlConnection, sqlBulkCopyOptions, sqlTransaction);
             }
         }
-
-        private static System.Data.SqlClient.SqlBulkCopy GetSqlBulkCopy(System.Data.SqlClient.SqlConnection sqlConnection, IDbContextTransaction transaction, BulkConfig config)
-        {
-            var sqlBulkCopyOptions = (System.Data.SqlClient.SqlBulkCopyOptions)config.SqlBulkCopyOptions;
-            if (transaction == null)
-            {
-                return new System.Data.SqlClient.SqlBulkCopy(sqlConnection, sqlBulkCopyOptions, null);
-            }
-            
-            var sqlTransaction = (System.Data.SqlClient.SqlTransaction)transaction.GetUnderlyingTransaction(config);
-            return new System.Data.SqlClient.SqlBulkCopy(sqlConnection, sqlBulkCopyOptions, sqlTransaction);
-        }
         #endregion
         
         #region DataTable
@@ -475,30 +416,8 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
             }
             return dataTable;
         }
-
+        
         /// <summary>
-        /// Supports <see cref="System.Data.SqlClient.SqlBulkCopy"/>
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="context"></param>
-        /// <param name="type"></param>
-        /// <param name="entities"></param>
-        /// <param name="sqlBulkCopy"></param>
-        /// <param name="tableInfo"></param>
-        /// <returns></returns>
-        internal static DataTable GetDataTable<T>(DbContext context, Type type, IList<T> entities, System.Data.SqlClient.SqlBulkCopy sqlBulkCopy, TableInfo tableInfo)
-        {
-            DataTable dataTable = InnerGetDataTable(context, ref type, entities, tableInfo);
-
-            foreach (DataColumn item in dataTable.Columns)  //Add mapping
-            {
-                sqlBulkCopy.ColumnMappings.Add(item.ColumnName, item.ColumnName);
-            }
-            return dataTable;
-        }
-        
-        
-       /// <summary>
         /// Common logic for two versions of GetDataTable
         /// </summary>
         /// <typeparam name="T"></typeparam>
