@@ -13,10 +13,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
 
         public List<object> ReloadSqlParameters(DbContext context, List<object> sqlParameters)
         {
-            // if SqlServer, might need to convert
-            // Microsoft.Data.SqlClient to System.Data.SqlClient
             var sqlParametersReloaded = new List<object>();
-            var c = context.Database.GetDbConnection();
             foreach (var parameter in sqlParameters)
             {
                 var sqlParameter = (IDbDataParameter)parameter;

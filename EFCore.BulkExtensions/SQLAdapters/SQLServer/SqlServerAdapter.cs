@@ -1,4 +1,5 @@
 ﻿using EFCore.BulkExtensions.SqlAdapters;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using NetTopologySuite.Geometries;
@@ -380,24 +381,17 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
             return context.GetUnderlyingConnection(config);
         }
 
-        private static Microsoft.Data.SqlClient.SqlBulkCopy GetSqlBulkCopy(Microsoft.Data.SqlClient.SqlConnection sqlConnection, IDbContextTransaction transaction, BulkConfig config)
+        private static SqlBulkCopy GetSqlBulkCopy(SqlConnection sqlConnection, IDbContextTransaction transaction, BulkConfig config)
         {
-            var sqlBulkCopyOptions = config.SqlBulkCopyOptions;
-            if (transaction == null)
-            {
-                return new Microsoft.Data.SqlClient.SqlBulkCopy(sqlConnection, sqlBulkCopyOptions, null);
-            }
-            else
-            {
-                var sqlTransaction = (Microsoft.Data.SqlClient.SqlTransaction)transaction.GetUnderlyingTransaction(config);
-                return new Microsoft.Data.SqlClient.SqlBulkCopy(sqlConnection, sqlBulkCopyOptions, sqlTransaction);
-            }
+            var sqlTransaction = transaction == null ? null : (SqlTransaction)transaction.GetUnderlyingTransaction(config);
+            var sqlBulkCopy = new SqlBulkCopy(sqlConnection, config.SqlBulkCopyOptions, sqlTransaction);
+            return sqlBulkCopy;
         }
         #endregion
         
         #region DataTable
         /// <summary>
-        /// Supports <see cref="Microsoft.Data.SqlClient.SqlBulkCopy"/>
+        /// Supports <see cref="SqlBulkCopy"/>
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="context"></param>
@@ -406,7 +400,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
         /// <param name="sqlBulkCopy"></param>
         /// <param name="tableInfo"></param>
         /// <returns></returns>
-        internal static DataTable GetDataTable<T>(DbContext context, Type type, IList<T> entities, Microsoft.Data.SqlClient.SqlBulkCopy sqlBulkCopy, TableInfo tableInfo)
+        internal static DataTable GetDataTable<T>(DbContext context, Type type, IList<T> entities, SqlBulkCopy sqlBulkCopy, TableInfo tableInfo)
         {
             DataTable dataTable = InnerGetDataTable(context, ref type, entities, tableInfo);
 

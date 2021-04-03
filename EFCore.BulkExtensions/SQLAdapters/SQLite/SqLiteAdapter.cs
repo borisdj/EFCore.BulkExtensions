@@ -322,17 +322,18 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
             object idValue = null;
             for (int i = entities.Count - 1; i >= 0; i--)
             {
-                switch (idTypeName)
+                idValue = idTypeName switch
                 {
-                    case "Int64": idValue = counter; break; // 'long' is default since it's largest
-                    case "UInt64": idValue = (ulong)counter; break;
-                    case "Int32": idValue = (int)counter; break;
-                    case "UInt32": idValue = (uint)counter; break;
-                    case "Int16": idValue = (short)counter; break;
-                    case "UInt16": idValue = (ushort)counter; break;
-                    case "Byte": idValue = (byte)counter; break;
-                    case "SByte": idValue = (sbyte)counter; break;
-                }
+                    "Int64" => counter, // long is default
+                    "UInt64" => (ulong)counter,
+                    "Int32" => (int)counter,
+                    "UInt32" => (uint)counter,
+                    "Int16" => (short)counter,
+                    "UInt16" => (ushort)counter,
+                    "Byte" => (byte)counter,
+                    "SByte" => (sbyte)counter,
+                    _ => counter,
+                };
                 identityFastProperty.Set(entities[i], idValue);
                 counter--;
             }

@@ -69,19 +69,12 @@ namespace EFCore.BulkExtensions.Tests
                 var tableName = sqlHelper.DelimitIdentifier("#MyTempTable");
                 var createTableSql = $" TABLE {tableName} ({columnName} INTEGER);";
 
-                switch (dbServer)
+                createTableSql = dbServer switch
                 {
-                    case DbServer.Sqlite:
-                        createTableSql = $"CREATE TEMPORARY {createTableSql}";
-                        break;
-
-                    case DbServer.SqlServer:
-                        createTableSql = $"CREATE {createTableSql}";
-                        break;
-
-                    default:
-                        throw new ArgumentException($"Unknown database type: '{dbServer}'.", nameof(dbServer));
-                }
+                    DbServer.Sqlite => $"CREATE TEMPORARY {createTableSql}",
+                    DbServer.SqlServer => $"CREATE {createTableSql}",
+                    _ => throw new ArgumentException($"Unknown database type: '{dbServer}'.", nameof(dbServer)),
+                };
 
                 context.Database.ExecuteSqlRaw(createTableSql);
 

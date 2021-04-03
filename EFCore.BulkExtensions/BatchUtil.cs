@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.Internal;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -202,11 +203,11 @@ namespace EFCore.BulkExtensions
                     if (isDifferentFromDefault || (updateColumns != null && updateColumns.Contains(propertyName)))
                     {
                         sql += $"[{columnName}] = @{columnName}, ";
-                        propertyUpdateValue = propertyUpdateValue ?? DBNull.Value;
-                        var p = SqlClientHelper.CreateParameter(context.Database.GetDbConnection());
-                        p.ParameterName = $"@{columnName}";
-                        p.Value = propertyUpdateValue;
-                        parameters.Add(p);
+                        propertyUpdateValue ??= DBNull.Value;
+                        var param = (IDbDataParameter)Activator.CreateInstance(typeof(Microsoft.Data.SqlClient.SqlParameter));
+                        param.ParameterName = $"@{columnName}";
+                        param.Value = propertyUpdateValue;
+                        parameters.Add(param);
                     }
                 }
             }

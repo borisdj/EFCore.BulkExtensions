@@ -525,7 +525,7 @@ namespace EFCore.BulkExtensions
 
         protected async Task<int> GetNumberUpdatedAsync(DbContext context, CancellationToken cancellationToken, bool isAsync)
         {
-            var resultParameter = SqlClientHelper.CreateParameter(context.Database.GetDbConnection());
+            var resultParameter = (IDbDataParameter)Activator.CreateInstance(typeof(Microsoft.Data.SqlClient.SqlParameter));
             resultParameter.ParameterName = "@result";
             resultParameter.DbType = DbType.Int32;
             resultParameter.Direction = ParameterDirection.Output;
@@ -545,7 +545,7 @@ namespace EFCore.BulkExtensions
 
         protected async Task<int> GetNumberDeletedAsync(DbContext context, CancellationToken cancellationToken, bool isAsync)
         {
-            var resultParameter = SqlClientHelper.CreateParameter(context.Database.GetDbConnection());
+            var resultParameter = (IDbDataParameter)Activator.CreateInstance(typeof(Microsoft.Data.SqlClient.SqlParameter));
             resultParameter.ParameterName = "@result";
             resultParameter.DbType = DbType.Int32;
             resultParameter.Direction = ParameterDirection.Output;
