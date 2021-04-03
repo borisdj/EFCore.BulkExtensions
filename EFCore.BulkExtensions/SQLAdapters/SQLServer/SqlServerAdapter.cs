@@ -8,7 +8,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -30,7 +29,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
         {
             await InsertAsync(context, type, entities, tableInfo, progress, cancellationToken, isAsync: true).ConfigureAwait(false);
         }
-        // Publish Async and NonAsync are merged into single operation flow with protected method using arg: bool isAsync, to keep it DRY
+        // Publish Async and NonAsync are merged into single operation flow with protected method using arg: bool isAsync (keeps code DRY)
         protected async Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, CancellationToken cancellationToken, bool isAsync)
         {
             tableInfo.CheckToSetIdentityForPreserveOrder(entities);
@@ -48,7 +47,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
             {
                 var transaction = context.Database.CurrentTransaction;
 
-                using var sqlBulkCopy = GetSqlBulkCopy((Microsoft.Data.SqlClient.SqlConnection)connection, transaction, tableInfo.BulkConfig);
+                using var sqlBulkCopy = GetSqlBulkCopy((SqlConnection)connection, transaction, tableInfo.BulkConfig);
                 bool setColumnMapping = false;
                 tableInfo.SetSqlBulkCopyConfig(sqlBulkCopy, entities, setColumnMapping, progress);
                 try
@@ -194,7 +193,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                 }
             }
 
-            bool keepIdentity = tableInfo.BulkConfig.SqlBulkCopyOptions.HasFlag(Microsoft.Data.SqlClient.SqlBulkCopyOptions.KeepIdentity);
+            bool keepIdentity = tableInfo.BulkConfig.SqlBulkCopyOptions.HasFlag(SqlBulkCopyOptions.KeepIdentity);
             try
             {
                 if (isAsync)
