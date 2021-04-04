@@ -493,6 +493,8 @@ namespace EFCore.BulkExtensions.Tests
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
+                context.LogPersonReports.Add(new LogPersonReport { }); // used for initial add so that after RESEED it starts from 1, not 0
+                context.SaveChanges();
                 context.Truncate<LogPersonReport>();
                 context.Database.ExecuteSqlRaw($"DELETE FROM {nameof(Log)}");
                 context.Database.ExecuteSqlRaw($"DBCC CHECKIDENT('{nameof(Log)}', RESEED, 0);");
@@ -503,10 +505,10 @@ namespace EFCore.BulkExtensions.Tests
                 var entities = new List<LogPersonReport>();
                 for (int i = 1; i <= numberOfNewToInsert; i++)
                 {
-                    nextLogId++;
+                    nextLogId++; // OPTION 1.
                     var entity = new LogPersonReport
                     {
-                        LogId = nextLogId,
+                        LogId = nextLogId, // OPTION 1.
                         PersonId = (i % 22),
                         RegBy = 15,
                         CreatedDate = DateTime.Now,
@@ -519,7 +521,7 @@ namespace EFCore.BulkExtensions.Tests
 
                 var bulkConfigBase = new BulkConfig
                 {
-                    SqlBulkCopyOptions = Microsoft.Data.SqlClient.SqlBulkCopyOptions.KeepIdentity, // to ensure insert order is kept the same since SqlBulkCopy does not guarantee it.
+                    SqlBulkCopyOptions = Microsoft.Data.SqlClient.SqlBulkCopyOptions.KeepIdentity, // OPTION 1. - to ensure insert order is kept the same since SqlBulkCopy does not guarantee it.
                     CustomDestinationTableName = nameof(Log),
                     PropertiesToInclude = new List<string>
                     {
@@ -539,7 +541,7 @@ namespace EFCore.BulkExtensions.Tests
                 };
                 context.BulkInsert(entities, bulkConfigBase, type: typeof(Log)); // to base 'Log' table
 
-                //foreach(var entity in entities) { // OPTION 2. Could be set here if Id of base table Log was set by Db
+                //foreach(var entity in entities) { // OPTION 2. Could be set here if Id of base table Log was set by Db (when Op.2. used 'Option 1.' have to be commented out)
                 //    entity.LogId = ++nextLogId;
                 //}
 
