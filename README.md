@@ -195,6 +195,7 @@ public class Student : Person { ... }
 context.Students.AddRange(entities); // adding to Context so that Shadow property 'Discriminator' gets set
 context.BulkInsert(entities);
 ```
+**TPT** (Table-Per-Type) as of v5 is [partially supported](https://github.com/borisdj/EFCore.BulkExtensions/issues/493).
 
 ## Read example
 
