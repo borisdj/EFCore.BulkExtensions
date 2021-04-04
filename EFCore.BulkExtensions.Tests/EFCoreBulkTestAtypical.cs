@@ -487,5 +487,75 @@ namespace EFCore.BulkExtensions.Tests
                 context.BulkInsertOrUpdate(entities);
             }
         }
+
+        [Fact]
+        private void TablePerTypeInsert()
+        {
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.Truncate<LogPersonReport>();
+                context.Database.ExecuteSqlRaw($"DELETE FROM {nameof(Log)}");
+                context.Database.ExecuteSqlRaw($"DBCC CHECKIDENT('{nameof(Log)}', RESEED, 0);");
+
+                int nextLogId = GetLastRowId(context, tableName: nameof(Log));
+                int numberOfNewToInsert = 1000;
+
+                var entities = new List<LogPersonReport>();
+                for (int i = 1; i <= numberOfNewToInsert; i++)
+                {
+                    nextLogId++;
+                    var entity = new LogPersonReport
+                    {
+                        LogId = nextLogId,
+                        PersonId = (i % 22),
+                        RegBy = 15,
+                        CreatedDate = DateTime.Now,
+
+                        ReportId = (i % 22) * 10,
+                        LogPersonReportTypeId = 4,
+                    };
+                    entities.Add(entity);
+                }
+
+                var bulkConfigBase = new BulkConfig
+                {
+                    SqlBulkCopyOptions = Microsoft.Data.SqlClient.SqlBulkCopyOptions.KeepIdentity, // to ensure insert order is kept the same since SqlBulkCopy does not guarantee it.
+                    CustomDestinationTableName = nameof(Log),
+                    PropertiesToInclude = new List<string>
+                    {
+                        nameof(LogPersonReport.LogId),
+                        nameof(LogPersonReport.PersonId),
+                        nameof(LogPersonReport.RegBy),
+                        nameof(LogPersonReport.CreatedDate)
+                    }
+                };
+                var bulkConfig = new BulkConfig
+                {
+                    PropertiesToInclude = new List<string> {
+                        nameof(LogPersonReport.LogId),
+                        nameof(LogPersonReport.ReportId),
+                        nameof(LogPersonReport.LogPersonReportTypeId)
+                    }
+                };
+                context.BulkInsert(entities, bulkConfigBase, type: typeof(Log)); // to base 'Log' table
+
+                //foreach(var entity in entities) { // OPTION 2. Could be set here if Id of base table Log was set by Db
+                //    entity.LogId = ++nextLogId;
+                //}
+
+                context.BulkInsert(entities, bulkConfig); // to 'LogPersonReport' table
+
+                Assert.Equal(nextLogId, context.LogPersonReports.OrderByDescending(a => a.LogId).FirstOrDefault().LogId);
+            }
+        }
+        private int GetLastRowId(DbContext context, string tableName)
+        {
+            var sqlConnection = context.Database.GetDbConnection();
+            sqlConnection.Open();
+            using var command = sqlConnection.CreateCommand();
+            command.CommandText = $"SELECT IDENT_CURRENT('{tableName}')";
+            int lastRowIdScalar = Convert.ToInt32(command.ExecuteScalar());
+            return lastRowIdScalar;
+        }
     }
 }

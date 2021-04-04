@@ -135,8 +135,7 @@ namespace EFCore.BulkExtensions
             PrimaryKeysPropertyColumnNameDict = AreSpecifiedUpdateByProperties ? BulkConfig.UpdateByProperties.ToDictionary(a => a, b => b)
                                                                                : (primaryKeys ?? new Dictionary<string, string>());
 
-            var allProperties = entityType.GetProperties().AsEnumerable();
-
+            var allProperties = entityType.GetProperties().Where(a => a.GetColumnName(ObjectIdentifier) != null);
             ColumnNamesTypesDict = allProperties.ToDictionary(a => a.GetColumnName(ObjectIdentifier), a => a.GetColumnType());
 
             // load all derived type properties
@@ -203,7 +202,8 @@ namespace EFCore.BulkExtensions
             var propertiesOnUpdate = allPropertiesExceptTimeStamp.Where(a => a.GetComputedColumnSql() == null);
 
             // TimeStamp prop. is last column in OutputTable since it is added later with varbinary(8) type in which Output can be inserted
-            OutputPropertyColumnNamesDict = allPropertiesExceptTimeStamp.Concat(timeStampProperties).ToDictionary(a => a.Name, b => b.GetColumnName(ObjectIdentifier)?.Replace("]", "]]")); // square brackets have to be escaped
+            var outputProperties = allPropertiesExceptTimeStamp.Where(a => a.GetColumnName(ObjectIdentifier) != null).Concat(timeStampProperties);
+            OutputPropertyColumnNamesDict = outputProperties.ToDictionary(a => a.Name, b => b.GetColumnName(ObjectIdentifier).Replace("]", "]]")); // square brackets have to be escaped
 
             bool AreSpecifiedPropertiesToInclude = BulkConfig.PropertiesToInclude?.Count() > 0;
             bool AreSpecifiedPropertiesToExclude = BulkConfig.PropertiesToExclude?.Count() > 0;

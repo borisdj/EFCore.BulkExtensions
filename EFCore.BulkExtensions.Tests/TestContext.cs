@@ -39,6 +39,8 @@ namespace EFCore.BulkExtensions.Tests
 
         public DbSet<Setting> Settings { get; set; }
 
+        public DbSet<LogPersonReport> LogPersonReports { get; set; }
+
         public TestContext(DbContextOptions options) : base(options)
         {
             Database.EnsureCreated();
@@ -68,6 +70,9 @@ namespace EFCore.BulkExtensions.Tests
 
             modelBuilder.Entity<Document>().Property(p => p.IsActive).HasDefaultValue(true);
             modelBuilder.Entity<Document>().Property(p => p.Tag).HasDefaultValue("DefaultData");
+
+            modelBuilder.Entity<Log>().ToTable("Log");
+            modelBuilder.Entity<LogPersonReport>().ToTable("LogPersonReport");
 
             if (Database.IsSqlServer())
             {
@@ -431,5 +436,18 @@ namespace EFCore.BulkExtensions.Tests
 
         public virtual Parent Parent { get; set; }
         public int ParentId { get; set; }
+    }
+
+    public abstract class Log // To Test TPT (TablePerType) - https://docs.microsoft.com/en-us/ef/core/modeling/inheritance#table-per-type-configuration
+    {
+        public int LogId { get; set; }
+        public int PersonId { get; set; }
+        public int RegBy { get; set; }
+        public DateTime CreatedDate { get; set; }
+    }
+    public class LogPersonReport : Log
+    {
+        public int ReportId { get; set; }
+        public int LogPersonReportTypeId { get; set; }
     }
 }
