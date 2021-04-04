@@ -489,8 +489,9 @@ namespace EFCore.BulkExtensions.Tests
         }
 
         [Fact]
-        private void TablePerTypeInsert()
+        private void TablePerTypeInsertTest()
         {
+            ContextUtil.DbServer = DbServer.SqlServer;
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
                 context.LogPersonReports.Add(new LogPersonReport { }); // used for initial add so that after RESEED it starts from 1, not 0
@@ -558,6 +559,56 @@ namespace EFCore.BulkExtensions.Tests
             command.CommandText = $"SELECT IDENT_CURRENT('{tableName}')";
             int lastRowIdScalar = Convert.ToInt32(command.ExecuteScalar());
             return lastRowIdScalar;
+        }
+
+        [Fact]
+        private void CustomPrecisionDateTimeTest()
+        {
+            ContextUtil.DbServer = DbServer.SqlServer;
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.BulkDelete(context.Events.ToList());
+
+                var entities = new List<Event>();
+                for (int i = 1; i <= 10; i++)
+                {
+                    var entity = new Event
+                    {
+                        Name = "Event " + i,
+                        TimeCreated = DateTime.Now
+                    };
+                    var testTime = new DateTime(2020, 1, 1, 12, 45, 20, 324);
+                    if (i == 1)
+                    {
+                        entity.TimeCreated = testTime.AddTicks(6387); // Ticks will be 3256387 when rounded to 3 digits: 326 ms
+                    }
+                    if (i == 2)
+                    {
+                        entity.TimeCreated = testTime.AddTicks(5000); // Ticks will be 3255000 when rounded to 3 digits: 326 ms (middle .5zeros goes to Upper)
+                    }
+
+                    var fullDateTimeFormat = "yyyy-MM-dd HH:mm:ss.fffffff";
+                    entity.Description = entity.TimeCreated.ToString(fullDateTimeFormat);
+
+                    entities.Add(entity);
+                }
+
+                bool useBulk = true;
+                if (useBulk)
+                {
+                    context.BulkInsert(entities, b => b.DateTime2PrecisionForceRound = true);
+                }
+                else
+                {
+                    context.AddRange(entities);
+                    context.SaveChanges();
+                }
+            }
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                Assert.Equal(3250000, context.Events.SingleOrDefault(a => a.Name == "Event 1").TimeCreated.Ticks % 10000000);
+                Assert.Equal(3250000, context.Events.SingleOrDefault(a => a.Name == "Event 2").TimeCreated.Ticks % 10000000);
+            }
         }
     }
 }

@@ -188,6 +188,14 @@ namespace EFCore.BulkExtensions
         public int SRID { get; set; } = 4326;
 
         /// <summary>
+        ///     When type dbtype datetime2 has precision less then default 7, for example 'datetime2(3)' SqlBulkCopy does Floor instead of Round so Rounding done in memory to make sure inserted values are same as with regular SaveChanges
+        /// </summary>
+        /// <remarks>
+        ///     Only for SqlServer
+        /// </remarks>
+        public bool DateTime2PrecisionForceRound { get; set; }
+
+        /// <summary>
         ///     Enum with [Flags] attribute which enables specifying one or more options.
         /// </summary>
         /// <value>

@@ -58,6 +58,8 @@ namespace EFCore.BulkExtensions
 
         public Dictionary<string, string> ConvertiblePropertyColumnDict { get; set; } = new Dictionary<string, string>();
         public Dictionary<string, ValueConverter> ConvertibleColumnConverterDict { get; set; } = new Dictionary<string, ValueConverter>();
+        public Dictionary<string, int> DateTime2PropertiesPrecisionLessThen7Dict { get; set; } = new Dictionary<string, int>();
+
         public string TimeStampOutColumnType => "varbinary(8)";
         public string TimeStampPropertyName { get; set; }
         public string TimeStampColumnName { get; set; }
@@ -137,6 +139,22 @@ namespace EFCore.BulkExtensions
 
             var allProperties = entityType.GetProperties().Where(a => a.GetColumnName(ObjectIdentifier) != null);
             ColumnNamesTypesDict = allProperties.ToDictionary(a => a.GetColumnName(ObjectIdentifier), a => a.GetColumnType());
+
+            if (BulkConfig.DateTime2PrecisionForceRound)
+            {
+                var propertyMappings = allProperties.Select(a => a.GetTableColumnMappings().ToList());
+                foreach (var propertyMap in propertyMappings)
+                {
+                    IColumn column = propertyMap.FirstOrDefault().Column;
+                    var columnType = column.StoreType;
+                    if (columnType.StartsWith("datetime2(") && !columnType.EndsWith("7)"))
+                    {
+                        string precisionText = columnType.Substring(10, 1);
+                        int precision = int.Parse(precisionText);
+                        DateTime2PropertiesPrecisionLessThen7Dict.Add(propertyMap.FirstOrDefault().Property.Name, precision); // SqlBulkCopy does Floor instead of Round so Rounding done in memory
+                    }
+                }
+            }
 
             // load all derived type properties
             if (entityType.IsAbstract())

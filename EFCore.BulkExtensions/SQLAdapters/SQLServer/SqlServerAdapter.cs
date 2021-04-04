@@ -595,6 +595,22 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                 {
                     var propertyValue = tableInfo.FastPropertyDict.ContainsKey(property.Name) ? tableInfo.FastPropertyDict[property.Name].Get(entity) : null;
 
+                    if (tableInfo.BulkConfig.DateTime2PrecisionForceRound && isSqlServer && tableInfo.DateTime2PropertiesPrecisionLessThen7Dict.ContainsKey(property.Name))
+                    {
+                        DateTime dateTimePropertyValue = (DateTime)propertyValue;
+
+                        int precision = tableInfo.DateTime2PropertiesPrecisionLessThen7Dict[property.Name];
+                        int digitsToRemove = 7 - precision;
+                        int powerOf10 = (int)Math.Pow(10, digitsToRemove);
+
+                        long subsecondTicks = dateTimePropertyValue.Ticks % 10000000;
+                        long ticksToRound = subsecondTicks + (subsecondTicks % 10 == 0 ? 1 : 0); // if ends with 0 add 1 tick to make sure rounding of value .5_zeros is rounded to Upper like SqlServer is doing, not to Even as Math.Round works
+                        int roundedTicks = Convert.ToInt32(Math.Round((decimal)ticksToRound / powerOf10, 0)) * powerOf10;
+                        dateTimePropertyValue = dateTimePropertyValue.AddTicks(-subsecondTicks).AddTicks(roundedTicks);
+
+                        propertyValue = dateTimePropertyValue;
+                    }
+
                     if (hasConverterProperties && tableInfo.ConvertiblePropertyColumnDict.ContainsKey(property.Name))
                     {
                         string columnName = tableInfo.ConvertiblePropertyColumnDict[property.Name];

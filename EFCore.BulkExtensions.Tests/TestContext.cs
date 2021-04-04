@@ -41,6 +41,8 @@ namespace EFCore.BulkExtensions.Tests
 
         public DbSet<LogPersonReport> LogPersonReports { get; set; }
 
+        public DbSet<Event> Events { get; set; }
+
         public TestContext(DbContextOptions options) : base(options)
         {
             Database.EnsureCreated();
@@ -449,5 +451,18 @@ namespace EFCore.BulkExtensions.Tests
     {
         public int ReportId { get; set; }
         public int LogPersonReportTypeId { get; set; }
+    }
+
+    public class Event // CustomPrecision DateTime Test (SqlServer only)
+    {
+        public int EventId { get; set; }
+
+        [Required]
+        public string Name { get; set; }
+
+        public string Description { get; set; }
+
+        [Column(TypeName = "datetime2(3)")]
+        public DateTime TimeCreated { get; set; }
     }
 }
