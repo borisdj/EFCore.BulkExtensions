@@ -2,8 +2,10 @@ using EFCore.BulkExtensions.SqlAdapters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.Caching.Memory;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
@@ -26,7 +28,8 @@ namespace EFCore.BulkExtensions.Tests
         {
             ContextUtil.DbServer = dbServer;
 
-            await new EFCoreBatchTestAsync().RunDeleteAllAsync(dbServer); // TODO
+            //await DeletePreviousDatabaseAsync().ConfigureAwait(false);
+            await new EFCoreBatchTestAsync().RunDeleteAllAsync(dbServer).ConfigureAwait(false);
 
             // Test can be run individually by commenting others and running each separately in order one after another
             await RunInsertAsync(isBulk);
@@ -37,7 +40,7 @@ namespace EFCore.BulkExtensions.Tests
                 await RunReadAsync(isBulk); // Not Yet supported for Sqlite
                 await RunInsertOrUpdateOrDeleteAsync(isBulk); // Not Yet supported for Sqlite
             }
-            await RunDeleteAsync(isBulk, dbServer);
+            //await RunDeleteAsync(isBulk, dbServer);
         }
 
         [Theory]
@@ -49,159 +52,151 @@ namespace EFCore.BulkExtensions.Tests
             await BulkOperationShouldNotCloseOpenConnectionAsync(dbServer, context => context.BulkUpdateAsync(new[] { new Item() }));
         }
 
-        private static async Task BulkOperationShouldNotCloseOpenConnectionAsync(
-            DbServer dbServer,
-            Func<TestContext, Task> bulkOperation)
+        private async Task DeletePreviousDatabaseAsync()
+        {
+            using var context = new TestContext(ContextUtil.GetOptions());
+            await context.Database.EnsureDeletedAsync().ConfigureAwait(false);
+        }
+
+        private void WriteProgress(decimal percentage)
+        {
+            Debug.WriteLine(percentage);
+        }
+
+        private static async Task BulkOperationShouldNotCloseOpenConnectionAsync(DbServer dbServer, Func<TestContext, Task> bulkOperation)
         {
             ContextUtil.DbServer = dbServer;
+            using var context = new TestContext(ContextUtil.GetOptions());
 
-            using (var context = new TestContext(ContextUtil.GetOptions()))
+            var sqlHelper = context.GetService<ISqlGenerationHelper>();
+            await context.Database.OpenConnectionAsync();
+
+            try
             {
-                var sqlHelper = context.GetService<ISqlGenerationHelper>();
-                await context.Database.OpenConnectionAsync();
+                // we use a temp table to verify whether the connection has been closed (and re-opened) inside BulkUpdate(Async)
+                var columnName = sqlHelper.DelimitIdentifier("Id");
+                var tableName = sqlHelper.DelimitIdentifier("#MyTempTable");
+                var createTableSql = $" TABLE {tableName} ({columnName} INTEGER);";
 
-                try
+                createTableSql = dbServer switch
                 {
-                    // we use a temp table to verify whether the connection has been closed (and re-opened) inside BulkUpdate(Async)
-                    var columnName = sqlHelper.DelimitIdentifier("Id");
-                    var tableName = sqlHelper.DelimitIdentifier("#MyTempTable");
-                    var createTableSql = $" TABLE {tableName} ({columnName} INTEGER);";
+                    DbServer.Sqlite => $"CREATE TEMPORARY {createTableSql}",
+                    DbServer.SqlServer => $"CREATE {createTableSql}",
+                    _ => throw new ArgumentException($"Unknown database type: '{dbServer}'.", nameof(dbServer)),
+                };
+                await context.Database.ExecuteSqlRawAsync(createTableSql);
 
-                    switch (dbServer)
-                    {
-                        case DbServer.Sqlite:
-                            createTableSql = $"CREATE TEMPORARY {createTableSql}";
-                            break;
+                await bulkOperation(context);
 
-                        case DbServer.SqlServer:
-                            createTableSql = $"CREATE {createTableSql}";
-                            break;
-
-                        default:
-                            throw new ArgumentException($"Unknown database type: '{dbServer}'.", nameof(dbServer));
-                    }
-
-                    await context.Database.ExecuteSqlRawAsync(createTableSql);
-
-                    await bulkOperation(context);
-
-                    await context.Database.ExecuteSqlRawAsync($"SELECT {columnName} FROM {tableName}");
-                }
-                finally
-                {
-                    await context.Database.CloseConnectionAsync();
-                }
+                await context.Database.ExecuteSqlRawAsync($"SELECT {columnName} FROM {tableName}");
+            }
+            finally
+            {
+                await context.Database.CloseConnectionAsync();
             }
         }
 
         private async Task RunInsertAsync(bool isBulk)
         {
-            using (var context = new TestContext(ContextUtil.GetOptions()))
+            using var context = new TestContext(ContextUtil.GetOptions());
+
+            var entities = new List<Item>();
+            var subEntities = new List<ItemHistory>();
+            for (int i = 1; i < EntitiesNumber; i++)
             {
-                var entities = new List<Item>();
-                var subEntities = new List<ItemHistory>();
-                for (int i = 1; i < EntitiesNumber; i++)
+                var entity = new Item
                 {
-                    var entity = new Item
-                    {
-                        ItemId = isBulk ? i : 0,
-                        Name = "name " + i,
-                        Description = "info " + Guid.NewGuid().ToString().Substring(0, 3),
-                        Quantity = i % 10,
-                        Price = i / (i % 5 + 1),
-                        TimeUpdated = DateTime.Now,
-                        ItemHistories = new List<ItemHistory>()
-                    };
+                    ItemId = isBulk ? i : 0,
+                    Name = "name " + i,
+                    Description = "info " + Guid.NewGuid().ToString().Substring(0, 3),
+                    Quantity = i % 10,
+                    Price = i / (i % 5 + 1),
+                    TimeUpdated = DateTime.Now,
+                    ItemHistories = new List<ItemHistory>()
+                };
 
-                    var subEntity1 = new ItemHistory
-                    {
-                        ItemHistoryId = SeqGuid.Create(),
-                        Remark = $"some more info {i}.1"
-                    };
-                    var subEntity2 = new ItemHistory
-                    {
-                        ItemHistoryId = SeqGuid.Create(),
-                        Remark = $"some more info {i}.2"
-                    };
-                    entity.ItemHistories.Add(subEntity1);
-                    entity.ItemHistories.Add(subEntity2);
-
-                    entities.Add(entity);
-                }
-
-                if (isBulk)
+                var subEntity1 = new ItemHistory
                 {
-                    if (ContextUtil.DbServer == DbServer.SqlServer)
+                    ItemHistoryId = SeqGuid.Create(),
+                    Remark = $"some more info {i}.1"
+                };
+                var subEntity2 = new ItemHistory
+                {
+                    ItemHistoryId = SeqGuid.Create(),
+                    Remark = $"some more info {i}.2"
+                };
+                entity.ItemHistories.Add(subEntity1);
+                entity.ItemHistories.Add(subEntity2);
+
+                entities.Add(entity);
+            }
+
+            if (isBulk)
+            {
+                if (ContextUtil.DbServer == DbServer.SqlServer)
+                {
+                    using var transaction = await context.Database.BeginTransactionAsync();
+                    var bulkConfig = new BulkConfig
                     {
-                        using (var transaction = await context.Database.BeginTransactionAsync())
+                        //PreserveInsertOrder = true, // true is default
+                        SetOutputIdentity = true,
+                        BatchSize = 4000,
+                        CalculateStats = true
+                    };
+                    await context.BulkInsertAsync(entities, bulkConfig, (a) => WriteProgress(a));
+                    Assert.Equal(EntitiesNumber - 1, bulkConfig.StatsInfo.StatsNumberInserted);
+                    Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberUpdated);
+                    Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberDeleted);
+
+                    foreach (var entity in entities)
+                    {
+                        foreach (var subEntity in entity.ItemHistories)
                         {
-                            var bulkConfig = new BulkConfig
-                            {
-                                //PreserveInsertOrder = true, // true is default
-                                SetOutputIdentity = true,
-                                BatchSize = 4000,
-                                CalculateStats = true
-                            };
-                            await context.BulkInsertAsync(entities, bulkConfig);
-                            Assert.Equal(EntitiesNumber - 1, bulkConfig.StatsInfo.StatsNumberInserted);
-                            Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberUpdated);
-                            Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberDeleted);
-
-                            foreach (var entity in entities)
-                            {
-                                foreach (var subEntity in entity.ItemHistories)
-                                {
-                                    subEntity.ItemId = entity.ItemId; // setting FK to match its linked PK that was generated in DB
-                                }
-                                subEntities.AddRange(entity.ItemHistories);
-                            }
-
-                            await context.BulkInsertAsync(subEntities);
-
-                            transaction.Commit();
+                            subEntity.ItemId = entity.ItemId; // setting FK to match its linked PK that was generated in DB
                         }
+                        subEntities.AddRange(entity.ItemHistories);
                     }
-                    else if (ContextUtil.DbServer == DbServer.Sqlite)
-                    {
-                        using (var transaction = context.Database.BeginTransaction())
-                        {
-                            var bulkConfig = new BulkConfig()
-                            {
-                                SetOutputIdentity = true,
-                            };
-                            await context.BulkInsertAsync(entities, bulkConfig);
 
-                            foreach (var entity in entities)
-                            {
-                                foreach (var subEntity in entity.ItemHistories)
-                                {
-                                    subEntity.ItemId = entity.ItemId; // setting FK to match its linked PK that was generated in DB
-                                }
-                                subEntities.AddRange(entity.ItemHistories);
-                            }
-                            await context.BulkInsertAsync(subEntities, bulkConfig);
+                    await context.BulkInsertAsync(subEntities);
 
-                            transaction.Commit();
-                        }
-                    }
+                    transaction.Commit();
                 }
-                else
+                else if (ContextUtil.DbServer == DbServer.Sqlite)
                 {
-                    await context.Items.AddRangeAsync(entities);
-                    await context.SaveChangesAsync();
+                    using var transaction = context.Database.BeginTransaction();
+
+                    var bulkConfig = new BulkConfig()
+                    {
+                        SetOutputIdentity = true,
+                    };
+                    await context.BulkInsertAsync(entities, bulkConfig);
+
+                    foreach (var entity in entities)
+                    {
+                        foreach (var subEntity in entity.ItemHistories)
+                        {
+                            subEntity.ItemId = entity.ItemId; // setting FK to match its linked PK that was generated in DB
+                        }
+                        subEntities.AddRange(entity.ItemHistories);
+                    }
+                    await context.BulkInsertAsync(subEntities, bulkConfig);
+
+                    transaction.Commit();
                 }
             }
-            using (var context = new TestContext(ContextUtil.GetOptions()))
+            else
             {
-                //int entitiesCount = ItemsCountQuery(context);
-                int entitiesCount = await context.Items.CountAsync();
-                //Item lastEntity = LastItemQuery(context);
-                Item lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
-
-                Assert.Equal(EntitiesNumber - 1, entitiesCount);
-                Assert.NotNull(lastEntity);
-                Assert.Equal("name " + (EntitiesNumber - 1), lastEntity.Name);
+                await context.Items.AddRangeAsync(entities);
+                await context.SaveChangesAsync();
             }
+
+            // TEST
+            int entitiesCount = await context.Items.CountAsync(); // = ItemsCountQuery(context);
+            Item lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault(); // = LastItemQuery(context);
+
+            Assert.Equal(EntitiesNumber - 1, entitiesCount);
+            Assert.NotNull(lastEntity);
+            Assert.Equal("name " + (EntitiesNumber - 1), lastEntity.Name);
         }
 
         private async Task RunInsertOrUpdateAsync(bool isBulk, DbServer dbServer)
@@ -238,12 +233,9 @@ namespace EFCore.BulkExtensions.Tests
                     await context.Items.AddRangeAsync(entities);
                     await context.SaveChangesAsync();
                 }
-            }
-            using (var context = new TestContext(ContextUtil.GetOptions()))
-            {
-                //int entitiesCount = ItemsCountQuery(context);
+
+                // TEST
                 int entitiesCount = await context.Items.CountAsync();
-                //Item lastEntity = LastItemQuery(context);
                 Item lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
 
                 Assert.Equal(EntitiesNumber, entitiesCount);
@@ -254,171 +246,146 @@ namespace EFCore.BulkExtensions.Tests
 
         private async Task RunInsertOrUpdateOrDeleteAsync(bool isBulk)
         {
-            using (var context = new TestContext(ContextUtil.GetOptions()))
-            {
-                var entities = new List<Item>();
-                var dateTimeNow = DateTime.Now;
-                for (int i = 2; i <= EntitiesNumber; i += 2)
-                {
-                    entities.Add(new Item
-                    {
-                        ItemId = i,
-                        Name = "name InsertOrUpdateOrDelete " + i,
-                        Description = "info",
-                        Quantity = i,
-                        Price = i / (i % 5 + 1),
-                        TimeUpdated = dateTimeNow
-                    });
-                }
-                if (isBulk)
-                {
-                    var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
-                    await context.BulkInsertOrUpdateOrDeleteAsync(entities, bulkConfig);
-                    Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberInserted);
-                    Assert.Equal(EntitiesNumber / 2, bulkConfig.StatsInfo.StatsNumberUpdated);
-                    Assert.Equal(EntitiesNumber / 2, bulkConfig.StatsInfo.StatsNumberDeleted);
-                }
-                else
-                {
-                    var existingItems = context.Items;
-                    var removedItems = existingItems.Where(x => !entities.Any(y => y.ItemId == x.ItemId));
-                    context.Items.RemoveRange(removedItems);
-                    await context.Items.AddRangeAsync(entities);
-                    await context.SaveChangesAsync();
-                }
-            }
-            using (var context = new TestContext(ContextUtil.GetOptions()))
-            {
-                //int entitiesCount = ItemsCountQuery(context);
-                int entitiesCount = await context.Items.CountAsync();
-                //Item lastEntity = LastItemQuery(context);
-                Item firstEntity = context.Items.OrderBy(a => a.ItemId).FirstOrDefault();
-                Item lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
+            using var context = new TestContext(ContextUtil.GetOptions());
 
-                Assert.Equal(EntitiesNumber / 2, entitiesCount);
-                Assert.NotNull(firstEntity);
-                Assert.Equal("name InsertOrUpdateOrDelete 2", firstEntity.Name);
-                Assert.NotNull(lastEntity);
-                Assert.Equal("name InsertOrUpdateOrDelete " + EntitiesNumber, lastEntity.Name);
+            var entities = new List<Item>();
+            var dateTimeNow = DateTime.Now;
+            for (int i = 2; i <= EntitiesNumber; i += 2)
+            {
+                entities.Add(new Item
+                {
+                    ItemId = i,
+                    Name = "name InsertOrUpdateOrDelete " + i,
+                    Description = "info",
+                    Quantity = i,
+                    Price = i / (i % 5 + 1),
+                    TimeUpdated = dateTimeNow
+                });
             }
+            if (isBulk)
+            {
+                var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
+                await context.BulkInsertOrUpdateOrDeleteAsync(entities, bulkConfig);
+                Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberInserted);
+                Assert.Equal(EntitiesNumber / 2, bulkConfig.StatsInfo.StatsNumberUpdated);
+                Assert.Equal(EntitiesNumber / 2, bulkConfig.StatsInfo.StatsNumberDeleted);
+            }
+            else
+            {
+                var existingItems = context.Items;
+                var removedItems = existingItems.Where(x => !entities.Any(y => y.ItemId == x.ItemId));
+                context.Items.RemoveRange(removedItems);
+                await context.Items.AddRangeAsync(entities);
+                await context.SaveChangesAsync();
+            }
+
+            // TEST
+            using var contextRead = new TestContext(ContextUtil.GetOptions());
+            int entitiesCount = await contextRead.Items.CountAsync(); // = ItemsCountQuery(context);
+            Item firstEntity = contextRead.Items.OrderBy(a => a.ItemId).FirstOrDefault(); // = LastItemQuery(context);
+            Item lastEntity = contextRead.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
+
+            Assert.Equal(EntitiesNumber / 2, entitiesCount);
+            Assert.NotNull(firstEntity);
+            Assert.Equal("name InsertOrUpdateOrDelete 2", firstEntity.Name);
+            Assert.NotNull(lastEntity);
+            Assert.Equal("name InsertOrUpdateOrDelete " + EntitiesNumber, lastEntity.Name);
         }
 
         private async Task RunUpdateAsync(bool isBulk, DbServer dbServer)
         {
-            using (var context = new TestContext(ContextUtil.GetOptions()))
-            {
-                int counter = 1;
-                var entities = AllItemsQuery(context).ToList();
-                foreach (var entity in entities)
-                {
-                    entity.Description = "Desc Update " + counter++;
-                    entity.TimeUpdated = DateTime.Now;
-                }
-                if (isBulk)
-                {
-                    var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
-                    await context.BulkUpdateAsync(entities, bulkConfig);
-                    if (dbServer == DbServer.SqlServer)
-                    {
-                        Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberInserted);
-                        Assert.Equal(EntitiesNumber, bulkConfig.StatsInfo.StatsNumberUpdated);
-                        Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberDeleted);
-                    }
-                }
-                else
-                {
-                    context.Items.UpdateRange(entities);
-                    await context.SaveChangesAsync();
-                }
-            }
-            using (var context = new TestContext(ContextUtil.GetOptions()))
-            {
-                //int entitiesCount = ItemsCountQuery(context);
-                int entitiesCount = await context.Items.CountAsync();
-                //Item lastEntity = LastItemQuery(context);
-                Item lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
+            using var context = new TestContext(ContextUtil.GetOptions());
 
-                Assert.Equal(EntitiesNumber, entitiesCount);
-                Assert.NotNull(lastEntity);
-                Assert.Equal("Desc Update " + EntitiesNumber, lastEntity.Description);
+            int counter = 1;
+            var entities = AllItemsQuery(context).ToList();
+            foreach (var entity in entities)
+            {
+                entity.Description = "Desc Update " + counter++;
+                entity.TimeUpdated = DateTime.Now;
             }
+            if (isBulk)
+            {
+                var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
+                await context.BulkUpdateAsync(entities, bulkConfig);
+                if (dbServer == DbServer.SqlServer)
+                {
+                    Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberInserted);
+                    Assert.Equal(EntitiesNumber, bulkConfig.StatsInfo.StatsNumberUpdated);
+                    Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberDeleted);
+                }
+            }
+            else
+            {
+                context.Items.UpdateRange(entities);
+                await context.SaveChangesAsync();
+            }
+
+            // TEST
+            int entitiesCount = await context.Items.CountAsync();
+            Item lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
+
+            Assert.Equal(EntitiesNumber, entitiesCount);
+            Assert.NotNull(lastEntity);
+            Assert.Equal("Desc Update " + EntitiesNumber, lastEntity.Description);
         }
 
         private async Task RunReadAsync(bool isBulk)
         {
-            using (var context = new TestContext(ContextUtil.GetOptions()))
+            using var context = new TestContext(ContextUtil.GetOptions());
+
+            var entities = new List<Item>();
+            for (int i = 1; i < EntitiesNumber; i++)
             {
-                var entities = new List<Item>();
-
-                for (int i = 1; i < EntitiesNumber; i++)
-                {
-                    var entity = new Item
-                    {
-                        Name = "name " + i,
-                    };
-                    entities.Add(entity);
-                }
-
-                await context.BulkReadAsync(
-                    entities,
-                    new BulkConfig
-                    {
-                        UpdateByProperties = new List<string> { nameof(Item.Name) }
-                    }
-                );
-
-                Assert.Equal(1, entities[0].ItemId);
-                Assert.Equal(0, entities[1].ItemId);
-                Assert.Equal(3, entities[2].ItemId);
-                Assert.Equal(0, entities[3].ItemId);
+                entities.Add(new Item { Name = "name " + i });
             }
+
+            var bulkConfig = new BulkConfig { UpdateByProperties = new List<string> { nameof(Item.Name) }};
+            await context.BulkReadAsync(entities, bulkConfig).ConfigureAwait(false);
+
+            Assert.Equal(1, entities[0].ItemId);
+            Assert.Equal(0, entities[1].ItemId);
+            Assert.Equal(3, entities[2].ItemId);
+            Assert.Equal(0, entities[3].ItemId);
         }
 
         private async Task RunDeleteAsync(bool isBulk, DbServer dbServer)
         {
-            using (var context = new TestContext(ContextUtil.GetOptions()))
-            {
-                var entities = AllItemsQuery(context).ToList();
-                // ItemHistories will also be deleted because of Relationship - ItemId (Delete Rule: Cascade)
-                if (isBulk)
-                {
-                    var bulkConfig = new BulkConfig() { CalculateStats = true };
-                    await context.BulkDeleteAsync(entities, bulkConfig);
-                    if (dbServer == DbServer.SqlServer)
-                    {
-                        Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberInserted);
-                        Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberUpdated);
-                        Assert.Equal(EntitiesNumber / 2, bulkConfig.StatsInfo.StatsNumberDeleted);
-                    }
-                }
-                else
-                {
-                    context.Items.RemoveRange(entities);
-                    await context.SaveChangesAsync();
-                }
-            }
-            using (var context = new TestContext(ContextUtil.GetOptions()))
-            {
-                //int entitiesCount = ItemsCountQuery(context);
-                int entitiesCount = await context.Items.CountAsync();
-                //Item lastEntity = LastItemQuery(context);
-                Item lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
+            using var context = new TestContext(ContextUtil.GetOptions());
 
-                Assert.Equal(0, entitiesCount);
-                Assert.Null(lastEntity);
-            }
-
-            using (var context = new TestContext(ContextUtil.GetOptions()))
+            var entities = AllItemsQuery(context).ToList();
+            // ItemHistories will also be deleted because of Relationship - ItemId (Delete Rule: Cascade)
+            if (isBulk)
             {
+                var bulkConfig = new BulkConfig() { CalculateStats = true };
+                await context.BulkDeleteAsync(entities, bulkConfig);
                 if (dbServer == DbServer.SqlServer)
                 {
-                    await context.Database.ExecuteSqlRawAsync("DBCC CHECKIDENT('[dbo].[Item]', RESEED, 0);").ConfigureAwait(false);
-                }
-                if (dbServer == DbServer.Sqlite)
-                {
-                    await context.Database.ExecuteSqlRawAsync("DELETE FROM sqlite_sequence WHERE name = 'Item';").ConfigureAwait(false);
+                    Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberInserted);
+                    Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberUpdated);
+                    Assert.Equal(EntitiesNumber / 2, bulkConfig.StatsInfo.StatsNumberDeleted);
                 }
             }
+            else
+            {
+                context.Items.RemoveRange(entities);
+                await context.SaveChangesAsync();
+            }
+
+            // TEST
+            int entitiesCount = await context.Items.CountAsync();
+            Item lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
+
+            Assert.Equal(0, entitiesCount);
+            Assert.Null(lastEntity);
+
+            // RESET AutoIncrement
+            string deleteTableSql = dbServer switch
+            {
+                DbServer.SqlServer => $"DBCC CHECKIDENT('[dbo].[{nameof(Item)}]', RESEED, 0);",
+                DbServer.Sqlite => $"DELETE FROM sqlite_sequence WHERE name = '{nameof(Item)}';",
+                _ => throw new ArgumentException($"Unknown database type: '{dbServer}'.", nameof(dbServer)),
+            };
+            await context.Database.ExecuteSqlRawAsync(deleteTableSql).ConfigureAwait(false);
         }
     }
 }

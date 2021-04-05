@@ -39,124 +39,111 @@ namespace EFCore.BulkExtensions.Tests
 
         private void RunInsert(bool isBulk)
         {
-            using (var context = new TestContext(GetOptions()))
+            using var context = new TestContext(GetOptions());
+            var entities = new List<Item>();
+            var subEntities = new List<ItemHistory>();
+            for (int i = 1; i < EntitiesNumber; i++)
             {
-                var entities = new List<Item>();
-                var subEntities = new List<ItemHistory>();
-                for (int i = 1; i < EntitiesNumber; i++)
+                var entity = new Item
                 {
-                    var entity = new Item
-                    {
-                        ItemId = isBulk ? i : 0,
-                        Name = "name " + i,
-                        Description = "info " + Guid.NewGuid().ToString().Substring(0, 3),
-                        Quantity = i % 10,
-                        Price = i / (i % 5 + 1),
-                        TimeUpdated = DateTime.Now,
-                        ItemHistories = new List<ItemHistory>()
-                    };
+                    ItemId = isBulk ? i : 0,
+                    Name = "name " + i,
+                    Description = "info " + Guid.NewGuid().ToString().Substring(0, 3),
+                    Quantity = i % 10,
+                    Price = i / (i % 5 + 1),
+                    TimeUpdated = DateTime.Now,
+                    ItemHistories = new List<ItemHistory>()
+                };
 
-                    var subEntity1 = new ItemHistory
-                    {
-                        ItemHistoryId = SeqGuid.Create(),
-                        Remark = $"some more info {i}.1"
-                    };
-                    var subEntity2 = new ItemHistory
-                    {
-                        ItemHistoryId = SeqGuid.Create(),
-                        Remark = $"some more info {i}.2"
-                    };
-                    entity.ItemHistories.Add(subEntity1);
-                    entity.ItemHistories.Add(subEntity2);
-
-                    entities.Add(entity);
-                }
-
-                if (isBulk)
+                var subEntity1 = new ItemHistory
                 {
-                    using (var transaction = context.Database.BeginTransaction())
-                    {
-                        context.BulkInsert(
-                            entities,
-                            new BulkConfig
-                            {
-                                PreserveInsertOrder = true,
-                                SetOutputIdentity = true,
-                                BatchSize = 4000,
-                                UseTempDB = true,
-                                UnderlyingConnection = GetUnderlyingConnection,
-                                UnderlyingTransaction = GetUnderlyingTransaction
-                            }
-                        );
+                    ItemHistoryId = SeqGuid.Create(),
+                    Remark = $"some more info {i}.1"
+                };
+                var subEntity2 = new ItemHistory
+                {
+                    ItemHistoryId = SeqGuid.Create(),
+                    Remark = $"some more info {i}.2"
+                };
+                entity.ItemHistories.Add(subEntity1);
+                entity.ItemHistories.Add(subEntity2);
 
-                        foreach (var entity in entities)
+                entities.Add(entity);
+            }
+
+            if (isBulk)
+            {
+                using (var transaction = context.Database.BeginTransaction())
+                {
+                    context.BulkInsert(
+                        entities,
+                        new BulkConfig
                         {
-                            foreach (var subEntity in entity.ItemHistories)
-                            {
-                                subEntity.ItemId = entity.ItemId; // setting FK to match its linked PK that was generated in DB
-                            }
-                            subEntities.AddRange(entity.ItemHistories);
+                            PreserveInsertOrder = true,
+                            SetOutputIdentity = true,
+                            BatchSize = 4000,
+                            UseTempDB = true,
+                            UnderlyingConnection = GetUnderlyingConnection,
+                            UnderlyingTransaction = GetUnderlyingTransaction
                         }
-                        context.BulkInsert(subEntities, new BulkConfig()
+                    );
+
+                    foreach (var entity in entities)
+                    {
+                        foreach (var subEntity in entity.ItemHistories)
                         {
-                            UnderlyingConnection = GetUnderlyingConnection, UnderlyingTransaction = GetUnderlyingTransaction
-                        });
-
-                        transaction.Commit();
+                            subEntity.ItemId = entity.ItemId; // setting FK to match its linked PK that was generated in DB
+                        }
+                        subEntities.AddRange(entity.ItemHistories);
                     }
-                }
-                else
-                {
-                    context.Items.AddRange(entities);
-                    context.SaveChanges();
-                }
-            }
-
-            using (var context = new TestContext(GetOptions()))
-            {
-                int entitiesCount = ItemsCountQuery(context);
-                Item lastEntity = LastItemQuery(context);
-
-                Assert.Equal(EntitiesNumber - 1, entitiesCount);
-                Assert.NotNull(lastEntity);
-                Assert.Equal("name " + (EntitiesNumber - 1), lastEntity.Name);
-            }
-        }
-
-        private void RunDelete(bool isBulk)
-        {
-            using (var context = new TestContext(GetOptions()))
-            {
-                var entities = AllItemsQuery(context).ToList();
-                // ItemHistories will also be deleted because of Relationship - ItemId (Delete Rule: Cascade)
-                if (isBulk)
-                {
-                    context.BulkDelete(entities, new BulkConfig()
+                    context.BulkInsert(subEntities, new BulkConfig()
                     {
                         UnderlyingConnection = GetUnderlyingConnection,
                         UnderlyingTransaction = GetUnderlyingTransaction
                     });
+
+                    transaction.Commit();
                 }
-                else
+            }
+            else
+            {
+                context.Items.AddRange(entities);
+                context.SaveChanges();
+            }
+
+            //TEST
+            int entitiesCount = ItemsCountQuery(context);
+            Item lastEntity = LastItemQuery(context);
+
+            Assert.Equal(EntitiesNumber - 1, entitiesCount);
+            Assert.NotNull(lastEntity);
+            Assert.Equal("name " + (EntitiesNumber - 1), lastEntity.Name);
+        }
+
+        private void RunDelete(bool isBulk)
+        {
+            using var context = new TestContext(GetOptions());
+            var entities = AllItemsQuery(context).ToList();
+            // ItemHistories will also be deleted because of Relationship - ItemId (Delete Rule: Cascade)
+            if (isBulk)
+            {
+                context.BulkDelete(entities, new BulkConfig()
                 {
-                    context.Items.RemoveRange(entities);
-                    context.SaveChanges();
-                }
+                    UnderlyingConnection = GetUnderlyingConnection,
+                    UnderlyingTransaction = GetUnderlyingTransaction
+                });
             }
-            using (var context = new TestContext(GetOptions()))
+            else
             {
-                int entitiesCount = ItemsCountQuery(context);
-                Item lastEntity = LastItemQuery(context);
-
-                Assert.Equal(0, entitiesCount);
-                Assert.Null(lastEntity);
+                context.Items.RemoveRange(entities);
+                context.SaveChanges();
             }
 
-            using (var context = new TestContext(GetOptions()))
-            {
-                // Resets AutoIncrement
-                context.Database.ExecuteSqlRaw("DBCC CHECKIDENT ('dbo.[" + nameof(Item) + "]', RESEED, 0);");
-            }
+            Assert.Equal(0, ItemsCountQuery(context));
+            Assert.Null(LastItemQuery(context));
+
+            // Resets AutoIncrement
+            context.Database.ExecuteSqlRaw("DBCC CHECKIDENT ('dbo.[" + nameof(Item) + "]', RESEED, 0);");
         }
 
         public DbConnection GetUnderlyingConnection(DbConnection connection)

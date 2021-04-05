@@ -10,13 +10,11 @@ namespace EFCore.BulkExtensions.Tests
         {
             ContextUtil.DbServer = DbServer.Sqlite;
 
-            using (var context = new TestContext(ContextUtil.GetOptions()))
-            {
-                (string sql, string tableAlias, string tableAliasSufixAs, _, _, _)  = BatchUtil.GetBatchSql(context.Items, context, true);
+            using var context = new TestContext(ContextUtil.GetOptions());
+            (string sql, string tableAlias, string tableAliasSufixAs, _, _, _) = BatchUtil.GetBatchSql(context.Items, context, true);
 
-                Assert.Equal("\"Item\"", tableAlias);
-                Assert.Equal(" AS \"i\"", tableAliasSufixAs);
-            }
+            Assert.Equal("\"Item\"", tableAlias);
+            Assert.Equal(" AS \"i\"", tableAliasSufixAs);
         }
     }
 }
