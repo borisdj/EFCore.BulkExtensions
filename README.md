@@ -4,18 +4,21 @@ EntityFrameworkCore extensions: <br>
 -Batch ops (**Delete, Update**).<br>
 Library is Lightweight and very Efficient, having all mostly used CRUD operation.<br>
 Was selected in top 20 [EF Core Extensions](https://docs.microsoft.com/en-us/ef/core/extensions/) recommended by Microsoft.<br>
-Current version is using EF Core 5 and at the moment supports Microsoft SQL Server(2008+) and SQLite.<br>
-It is targeting NetStandard 2.1 so it can be used on project targeting Net 5.<br>
-Versions 3.5.8 to 3.1.0 are using EF Core 3.1 and targeting NetStandard 2.0 for use on project targeting NetCore(2.0+) or NetFramework(4.6.1+).<br>
-Versions between 3.1.0 and 3.0.0 are using EF Core 3.0 and targeting NetStandard 2.1 so could only be on NetCore(3.0+).<br>
-Versions before 3.0, last 2.6.4, are targeting NetStandard 2.0 and can be used with NetCore(2.2) or NetFramework(4.6.1+).<br>
-EFCore/v.Nuget: EFCore2.1/v2.4.1 EFCore2.0/v2.0.8, and for EF Core 1.x use 1.1.0 (targeting NetStandard 1.4)<br>
+Current version is using EF Core 5 and is targeting NetStandard 2.1 so it can be used on project targeting Net 5.<br>
+At the moment supports Microsoft SQL Server(2008+) and SQLite.<br>
 Under the hood uses [SqlBulkCopy](https://msdn.microsoft.com/en-us/library/system.data.sqlclient.sqlbulkcopy.aspx) for Insert, for Update/Delete combines BulkInsert with raw Sql [MERGE](https://docs.microsoft.com/en-us/sql/t-sql/statements/merge-transact-sql).<br>
 For SQLite there is no BulkCopy, instead library uses plain SQL combined with [UPSERT](https://www.sqlite.org/lang_UPSERT.html).<br>
 Bulk Tests can not have UseInMemoryDb because InMemoryProvider does not support Relational-specific methods.
 
 Available on [![NuGet](https://img.shields.io/nuget/v/EFCore.BulkExtensions.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/) latest version.<br>
 Package manager console command for installation: *Install-Package EFCore.BulkExtensions*
+
+| Nuget | Target          | Used EF v.  | For projects targeting          |
+| ----- | --------------- | ----------- | ------------------------------- |
+| 5.x   | NetStandard 2.1 | EF Core 5.0 | Net 5+                          |
+| 3.x   | NetStandard 2.0 | EF Core 3.n | NetCore(3.0+) or NetFrm(4.6.1+) |
+| 2.x   | NetStandard 2.0 | EF Core 2.n | NetCore(2.0+) or NetFrm(4.6.1+) |
+| 1.x   | NetStandard 1.4 | EF Core 1.0 | NetCore(1.0+)                   |
 
 ## Contributing
 
