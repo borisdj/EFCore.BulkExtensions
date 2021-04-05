@@ -11,8 +11,8 @@ For SQLite there is no BulkCopy, instead library uses plain SQL combined with [U
 Bulk Tests can not have UseInMemoryDb because InMemoryProvider does not support Relational-specific methods.
 
 Available on [![NuGet](https://img.shields.io/nuget/v/EFCore.BulkExtensions.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/) latest version.<br>
-Package manager console command for installation: *Install-Package EFCore.BulkExtensions*
-
+Package manager console command for installation: *Install-Package EFCore.BulkExtensions*<br>
+[Versioning table](https://github.com/borisdj/EFCore.BulkExtensions/issues/271#issuecomment-567117488):
 | Nuget | Target          | Used EF v.  | For projects targeting          |
 | ----- | --------------- | ----------- | ------------------------------- |
 | 5.x   | NetStandard 2.1 | EF Core 5.0 | Net 5+                          |
