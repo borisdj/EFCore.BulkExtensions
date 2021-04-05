@@ -31,7 +31,7 @@ Want to **Contact** us for Hire (Development & Consulting): [www.codis.tech](htt
 
 ## Usage
 It's pretty simple and straightforward.<br>
-**Bulk** Extensions are made on *DbContext* class and can be used like this (both regular and Async methods are supported):
+**Bulk** Extensions are made on *DbContext* class and used like this (supported both regular and Async methods):
 ```C#
 context.BulkInsert(entitiesList);                 context.BulkInsertAsync(entitiesList);
 context.BulkInsertOrUpdate(entitiesList);         context.BulkInsertOrUpdateAsync(entitiesList);      //Upsert
