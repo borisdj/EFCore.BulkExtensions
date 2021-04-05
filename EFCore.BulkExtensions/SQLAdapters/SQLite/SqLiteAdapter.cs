@@ -160,7 +160,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
 
         public Task ReadAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, CancellationToken cancellationToken) where T : class
         {
-            throw new NotImplementedException();
+            throw new NotImplementedException(); // once implemented add 'async' in method signature
         }
 
         // Truncate
