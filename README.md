@@ -4,18 +4,20 @@ EntityFrameworkCore extensions: <br>
 -Batch ops (**Delete, Update**).<br>
 Library is Lightweight and very Efficient, having all mostly used CRUD operation.<br>
 Was selected in top 20 [EF Core Extensions](https://docs.microsoft.com/en-us/ef/core/extensions/) recommended by Microsoft.<br>
-Current version is using EF Core 5 and at the moment supports Microsoft SQL Server(2008+) and SQLite.<br>
-It is targeting NetStandard 2.1 so it can be used on project targeting Net 5.<br>
-Versions 3.5.8 to 3.1.0 are using EF Core 3.1 and targeting NetStandard 2.0 for use on project targeting NetCore(2.0+) or NetFramework(4.6.1+).<br>
-Versions between 3.1.0 and 3.0.0 are using EF Core 3.0 and targeting NetStandard 2.1 so could only be on NetCore(3.0+).<br>
-Versions before 3.0, last 2.6.4, are targeting NetStandard 2.0 and can be used with NetCore(2.2) or NetFramework(4.6.1+).<br>
-EFCore/v.Nuget: EFCore2.1/v2.4.1 EFCore2.0/v2.0.8, and for EF Core 1.x use 1.1.0 (targeting NetStandard 1.4)<br>
+Current version is using EF Core 5 and is targeting NetStandard 2.1 so it can be used on project targeting Net 5.<br>
+At the moment supports Microsoft SQL Server(2008+) and SQLite.<br>
 Under the hood uses [SqlBulkCopy](https://msdn.microsoft.com/en-us/library/system.data.sqlclient.sqlbulkcopy.aspx) for Insert, for Update/Delete combines BulkInsert with raw Sql [MERGE](https://docs.microsoft.com/en-us/sql/t-sql/statements/merge-transact-sql).<br>
 For SQLite there is no BulkCopy, instead library uses plain SQL combined with [UPSERT](https://www.sqlite.org/lang_UPSERT.html).<br>
 Bulk Tests can not have UseInMemoryDb because InMemoryProvider does not support Relational-specific methods.
 
 Available on [![NuGet](https://img.shields.io/nuget/v/EFCore.BulkExtensions.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/) latest version.<br>
-Package manager console command for installation: *Install-Package EFCore.BulkExtensions*
+Package manager console command for installation: *Install-Package EFCore.BulkExtensions*<br>
+| Nuget | Target          | Used EF v.  | For projects targeting          |
+| ----- | --------------- | ----------- | ------------------------------- |
+| 5.x   | NetStandard 2.1 | EF Core 5.0 | Net 5+                          |
+| 3.x   | NetStandard 2.0 | EF Core 3.n | NetCore(3.0+) or NetFrm(4.6.1+) [MoreInfo](https://github.com/borisdj/EFCore.BulkExtensions/issues/271#issuecomment-567117488)|
+| 2.x   | NetStandard 2.0 | EF Core 2.n | NetCore(2.0+) or NetFrm(4.6.1+) |
+| 1.x   | NetStandard 1.4 | EF Core 1.0 | NetCore(1.0+)                   |
 
 ## Contributing
 
@@ -29,7 +31,7 @@ Want to **Contact** us for Hire (Development & Consulting): [www.codis.tech](htt
 
 ## Usage
 It's pretty simple and straightforward.<br>
-**Bulk** Extensions are made on *DbContext* class and can be used like this (both regular and Async methods are supported):
+**Bulk** Extensions are made on *DbContext* class and can be used like this (supported both regular and Async methods):
 ```C#
 context.BulkInsert(entitiesList);                 context.BulkInsertAsync(entitiesList);
 context.BulkInsertOrUpdate(entitiesList);         context.BulkInsertOrUpdateAsync(entitiesList);      //Upsert
@@ -41,7 +43,7 @@ context.Truncate<Entity>();                       context.TruncateAsync<Entity>(
 ```
 **Batch** Extensions are made on *IQueryable* DbSet and can be used as in the following code segment.<br>
 They are done as pure sql and no check is done whether some are prior loaded in memory and are being Tracked.<br>
-(*updateColumns* is optional parameter in which PropertyNames added explicitly when we need update to it's default value)
+(*updateColumns* is optional param in which PropertyNames added explicitly when need update to it's default value)
 ```C#
 // Delete
 context.Items.Where(a => a.ItemId >  500).BatchDelete();
@@ -156,8 +158,8 @@ using (var transaction = context.Database.BeginTransaction())
 // Option 2 using Graph (only for SQL Server) - all entities in relationship with main ones in list are BulkInsertUpdated
 context.BulkInsert(entities, b => b.IncludeGraph = true);
 ```
-When **CalculateStats** is set to True the result is return in `BulkConfig.StatsInfo` (*StatsNumber-Inserted/Updated/Deleted*).<br>
-If used for pure Insert (with Batching) then SetOutputIdentity should also be configured because Merge have to be used.<br>
+When **CalculateStats** set to True the result returned in `BulkConfig.StatsInfo` (*StatsNumber-Inserted/Updated/Deleted*).<br>
+If used for pure Insert (with Batching) then SetOutputIdentity should also be configured because Merge is required.<br>
 **TrackingEntities** can be set to True if we want to have tracking of entities from BulkRead or if SetOutputIdentity is set.<br>
 **UseTempDB** when set then BulkOperation has to be [inside Transaction](https://github.com/borisdj/EFCore.BulkExtensions/issues/49)<br>
 **UniqueTableNameTempDb** when changed to true temp table name will be only 'Temp' without random numbers.<br>
@@ -176,11 +178,12 @@ Last optional argument is **Action progress** (Example in *EfOperationTest.cs* *
 context.BulkInsert(entitiesList, null, (a) => WriteProgress(a));
 ```
 
-Library supports [Global Query Filters](https://docs.microsoft.com/en-us/ef/core/querying/filters) and [Value Conversions](https://docs.microsoft.com/en-us/ef/core/modeling/value-conversions) as well. BatchUpdate and named Property with [EnumToString Conversion](https://github.com/borisdj/EFCore.BulkExtensions/issues/397).</br>
+Library supports [Global Query Filters](https://docs.microsoft.com/en-us/ef/core/querying/filters) and [Value Conversions](https://docs.microsoft.com/en-us/ef/core/modeling/value-conversions) as well.</br>
+Additionally BatchUpdate and named Property works with [EnumToString Conversion](https://github.com/borisdj/EFCore.BulkExtensions/issues/397).</br>
 It also maps [OwnedTypes](https://docs.microsoft.com/en-us/ef/core/modeling/owned-entities), which is implemented with `DataTable` class.</br>
 With [Computed](https://docs.microsoft.com/en-us/ef/core/modeling/relational/computed-columns) and [Timestamp](https://docs.microsoft.com/en-us/ef/core/modeling/concurrency) Columns it will work in a way that they are automatically excluded from Insert. And when combined with *SetOutputIdentity* they will be Selected.<br>
 [Spatial](https://docs.microsoft.com/en-us/sql/relational-databases/spatial/spatial-data-types-overview?view=sql-server-ver15) types, like Geometry, also supported and if  Entity has one, clause *EXIST ... EXCEPT* it skipped because it's not comparable.<br>
-Performance for bulk ops measured with `ActivitySources` named: '*EFCore.BulkExtensions.BulkExecute*' (tags: '*operationType*', '*entitiesCount*')<br>
+Performance for bulk ops measured with `ActivitySources` named: '*BulkExecute*' (tags: '*operationType*', '*entitiesCount*')<br>
 Bulk Extension methods can be [Overridden](https://github.com/borisdj/EFCore.BulkExtensions/issues/56) if required, for example to set AuditInfo.<br>
 If having problems with Deadlock there is useful info in [issue/46](https://github.com/borisdj/EFCore.BulkExtensions/issues/46).
 
