@@ -31,7 +31,7 @@ Want to **Contact** us for Hire (Development & Consulting): [www.codis.tech](htt
 
 ## Usage
 It's pretty simple and straightforward.<br>
-**Bulk** Extensions are made on *DbContext* class and used like this (supported both regular and Async methods):
+**Bulk** Extensions are made on *DbContext* class and can be used like this (supported both regular and Async methods):
 ```C#
 context.BulkInsert(entitiesList);                 context.BulkInsertAsync(entitiesList);
 context.BulkInsertOrUpdate(entitiesList);         context.BulkInsertOrUpdateAsync(entitiesList);      //Upsert
@@ -43,7 +43,7 @@ context.Truncate<Entity>();                       context.TruncateAsync<Entity>(
 ```
 **Batch** Extensions are made on *IQueryable* DbSet and can be used as in the following code segment.<br>
 They are done as pure sql and no check is done whether some are prior loaded in memory and are being Tracked.<br>
-(*updateColumns* is optional parameter in which PropertyNames added explicitly when need update to it's default value)
+(*updateColumns* is optional param in which PropertyNames added explicitly when need update to it's default value)
 ```C#
 // Delete
 context.Items.Where(a => a.ItemId >  500).BatchDelete();
