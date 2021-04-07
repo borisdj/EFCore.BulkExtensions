@@ -617,7 +617,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                         propertyValue = tableInfo.ConvertibleColumnConverterDict[columnName].ConvertToProvider.Invoke(propertyValue);
                     }
 
-                    if (propertyValue is Geometry geometryValue && isSqlServer)
+                    if (tableInfo.HasSpatialType && propertyValue is Geometry geometryValue)
                     {
                         geometryValue.SRID = tableInfo.BulkConfig.SRID;
                         propertyValue = sqlServerBytesWriter.Write(geometryValue);
