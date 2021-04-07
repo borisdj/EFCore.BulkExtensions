@@ -302,9 +302,9 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
                     }
                 }
 
-                if (tableInfo.ConvertibleProperties.ContainsKey(propertyColumn.Key) && value != DBNull.Value)
+                if (tableInfo.ConvertibleColumnConverterDict.ContainsKey(propertyColumn.Key) && value != DBNull.Value)
                 {
-                    value = tableInfo.ConvertibleProperties[propertyColumn.Key].ConvertToProvider.Invoke(value);
+                    value = tableInfo.ConvertibleColumnConverterDict[propertyColumn.Key].ConvertToProvider.Invoke(value);
                 }
 
                 command.Parameters[$"@{parameterName}"].Value = value ?? DBNull.Value;

@@ -543,8 +543,8 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                     var propertyEntityType = entityPropertiesDict[property.Name];
                     string columnName = propertyEntityType.GetColumnName();
 
-                    var isConvertible = tableInfo.ConvertibleProperties.ContainsKey(columnName);
-                    var propertyType = isConvertible ? tableInfo.ConvertibleProperties[columnName].ProviderClrType : property.PropertyType;
+                    var isConvertible = tableInfo.ConvertibleColumnConverterDict.ContainsKey(columnName);
+                    var propertyType = isConvertible ? tableInfo.ConvertibleColumnConverterDict[columnName].ProviderClrType : property.PropertyType;
 
                     var underlyingType = Nullable.GetUnderlyingType(propertyType);
                     if (underlyingType != null)
@@ -629,9 +629,9 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                                 var columnName = ownedEntityPropertyNameColumnNameDict[innerProperty.Name];
                                 var propertyName = $"{property.Name}_{innerProperty.Name}";
 
-                                if (tableInfo.ConvertibleProperties.ContainsKey(propertyName))
+                                if (tableInfo.ConvertibleColumnConverterDict.ContainsKey(propertyName))
                                 {
-                                    var convertor = tableInfo.ConvertibleProperties[propertyName];
+                                    var convertor = tableInfo.ConvertibleColumnConverterDict[propertyName];
                                     var underlyingType = Nullable.GetUnderlyingType(convertor.ProviderClrType) ?? convertor.ProviderClrType;
                                     dataTable.Columns.Add(columnName, underlyingType);
                                 }
@@ -658,8 +658,8 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                     if (dataTable.Columns.Contains(columnName))
                         continue;
                     
-                    var isConvertible = tableInfo.ConvertibleProperties.ContainsKey(columnName);
-                    var propertyType = isConvertible ? tableInfo.ConvertibleProperties[columnName].ProviderClrType : shadowProperty.ClrType;
+                    var isConvertible = tableInfo.ConvertibleColumnConverterDict.ContainsKey(columnName);
+                    var propertyType = isConvertible ? tableInfo.ConvertibleColumnConverterDict[columnName].ProviderClrType : shadowProperty.ClrType;
 
                     var underlyingType = Nullable.GetUnderlyingType(propertyType);
                     if (underlyingType != null)
@@ -682,6 +682,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                 dataTable.Columns.Add(discriminatorColumn, typeof(string));
                 columnsDict.Add(discriminatorColumn, type.Name);
             }
+            bool hasConverterProperties = tableInfo.ConvertiblePropertyColumnDict.Count > 0;
 
             foreach (var entity in entities)
             {
@@ -689,13 +690,10 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                 {
                     var propertyValue = tableInfo.FastPropertyDict.ContainsKey(property.Name) ? tableInfo.FastPropertyDict[property.Name].Get(entity) : null;
 
-                    if (entityPropertiesDict.ContainsKey(property.Name))
+                    if (hasConverterProperties && tableInfo.ConvertiblePropertyColumnDict.ContainsKey(property.Name))
                     {
-                        string columnName = entityPropertiesDict[property.Name].GetColumnName();
-                        if (tableInfo.ConvertibleProperties.ContainsKey(columnName))
-                        {
-                            propertyValue = tableInfo.ConvertibleProperties[columnName].ConvertToProvider.Invoke(propertyValue);
-                        }
+                        string columnName = tableInfo.ConvertiblePropertyColumnDict[property.Name];
+                        propertyValue = tableInfo.ConvertibleColumnConverterDict[columnName].ConvertToProvider.Invoke(propertyValue);
                     }
 
                     if (propertyValue is Geometry geometryValue && isSqlServer)
@@ -726,9 +724,9 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                             var columnName = $"{property.Name}_{ownedProperty.Name}";
                             var ownedPropertyValue = propertyValue == null ? null : tableInfo.FastPropertyDict[columnName].Get(propertyValue);
 
-                            if (tableInfo.ConvertibleProperties.ContainsKey(columnName))
+                            if (tableInfo.ConvertibleColumnConverterDict.ContainsKey(columnName))
                             {
-                                var converter = tableInfo.ConvertibleProperties[columnName];
+                                var converter = tableInfo.ConvertibleColumnConverterDict[columnName];
                                 columnsDict[columnName] = ownedPropertyValue == null ? null : converter.ConvertToProvider.Invoke(ownedPropertyValue);
                             }
                             else
@@ -746,9 +744,9 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                         var propertyValue = context.Entry(entity).Property(shadowProperty.Name).CurrentValue;
                         var columnName = shadowProperty.GetColumnName();
 
-                        if (tableInfo.ConvertibleProperties.ContainsKey(columnName))
+                        if (tableInfo.ConvertibleColumnConverterDict.ContainsKey(columnName))
                         {
-                            propertyValue = tableInfo.ConvertibleProperties[columnName].ConvertToProvider.Invoke(propertyValue);
+                            propertyValue = tableInfo.ConvertibleColumnConverterDict[columnName].ConvertToProvider.Invoke(propertyValue);
                         }
 
                         columnsDict[shadowProperty.Name] = propertyValue;

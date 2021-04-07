@@ -55,7 +55,10 @@ namespace EFCore.BulkExtensions
         public Dictionary<string, INavigation> AllNavigationsDictionary { get; private set; }
         public Dictionary<string, INavigation> OwnedTypesDict { get; set; } = new Dictionary<string, INavigation>();
         public HashSet<string> ShadowProperties { get; set; } = new HashSet<string>();
-        public Dictionary<string, ValueConverter> ConvertibleProperties { get; set; } = new Dictionary<string, ValueConverter>();
+
+        public Dictionary<string, string> ConvertiblePropertyColumnDict { get; set; } = new Dictionary<string, string>();
+        public Dictionary<string, ValueConverter> ConvertibleColumnConverterDict { get; set; } = new Dictionary<string, ValueConverter>();
+
         public string TimeStampOutColumnType => "varbinary(8)";
         public string TimeStampPropertyName { get; set; }
         public string TimeStampColumnName { get; set; }
@@ -337,7 +340,8 @@ namespace EFCore.BulkExtensions
                     }
 
                     var columnName = property.GetColumnName();
-                    ConvertibleProperties.Add(columnName, converter);
+                    ConvertiblePropertyColumnDict.Add(property.Name, columnName);
+                    ConvertibleColumnConverterDict.Add(columnName, converter);
                 }
 
                 foreach (var navigation in entityType.GetNavigations().Where(a => !a.IsCollection() && !a.GetTargetType().IsOwned()))
@@ -377,7 +381,7 @@ namespace EFCore.BulkExtensions
                             var converter = ownedEntityProperty.GetValueConverter();
                             if (converter != null)
                             {
-                                ConvertibleProperties.Add($"{navgationProperty.Name}_{ownedEntityProperty.Name}", converter);
+                                ConvertibleColumnConverterDict.Add($"{navgationProperty.Name}_{ownedEntityProperty.Name}", converter);
                             }
                         }
                         var ownedProperties = property.PropertyType.GetProperties();
