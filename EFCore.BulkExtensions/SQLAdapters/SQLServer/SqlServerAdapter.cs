@@ -437,6 +437,8 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                                                                                a.IsForeignKey() &&
                                                                                a.GetContainingForeignKeys().FirstOrDefault()?.DependentToPrincipal?.Name != null)
                                                                          .ToDictionary(a => a.Name, a => a);
+            var entityShadowFkPropertyColumnNamesDict = entityShadowFkPropertiesDict.ToDictionary(a => a.Key, a => a.Value.GetColumnName(objectIdentifier));
+            var shadowPropertyColumnNamesDict = entityPropertiesDict.Where(a => a.Value.IsShadowProperty()).ToDictionary(a => a.Key, a => a.Value.GetColumnName(objectIdentifier));
 
             var properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             var discriminatorColumn = GetDiscriminatorColumn(tableInfo);
@@ -630,12 +632,12 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                     else if (entityShadowFkPropertiesDict.ContainsKey(property.Name))
                     {
                         var foreignKeyShadowProperty = entityShadowFkPropertiesDict[property.Name];
-                        var columnName = foreignKeyShadowProperty.GetColumnName(objectIdentifier);
-                        entityPropertiesDict.TryGetValue(foreignKeyShadowProperty.GetColumnName(objectIdentifier), out var entityProperty);
+                        var columnName = entityShadowFkPropertyColumnNamesDict[property.Name];
+                        entityPropertiesDict.TryGetValue(columnName, out var entityProperty);
                         if (entityProperty == null) // BulkRead
                             continue;
 
-                        columnsDict[columnName] = propertyValue == null ? null : foreignKeyShadowProperty.FindFirstPrincipal().PropertyInfo.GetValue(propertyValue);
+                        columnsDict[columnName] = propertyValue == null ? null : foreignKeyShadowProperty.FindFirstPrincipal().PropertyInfo.GetValue(propertyValue); // TODO Check if can be optimized
                     }
                     else if (entityNavigationOwnedDict.ContainsKey(property.Name) && !tableInfo.LoadOnlyPKColumn)
                     {
@@ -660,17 +662,18 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
 
                 if (tableInfo.BulkConfig.EnableShadowProperties)
                 {
-                    foreach (var shadowProperty in entityPropertiesDict.Values.Where(y => y.IsShadowProperty()))
+                    foreach (var shadowPropertyName in shadowPropertyColumnNamesDict.Keys)
                     {
-                        var propertyValue = context.Entry(entity).Property(shadowProperty.Name).CurrentValue;
-                        var columnName = shadowProperty.GetColumnName(objectIdentifier);
+                        var shadowProperty = entityPropertiesDict[shadowPropertyName];
+                        var columnName = shadowPropertyColumnNamesDict[shadowPropertyName];
+                        var propertyValue = context.Entry(entity).Property(shadowPropertyName).CurrentValue;
 
                         if (tableInfo.ConvertibleColumnConverterDict.ContainsKey(columnName))
                         {
                             propertyValue = tableInfo.ConvertibleColumnConverterDict[columnName].ConvertToProvider.Invoke(propertyValue);
                         }
 
-                        columnsDict[shadowProperty.Name] = propertyValue;
+                        columnsDict[shadowPropertyName] = propertyValue;
                     }
                 }
 
