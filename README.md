@@ -24,7 +24,7 @@ Package manager console command for installation: *Install-Package EFCore.BulkEx
 If you find this project useful you can mark it by leaving a Github **\*Star**.</br>
 If you would like to support the Project by making a Donation ($10) *#BuyMeBeer*, you are welcome to do so:<br>
 [![Donate](https://img.shields.io/badge/donate-PayPal-yellow.svg)](https://www.paypal.me/BorisDjurdjevic/10) or
-[![Donate Bitcoin](https://img.shields.io/badge/donate-Bitcoin-orange.svg)](https://borisdj.github.io/pages/donateBTC.html)<br>
+[![Donate Nano](https://img.shields.io/badge/donate-Nano-9cf.svg)](https://borisdj.github.io/pages/donation/donate-nano.html)<br>
 Please read [CONTRIBUTING](CONTRIBUTING.md) for details on code of conduct, and the process for submitting pull requests.<br>
 [![NuGet](https://img.shields.io/npm/l/express.svg)](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE)<br>
 Want to **Contact** us for Hire (Development & Consulting): [www.codis.tech](http://www.codis.tech)
