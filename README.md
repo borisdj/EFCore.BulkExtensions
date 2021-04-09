@@ -89,9 +89,24 @@ Note: Bulk ops have optional argument *Type type* that can be set to type of Ent
 ## BulkConfig arguments
 
 **BulkInsert_/OrUpdate/OrDelete** methods can have optional argument **BulkConfig** with properties (bool, int, object, List<string>):<br>
-{ *PreserveInsertOrder, SetOutputIdentity, BatchSize, NotifyAfter, BulkCopyTimeout, EnableStreaming, UseTempDB, UniqueTableNameTempDb, CustomDestinationTableName, TrackingEntities, WithHoldlock, CalculateStats, PropertiesToInclude, PropertiesToIncludeOnCompare, PropertiesToExclude, PropertiesToIncludeOnUpdate, PropertiesToExcludeOnCompare, PropertiesToExcludeOnUpdate, UpdateByProperties, EnableShadowProperties, IncludeGraph, OmitClauseExistsExcept, DoNotUpdateIfTimeStampChanged, SRID, SqlBulkCopyOptions }*<br>
-Default behaviour is <br>
-{ *PreserveInsertOrder*: true, *SetOutputIdentity*: false, *BatchSize*: 2000, *NotifyAfter*: null, *BulkCopyTimeout*: null,<br> *EnableStreaming*: false, *UseTempDB*: false, *UniqueTableNameTempDb*: true, *CustomDestinationTableName*: null, *TrackingEntities*: false, *WithHoldlock*: true,<br> *CalculateStats*: false, *PropertiesToInclude*: null, *PropertiesToIncludeOnCompare* : null, *PropertiesToIncludeOnUpdate* : null, *PropertiesToExclude*: null, *PropertiesToExcludeOnCompare*: null, *PropertiesToExcludeOnUpdate*: null, *UpdateByProperties*: null, *EnableShadowProperties*: false, *IncludeGraph*: false, *OmitClauseExistsExcept*: false, *DoNotUpdateIfTimeStampChanged*: false, *SRID*: 4326, *SqlBulkCopyOptions*: Default }<br><br>
+```C#
+PROPERTY : DEFAULTvalue
+-----------------------
+PreserveInsertOrder: true,                        PropertiesToInclude: null,
+SetOutputIdentity: false,	                  PropertiesToIncludeOnCompare: null,
+BatchSize: 2000,	                          PropertiesToIncludeOnUpdate: null,
+NotifyAfter: null,	                          PropertiesToExclude: null,
+BulkCopyTimeout: null,	                          PropertiesToExcludeOnCompare: null,
+EnableStreaming: false,	                          PropertiesToExcludeOnUpdate: null,
+UseTempDB: false,	                          UpdateByProperties: null,
+UniqueTableNameTempDb: true,	                  EnableShadowProperties: false,
+CustomDestinationTableName: null,	          IncludeGraph: false,
+TrackingEntities: false,	                  OmitClauseExistsExcept: false,
+WithHoldlock: true,	                          DoNotUpdateIfTimeStampChanged: false,
+CalculateStats: false,	                          SRID: 4326,
+		                                  SqlBulkCopyOptions: Default
+
+```
 If we want to change defaults, BulkConfig should be added explicitly with one or more bool properties set to true, and/or int props like **BatchSize** to different number.<br> Config also has DelegateFunc for setting *Underlying-Connection/Transaction*, e.g. in UnderlyingTest.<br>
 When doing update we can chose to exclude one or more properties by adding their names into **PropertiesToExclude**, or if we need to update less then half column then **PropertiesToInclude** can be used. Setting both Lists are not allowed.
 
