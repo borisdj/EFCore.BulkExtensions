@@ -183,7 +183,8 @@ If used for pure Insert (with Batching) then SetOutputIdentity should also be co
 **IncludeGraph** when set all entites that have relations with main ones from the list are also merged into theirs tables.<br>
 **OmitClauseExistsExcept** removes the clause from Merge statement, useful when need to active triggers even for same data.<br>
 **DoNotUpdateIfTimeStampChanged** if set checks TimeStamp for Concurrency, ones with conflict will [not be updated](https://github.com/borisdj/EFCore.BulkExtensions/issues/469#issuecomment-803662721).<br>
-**SRID** Spatial Reference Identifier - for SQL Server with NetTopologySuite.
+**SRID** Spatial Reference Identifier - for SQL Server with NetTopologySuite.<br>
+**DateTime2PrecisionForceRound** If dbtype datetime2 has precision less then default 7, for example 'datetime2(3)' SqlBulkCopy does Floor instead of Round so when did property is set Rounding will be done done in memory to make sure inserted values are same as with regular SaveChanges.
 
 **SqlBulkCopyOptions** is Enum with [[Flags]](https://stackoverflow.com/questions/8447/what-does-the-flags-enum-attribute-mean-in-c) attribute which enables specifying one or more options:<br>
 *Default, KeepIdentity, CheckConstraints, TableLock, KeepNulls, FireTriggers, UseInternalTransaction*
