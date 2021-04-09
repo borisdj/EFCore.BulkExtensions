@@ -91,19 +91,19 @@ Note: Bulk ops have optional argument *Type type* that can be set to type of Ent
 **Bulk** methods can have optional argument **BulkConfig** with properties (bool, int, object, List<string>):<br>
 ```C#
 PROPERTY : DEFAULTvalue
------------------------
-PreserveInsertOrder: true,                        PropertiesToInclude: null,
-SetOutputIdentity: false,	                  PropertiesToIncludeOnCompare: null,
-BatchSize: 2000,	                          PropertiesToIncludeOnUpdate: null,
-NotifyAfter: null,	                          PropertiesToExclude: null,
-BulkCopyTimeout: null,	                          PropertiesToExcludeOnCompare: null,
-EnableStreaming: false,	                          PropertiesToExcludeOnUpdate: null,
-UseTempDB: false,	                          UpdateByProperties: null,
-UniqueTableNameTempDb: true,	                  EnableShadowProperties: false,
-CustomDestinationTableName: null,	          IncludeGraph: false,
-TrackingEntities: false,	                  OmitClauseExistsExcept: false,
-WithHoldlock: true,	                          DoNotUpdateIfTimeStampChanged: false,
-CalculateStats: false,	                          SRID: 4326,
+-----------------------                           PropertiesToInclude: null,
+PreserveInsertOrder: true,                        PropertiesToIncludeOnCompare: null,
+SetOutputIdentity: false,	                  PropertiesToIncludeOnUpdate: null,
+BatchSize: 2000,	                          PropertiesToExclude: null,
+NotifyAfter: null,	                          PropertiesToExcludeOnCompare: null,
+BulkCopyTimeout: null,	                          PropertiesToExcludeOnUpdate: null,
+EnableStreaming: false,	                          UpdateByProperties: null,
+UseTempDB: false,	                          EnableShadowProperties: false,
+UniqueTableNameTempDb: true,	                  IncludeGraph: false,
+CustomDestinationTableName: null,	          OmitClauseExistsExcept: false,
+TrackingEntities: false,	                  DoNotUpdateIfTimeStampChanged: false,
+WithHoldlock: true,	                          SRID: 4326,
+CalculateStats: false,	                          DateTime2PrecisionForceRound: false,
 		                                  SqlBulkCopyOptions: Default
 
 ```
