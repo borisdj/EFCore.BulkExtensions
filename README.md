@@ -88,7 +88,7 @@ Note: Bulk ops have optional argument *Type type* that can be set to type of Ent
 
 ## BulkConfig arguments
 
-**BulkInsert_/OrUpdate/OrDelete** methods can have optional argument **BulkConfig** with properties (bool, int, object, List<string>):<br>
+**Bulk** methods can have optional argument **BulkConfig** with properties (bool, int, object, List<string>):<br>
 ```C#
 PROPERTY : DEFAULTvalue
 -----------------------
