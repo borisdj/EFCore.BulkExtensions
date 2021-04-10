@@ -188,7 +188,11 @@ namespace EFCore.BulkExtensions
             // timestamp/row version properties are only set by the Db, the property has a [Timestamp] Attribute or is configured in FluentAPI with .IsRowVersion()
             // They can be identified by the columne type "timestamp" or .IsConcurrencyToken in combination with .ValueGenerated == ValueGenerated.OnAddOrUpdate
             string timestampDbTypeName = nameof(TimestampAttribute).Replace("Attribute", "").ToLower(); // = "timestamp";
-            var timeStampProperties = allProperties.Where(a => (a.IsConcurrencyToken && a.ValueGenerated == ValueGenerated.OnAddOrUpdate) || a.GetColumnType() == timestampDbTypeName);
+            IEnumerable<IProperty> timeStampProperties;
+            if (BulkConfig.IgnoreRowVersion)
+                timeStampProperties = new List<IProperty>();
+            else
+                timeStampProperties = allProperties.Where(a => (a.IsConcurrencyToken && a.ValueGenerated == ValueGenerated.OnAddOrUpdate) || a.GetColumnType() == timestampDbTypeName);
             TimeStampColumnName = timeStampProperties.FirstOrDefault()?.GetColumnName(ObjectIdentifier); // can be only One
             TimeStampPropertyName = timeStampProperties.FirstOrDefault()?.Name; // can be only One
             var allPropertiesExceptTimeStamp = allProperties.Except(timeStampProperties);
