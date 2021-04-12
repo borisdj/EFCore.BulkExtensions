@@ -512,6 +512,22 @@ namespace EFCore.BulkExtensions.Tests
 
             Assert.Equal(nextLogId, context.LogPersonReports.OrderByDescending(a => a.LogId).FirstOrDefault().LogId);
         }
+
+        [Fact]
+        private void TableWithSpecialRowVersion()
+        {
+            ContextUtil.DbServer = DbServer.SqlServer;
+            using var context = new TestContext(ContextUtil.GetOptions());
+
+            var bulk = new List<AtypicalRowVersionEntity>();
+            for (var i = 0; i < 100; i++)
+                bulk.Add(new AtypicalRowVersionEntity { Id = Guid.NewGuid(), Name = $"Row {i}", RowVersion = i, SyncDevice = "Test" });
+
+            Assert.Throws(typeof(InvalidOperationException), () => context.BulkInsertOrUpdate(bulk));
+            context.BulkInsertOrUpdate(bulk, new BulkConfig { IgnoreRowVersion = true });
+            Assert.Equal(bulk.Count(), context.AtypicalRowVersionEntity.Count());
+        }
+
         private int GetLastRowId(DbContext context, string tableName)
         {
             var sqlConnection = context.Database.GetDbConnection();

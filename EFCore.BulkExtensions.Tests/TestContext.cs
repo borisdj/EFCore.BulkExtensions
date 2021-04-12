@@ -42,6 +42,7 @@ namespace EFCore.BulkExtensions.Tests
         public DbSet<LogPersonReport> LogPersonReports { get; set; }
 
         public DbSet<Event> Events { get; set; }
+        public DbSet<AtypicalRowVersionEntity> AtypicalRowVersionEntity { get; set; }
 
         public TestContext(DbContextOptions options) : base(options)
         {
@@ -93,8 +94,10 @@ namespace EFCore.BulkExtensions.Tests
             //modelBuilder.Entity<Modul>(buildAction => { buildAction.HasNoKey(); });
             modelBuilder.Entity<Modul>().Property(et => et.Code).ValueGeneratedNever();
 
-
             modelBuilder.Entity<Setting>().Property(e => e.Settings).HasConversion<string>();
+            modelBuilder.Entity<AtypicalRowVersionEntity>().HasKey(e => e.Id);
+            modelBuilder.Entity<AtypicalRowVersionEntity>().Property(e => e.RowVersion).HasDefaultValue(0).IsConcurrencyToken().ValueGeneratedOnAddOrUpdate().Metadata.SetBeforeSaveBehavior(PropertySaveBehavior.Save);
+            modelBuilder.Entity<AtypicalRowVersionEntity>().Property(e => e.SyncDevice).IsRequired(true).IsConcurrencyToken().HasDefaultValue("");
 
             // [Timestamp] alternative:
             //modelBuilder.Entity<Document>().Property(x => x.RowVersion).HasColumnType("timestamp").ValueGeneratedOnAddOrUpdate().HasConversion(new NumberToBytesConverter<ulong>()).IsConcurrencyToken();
@@ -451,6 +454,14 @@ namespace EFCore.BulkExtensions.Tests
     {
         public int ReportId { get; set; }
         public int LogPersonReportTypeId { get; set; }
+    }
+
+    public class AtypicalRowVersionEntity
+    {
+        public Guid Id { get; set; }
+        public long RowVersion { get; set; }
+        public string SyncDevice { get; set; }
+        public string Name { get; set; }
     }
 
     public class Event // CustomPrecision DateTime Test (SqlServer only)
