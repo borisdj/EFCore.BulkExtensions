@@ -83,6 +83,7 @@ Those in Db that are not found in the list will be deleted.<br>
 
 **BulkRead** does SELECT and JOIN based on one or more Unique columns that are specified in Config `UpdateByProperties`.<br>
 More info in the [Example](https://github.com/borisdj/EFCore.BulkExtensions#read-example) at the bottom.<br>
+Currently not supported for Sqlite.<br>
 
 Note: Bulk ops have optional argument *Type type* that can be set to type of Entity if list has dynamic runtime objects or is inhereted from Entity class.
 
