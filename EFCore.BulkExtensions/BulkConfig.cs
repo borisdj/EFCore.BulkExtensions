@@ -15,6 +15,14 @@ namespace EFCore.BulkExtensions
         public bool PreserveInsertOrder { get; set; } = true;
 
         /// <summary>
+        ///     Ignore handling RowVersion column
+        /// </summary>
+        /// <value>
+        ///     Default value is <c>false</c>, if table have any RowVersion column, it will have special handling and need to be binary
+        /// </value>
+        public bool IgnoreRowVersion { get; set; } = false;
+
+        /// <summary>
         ///     When set IDs zero values will be updated to new ones from database (Have function only when PK has Identity)
         /// </summary>
         /// <remarks>
