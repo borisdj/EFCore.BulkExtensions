@@ -525,7 +525,7 @@ namespace EFCore.BulkExtensions.Tests
 
             Assert.Throws(typeof(InvalidOperationException), () => context.BulkInsertOrUpdate(bulk));
             context.BulkInsertOrUpdate(bulk, new BulkConfig { IgnoreRowVersion = true });
-            Assert.Equal(bulk.Count(), context.AtypicalRowVersionEntity.Count());
+            Assert.Equal(bulk.Count(), context.AtypicalRowVersionEntities.Count());
         }
 
         private int GetLastRowId(DbContext context, string tableName)

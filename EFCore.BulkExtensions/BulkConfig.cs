@@ -15,14 +15,6 @@ namespace EFCore.BulkExtensions
         public bool PreserveInsertOrder { get; set; } = true;
 
         /// <summary>
-        ///     Ignore handling RowVersion column
-        /// </summary>
-        /// <value>
-        ///     Default value is <c>false</c>, if table have any RowVersion column, it will have special handling and need to be binary
-        /// </value>
-        public bool IgnoreRowVersion { get; set; } = false;
-
-        /// <summary>
         ///     When set IDs zero values will be updated to new ones from database (Have function only when PK has Identity)
         /// </summary>
         /// <remarks>
@@ -94,6 +86,14 @@ namespace EFCore.BulkExtensions
         ///     If used for pure Insert (with Batching) then SetOutputIdentity should also be configured because Merge have to be used.
         /// </remarks>
         public bool CalculateStats { get; set; }
+
+        /// <summary>
+        ///     Ignore handling RowVersion column
+        /// </summary>
+        /// <value>
+        ///     Default value is <c>false</c>, if table have any RowVersion column, it will have special handling and need to be binary
+        /// </value>
+        public bool IgnoreRowVersion { get; set; } = false;
 
         /// <summary>
         ///     Used as object for returning Stats Info when <c>BulkConfig.CalculateStats = true</c>

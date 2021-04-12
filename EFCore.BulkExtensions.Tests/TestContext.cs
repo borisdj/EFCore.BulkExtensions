@@ -42,7 +42,7 @@ namespace EFCore.BulkExtensions.Tests
         public DbSet<LogPersonReport> LogPersonReports { get; set; }
 
         public DbSet<Event> Events { get; set; }
-        public DbSet<AtypicalRowVersionEntity> AtypicalRowVersionEntity { get; set; }
+        public DbSet<AtypicalRowVersionEntity> AtypicalRowVersionEntities { get; set; }
 
         public TestContext(DbContextOptions options) : base(options)
         {
@@ -95,6 +95,7 @@ namespace EFCore.BulkExtensions.Tests
             modelBuilder.Entity<Modul>().Property(et => et.Code).ValueGeneratedNever();
 
             modelBuilder.Entity<Setting>().Property(e => e.Settings).HasConversion<string>();
+
             modelBuilder.Entity<AtypicalRowVersionEntity>().HasKey(e => e.Id);
             modelBuilder.Entity<AtypicalRowVersionEntity>().Property(e => e.RowVersion).HasDefaultValue(0).IsConcurrencyToken().ValueGeneratedOnAddOrUpdate().Metadata.SetBeforeSaveBehavior(PropertySaveBehavior.Save);
             modelBuilder.Entity<AtypicalRowVersionEntity>().Property(e => e.SyncDevice).IsRequired(true).IsConcurrencyToken().HasDefaultValue("");
