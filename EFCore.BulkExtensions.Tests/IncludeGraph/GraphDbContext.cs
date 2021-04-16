@@ -23,6 +23,9 @@ namespace EFCore.BulkExtensions.Tests.ShadowProperties
             modelBuilder.Entity<Asset>(cfg =>
             {
                 cfg.HasKey(y => y.Id);
+
+                cfg.HasOne(y => y.ParentAsset).WithMany(y => y.ChildAssets);
+                cfg.HasMany(y => y.WorkOrders).WithOne(y => y.Asset).IsRequired();
             });
 
             modelBuilder.Entity<WorkOrder>(cfg =>
@@ -30,7 +33,7 @@ namespace EFCore.BulkExtensions.Tests.ShadowProperties
                 cfg.HasKey(y => y.Id);
 
                 cfg.HasMany(y => y.WorkOrderSpares).WithOne(y => y.WorkOrder);
-                cfg.HasOne(y => y.Asset).WithMany().IsRequired();
+                cfg.HasOne(y => y.Asset).WithMany(y => y.WorkOrders).IsRequired();
             });
 
             modelBuilder.Entity<WorkOrderSpare>(cfg =>

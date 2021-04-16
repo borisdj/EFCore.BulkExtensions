@@ -87,6 +87,23 @@ namespace EFCore.BulkExtensions.Tests.IncludeGraph
 
             using var db = new GraphDbContext(ContextUtil.GetOptions<GraphDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_Graph"));
 
+            // Ensure there are references going up and down the hierarchy tree
+            foreach (var wos in WorkOrder1.WorkOrderSpares)
+            {
+                wos.WorkOrder = WorkOrder1;
+            }
+
+            foreach (var wos in WorkOrder2.WorkOrderSpares)
+            {
+                wos.WorkOrder = WorkOrder2;
+            }
+
+            WorkOrder1.Asset.WorkOrders.Add(WorkOrder1);
+            WorkOrder2.Asset.WorkOrders.Add(WorkOrder2);
+
+            WorkOrder1.Asset.ParentAsset = WorkOrder2.Asset;
+            WorkOrder2.Asset.ChildAssets.Add(WorkOrder1.Asset);
+
             var testData = this.GetTestData(db).ToList();
             await db.BulkInsertOrUpdateAsync(testData, new BulkConfig
             {
