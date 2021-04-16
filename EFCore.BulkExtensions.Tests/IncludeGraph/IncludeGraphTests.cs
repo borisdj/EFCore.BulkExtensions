@@ -87,7 +87,8 @@ namespace EFCore.BulkExtensions.Tests.IncludeGraph
 
             using var db = new GraphDbContext(ContextUtil.GetOptions<GraphDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_Graph"));
 
-            // Ensure there are references going up and down the hierarchy tree
+            // To ensure there are no stack overflows with circular reference trees, we must test for that.
+            // Set all navigation properties so the base navigation and its inverse both have values
             foreach (var wos in WorkOrder1.WorkOrderSpares)
             {
                 wos.WorkOrder = WorkOrder1;
