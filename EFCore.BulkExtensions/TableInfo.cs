@@ -209,13 +209,21 @@ namespace EFCore.BulkExtensions
                 bool listHasAllDefaultValues = !entities.Any(a => a.GetType().GetProperty(propertyWithDefaultValue.Name).GetValue(a, null)?.ToString() != instance?.ToString());
                 if (listHasAllDefaultValues)
                 {
-                    if (BulkConfig.PropertiesToExclude == null)
+                    if (BulkConfig.PropertiesToInclude != null)
                     {
-                        BulkConfig.PropertiesToExclude = new List<string>();
+                        if (BulkConfig.PropertiesToInclude.Contains(propertyWithDefaultValue.Name))
+                            BulkConfig.PropertiesToInclude.Remove(propertyWithDefaultValue.Name);
                     }
-                    if (!BulkConfig.PropertiesToExclude.Contains(propertyWithDefaultValue.Name))
+                    else
                     {
-                        BulkConfig.PropertiesToExclude.Add(propertyWithDefaultValue.Name);
+                        if (BulkConfig.PropertiesToExclude == null)
+                        {
+                            BulkConfig.PropertiesToExclude = new List<string>();
+                        }
+                        if (!BulkConfig.PropertiesToExclude.Contains(propertyWithDefaultValue.Name))
+                        {
+                            BulkConfig.PropertiesToExclude.Add(propertyWithDefaultValue.Name);
+                        }
                     }
                 }
             }
