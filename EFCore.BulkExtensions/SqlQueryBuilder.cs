@@ -37,7 +37,7 @@ namespace EFCore.BulkExtensions
             return q;
         }
 
-        // Not used for TableCopy since order of columns is not the same as of original table, that is required for the MERGE (insted after creation columns are Altered to Nullable)
+        // Not used for TableCopy since order of columns is not the same as of original table, that is required for the MERGE (instead after creation columns are Altered to Nullable)
         public static string CreateTable(string newTableName, TableInfo tableInfo, bool isOutputTable = false)
         {
             List<string> columnsNames = (isOutputTable ? tableInfo.OutputPropertyColumnNamesDict : tableInfo.PropertyColumnNamesDict).Values.ToList();
