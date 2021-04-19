@@ -87,6 +87,24 @@ namespace EFCore.BulkExtensions.Tests.IncludeGraph
 
             using var db = new GraphDbContext(ContextUtil.GetOptions<GraphDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_Graph"));
 
+            // To ensure there are no stack overflows with circular reference trees, we must test for that.
+            // Set all navigation properties so the base navigation and its inverse both have values
+            foreach (var wos in WorkOrder1.WorkOrderSpares)
+            {
+                wos.WorkOrder = WorkOrder1;
+            }
+
+            foreach (var wos in WorkOrder2.WorkOrderSpares)
+            {
+                wos.WorkOrder = WorkOrder2;
+            }
+
+            WorkOrder1.Asset.WorkOrders.Add(WorkOrder1);
+            WorkOrder2.Asset.WorkOrders.Add(WorkOrder2);
+
+            WorkOrder1.Asset.ParentAsset = WorkOrder2.Asset;
+            WorkOrder2.Asset.ChildAssets.Add(WorkOrder1.Asset);
+
             var testData = this.GetTestData(db).ToList();
             await db.BulkInsertOrUpdateAsync(testData, new BulkConfig
             {

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -39,9 +40,9 @@ namespace EFCore.BulkExtensions
             // If this is set to false, wont' be able to support some code first model types as EFCore uses shadow properties when a relationship's foreign keys arent explicitly defined
             bulkConfig.EnableShadowProperties = true;
 
-            var rootGraphItems = GraphUtil.GetOrderedGraph(context, entities);
+            var graphNodes = GraphUtil.GetTopologicallySortedGraph(context, entities);
 
-            if (rootGraphItems == null)
+            if (graphNodes == null)
                 return;
 
             // Inserting an entity graph must be done within a transaction otherwise the database could end up in a bad state
@@ -50,61 +51,41 @@ namespace EFCore.BulkExtensions
 
             try
             {
-                foreach (var actionGraphItem in rootGraphItems)
+                // Group the graph nodes by entity type so we can merge them into the database in batches, in the correct order of dependency (topological order)
+                var graphNodesGroupedByType = graphNodes.GroupBy(y => y.Entity.GetType());
+
+                foreach (var graphNodeGroup in graphNodesGroupedByType)
                 {
-                    var entitiesToAction = GetUniqueEntities(context, actionGraphItem).ToList();
-                    var tableInfo = TableInfo.CreateInstance(context, actionGraphItem.EntityClrType, entitiesToAction, operationType, bulkConfig);
+                    // It is possible the object graph contains duplicate entities (by primary key) but the entities are different object instances in memory.
+                    // This an happen when deserializing a nested JSON tree for example. So filter out the duplicates.
+                    var entitiesToAction = GetUniqueEntities(context, graphNodeGroup.Select(y => y.Entity)).ToList();
+                    var entityClrType = graphNodeGroup.Key;
+                    var tableInfo = TableInfo.CreateInstance(context, entityClrType, entitiesToAction, operationType, bulkConfig);
 
                     if (isAsync)
                     {
-                        await SqlBulkOperation.MergeAsync(context, actionGraphItem.EntityClrType, entitiesToAction, tableInfo, operationType, progress, cancellationToken);
+                        await SqlBulkOperation.MergeAsync(context, entityClrType, entitiesToAction, tableInfo, operationType, progress, cancellationToken);
                     }
                     else
                     {
-                        SqlBulkOperation.Merge(context, actionGraphItem.EntityClrType, entitiesToAction, tableInfo, operationType, progress);
+                        SqlBulkOperation.Merge(context, entityClrType, entitiesToAction, tableInfo, operationType, progress);
                     }
-                    
-                    // Loop through the dependants and update their foreign keys with the PK values of the just inserted / merged entities
-                    foreach (var graphEntity in actionGraphItem.Entities)
+
+                    // Set the foreign keys for dependents so they may be inserted on the next loop
+                    var dependentsOfSameType = SetForeignKeysForDependentsAndYieldSameTypeDependents(context, entityClrType, graphNodeGroup).ToList();
+
+                    // If there are any dependents of the same type (parent child relationship), then save those dependent entities again to commit the fk values
+                    if (dependentsOfSameType.Any())
                     {
-                        var entity = graphEntity.Entity;
-                        var parentEntity = graphEntity.ParentEntity;
+                        var dependentTableInfo = TableInfo.CreateInstance(context, entityClrType, dependentsOfSameType, operationType, bulkConfig);
 
-                        // If the parent entity is null its the root type of the object graph.
-                        if (parentEntity is null)
+                        if (isAsync)
                         {
-                            foreach (var navigation in actionGraphItem.Relationships)
-                            {
-                                // If this relationship requires the parents value to exist
-                                if (navigation.ParentNavigation.IsOnDependent == false)
-                                {
-                                    foreach (var navGraphEntity in navigation.Entities)
-                                    {
-                                        if (navGraphEntity.ParentEntity != entity)
-                                            continue;
-
-                                        SetForeignKeyForRelationship(context, navigation.ParentNavigation,
-                                            navGraphEntity.Entity, entity);
-                                    }
-                                }
-                            }
+                            await SqlBulkOperation.MergeAsync(context, entityClrType, dependentsOfSameType, dependentTableInfo, operationType, progress, cancellationToken);
                         }
                         else
                         {
-                            var navigation = actionGraphItem.ParentNavigation;
-
-                            if (navigation.IsOnDependent)
-                            {
-                                SetForeignKeyForRelationship(context, navigation,
-                                    dependent: parentEntity,
-                                    principal: entity);
-                            }
-                            else
-                            {
-                                SetForeignKeyForRelationship(context, navigation,
-                                    dependent: entity,
-                                    principal: parentEntity);
-                            }
+                            SqlBulkOperation.Merge(context, entityClrType, dependentsOfSameType, dependentTableInfo, operationType, progress);
                         }
                     }
                 }
@@ -137,20 +118,39 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        private static IEnumerable<object> GetUniqueEntities(DbContext context, GraphUtil.GraphItem graphItem)
+        private static IEnumerable<object> SetForeignKeysForDependentsAndYieldSameTypeDependents(DbContext context, Type entityClrType, IEnumerable<GraphUtil.GraphNode> graphNodeGroup)
         {
-            var pk = graphItem.EntityType.FindPrimaryKey();
-            var processedPks = new HashSet<PrimaryKeyComparer>();
-
-            foreach (var e in graphItem.Entities)
+            // Loop through the dependants and update their foreign keys with the PK values of the just inserted / merged entities
+            foreach (var graphNode in graphNodeGroup)
             {
-                var entity = e.Entity;
+                var entity = graphNode.Entity;
+
+                foreach (var d in graphNode.Dependencies.Dependents)
+                {
+                    SetForeignKeyForRelationship(context, d.navigation, d.entity, entity);
+
+                    if (d.entity.GetType() == entityClrType)
+                    {
+                        yield return d.entity;
+                    }
+                }
+            }
+        }
+
+        private static IEnumerable<object> GetUniqueEntities(DbContext context, IEnumerable<object> entities)
+        {
+            var entityType = context.Model.FindEntityType(entities.First().GetType());
+            var pk = entityType.FindPrimaryKey();
+            var processedPks = new HashSet<PrimaryKeyList>();
+
+            foreach (var entity in entities)
+            {
                 var entry = context.Entry(entity);
 
                 // If the entry has its key set, make sure its unique. It is possible for an entity to exist more than once in a graph.
                 if (entry.IsKeySet)
                 {
-                    var primaryKeyComparer = new PrimaryKeyComparer();
+                    var primaryKeyComparer = new PrimaryKeyList();
 
                     foreach (var pkProp in pk.Properties)
                     {
@@ -190,11 +190,11 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        private class PrimaryKeyComparer : List<object>
+        private class PrimaryKeyList : List<object>
         {
             public override bool Equals(object obj)
             {
-                var objCast = obj as PrimaryKeyComparer;
+                var objCast = obj as PrimaryKeyList;
 
                 if (objCast is null)
                     return base.Equals(objCast);
