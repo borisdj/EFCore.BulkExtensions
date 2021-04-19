@@ -134,15 +134,14 @@ namespace EFCore.BulkExtensions
                 TempTableSufix += Guid.NewGuid().ToString().Substring(0, 8); // 8 chars of Guid as tableNameSufix to avoid same name collision with other tables
             }
 
-            bool AreSpecifiedUpdateByProperties = BulkConfig.UpdateByProperties?.Count() > 0;
-            var primaryKeys = entityType.FindPrimaryKey()?.Properties?.ToDictionary(a => a.Name, b => b.GetColumnName(ObjectIdentifier));
-
-            HasSinglePrimaryKey = primaryKeys?.Count == 1;
-            PrimaryKeysPropertyColumnNameDict = AreSpecifiedUpdateByProperties ? BulkConfig.UpdateByProperties.ToDictionary(a => a, b => b)
-                                                                               : (primaryKeys ?? new Dictionary<string, string>());
-
             var allProperties = entityType.GetProperties().Where(a => a.GetColumnName(ObjectIdentifier) != null);
             ColumnNamesTypesDict = allProperties.ToDictionary(a => a.GetColumnName(ObjectIdentifier), a => a.GetColumnType());
+
+            bool AreSpecifiedUpdateByProperties = BulkConfig.UpdateByProperties?.Count() > 0;
+            var primaryKeys = entityType.FindPrimaryKey()?.Properties?.ToDictionary(a => a.Name, b => b.GetColumnName(ObjectIdentifier));
+            HasSinglePrimaryKey = primaryKeys?.Count == 1;
+            PrimaryKeysPropertyColumnNameDict = AreSpecifiedUpdateByProperties ? BulkConfig.UpdateByProperties.ToDictionary(a => a, b => allProperties.First(p => p.Name == b).GetColumnName(ObjectIdentifier))
+                                                                               : (primaryKeys ?? new Dictionary<string, string>());
 
             if (BulkConfig.DateTime2PrecisionForceRound)
             {
