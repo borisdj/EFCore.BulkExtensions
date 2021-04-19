@@ -16,7 +16,7 @@ namespace EFCore.BulkExtensions
         // we can not simultaneously Insert without PK(being 0,0,...) and Update with PK(1,2,...), separate calls Insert, Update are required.
         public static string InsertIntoTable(TableInfo tableInfo, OperationType operationType, string tableName = null)
         {
-            tableName ??= tableInfo.TableName;
+            tableName ??= tableInfo.InsertToTempTable ? tableInfo.TempTableName : tableInfo.TableName;
             List<string> columnsList = tableInfo.PropertyColumnNamesDict.Values.ToList();
             List<string> propertiesList = tableInfo.PropertyColumnNamesDict.Keys.ToList();
 
@@ -71,6 +71,18 @@ namespace EFCore.BulkExtensions
 
             var q = $"DELETE FROM [{tableName}] " +
                     $"WHERE {commaSeparatedPrimaryKeys};";
+            return q;
+        }
+
+        public static string CreateTableCopy(string existingTableName, string newTableName) // Used for BulkRead
+        {
+            var q = $"CREATE TABLE {newTableName} AS SELECT * FROM {existingTableName} WHERE 0;";
+            return q;
+        }
+
+        public static string DropTable(string tableName)
+        {
+            string q =  $"DROP TABLE IF EXISTS {tableName}";
             return q;
         }
     }

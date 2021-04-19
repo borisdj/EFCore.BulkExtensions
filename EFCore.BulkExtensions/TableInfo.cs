@@ -1,4 +1,5 @@
 using EFCore.BulkExtensions.SqlAdapters;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -65,6 +66,9 @@ namespace EFCore.BulkExtensions
         public string TimeStampColumnName { get; set; }
 
         public StoreObjectIdentifier ObjectIdentifier { get; set; }
+
+        internal SqliteConnection SqliteConnection { get; set; }
+        internal SqliteTransaction SqliteTransaction { get; set; }
 
         public static TableInfo CreateInstance<T>(DbContext context, Type type, IList<T> entities, OperationType operationType, BulkConfig bulkConfig)
         {

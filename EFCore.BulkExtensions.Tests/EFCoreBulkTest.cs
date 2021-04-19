@@ -33,10 +33,12 @@ namespace EFCore.BulkExtensions.Tests
             RunInsert(isBulk);
             RunInsertOrUpdate(isBulk, dbServer);
             RunUpdate(isBulk, dbServer);
+
+            RunRead(isBulk);
+
             if (dbServer == DbServer.SqlServer)
             {
-                RunRead(isBulk); // Not Yet supported for Sqlite
-                RunInsertOrUpdateOrDelete(isBulk); // Not Yet supported for Sqlite
+                RunInsertOrUpdateOrDelete(isBulk); // Not supported for Sqlite (has only UPSERT), instead use BulkRead, then split list into sublists and call separately Bulk methods for Insert, Update, Delete.
             }
             //RunDelete(isBulk, dbServer);
 
@@ -352,6 +354,7 @@ namespace EFCore.BulkExtensions.Tests
                 entities.Add(entity);
             }
 
+            using var transaction = context.Database.BeginTransaction();
             context.BulkRead(
                 entities,
                 new BulkConfig
@@ -359,6 +362,7 @@ namespace EFCore.BulkExtensions.Tests
                     UpdateByProperties = new List<string> { nameof(Item.Name) }
                 }
             );
+            transaction.Commit();
 
             Assert.Equal(1, entities[0].ItemId);
             Assert.Equal(0, entities[1].ItemId);
