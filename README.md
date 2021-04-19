@@ -80,10 +80,10 @@ It makes Update when PK(PrimaryKey) is matched, otherwise does Insert.<br>
 
 **BulkInsertOrUpdateOrDelete** effectively [synchronizes](https://www.mssqltips.com/sqlservertip/1704/using-merge-in-sql-server-to-insert-update-and-delete-at-the-same-time/) table rows with input data.<br>
 Those in Db that are not found in the list will be deleted.<br>
-For Sqlite Not supported since lite only has UPSERT statement. Way to achieve there sync functionality is to Select existing data from DB, split list into sublists and call separately Bulk methods for BulkInsertOrUpdate and Delete.
+For Sqlite Not supported since lite only has UPSERT statement. Way to achieve there sync functionality is to Select or BulkRead existing data from DB, split list into sublists and call separately Bulk methods for BulkInsertOrUpdate and Delete.
 
 **BulkRead** does SELECT and JOIN based on one or more Unique columns that are specified in Config `UpdateByProperties`.<br>
-More info in the [Example](https://github.com/borisdj/EFCore.BulkExtensions#read-example) at the bottom. Currently not supported for Sqlite.<br>
+More info in the [Example](https://github.com/borisdj/EFCore.BulkExtensions#read-example) at the bottom.
 
 Note: Bulk ops have optional argument *Type type* that can be set to type of Entity if list has dynamic runtime objects or is inhereted from Entity class.
 
