@@ -354,7 +354,6 @@ namespace EFCore.BulkExtensions.Tests
                 entities.Add(entity);
             }
 
-            using var transaction = context.Database.BeginTransaction();
             context.BulkRead(
                 entities,
                 new BulkConfig
@@ -362,7 +361,6 @@ namespace EFCore.BulkExtensions.Tests
                     UpdateByProperties = new List<string> { nameof(Item.Name) }
                 }
             );
-            transaction.Commit();
 
             Assert.Equal(1, entities[0].ItemId);
             Assert.Equal(0, entities[1].ItemId);
