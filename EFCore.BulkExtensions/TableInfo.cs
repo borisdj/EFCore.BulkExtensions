@@ -56,6 +56,7 @@ namespace EFCore.BulkExtensions
         public Dictionary<string, INavigation> AllNavigationsDictionary { get; private set; }
         public Dictionary<string, INavigation> OwnedTypesDict { get; set; } = new Dictionary<string, INavigation>();
         public HashSet<string> ShadowProperties { get; set; } = new HashSet<string>();
+        public HashSet<string> DefaultValueProperties { get; set; } = new HashSet<string>();
 
         public Dictionary<string, string> ConvertiblePropertyColumnDict { get; set; } = new Dictionary<string, string>();
         public Dictionary<string, ValueConverter> ConvertibleColumnConverterDict { get; set; } = new Dictionary<string, ValueConverter>();
@@ -210,24 +211,9 @@ namespace EFCore.BulkExtensions
                                   : null; // when type does not have parameterless constructor, like String for example, then default value is 'null'
 
                 bool listHasAllDefaultValues = !entities.Any(a => a.GetType().GetProperty(propertyWithDefaultValue.Name).GetValue(a, null)?.ToString() != instance?.ToString());
-                if (listHasAllDefaultValues)
+                if (listHasAllDefaultValues) // it is not feasible to have in same list simultaniously both entities groups With and Without default values, they are ommited OnInsert only if all have default values
                 {
-                    if (BulkConfig.PropertiesToInclude != null)
-                    {
-                        if (BulkConfig.PropertiesToInclude.Contains(propertyWithDefaultValue.Name))
-                            BulkConfig.PropertiesToInclude.Remove(propertyWithDefaultValue.Name);
-                    }
-                    else
-                    {
-                        if (BulkConfig.PropertiesToExclude == null)
-                        {
-                            BulkConfig.PropertiesToExclude = new List<string>();
-                        }
-                        if (!BulkConfig.PropertiesToExclude.Contains(propertyWithDefaultValue.Name))
-                        {
-                            BulkConfig.PropertiesToExclude.Add(propertyWithDefaultValue.Name);
-                        }
-                    }
+                    DefaultValueProperties.Add(propertyWithDefaultValue.Name);
                 }
             }
 

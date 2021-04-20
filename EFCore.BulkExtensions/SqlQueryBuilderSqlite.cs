@@ -17,6 +17,13 @@ namespace EFCore.BulkExtensions
         public static string InsertIntoTable(TableInfo tableInfo, OperationType operationType, string tableName = null)
         {
             tableName ??= tableInfo.InsertToTempTable ? tableInfo.TempTableName : tableInfo.TableName;
+
+            var tempDict = tableInfo.PropertyColumnNamesDict;
+            if (operationType == OperationType.Insert && tableInfo.PropertyColumnNamesDict.Any()) // Only OnInsert ommite colums with Default values
+            {
+                tableInfo.PropertyColumnNamesDict = tableInfo.PropertyColumnNamesDict.Where(a => !tableInfo.DefaultValueProperties.Contains(a.Key)).ToDictionary(a => a.Key, a => a.Value);
+            }
+
             List<string> columnsList = tableInfo.PropertyColumnNamesDict.Values.ToList();
             List<string> propertiesList = tableInfo.PropertyColumnNamesDict.Keys.ToList();
 
@@ -46,6 +53,9 @@ namespace EFCore.BulkExtensions
                      $" SET {commaSeparatedColumnsEquals}" +
                      $" WHERE {commaANDSeparatedPrimaryKeys}";
             }
+
+            tableInfo.PropertyColumnNamesDict = tempDict;
+
             return q + ";";
         }
 

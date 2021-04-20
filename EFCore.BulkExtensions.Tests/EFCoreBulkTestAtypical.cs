@@ -38,13 +38,24 @@ namespace EFCore.BulkExtensions.Tests
             }
             context.BulkInsert(entities, bulkAction => bulkAction.SetOutputIdentity = true); // example of setting BulkConfig with Action argument
 
+            var firstDocument = context.Documents.AsNoTracking().FirstOrDefault();
+            var count = context.Documents.Count();
+
             // TEST
-            var documents = context.Documents.ToList();
-            Assert.Equal(EntitiesNumber, documents.Count());
-            var firstDocument = documents[0];
+
+            Assert.Equal("DefaultData", firstDocument.Tag);
+
+            firstDocument.Tag = null;
+            context.BulkInsertOrUpdate(new List<Document> { firstDocument });
+            firstDocument = context.Documents.AsNoTracking().FirstOrDefault();
+
+            Assert.Null(firstDocument.Tag); // OnUpdate columns with Defaults not ommited, should change even to default value, in this case to 'null'
+
             Assert.NotEqual(Guid.Empty, firstDocument.DocumentId);
-            Assert.Equal(firstDocument.Content.Length, firstDocument.ContentLength);
             Assert.Equal(true, firstDocument.IsActive);
+            Assert.Equal(firstDocument.Content.Length, firstDocument.ContentLength);
+            Assert.Equal(EntitiesNumber, count);
+
         }
 
         [Theory]
