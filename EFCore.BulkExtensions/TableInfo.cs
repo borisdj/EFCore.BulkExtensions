@@ -128,7 +128,7 @@ namespace EFCore.BulkExtensions
             TableName = customTableName ?? entityType.GetTableName();
             ObjectIdentifier = StoreObjectIdentifier.Table(TableName, entityType.GetSchema());
 
-            TempTableSufix = "Temp";
+            TempTableSufix = BulkConfig.TempTableSuffix;
 
             if (!BulkConfig.UseTempDB || BulkConfig.UniqueTableNameTempDb)
             {
@@ -185,7 +185,7 @@ namespace EFCore.BulkExtensions
                                                                       a.ClrType.Name.StartsWith("Int") ||
                                                                       a.ClrType.Name.StartsWith("UInt") ||
                                                                       (isSqlServer && a.ClrType.Name.StartsWith("Decimal"))) &&
-                                                                    !a.ClrType.Name.EndsWith("[]") && 
+                                                                    !a.ClrType.Name.EndsWith("[]") &&
                                                                     a.ValueGenerated == ValueGenerated.OnAdd
                                                               )?.GetColumnName(ObjectIdentifier); // ValueGenerated equals OnAdd even for nonIdentity column like Guid so we only type int as second condition
 
@@ -272,7 +272,7 @@ namespace EFCore.BulkExtensions
                 if (AreSpecifiedPropertiesToInclude && AreSpecifiedPropertiesToExclude)
                 {
                     throw new MultiplePropertyListSetException(nameof(BulkConfig.PropertiesToInclude), nameof(BulkConfig.PropertiesToExclude));
-                }  
+                }
                 if (AreSpecifiedPropertiesToInclude)
                 {
                     properties = properties.Where(a => BulkConfig.PropertiesToInclude.Contains(a.Name));
@@ -648,7 +648,7 @@ namespace EFCore.BulkExtensions
             }
         }
         #endregion
-          
+
         public void CheckToSetIdentityForPreserveOrder<T>(IList<T> entities, bool reset = false)
         {
             string identityPropertyName = PropertyColumnNamesDict.SingleOrDefault(a => a.Value == IdentityColumnName).Key;
@@ -667,7 +667,7 @@ namespace EFCore.BulkExtensions
                 {
                     var identityFastProperty = FastPropertyDict[identityPropertyName];
                     if (Convert.ToInt64(identityFastProperty.Get(entity)) == 0 ||           // set only zero(0) values
-                        (Convert.ToInt64(identityFastProperty.Get(entity)) <  0 && reset))  // set only negative(-N) values if reset
+                        (Convert.ToInt64(identityFastProperty.Get(entity)) < 0 && reset))  // set only negative(-N) values if reset
                     {
                         long value = reset ? 0 : i;
 
@@ -692,7 +692,7 @@ namespace EFCore.BulkExtensions
                 }
             }
         }
-      
+
         protected void UpdateEntitiesIdentity(DbContext context, TableInfo tableInfo, IList<object> entities, IList<object> entitiesWithOutputIdentity)
         {
             var identityPropertyName = OutputPropertyColumnNamesDict.SingleOrDefault(a => a.Value == IdentityColumnName).Key;
@@ -705,7 +705,7 @@ namespace EFCore.BulkExtensions
                     tableInfo.BulkConfig.TimeStampInfo = new TimeStampInfo {
                         NumberOfSkippedForUpdate = countDiff,
                         EntitiesOutput = entitiesWithOutputIdentity.Cast<object>().ToList()
-                };
+                    };
                     return;
                 }
                 for (int i = 0; i < NumberOfEntities; i++)

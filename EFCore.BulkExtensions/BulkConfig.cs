@@ -54,9 +54,15 @@ namespace EFCore.BulkExtensions
         public bool UseTempDB { get; set; }
 
         /// <summary>
-        ///     ToDo
+        ///    If true some unique characters are added to the temp table name. 
         /// </summary>
         public bool UniqueTableNameTempDb { get; set; } = true;
+
+        /// <summary>
+        /// The suffix which is added to the name of the temp table. Default value is "Temp"
+        /// </summary>
+        public string TempTableSuffix { get; set; } = "Temp";
+
 
         /// <summary>
         ///     Enables specifying custom name of tabel in Db that does not have to be mapped to Entity.
