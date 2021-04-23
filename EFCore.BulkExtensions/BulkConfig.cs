@@ -54,8 +54,11 @@ namespace EFCore.BulkExtensions
         public bool UseTempDB { get; set; }
 
         /// <summary>
-        ///     ToDo
+        ///     When set to false temp table name will be only 'Temp' without random numbers
         /// </summary>
+        /// <value>
+        ///     Default value is <c>true</c>.
+        /// </value>
         public bool UniqueTableNameTempDb { get; set; } = true;
 
         /// <summary>
@@ -175,7 +178,7 @@ namespace EFCore.BulkExtensions
         public bool IncludeGraph { get; set; }
 
         /// <summary>
-        ///     Removes the clause 'EXISTS ... EXCEPT' from Merge statement, useful when need to active triggers even for same data.
+        ///     Removes the clause 'EXISTS ... EXCEPT' from Merge statement which then updates even same data, useful when need to always active triggers.
         /// </summary>
         public bool OmitClauseExistsExcept { get; set; }
 

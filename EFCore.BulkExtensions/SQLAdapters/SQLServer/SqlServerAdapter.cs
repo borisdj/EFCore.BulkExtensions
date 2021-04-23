@@ -327,7 +327,12 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
 
                 var sqlSelectJoinTable = SqlQueryBuilder.SelectJoinTable(tableInfo);
 
-                tableInfo.PropertyColumnNamesDict = previousPropertyColumnNamesDict;
+                tableInfo.PropertyColumnNamesDict = previousPropertyColumnNamesDict; // TODO Consider refactor and integrate with TimeStampPropertyName, also check for Calculated props.
+                                                                                     // Output only PropertisToInclude and for getting Id with SetOutputIdentity
+                if (tableInfo.TimeStampPropertyName != null && !tableInfo.PropertyColumnNamesDict.ContainsKey(tableInfo.TimeStampPropertyName))
+                {
+                    tableInfo.PropertyColumnNamesDict.Add(tableInfo.TimeStampPropertyName, tableInfo.TimeStampColumnName);
+                }
 
                 List<T> existingEntities;
                 if (typeof(T) == type)
@@ -344,6 +349,11 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                 }
 
                 tableInfo.UpdateReadEntities(type, entities, existingEntities);
+
+                if (tableInfo.TimeStampPropertyName != null && !tableInfo.PropertyColumnNamesDict.ContainsKey(tableInfo.TimeStampPropertyName))
+                {
+                    tableInfo.PropertyColumnNamesDict.Remove(tableInfo.TimeStampPropertyName);
+                }
             }
             finally
             {
@@ -432,7 +442,9 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
             type = tableInfo.HasAbstractList ? entities[0].GetType() : type;
             var entityType = context.Model.FindEntityType(type);
             var entityTypeProperties = entityType.GetProperties();
-            var entityPropertiesDict = entityTypeProperties.Where(a => tableInfo.PropertyColumnNamesDict.ContainsKey(a.Name) || a.Name == tableInfo.TimeStampPropertyName).ToDictionary(a => a.Name, a => a);
+            var entityPropertiesDict = entityTypeProperties.Where(a => tableInfo.PropertyColumnNamesDict.ContainsKey(a.Name) ||
+                                                                       (tableInfo.BulkConfig.OperationType != OperationType.Read && a.Name == tableInfo.TimeStampPropertyName))
+                                                           .ToDictionary(a => a.Name, a => a);
             var entityNavigationOwnedDict = entityType.GetNavigations().Where(a => a.TargetEntityType.IsOwned()).ToDictionary(a => a.Name, a => a);
             var entityShadowFkPropertiesDict = entityTypeProperties.Where(a => a.IsShadowProperty() &&
                                                                                a.IsForeignKey() &&

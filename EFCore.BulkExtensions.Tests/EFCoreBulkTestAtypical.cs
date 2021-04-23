@@ -79,6 +79,19 @@ namespace EFCore.BulkExtensions.Tests
             }
             context.BulkInsert(entities, bulkAction => bulkAction.SetOutputIdentity = true); // example of setting BulkConfig with Action argument
 
+            // Test BulkRead
+            var entitiesRead = new List<File>
+            {
+                new File { Data = "Some data 1" },
+                new File { Data = "Some data 2" }
+            };
+            context.BulkRead(entitiesRead, new BulkConfig
+            {
+                UpdateByProperties = new List<string> { nameof(File.Data) }
+            });
+            Assert.Equal(1, entitiesRead.First().FileId);
+            Assert.NotNull(entitiesRead.First().VersionChange);
+
             // For testing concurrency conflict (UPDATE changes RowVersion which is TimeStamp column)
             context.Database.ExecuteSqlRaw("UPDATE dbo.[File] SET Data = 'Some data 1 PRE CHANGE' WHERE [Id] = 1;");
 
