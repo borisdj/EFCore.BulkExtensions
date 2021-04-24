@@ -694,7 +694,7 @@ namespace EFCore.BulkExtensions
             }
         }
       
-        protected void UpdateEntitiesIdentity(DbContext context, TableInfo tableInfo, IList<object> entities, IList<object> entitiesWithOutputIdentity)
+        protected void UpdateEntitiesIdentity<T>(DbContext context, TableInfo tableInfo, IList<T> entities, IList<object> entitiesWithOutputIdentity)
         {
             var identityPropertyName = OutputPropertyColumnNamesDict.SingleOrDefault(a => a.Value == IdentityColumnName).Key;
 
@@ -755,7 +755,15 @@ namespace EFCore.BulkExtensions
             else // Clears entityList and then refills it with loaded entites from Db
             {
                 entities.Clear();
-                ((List<object>)entities).AddRange(entitiesWithOutputIdentity);
+                if (typeof(T) == entitiesWithOutputIdentity.FirstOrDefault()?.GetType())
+                {
+                    ((List<T>)entities).AddRange(entitiesWithOutputIdentity.Cast<T>().ToList());
+                }
+                else
+                {
+                    var entitiesObjects = entities.Cast<object>().ToList();
+                    entitiesObjects.AddRange(entitiesWithOutputIdentity);
+                }
             }
         }
 
@@ -775,8 +783,8 @@ namespace EFCore.BulkExtensions
                 var entitiesWithOutputIdentity = QueryOutputTable(context, type, sqlQuery).Cast<object>().ToList();
                 //var entitiesWithOutputIdentity = (typeof(T) == type) ? QueryOutputTable<object>(context, sqlQuery).ToList() : QueryOutputTable(context, type, sqlQuery).Cast<object>().ToList();
 
-                var entitiesObjects = entities.Cast<object>().ToList();
-                UpdateEntitiesIdentity(context, tableInfo, entitiesObjects, entitiesWithOutputIdentity);
+                //var entitiesObjects = entities.Cast<object>().ToList();
+                UpdateEntitiesIdentity(context, tableInfo, entities, entitiesWithOutputIdentity);
                 totallNumber = entitiesWithOutputIdentity.Count;
             }
             if (BulkConfig.CalculateStats)

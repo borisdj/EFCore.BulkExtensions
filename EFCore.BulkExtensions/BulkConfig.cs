@@ -62,7 +62,7 @@ namespace EFCore.BulkExtensions
         public bool UniqueTableNameTempDb { get; set; } = true;
 
         /// <summary>
-        ///     Enables specifying custom name of tabel in Db that does not have to be mapped to Entity.
+        ///     Enables specifying custom name of table in Db that does not have to be mapped to Entity.
         /// </summary>
         /// <value>
         ///     Can be set with 'TableName' only or with 'Schema.TableName'.
