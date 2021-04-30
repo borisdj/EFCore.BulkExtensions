@@ -26,7 +26,7 @@
     <PackageReference Include="Microsoft.Data.SqlClient" Version="2.1.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="5.0.*" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="5.0.*" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="5.0.*" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="5.0.5" />
     <PackageReference Include="NetTopologySuite.IO.SqlServerBytes" Version="2.0.0" />
     <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="5.0.1" />
   </ItemGroup>

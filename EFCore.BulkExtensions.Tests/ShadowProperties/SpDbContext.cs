@@ -8,7 +8,7 @@ namespace EFCore.BulkExtensions.Tests.ShadowProperties
     {
         public SpDbContext([NotNull] DbContextOptions options) : base(options)
         {
-            this.Database.EnsureCreated();
+            Database.EnsureCreated();
         }
 
         public DbSet<SpModel> SpModels { get; set; }

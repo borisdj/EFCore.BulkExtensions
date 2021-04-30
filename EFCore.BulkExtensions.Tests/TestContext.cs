@@ -138,6 +138,7 @@ namespace EFCore.BulkExtensions.Tests
             {
                 string connectionString = GetSqliteConnectionString(databaseName);
                 optionsBuilder.UseSqlite(connectionString);
+                SQLitePCL.Batteries.Init();
 
                 // ALTERNATIVELY:
                 //string connectionString = (new SqliteConnectionStringBuilder { DataSource = $"{databaseName}Lite.db" }).ToString();
