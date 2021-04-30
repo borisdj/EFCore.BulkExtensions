@@ -543,6 +543,7 @@ namespace EFCore.BulkExtensions.Tests
             ContextUtil.DbServer = DbServer.SqlServer;
             using var context = new TestContext(ContextUtil.GetOptions());
             context.AtypicalRowVersionEntities.BatchDelete();
+            context.AtypicalRowVersionConverterEntities.BatchDelete();
 
             var bulk = new List<AtypicalRowVersionEntity>();
             for (var i = 0; i < 100; i++)
@@ -551,6 +552,12 @@ namespace EFCore.BulkExtensions.Tests
             //Assert.Throws<InvalidOperationException>(() => context.BulkInsertOrUpdate(bulk)); // commented since when running in Debug mode it pauses on Exception
             context.BulkInsertOrUpdate(bulk, new BulkConfig { IgnoreRowVersion = true });
             Assert.Equal(bulk.Count(), context.AtypicalRowVersionEntities.Count());
+
+            var bulk2 = new List<AtypicalRowVersionConverterEntity>();
+            for (var i = 0; i < 100; i++)
+                bulk2.Add(new AtypicalRowVersionConverterEntity { Id = Guid.NewGuid(), Name = $"Row {i}" });
+            context.BulkInsertOrUpdate(bulk2);
+            Assert.Equal(bulk2.Count(), context.AtypicalRowVersionConverterEntities.Count());
         }
 
         private int GetLastRowId(DbContext context, string tableName)

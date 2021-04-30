@@ -94,7 +94,7 @@ namespace EFCore.BulkExtensions
         ///     Ignore handling RowVersion column
         /// </summary>
         /// <value>
-        ///     Default value is <c>false</c>, if table have any RowVersion column, it will have special handling and need to be binary
+        ///     Default value is <c>false</c>, if table have any RowVersion column, it will have special handling and needs to be binary
         /// </value>
         public bool IgnoreRowVersion { get; set; } = false;
 

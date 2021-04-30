@@ -44,6 +44,8 @@ namespace EFCore.BulkExtensions.Tests
         public DbSet<Event> Events { get; set; }
         public DbSet<AtypicalRowVersionEntity> AtypicalRowVersionEntities { get; set; }
 
+        public DbSet<AtypicalRowVersionConverterEntity> AtypicalRowVersionConverterEntities { get; set; }
+
         public TestContext(DbContextOptions options) : base(options)
         {
             Database.EnsureCreated();
@@ -100,6 +102,8 @@ namespace EFCore.BulkExtensions.Tests
             modelBuilder.Entity<AtypicalRowVersionEntity>().HasKey(e => e.Id);
             modelBuilder.Entity<AtypicalRowVersionEntity>().Property(e => e.RowVersion).HasDefaultValue(0).IsConcurrencyToken().ValueGeneratedOnAddOrUpdate().Metadata.SetBeforeSaveBehavior(PropertySaveBehavior.Save);
             modelBuilder.Entity<AtypicalRowVersionEntity>().Property(e => e.SyncDevice).IsRequired(true).IsConcurrencyToken().HasDefaultValue("");
+
+            modelBuilder.Entity<AtypicalRowVersionConverterEntity>().Property(e => e.RowVersionConverted).HasConversion(new NumberToBytesConverter<long>()).HasColumnType("timestamp").IsRowVersion().IsConcurrencyToken();
 
             // [Timestamp] alternative:
             //modelBuilder.Entity<Document>().Property(x => x.RowVersion).HasColumnType("timestamp").ValueGeneratedOnAddOrUpdate().HasConversion(new NumberToBytesConverter<ulong>()).IsConcurrencyToken();
@@ -465,6 +469,13 @@ namespace EFCore.BulkExtensions.Tests
         public Guid Id { get; set; }
         public long RowVersion { get; set; }
         public string SyncDevice { get; set; }
+        public string Name { get; set; }
+    }
+
+    public class AtypicalRowVersionConverterEntity
+    {
+        public Guid Id { get; set; }
+        public long RowVersionConverted { get; set; }
         public string Name { get; set; }
     }
 
