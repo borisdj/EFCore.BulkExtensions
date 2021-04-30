@@ -64,8 +64,9 @@ namespace EFCore.BulkExtensions.Tests
             modelBuilder.Entity<Info>(e => { e.Property(p => p.ConvertedTime).HasConversion((value) => value.AddDays(1), (value) => value.AddDays(-1)); });
             modelBuilder.Entity<Info>().Property(e => e.InfoType).HasConversion(new EnumToStringConverter<InfoType>());
 
-            modelBuilder.Entity<Info>(e => { e.Property("LogData").HasColumnName("LogData"); });
-            modelBuilder.Entity<Info>(e => { e.Property("TimeCreated").HasColumnName("TimeCreated"); });
+            modelBuilder.Entity<Info>(e => { e.Property("LogData"); });
+            modelBuilder.Entity<Info>(e => { e.Property("TimeCreated"); });
+            modelBuilder.Entity<Info>(e => { e.Property("Remark"); });
 
             modelBuilder.Entity<ChangeLog>().OwnsOne(e => e.Audit, b => b.Property(e => e.InfoType).HasConversion(new EnumToStringConverter<InfoType>()));
 
@@ -325,7 +326,9 @@ namespace EFCore.BulkExtensions.Tests
 
         public InfoType InfoType { get; set; }
 
-        public string Note { get; protected set; } // To test protected Setter
+        public string Note { get; protected set; } = "NN"; // To test protected Setter
+
+        public string Remark { get; } // To test without Setter
 
         private DateTime TimeCreated { get; set; } // To test private Property
 
