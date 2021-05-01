@@ -29,16 +29,18 @@ namespace EFCore.BulkExtensions.Tests
             ContextUtil.DbServer = dbServer;
 
             //await DeletePreviousDatabaseAsync().ConfigureAwait(false);
-            await new EFCoreBatchTestAsync().RunDeleteAllAsync(dbServer).ConfigureAwait(false);
+            await new EFCoreBatchTestAsync().RunDeleteAllAsync(dbServer);
 
             // Test can be run individually by commenting others and running each separately in order one after another
             await RunInsertAsync(isBulk);
             await RunInsertOrUpdateAsync(isBulk, dbServer);
             await RunUpdateAsync(isBulk, dbServer);
+
+            await RunReadAsync(isBulk);
+
             if (dbServer == DbServer.SqlServer)
             {
-                await RunReadAsync(isBulk); // Not Yet supported for Sqlite
-                await RunInsertOrUpdateOrDeleteAsync(isBulk); // Not Yet supported for Sqlite
+                await RunInsertOrUpdateOrDeleteAsync(isBulk); // Not supported for Sqlite (has only UPSERT), instead use BulkRead, then split list into sublists and call separately Bulk methods for Insert, Update, Delete.
             }
             //await RunDeleteAsync(isBulk, dbServer);
         }
