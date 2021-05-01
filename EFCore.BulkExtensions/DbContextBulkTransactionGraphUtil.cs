@@ -64,7 +64,7 @@ namespace EFCore.BulkExtensions
 
                     if (isAsync)
                     {
-                        await SqlBulkOperation.MergeAsync(context, entityClrType, entitiesToAction, tableInfo, operationType, progress, cancellationToken);
+                        await SqlBulkOperation.MergeAsync(context, entityClrType, entitiesToAction, tableInfo, operationType, progress, cancellationToken: cancellationToken);
                     }
                     else
                     {
@@ -81,7 +81,7 @@ namespace EFCore.BulkExtensions
 
                         if (isAsync)
                         {
-                            await SqlBulkOperation.MergeAsync(context, entityClrType, dependentsOfSameType, dependentTableInfo, operationType, progress, cancellationToken);
+                            await SqlBulkOperation.MergeAsync(context, entityClrType, dependentsOfSameType, dependentTableInfo, operationType, progress, cancellationToken: cancellationToken);
                         }
                         else
                         {

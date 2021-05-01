@@ -1,7 +1,9 @@
 ﻿using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 
 namespace EFCore.BulkExtensions
 {
@@ -148,8 +150,9 @@ namespace EFCore.BulkExtensions
             return q;
         }
 
-        public static string MergeTable(TableInfo tableInfo, OperationType operationType)
+        public static (string sql, IEnumerable<object> parameters) MergeTable<T>(DbContext context, TableInfo tableInfo, OperationType operationType, Expression<Func<T, bool>> deleteFilter = null) where T : class
         {
+            List<object> parameters = new List<object>();
             string targetTable = tableInfo.FullTableName;
             string sourceTable = tableInfo.FullTempTableName;
             bool keepIdentity = tableInfo.BulkConfig.SqlBulkCopyOptions.HasFlag(SqlBulkCopyOptions.KeepIdentity);
@@ -210,7 +213,25 @@ namespace EFCore.BulkExtensions
 
             if (operationType == OperationType.InsertOrUpdateDelete)
             {
-                q += $" WHEN NOT MATCHED BY SOURCE THEN DELETE";
+                string deleteSearchCondition = string.Empty;
+                if (deleteFilter != null)
+                {
+                    var querable = context.Set<T>()
+                        .IgnoreQueryFilters()
+                        .IgnoreAutoIncludes()
+                        .Where(deleteFilter);
+                    var batchSql = BatchUtil.GetBatchSql(querable, context, false);
+                    int wherePos = batchSql.Item1.IndexOf("\r\nWHERE ");
+                    if (wherePos > 0)
+                    {
+                        var sqlWhere = batchSql.Item1.Substring(wherePos + 8);
+                        sqlWhere = sqlWhere.Replace($"[{batchSql.Item2}].", string.Empty);
+                        deleteSearchCondition = " AND " + sqlWhere;
+                        parameters.AddRange(batchSql.Item6);
+                    }
+                }
+
+                q += " WHEN NOT MATCHED BY SOURCE" + deleteSearchCondition + " THEN DELETE";
             }
             if (operationType == OperationType.Delete)
             {
@@ -231,7 +252,7 @@ namespace EFCore.BulkExtensions
                      $" INTO {tableInfo.FullTempOutputTableName}";
             }
             q += ";";
-            return q;
+            return (sql: q, parameters: parameters);
         }
 
         public static string TruncateTable(string tableName)

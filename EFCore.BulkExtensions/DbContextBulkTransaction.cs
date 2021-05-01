@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -8,7 +9,7 @@ namespace EFCore.BulkExtensions
 {
     internal static class DbContextBulkTransaction
     {
-        public static void Execute<T>(DbContext context, Type type, IList<T> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress) where T : class
+        public static void Execute<T>(DbContext context, Type type, IList<T> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress, Expression<Func<T, bool>> deleteFilter = null) where T : class
         {
             type ??= typeof(T);
             using (ActivitySources.StartExecuteActivity(operationType, entities.Count))
@@ -40,13 +41,13 @@ namespace EFCore.BulkExtensions
                     }
                     else
                     {
-                        SqlBulkOperation.Merge(context, type, entities, tableInfo, operationType, progress);
+                        SqlBulkOperation.Merge(context, type, entities, tableInfo, operationType, progress, deleteFilter);
                     }
                 }
             }
         }
 
-        public static async Task ExecuteAsync<T>(DbContext context, Type type, IList<T> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress, CancellationToken cancellationToken) where T : class
+        public static async Task ExecuteAsync<T>(DbContext context, Type type, IList<T> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress, Expression<Func<T, bool>> deleteFilter = null, CancellationToken cancellationToken = default) where T : class
         {
             type ??= typeof(T);
             using (ActivitySources.StartExecuteActivity(operationType, entities.Count))
@@ -78,7 +79,7 @@ namespace EFCore.BulkExtensions
                     }
                     else
                     {
-                        await SqlBulkOperation.MergeAsync(context, type, entities, tableInfo, operationType, progress, cancellationToken);
+                        await SqlBulkOperation.MergeAsync(context, type, entities, tableInfo, operationType, progress, deleteFilter, cancellationToken);
                     }
                 }
             }

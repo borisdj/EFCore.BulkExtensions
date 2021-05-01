@@ -96,17 +96,17 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
         }
 
         // Merge
-        public void Merge<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress) where T : class
+        public void Merge<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, Expression<Func<T, bool>> deleteFilter) where T : class
         {
-            MergeAsync(context, type, entities, tableInfo, operationType, progress, CancellationToken.None, isAsync: false).GetAwaiter().GetResult();
+            MergeAsync(context, type, entities, tableInfo, operationType, progress, deleteFilter, CancellationToken.None, isAsync: false).GetAwaiter().GetResult();
         }
 
-        public async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, CancellationToken cancellationToken) where T : class
+        public async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, Expression<Func<T, bool>> deleteFilter, CancellationToken cancellationToken) where T : class
         {
-            await MergeAsync(context, type, entities, tableInfo, operationType, progress, cancellationToken, isAsync: true);
+            await MergeAsync(context, type, entities, tableInfo, operationType, progress, deleteFilter, cancellationToken, isAsync: true);
         }
 
-        protected async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, CancellationToken cancellationToken, bool isAsync) where T : class
+        protected async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, Expression<Func<T, bool>> deleteFilter, CancellationToken cancellationToken, bool isAsync) where T : class
         {
             SqliteConnection connection = isAsync ? await OpenAndGetSqliteConnectionAsync(context, tableInfo.BulkConfig, cancellationToken).ConfigureAwait(false)
                                                         : OpenAndGetSqliteConnection(context, tableInfo.BulkConfig);
