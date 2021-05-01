@@ -33,7 +33,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
         // https://docs.microsoft.com/en-us/archive/msdn-magazine/2015/july/async-programming-brownfield-async-development#the-flag-argument-hack
         protected async Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, CancellationToken cancellationToken, bool isAsync)
         {
-            tableInfo.CheckToSetIdentityForPreserveOrder(entities);
+            tableInfo.CheckToSetIdentityForPreserveOrder(tableInfo, entities);
             if (isAsync)
             {
                 await context.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
@@ -103,7 +103,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
             }
             if (!tableInfo.CreatedOutputTable)
             {
-                tableInfo.CheckToSetIdentityForPreserveOrder(entities, reset: true);
+                tableInfo.CheckToSetIdentityForPreserveOrder(tableInfo, entities, reset: true);
             }
         }
 

@@ -650,25 +650,40 @@ namespace EFCore.BulkExtensions
         }
         #endregion
           
-        public void CheckToSetIdentityForPreserveOrder<T>(IList<T> entities, bool reset = false)
+        public void CheckToSetIdentityForPreserveOrder<T>(TableInfo tableInfo, IList<T> entities, bool reset = false)
         {
             string identityPropertyName = PropertyColumnNamesDict.SingleOrDefault(a => a.Value == IdentityColumnName).Key;
 
             bool doSetIdentityColumnsForInsertOrder = BulkConfig.PreserveInsertOrder &&
                                                       entities.Count() > 1 &&
                                                       PrimaryKeysPropertyColumnNameDict?.Count() == 1 &&
-                                                      PrimaryKeysPropertyColumnNameDict?.Select(a => a.Value).First() == IdentityColumnName &&
-                                                      ((reset == true && Convert.ToInt64(FastPropertyDict[identityPropertyName].Get(entities[0])) < 0)
-                                                        || (Convert.ToInt64(FastPropertyDict[identityPropertyName].Get(entities[0])) == 0 &&
-                                                            Convert.ToInt64(FastPropertyDict[identityPropertyName].Get(entities[1])) == 0));
+                                                      PrimaryKeysPropertyColumnNameDict?.Select(a => a.Value).First() == IdentityColumnName;
+
+            var operationType = tableInfo.BulkConfig.OperationType;
+            if (doSetIdentityColumnsForInsertOrder == true)
+            {
+                if (operationType == OperationType.Insert && // Insert should either have all zeros for automatic order, or they can be manually set
+                    Convert.ToInt64(FastPropertyDict[identityPropertyName].Get(entities[0])) != 0) // (to check if fast condition for all 0s is only done on first one)
+                {
+                    doSetIdentityColumnsForInsertOrder = false;
+                }
+                if (operationType == OperationType.Update) // Pure Update does not need order set
+                {
+                    doSetIdentityColumnsForInsertOrder = false;
+                }
+                // InsertOrUpdate and InsertOrUpdateOrDelete can have combination of IDs with both zeros and certain value so there we need to check entire list
+            }
+
+
             if (doSetIdentityColumnsForInsertOrder)
             {
                 long i = -entities.Count();
                 foreach (var entity in entities)
                 {
                     var identityFastProperty = FastPropertyDict[identityPropertyName];
-                    if (Convert.ToInt64(identityFastProperty.Get(entity)) == 0 ||           // set only zero(0) values
-                        (Convert.ToInt64(identityFastProperty.Get(entity)) <  0 && reset))  // set only negative(-N) values if reset
+                    long identityValue = Convert.ToInt64(identityFastProperty.Get(entity));
+                    if (identityValue == 0 ||         // set only zero(0) values
+                        (identityValue < 0 && reset)) // set only negative(-N) values if reset
                     {
                         long value = reset ? 0 : i;
 
