@@ -66,6 +66,8 @@ namespace EFCore.BulkExtensions
         public string TimeStampPropertyName { get; set; }
         public string TimeStampColumnName { get; set; }
 
+        protected IList<object> EntitesSortedReference { get; set; } // Operation Merge writes In Output table first Existing that were Updated then for new that were Inserted so this makes sure order is same in list when need to set Output
+
         public StoreObjectIdentifier ObjectIdentifier { get; set; }
 
         internal SqliteConnection SqliteConnection { get; set; }
@@ -649,7 +651,7 @@ namespace EFCore.BulkExtensions
             }
         }
         #endregion
-          
+
         public void CheckToSetIdentityForPreserveOrder<T>(TableInfo tableInfo, IList<T> entities, bool reset = false)
         {
             string identityPropertyName = PropertyColumnNamesDict.SingleOrDefault(a => a.Value == IdentityColumnName).Key;
@@ -663,7 +665,7 @@ namespace EFCore.BulkExtensions
             if (doSetIdentityColumnsForInsertOrder == true)
             {
                 if (operationType == OperationType.Insert && // Insert should either have all zeros for automatic order, or they can be manually set
-                    Convert.ToInt64(FastPropertyDict[identityPropertyName].Get(entities[0])) != 0) // (to check if fast condition for all 0s is only done on first one)
+                    Convert.ToInt64(FastPropertyDict[identityPropertyName].Get(entities[0])) != 0) // (to check it fast, condition for all 0s is only done on first one)
                 {
                     doSetIdentityColumnsForInsertOrder = false;
                 }
@@ -677,6 +679,11 @@ namespace EFCore.BulkExtensions
 
             if (doSetIdentityColumnsForInsertOrder)
             {
+                bool sortEntities = !reset && BulkConfig.SetOutputIdentity &&
+                                    (operationType == OperationType.InsertOrUpdate || operationType == OperationType.InsertOrUpdateDelete);
+                var entitiesSorted = new List<T>();
+                var entitiesExisting = new List<T>();
+
                 long i = -entities.Count();
                 foreach (var entity in entities)
                 {
@@ -705,10 +712,22 @@ namespace EFCore.BulkExtensions
                         identityFastProperty.Set(entity, idValue);
                         i++;
                     }
+                    if (sortEntities)
+                    {
+                        if (identityValue != 0)
+                            entitiesSorted.Add(entity); // first add new ones
+                        else
+                            entitiesExisting.Add(entity);
+                    }
+                }
+                if (sortEntities)
+                {
+                    entitiesSorted.AddRange(entitiesExisting); // then append existing
+                    tableInfo.EntitesSortedReference = entitiesSorted.Cast<object>().ToList();
                 }
             }
         }
-      
+
         protected void UpdateEntitiesIdentity<T>(DbContext context, TableInfo tableInfo, IList<T> entities, IList<object> entitiesWithOutputIdentity)
         {
             var identityPropertyName = OutputPropertyColumnNamesDict.SingleOrDefault(a => a.Value == IdentityColumnName).Key;
@@ -724,6 +743,12 @@ namespace EFCore.BulkExtensions
                 };
                     return;
                 }
+
+                if (tableInfo.EntitesSortedReference != null)
+                {
+                    entities = tableInfo.EntitesSortedReference.Cast<T>().ToList();
+                }
+
                 for (int i = 0; i < NumberOfEntities; i++)
                 {
                     if (i == entitiesWithOutputIdentity.Count)

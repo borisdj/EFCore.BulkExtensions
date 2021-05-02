@@ -397,6 +397,36 @@ namespace EFCore.BulkExtensions.Tests
 
         [Theory]
         [InlineData(DbServer.SqlServer)]
+        private void UpsertWithOutputSortTest(DbServer dbServer)
+        {
+            ContextUtil.DbServer = dbServer;
+            using var context = new TestContext(ContextUtil.GetOptions());
+
+            new EFCoreBatchTest().RunDeleteAll(dbServer);
+
+            var entitiesInitial = new List<Item>();
+            for (int i = 1; i <= 10; ++i)
+            {
+                var entity = new Item { Name = "name " + i };
+                entitiesInitial.Add(entity);
+            }
+            context.Items.AddRange(entitiesInitial);
+            context.SaveChanges();
+
+            var entities = new List<Item>()
+            {
+                new Item { ItemId = 0, Name = "name " + 11 + " New" },
+                new Item { ItemId = 5, Name = "name " + 5 + " Updated" },
+                new Item { ItemId = 0, Name = "name " + 12 + " New" }
+            };
+            context.BulkInsertOrUpdate(entities, new BulkConfig() { SetOutputIdentity = true });
+
+            Assert.Equal(11, entities[0].ItemId);
+            Assert.Equal(12, entities[2].ItemId);
+        }
+
+        [Theory]
+        [InlineData(DbServer.SqlServer)]
         [InlineData(DbServer.Sqlite)]
         private void NoPrimaryKeyTest(DbServer dbServer)
         {
