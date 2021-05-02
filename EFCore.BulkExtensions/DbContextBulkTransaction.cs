@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -46,7 +47,7 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        public static async Task ExecuteAsync<T>(DbContext context, Type type, IList<T> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress, CancellationToken cancellationToken) where T : class
+        public static async Task ExecuteAsync<T>(DbContext context, Type type, IList<T> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress, CancellationToken cancellationToken = default) where T : class
         {
             type ??= typeof(T);
             using (ActivitySources.StartExecuteActivity(operationType, entities.Count))

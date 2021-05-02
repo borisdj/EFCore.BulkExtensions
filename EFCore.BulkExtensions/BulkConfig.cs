@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
+using System.Linq.Expressions;
 
 namespace EFCore.BulkExtensions
 {
@@ -214,11 +215,21 @@ namespace EFCore.BulkExtensions
         /// </value>
         public Microsoft.Data.SqlClient.SqlBulkCopyOptions SqlBulkCopyOptions { get; set; } // is superset of System.Data.SqlClient.SqlBulkCopyOptions, gets converted to the desired type
 
+        /// <summary>
+        ///     A filter on entities to delete when using BulkInsertOrUpdateOrDelete.
+        /// </summary>
+        public void SetSynchronizeFilter<T>(Expression<Func<T, bool>> filter) where T : class
+        {
+            SynchronizeFilter = filter;
+        }
+
         public Func<DbConnection, DbConnection> UnderlyingConnection { get; set; }
 
         public Func<DbTransaction, DbTransaction> UnderlyingTransaction { get; set; }
 
         internal OperationType OperationType { get; set; }
+
+        internal object SynchronizeFilter { get; private set; }
     }
 
     public class StatsInfo

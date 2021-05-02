@@ -2,6 +2,7 @@ using EFCore.BulkExtensions.SqlAdapters;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -40,7 +41,7 @@ namespace EFCore.BulkExtensions
             adapter.Merge(context, type, entities, tableInfo, operationType, progress);
         }
 
-        public static async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, CancellationToken cancellationToken) where T : class
+        public static async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, CancellationToken cancellationToken = default) where T : class
         {
             var adapter = SqlAdaptersMapping.CreateBulkOperationsAdapter(context);
             await adapter.MergeAsync(context, type, entities, tableInfo, operationType, progress, cancellationToken);

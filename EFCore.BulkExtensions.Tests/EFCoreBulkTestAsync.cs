@@ -264,13 +264,17 @@ namespace EFCore.BulkExtensions.Tests
                     TimeUpdated = dateTimeNow
                 });
             }
+
+            int? keepEntityItemId = null;
             if (isBulk)
             {
                 var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
+                keepEntityItemId = 3;
+                bulkConfig.SetSynchronizeFilter<Item>(e => e.ItemId != keepEntityItemId.Value);
                 await context.BulkInsertOrUpdateOrDeleteAsync(entities, bulkConfig);
                 Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberInserted);
                 Assert.Equal(EntitiesNumber / 2, bulkConfig.StatsInfo.StatsNumberUpdated);
-                Assert.Equal(EntitiesNumber / 2, bulkConfig.StatsInfo.StatsNumberDeleted);
+                Assert.Equal((EntitiesNumber / 2) -1, bulkConfig.StatsInfo.StatsNumberDeleted);
             }
             else
             {
@@ -287,11 +291,16 @@ namespace EFCore.BulkExtensions.Tests
             Item firstEntity = contextRead.Items.OrderBy(a => a.ItemId).FirstOrDefault(); // = LastItemQuery(context);
             Item lastEntity = contextRead.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
 
-            Assert.Equal(EntitiesNumber / 2, entitiesCount);
+            Assert.Equal(EntitiesNumber / 2 + (keepEntityItemId != null ? 1 : 0), entitiesCount);
             Assert.NotNull(firstEntity);
             Assert.Equal("name InsertOrUpdateOrDelete 2", firstEntity.Name);
             Assert.NotNull(lastEntity);
             Assert.Equal("name InsertOrUpdateOrDelete " + EntitiesNumber, lastEntity.Name);
+
+            if (keepEntityItemId != null)
+            {
+                Assert.NotNull(context.Items.Where(x => x.ItemId == keepEntityItemId.Value).FirstOrDefault());
+            }
         }
 
         private async Task RunUpdateAsync(bool isBulk, DbServer dbServer)

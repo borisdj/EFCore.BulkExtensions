@@ -221,14 +221,14 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                     }
                 }
 
-                var sqlMergeTable = SqlQueryBuilder.MergeTable(tableInfo, operationType);
+                var sqlMergeTable = SqlQueryBuilder.MergeTable<T>(context, tableInfo, operationType);
                 if (isAsync)
                 {
-                    await context.Database.ExecuteSqlRawAsync(sqlMergeTable, cancellationToken).ConfigureAwait(false);
+                    await context.Database.ExecuteSqlRawAsync(sqlMergeTable.sql, sqlMergeTable.parameters, cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
-                    context.Database.ExecuteSqlRaw(sqlMergeTable);
+                    context.Database.ExecuteSqlRaw(sqlMergeTable.sql, sqlMergeTable.parameters);
                 }
 
                 if (tableInfo.CreatedOutputTable)
