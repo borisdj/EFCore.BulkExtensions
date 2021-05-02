@@ -81,7 +81,7 @@ It makes Update when PK(PrimaryKey) is matched, otherwise does Insert.<br>
 **BulkInsertOrUpdateOrDelete** effectively [synchronizes](https://www.mssqltips.com/sqlservertip/1704/using-merge-in-sql-server-to-insert-update-and-delete-at-the-same-time/) table rows with input data.<br>
 Those in Db that are not found in the list will be deleted.<br>
 Partial Sync can be done on table subset using expression set on config with method:<br>
-`bulkConfig.SetSynchronizeFilter<Item>(e => e.Quantity > 0);`<br>
+`bulkConfig.SetSynchronizeFilter<Item>(a => a.Quantity > 0);`<br>
 For Sqlite Not supported since lite only has UPSERT statement. Way to achieve there sync functionality is to Select or BulkRead existing data from DB, split list into sublists and call separately Bulk methods for BulkInsertOrUpdate and Delete.
 
 **BulkRead** does SELECT and JOIN based on one or more Unique columns that are specified in Config `UpdateByProperties`.<br>
@@ -192,7 +192,7 @@ If used for pure Insert (with Batching) then SetOutputIdentity should also be co
 **SqlBulkCopyOptions** is Enum with [[Flags]](https://stackoverflow.com/questions/8447/what-does-the-flags-enum-attribute-mean-in-c) attribute which enables specifying one or more options:<br>
 *Default, KeepIdentity, CheckConstraints, TableLock, KeepNulls, FireTriggers, UseInternalTransaction*
 
-**SetSynchronizeFilter<T>** A filter on entities to delete when using BulkInsertOrUpdateOrDelete.<br>
+**SetSynchronizeFilter<T>** A method that receives and sets expresion filter on entities to delete when using BulkInsertOrUpdateOrDelete.<br>
 
 Last optional argument is **Action progress** (Example in *EfOperationTest.cs* *RunInsert()* with *WriteProgress()*).
 ```C#
