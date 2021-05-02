@@ -162,9 +162,20 @@ namespace EFCore.BulkExtensions.Tests
             }
             context.BulkUpdate(entitiesToUpdate);
 
+            var entitiesToUpsert = new List<UserRole>()
+            {
+                new UserRole { UserId = 1, RoleId = 1 },
+                new UserRole { UserId = 2, RoleId = 2 },
+                new UserRole { UserId = 100, RoleId = 10 },
+            };
+
             // TEST
             var entities = context.UserRoles.ToList();
             Assert.Equal(EntitiesNumber, entities.Count());
+
+            context.BulkInsertOrUpdate(entitiesToUpsert, new BulkConfig { PropertiesToInclude = new List<string> { nameof(UserRole.UserId), nameof(UserRole.RoleId) } });
+            var entitiesFinal = context.UserRoles.ToList();
+            Assert.Equal(EntitiesNumber + 1, entitiesFinal.Count());
         }
 
         [Theory]

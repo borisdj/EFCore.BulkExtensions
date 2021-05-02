@@ -193,22 +193,22 @@ namespace EFCore.BulkExtensions
 
             if (operationType == OperationType.Update || operationType == OperationType.InsertOrUpdate || operationType == OperationType.InsertOrUpdateDelete)
             {
-                if (updateColumnNames.Count > 0)
+                if (updateColumnNames.Count == 0 && operationType == OperationType.Update)
+                {
+                    throw new InvalidBulkConfigException($"'Bulk{operationType}' operation can not have zero columns to update.");
+                }
+                else if (updateColumnNames.Count > 0)
                 {
                     q += $" WHEN MATCHED" +
                          (tableInfo.BulkConfig.OmitClauseExistsExcept || tableInfo.HasSpatialType ? "" : // The data type Geography (Spatial) cannot be used as an operand to the UNION, INTERSECT or EXCEPT operators because it is not comparable
-                         $" AND EXISTS (SELECT {GetCommaSeparatedColumns(compareColumnNames, "S")}" + // EXISTS better handles nulls
-                         $" EXCEPT SELECT {GetCommaSeparatedColumns(compareColumnNames, "T")})"       // EXCEPT does not update if all values are same
+                          $" AND EXISTS (SELECT {GetCommaSeparatedColumns(compareColumnNames, "S")}" + // EXISTS better handles nulls
+                          $" EXCEPT SELECT {GetCommaSeparatedColumns(compareColumnNames, "T")})"       // EXCEPT does not update if all values are same
                          ) +
                          (!tableInfo.BulkConfig.DoNotUpdateIfTimeStampChanged || tableInfo.TimeStampColumnName == null ? "" :
-                         $" AND S.[{tableInfo.TimeStampColumnName}] = T.[{tableInfo.TimeStampColumnName}]"
+                          $" AND S.[{tableInfo.TimeStampColumnName}] = T.[{tableInfo.TimeStampColumnName}]"
                          ) +
                          $" THEN UPDATE SET {GetCommaSeparatedColumns(updateColumnNames, "T", "S")}";
                 }
-                else
-                {
-                    throw new InvalidBulkConfigException($"'Bulk{operationType}' operation can not have zero columns to update.");
-                }    
             }
 
             if (operationType == OperationType.InsertOrUpdateDelete)
