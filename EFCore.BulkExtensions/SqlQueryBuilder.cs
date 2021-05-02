@@ -150,7 +150,7 @@ namespace EFCore.BulkExtensions
             return q;
         }
 
-        public static (string sql, IEnumerable<object> parameters) MergeTable<T>(DbContext context, TableInfo tableInfo, OperationType operationType, Expression<Func<T, bool>> deleteFilter = null) where T : class
+        public static (string sql, IEnumerable<object> parameters) MergeTable<T>(DbContext context, TableInfo tableInfo, OperationType operationType) where T : class
         {
             List<object> parameters = new List<object>();
             string targetTable = tableInfo.FullTableName;
@@ -214,12 +214,12 @@ namespace EFCore.BulkExtensions
             if (operationType == OperationType.InsertOrUpdateDelete)
             {
                 string deleteSearchCondition = string.Empty;
-                if (deleteFilter != null)
+                if (tableInfo.BulkConfig.SynchronizeFilter != null)
                 {
                     var querable = context.Set<T>()
                         .IgnoreQueryFilters()
                         .IgnoreAutoIncludes()
-                        .Where(deleteFilter);
+                        .Where((Expression<Func<T, bool>>)tableInfo.BulkConfig.SynchronizeFilter);
                     var batchSql = BatchUtil.GetBatchSql(querable, context, false);
                     int wherePos = batchSql.Item1.IndexOf("\r\nWHERE ");
                     if (wherePos > 0)

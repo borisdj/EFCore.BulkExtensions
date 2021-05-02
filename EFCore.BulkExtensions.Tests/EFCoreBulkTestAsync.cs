@@ -268,8 +268,8 @@ namespace EFCore.BulkExtensions.Tests
             {
                 var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
                 keepEntityItemId = 3;
-                await context.BulkInsertOrUpdateOrDeleteAsync(entities, bulkConfig,
-                    deleteFilter: e => e.ItemId != keepEntityItemId.Value);
+                bulkConfig.SetSynchronizeFilter<Item>(e => e.ItemId != keepEntityItemId.Value);
+                await context.BulkInsertOrUpdateOrDeleteAsync(entities, bulkConfig);
                 Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberInserted);
                 Assert.Equal(EntitiesNumber / 2, bulkConfig.StatsInfo.StatsNumberUpdated);
                 Assert.Equal((EntitiesNumber / 2) -1, bulkConfig.StatsInfo.StatsNumberDeleted);

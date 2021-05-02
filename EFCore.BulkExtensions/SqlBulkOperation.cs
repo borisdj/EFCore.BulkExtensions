@@ -35,16 +35,16 @@ namespace EFCore.BulkExtensions
             await adapter.InsertAsync(context, type, entities, tableInfo, progress, cancellationToken);
         }
 
-        public static void Merge<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, Expression<Func<T, bool>> deleteFilter = null) where T : class
+        public static void Merge<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress) where T : class
         {
             var adapter = SqlAdaptersMapping.CreateBulkOperationsAdapter(context);
-            adapter.Merge(context, type, entities, tableInfo, operationType, progress, deleteFilter);
+            adapter.Merge(context, type, entities, tableInfo, operationType, progress);
         }
 
-        public static async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, Expression<Func<T, bool>> deleteFilter = null, CancellationToken cancellationToken = default) where T : class
+        public static async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, CancellationToken cancellationToken = default) where T : class
         {
             var adapter = SqlAdaptersMapping.CreateBulkOperationsAdapter(context);
-            await adapter.MergeAsync(context, type, entities, tableInfo, operationType, progress, deleteFilter, cancellationToken);
+            await adapter.MergeAsync(context, type, entities, tableInfo, operationType, progress, cancellationToken);
         }
 
         public static void Read<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress) where T : class

@@ -108,17 +108,17 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
         }
 
         // Merge
-        public void Merge<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, Expression<Func<T, bool>> deleteFilter) where T : class
+        public void Merge<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress) where T : class
         {
-            MergeAsync(context, type, entities, tableInfo, operationType, progress, deleteFilter, CancellationToken.None, isAsync: false).GetAwaiter().GetResult();
+            MergeAsync(context, type, entities, tableInfo, operationType, progress, CancellationToken.None, isAsync: false).GetAwaiter().GetResult();
         }
 
-        public async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, Expression<Func<T, bool>> deleteFilter, CancellationToken cancellationToken) where T : class
+        public async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, CancellationToken cancellationToken) where T : class
         {
-            await MergeAsync(context, type, entities, tableInfo, operationType, progress, deleteFilter, cancellationToken, isAsync: true).ConfigureAwait(false);
+            await MergeAsync(context, type, entities, tableInfo, operationType, progress, cancellationToken, isAsync: true).ConfigureAwait(false);
         }
 
-        protected async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, Expression<Func<T, bool>> deleteFilter, CancellationToken cancellationToken, bool isAsync) where T : class
+        protected async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, CancellationToken cancellationToken, bool isAsync) where T : class
         {
             tableInfo.InsertToTempTable = true;
 
@@ -221,7 +221,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                     }
                 }
 
-                var sqlMergeTable = SqlQueryBuilder.MergeTable<T>(context, tableInfo, operationType, deleteFilter);
+                var sqlMergeTable = SqlQueryBuilder.MergeTable<T>(context, tableInfo, operationType);
                 if (isAsync)
                 {
                     await context.Database.ExecuteSqlRawAsync(sqlMergeTable.sql, sqlMergeTable.parameters, cancellationToken).ConfigureAwait(false);
