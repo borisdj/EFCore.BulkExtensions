@@ -80,6 +80,7 @@ It makes Update when PK(PrimaryKey) is matched, otherwise does Insert.<br>
 
 **BulkInsertOrUpdateOrDelete** effectively [synchronizes](https://www.mssqltips.com/sqlservertip/1704/using-merge-in-sql-server-to-insert-update-and-delete-at-the-same-time/) table rows with input data.<br>
 Those in Db that are not found in the list will be deleted.<br>
+Partial Sync can be done on table subset using expression configured with method: `bulkConfig.SetSynchronizeFilter<Item>(e => e.Quantity > 0);`<br>
 For Sqlite Not supported since lite only has UPSERT statement. Way to achieve there sync functionality is to Select or BulkRead existing data from DB, split list into sublists and call separately Bulk methods for BulkInsertOrUpdate and Delete.
 
 **BulkRead** does SELECT and JOIN based on one or more Unique columns that are specified in Config `UpdateByProperties`.<br>
@@ -91,7 +92,7 @@ Note: Bulk ops have optional argument *Type type* that can be set to type of Ent
 
 **Bulk** methods can have optional argument **BulkConfig** with properties (bool, int, object, List<string>):<br>
 ```C#
-PROPERTY : DEFAULTvalue
+PROPERTY : DEFAULTvalue                           SqlBulkCopyOptions: Default
 -----------------------                           PropertiesToInclude: null,
 PreserveInsertOrder: true,                        PropertiesToIncludeOnCompare: null,
 SetOutputIdentity: false,	                  PropertiesToIncludeOnUpdate: null,
@@ -105,8 +106,9 @@ CustomDestinationTableName: null,	          OmitClauseExistsExcept: false,
 TrackingEntities: false,	                  DoNotUpdateIfTimeStampChanged: false,
 WithHoldlock: true,	                          SRID: 4326,
 CalculateStats: false,	                          DateTime2PrecisionForceRound: false,
-		                                  SqlBulkCopyOptions: Default
-
+METHOD
+-----------------------   
+SetSynchronizeFilter<T>
 ```
 If we want to change defaults, BulkConfig should be added explicitly with one or more bool properties set to true, and/or int props like **BatchSize** to different number.<br> Config also has DelegateFunc for setting *Underlying-Connection/Transaction*, e.g. in UnderlyingTest.<br>
 When doing update we can chose to exclude one or more properties by adding their names into **PropertiesToExclude**, or if we need to update less then half column then **PropertiesToInclude** can be used. Setting both Lists are not allowed.
