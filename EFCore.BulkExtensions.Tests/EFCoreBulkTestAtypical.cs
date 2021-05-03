@@ -427,13 +427,20 @@ namespace EFCore.BulkExtensions.Tests
             var entities = new List<Item>()
             {
                 new Item { ItemId = 0, Name = "name " + 11 + " New" },
+                new Item { ItemId = 6, Name = "name " + 6 + " Updated" },
                 new Item { ItemId = 5, Name = "name " + 5 + " Updated" },
                 new Item { ItemId = 0, Name = "name " + 12 + " New" }
             };
             context.BulkInsertOrUpdate(entities, new BulkConfig() { SetOutputIdentity = true });
 
             Assert.Equal(11, entities[0].ItemId);
-            Assert.Equal(12, entities[2].ItemId);
+            Assert.Equal(6, entities[1].ItemId);
+            Assert.Equal(5, entities[2].ItemId);
+            Assert.Equal(12, entities[3].ItemId);
+            Assert.Equal("name " + 11 + " New", entities[0].Name);
+            Assert.Equal("name " + 6 + " Updated", entities[1].Name);
+            Assert.Equal("name " + 5 + " Updated", entities[2].Name);
+            Assert.Equal("name " + 12 + " New", entities[3].Name);
         }
 
         [Theory]

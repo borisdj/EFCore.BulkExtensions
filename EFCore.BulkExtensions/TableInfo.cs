@@ -669,31 +669,26 @@ namespace EFCore.BulkExtensions
                 {
                     doSetIdentityColumnsForInsertOrder = false;
                 }
-                if (operationType == OperationType.Update) // Pure Update does not need order set
-                {
-                    doSetIdentityColumnsForInsertOrder = false;
-                }
-                // InsertOrUpdate and InsertOrUpdateOrDelete can have combination of IDs with both zeros and certain value so there we need to check entire list
             }
-
 
             if (doSetIdentityColumnsForInsertOrder)
             {
                 bool sortEntities = !reset && BulkConfig.SetOutputIdentity &&
-                                    (operationType == OperationType.InsertOrUpdate || operationType == OperationType.InsertOrUpdateDelete);
+                                    (operationType == OperationType.Update || operationType == OperationType.InsertOrUpdate || operationType == OperationType.InsertOrUpdateDelete);
+                var entitiesExistingDict = new Dictionary<long, T>();
+                var entitiesNew = new List<T>();
                 var entitiesSorted = new List<T>();
-                var entitiesExisting = new List<T>();
 
                 long i = -entities.Count();
                 foreach (var entity in entities)
                 {
                     var identityFastProperty = FastPropertyDict[identityPropertyName];
                     long identityValue = Convert.ToInt64(identityFastProperty.Get(entity));
+
                     if (identityValue == 0 ||         // set only zero(0) values
                         (identityValue < 0 && reset)) // set only negative(-N) values if reset
                     {
                         long value = reset ? 0 : i;
-
                         object idValue;
                         var idType = identityFastProperty.Property.PropertyType;
                         if (idType == typeof(ushort))
@@ -715,14 +710,15 @@ namespace EFCore.BulkExtensions
                     if (sortEntities)
                     {
                         if (identityValue != 0)
-                            entitiesSorted.Add(entity); // first add new ones
+                            entitiesExistingDict.Add(identityValue, entity); // first load existing ones
                         else
-                            entitiesExisting.Add(entity);
+                            entitiesNew.Add(entity);
                     }
                 }
                 if (sortEntities)
                 {
-                    entitiesSorted.AddRange(entitiesExisting); // then append existing
+                    entitiesSorted = entitiesExistingDict.OrderBy(a => a.Key).Select(a => a.Value).ToList();
+                    entitiesSorted.AddRange(entitiesNew); // then append new ones
                     tableInfo.EntitesSortedReference = entitiesSorted.Cast<object>().ToList();
                 }
             }
@@ -775,20 +771,21 @@ namespace EFCore.BulkExtensions
                         FastPropertyDict[outputPropertyName].Set(entities[i], propertyValue);
                     }
                 }
-            }
-            else if (BulkConfig.IncludeGraph)
-            {
-                for (int i = 0; i < NumberOfEntities; i++)
-                {
-                    if (i == entitiesWithOutputIdentity.Count())
-                        break;
-                    var originalEntity = entities[i];
-                    var outputEntity = entitiesWithOutputIdentity[i];
 
-                    if (context.Entry(originalEntity).IsKeySet == false)
+                if (BulkConfig.IncludeGraph)
+                {
+                    for (int i = 0; i < NumberOfEntities; i++)
                     {
-                        var newPk = context.Entry(outputEntity).Property(identityPropertyName).CurrentValue;
-                        context.Entry(originalEntity).Property(identityPropertyName).CurrentValue = newPk;
+                        if (i == entitiesWithOutputIdentity.Count())
+                            break;
+                        var originalEntity = entities[i];
+                        var outputEntity = entitiesWithOutputIdentity[i];
+
+                        if (context.Entry(originalEntity).IsKeySet == false)
+                        {
+                            var newPk = context.Entry(outputEntity).Property(identityPropertyName).CurrentValue;
+                            context.Entry(originalEntity).Property(identityPropertyName).CurrentValue = newPk;
+                        }
                     }
                 }
             }
