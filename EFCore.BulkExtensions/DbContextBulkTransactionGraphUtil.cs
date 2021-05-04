@@ -34,8 +34,8 @@ namespace EFCore.BulkExtensions
             if (SqlAdaptersMapping.GetDatabaseType(context) == DbServer.Sqlite)
                 throw new NotSupportedException("Sqlite is not currently supported due to its BulkInsert implementation.");
 
-            // If this is set to false, won't be able to propogate new primary keys to the relationships
-            bulkConfig.SetOutputIdentity = true;
+            bulkConfig.PreserveInsertOrder = true; // Required for SetOutputIdentity ('true' is default but here explicitly assigned again in case it was changed to 'false' in BulkConfing)
+            bulkConfig.SetOutputIdentity = true; // If this is set to false, won't be able to propogate new primary keys to the relationships
 
             // If this is set to false, wont' be able to support some code first model types as EFCore uses shadow properties when a relationship's foreign keys arent explicitly defined
             bulkConfig.EnableShadowProperties = true;

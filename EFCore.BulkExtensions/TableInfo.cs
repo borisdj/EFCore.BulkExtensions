@@ -745,11 +745,9 @@ namespace EFCore.BulkExtensions
                     entities = tableInfo.EntitesSortedReference.Cast<T>().ToList();
                 }
 
-                for (int i = 0; i < NumberOfEntities; i++)
+                var numberOfOutputEntities = Math.Min(NumberOfEntities, entitiesWithOutputIdentity.Count);
+                for (int i = 0; i < numberOfOutputEntities; i++)
                 {
-                    if (i == entitiesWithOutputIdentity.Count)
-                        break;
-
                     if (identityPropertyName != null)
                     {
                         var identityPropertyValue = FastPropertyDict[identityPropertyName].Get(entitiesWithOutputIdentity[i]);
@@ -764,28 +762,11 @@ namespace EFCore.BulkExtensions
                     }
 
                     var propertiesToLoad = tableInfo.OutputPropertyColumnNamesDict.Keys.Where(a => a != identityPropertyName && a != TimeStampColumnName && // already loaded in segmet above
-                                                                                                   !tableInfo.PropertyColumnNamesDict.ContainsKey(a)); // add Computed and DefaultValues
+                                                                                                   !tableInfo.PropertyColumnNamesDict.ContainsKey(a));      // add Computed and DefaultValues
                     foreach (var outputPropertyName in propertiesToLoad)
                     {
                         var propertyValue = FastPropertyDict[outputPropertyName].Get(entitiesWithOutputIdentity[i]);
                         FastPropertyDict[outputPropertyName].Set(entities[i], propertyValue);
-                    }
-                }
-
-                if (BulkConfig.IncludeGraph)
-                {
-                    for (int i = 0; i < NumberOfEntities; i++)
-                    {
-                        if (i == entitiesWithOutputIdentity.Count())
-                            break;
-                        var originalEntity = entities[i];
-                        var outputEntity = entitiesWithOutputIdentity[i];
-
-                        if (context.Entry(originalEntity).IsKeySet == false)
-                        {
-                            var newPk = context.Entry(outputEntity).Property(identityPropertyName).CurrentValue;
-                            context.Entry(originalEntity).Property(identityPropertyName).CurrentValue = newPk;
-                        }
                     }
                 }
             }
