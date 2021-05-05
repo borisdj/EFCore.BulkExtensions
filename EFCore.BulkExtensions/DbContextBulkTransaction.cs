@@ -13,7 +13,7 @@ namespace EFCore.BulkExtensions
             type ??= typeof(T);
             using (ActivitySources.StartExecuteActivity(operationType, entities.Count))
             {
-                if (operationType != OperationType.Truncate && entities.Count == 0)
+                if ((operationType != OperationType.Truncate && operationType != OperationType.InsertOrUpdateDelete) && entities.Count == 0)
                 {
                     return;
                 }
@@ -51,7 +51,7 @@ namespace EFCore.BulkExtensions
             type ??= typeof(T);
             using (ActivitySources.StartExecuteActivity(operationType, entities.Count))
             {
-                if (operationType != OperationType.Truncate && entities.Count == 0)
+                if ((operationType != OperationType.Truncate && operationType != OperationType.InsertOrUpdateDelete) && entities.Count == 0)
                 {
                     return;
                 }

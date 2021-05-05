@@ -306,6 +306,17 @@ namespace EFCore.BulkExtensions.Tests
             {
                 Assert.NotNull(context.Items.Where(x => x.ItemId == keepEntityItemId.Value).FirstOrDefault());
             }
+
+            if (isBulk)
+            {
+                var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
+                bulkConfig.SetSynchronizeFilter<Item>(e => e.ItemId != keepEntityItemId.Value);
+                context.BulkInsertOrUpdateOrDelete(new List<Item>(), bulkConfig);
+
+                var storedEntities = context.Items.ToList();
+                Assert.Single(storedEntities);
+                Assert.Equal(3, storedEntities[0].ItemId);
+            }
         }
 
         private void RunUpdate(bool isBulk, DbServer dbServer)

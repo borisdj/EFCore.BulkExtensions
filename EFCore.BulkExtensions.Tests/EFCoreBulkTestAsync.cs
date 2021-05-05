@@ -301,6 +301,17 @@ namespace EFCore.BulkExtensions.Tests
             {
                 Assert.NotNull(context.Items.Where(x => x.ItemId == keepEntityItemId.Value).FirstOrDefault());
             }
+
+            if (isBulk)
+            {
+                var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
+                bulkConfig.SetSynchronizeFilter<Item>(e => e.ItemId != keepEntityItemId.Value);
+                await context.BulkInsertOrUpdateOrDeleteAsync(new List<Item>(), bulkConfig);
+
+                var storedEntities = contextRead.Items.ToList();
+                Assert.Single(storedEntities);
+                Assert.Equal(3, storedEntities[0].ItemId);
+            }
         }
 
         private async Task RunUpdateAsync(bool isBulk, DbServer dbServer)
