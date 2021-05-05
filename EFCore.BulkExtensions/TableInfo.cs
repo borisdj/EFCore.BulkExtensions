@@ -66,7 +66,7 @@ namespace EFCore.BulkExtensions
         public string TimeStampPropertyName { get; set; }
         public string TimeStampColumnName { get; set; }
 
-        protected IList<object> EntitesSortedReference { get; set; } // Operation Merge writes In Output table first Existing that were Updated then for new that were Inserted so this makes sure order is same in list when need to set Output
+        protected IList<object> EntitiesSortedReference { get; set; } // Operation Merge writes In Output table first Existing that were Updated then for new that were Inserted so this makes sure order is same in list when need to set Output
 
         public StoreObjectIdentifier ObjectIdentifier { get; set; }
 
@@ -719,7 +719,7 @@ namespace EFCore.BulkExtensions
                 {
                     entitiesSorted = entitiesExistingDict.OrderBy(a => a.Key).Select(a => a.Value).ToList();
                     entitiesSorted.AddRange(entitiesNew); // then append new ones
-                    tableInfo.EntitesSortedReference = entitiesSorted.Cast<object>().ToList();
+                    tableInfo.EntitiesSortedReference = entitiesSorted.Cast<object>().ToList();
                 }
             }
         }
@@ -740,9 +740,9 @@ namespace EFCore.BulkExtensions
                     return;
                 }
 
-                if (tableInfo.EntitesSortedReference != null)
+                if (tableInfo.EntitiesSortedReference != null)
                 {
-                    entities = tableInfo.EntitesSortedReference.Cast<T>().ToList();
+                    entities = tableInfo.EntitiesSortedReference.Cast<T>().ToList();
                 }
 
                 var numberOfOutputEntities = Math.Min(NumberOfEntities, entitiesWithOutputIdentity.Count);
