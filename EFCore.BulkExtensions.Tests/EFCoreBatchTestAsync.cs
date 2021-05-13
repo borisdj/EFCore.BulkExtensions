@@ -32,6 +32,7 @@ namespace EFCore.BulkExtensions.Tests
             await RunBatchDeleteAsync();
 
             await UpdateSettingAsync(SettingsEnum.Sett1, "Val1UPDATE");
+            await UpdateByteArrayToDefaultAsync();
 
             using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -167,6 +168,14 @@ namespace EFCore.BulkExtensions.Tests
             await context.Settings.Where(x => x.Settings == settings).BatchUpdateAsync(x => new Setting { Value = value.ToString() }).ConfigureAwait(false);
 
             await context.TruncateAsync<Setting>();
+        }
+
+        private async Task UpdateByteArrayToDefaultAsync()
+        {
+            using var context = new TestContext(ContextUtil.GetOptions());
+
+            await context.Files.BatchUpdateAsync(new File { DataBytes = null }, updateColumns: new List<string> { nameof(File.DataBytes) }).ConfigureAwait(false);
+            //await context.Files.BatchUpdateAsync(a => new File { DataBytes = null }).ConfigureAwait(false); // can't use expression, there not property access to fix DbType
         }
     }
 }

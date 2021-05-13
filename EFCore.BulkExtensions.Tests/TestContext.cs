@@ -291,7 +291,9 @@ namespace EFCore.BulkExtensions.Tests
         public int FileId { get; set; }
 
         [Required]
-        public string Data { get; set; }
+        public string Description { get; set; }
+
+        public byte[] DataBytes { get; set; }
 
         [Timestamp]
         public byte[] VersionChange { get; set; }

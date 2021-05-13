@@ -200,13 +200,18 @@ namespace EFCore.BulkExtensions
                     }
 
                     bool isDifferentFromDefault = propertyUpdateValue != null && propertyUpdateValue?.ToString() != propertyDefaultValue?.ToString();
-                    if (isDifferentFromDefault || (updateColumns != null && updateColumns.Contains(propertyName)))
+                    bool updateColumnExplicit = updateColumns != null && updateColumns.Contains(propertyName);
+                    if (isDifferentFromDefault || updateColumnExplicit)
                     {
                         sql += $"[{columnName}] = @{columnName}, ";
                         propertyUpdateValue ??= DBNull.Value;
                         var param = (IDbDataParameter)Activator.CreateInstance(typeof(Microsoft.Data.SqlClient.SqlParameter));
                         param.ParameterName = $"@{columnName}";
                         param.Value = propertyUpdateValue;
+                        if (!isDifferentFromDefault && propertyUpdateValue == DBNull.Value && property.PropertyType == typeof(byte[])) // needed only when having complex type property to be updated to default 'null'
+                        {
+                            param.DbType = DbType.Binary; // fix for ByteArray since implicit conversion nvarchar to varbinary(max) is not allowed
+                        }
                         parameters.Add(param);
                     }
                 }

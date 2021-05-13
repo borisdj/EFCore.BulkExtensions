@@ -39,6 +39,7 @@ namespace EFCore.BulkExtensions.Tests
             RunAnyBatchDelete();
 
             UpdateSetting(SettingsEnum.Sett1, "Val1UPDATE");
+            UpdateByteArrayToDefault();
 
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
@@ -359,6 +360,14 @@ WHERE [p].[ParentId] = 1";
             context.Settings.Where(x => x.Settings == settings).BatchUpdate(x => new Setting { Value = value.ToString() });
 
             context.Truncate<Setting>();
+        }
+
+        private void UpdateByteArrayToDefault()
+        {
+            using var context = new TestContext(ContextUtil.GetOptions());
+
+            context.Files.BatchUpdate(new File { DataBytes = null }, updateColumns: new List<string> { nameof(File.DataBytes) });
+            //context.Files.BatchUpdateAsync(a => new File { DataBytes = null }); // can't use expression, there not property access to fix DbType
         }
     }
 }

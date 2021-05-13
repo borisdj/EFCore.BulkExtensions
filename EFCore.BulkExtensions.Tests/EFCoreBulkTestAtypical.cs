@@ -73,7 +73,7 @@ namespace EFCore.BulkExtensions.Tests
             {
                 var entity = new File
                 {
-                    Data = "Some data " + i
+                    Description = "Some data " + i
                 };
                 entities.Add(entity);
             }
@@ -82,12 +82,12 @@ namespace EFCore.BulkExtensions.Tests
             // Test BulkRead
             var entitiesRead = new List<File>
             {
-                new File { Data = "Some data 1" },
-                new File { Data = "Some data 2" }
+                new File { Description = "Some data 1" },
+                new File { Description = "Some data 2" }
             };
             context.BulkRead(entitiesRead, new BulkConfig
             {
-                UpdateByProperties = new List<string> { nameof(File.Data) }
+                UpdateByProperties = new List<string> { nameof(File.Description) }
             });
             Assert.Equal(1, entitiesRead.First().FileId);
             Assert.NotNull(entitiesRead.First().VersionChange);
@@ -98,7 +98,7 @@ namespace EFCore.BulkExtensions.Tests
             var entitiesToUpdate = entities.Take(10).ToList();
             foreach (var entityToUpdate in entitiesToUpdate)
             {
-                entityToUpdate.Data += " UPDATED";
+                entityToUpdate.Description += " UPDATED";
             }
 
             using var transaction = context.Database.BeginTransaction();
