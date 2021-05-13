@@ -10,7 +10,8 @@ Under the hood uses [SqlBulkCopy](https://msdn.microsoft.com/en-us/library/syste
 For SQLite there is no BulkCopy, instead library uses plain SQL combined with [UPSERT](https://www.sqlite.org/lang_UPSERT.html).<br>
 Bulk Tests can not have UseInMemoryDb because InMemoryProvider does not support Relational-specific methods.
 
-Available on [![NuGet](https://img.shields.io/nuget/v/EFCore.BulkExtensions.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/) latest version.<br>
+<!--[![Button](https://img.shields.io/nuget/v/EFCore.BulkExtensions.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/)-->
+Available on <a href="https://www.nuget.org/packages/EFCore.BulkExtensions/"><img src="https://buildstats.info/nuget/EFCore.BulkExtensions" /></a><br>
 Package manager console command for installation: *Install-Package EFCore.BulkExtensions*<br>
 | Nuget | Target          | Used EF v.  | For projects targeting          |
 | ----- | --------------- | ----------- | ------------------------------- |
@@ -21,10 +22,10 @@ Package manager console command for installation: *Install-Package EFCore.BulkEx
 
 ## Contributing
 
-If you find this project useful you can mark it by leaving a Github **\*Star**.</br>
+If you find this project useful you can mark it by leaving a Github **Star** ⭐.</br>
 If you would like to support the Project by making a Donation ($10) *#BuyMeBeer*, you are welcome to do so:<br>
-[![Donate](https://img.shields.io/badge/donate-PayPal-yellow.svg)](https://www.paypal.me/BorisDjurdjevic/10) or
-[![Donate Nano](https://img.shields.io/badge/donate-Nano-9cf.svg)](https://borisdj.github.io/pages/donation/donate-nano.html)([0 fee](https://nano.org/))<br>
+[![Button](https://img.shields.io/badge/donate-PayPal-yellow.svg)](https://www.paypal.me/BorisDjurdjevic/10) or
+[![Button](https://img.shields.io/badge/donate-Nano-9cf.svg)](https://borisdj.github.io/pages/donation/donate-nano.html)([0 fee](https://nano.org/))<br>
 Please read [CONTRIBUTING](CONTRIBUTING.md) for details on code of conduct, and the process for submitting pull requests.<br>
 [![NuGet](https://img.shields.io/npm/l/express.svg)](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE)<br>
 Want to **Contact** us for Hire (Development & Consulting): [www.codis.tech](http://www.codis.tech)
