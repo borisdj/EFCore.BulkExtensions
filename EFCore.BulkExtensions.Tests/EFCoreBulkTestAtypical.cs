@@ -93,7 +93,7 @@ namespace EFCore.BulkExtensions.Tests
             Assert.NotNull(entitiesRead.First().VersionChange);
 
             // For testing concurrency conflict (UPDATE changes RowVersion which is TimeStamp column)
-            context.Database.ExecuteSqlRaw("UPDATE dbo.[File] SET Data = 'Some data 1 PRE CHANGE' WHERE [Id] = 1;");
+            context.Database.ExecuteSqlRaw("UPDATE dbo.[File] SET Description = 'Some data 1 PRE CHANGE' WHERE [Id] = 1;");
 
             var entitiesToUpdate = entities.Take(10).ToList();
             foreach (var entityToUpdate in entitiesToUpdate)

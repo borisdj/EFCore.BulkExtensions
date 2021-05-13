@@ -367,7 +367,7 @@ WHERE [p].[ParentId] = 1";
             using var context = new TestContext(ContextUtil.GetOptions());
 
             context.Files.BatchUpdate(new File { DataBytes = null }, updateColumns: new List<string> { nameof(File.DataBytes) });
-            //context.Files.BatchUpdateAsync(a => new File { DataBytes = null }); // can't use expression, there not property access to fix DbType
+            context.Files.BatchUpdate(a => new File { DataBytes = null });
         }
     }
 }

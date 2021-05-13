@@ -450,7 +450,16 @@ namespace EFCore.BulkExtensions
                 value = valueConverter.ConvertToProvider.Invoke(value);
             }
             // will rely on SqlClientHelper.CorrectParameterType to fix the type before executing
-            sqlParameters.Add(new Microsoft.Data.SqlClient.SqlParameter(parmName, value ?? DBNull.Value));
+
+            var columnType = tableInfo.ColumnNamesTypesDict[columnName];
+            var parameter = new Microsoft.Data.SqlClient.SqlParameter(parmName, value ?? DBNull.Value);
+
+            if (value == null && columnType.Contains(DbType.Binary.ToString().ToLower())) //"varbinary(max)".Contains("binary")
+            {
+                parameter.DbType = DbType.Binary; // fix for ByteArray since implicit conversion nvarchar to varbinary(max) is not allowed
+            }
+
+            sqlParameters.Add(parameter);
             sqlColumns.Append($" @{parmName}");
         }
 
