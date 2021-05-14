@@ -70,7 +70,7 @@ namespace EFCore.BulkExtensions.Tests.IncludeGraph
         }
     }
 
-    public class Issue547
+    public class Issue547 : IDisposable
     {
         [Theory]
         [InlineData(DbServer.SqlServer)]
@@ -81,7 +81,6 @@ namespace EFCore.BulkExtensions.Tests.IncludeGraph
             using var db = new Issue547DbContext(ContextUtil.GetOptions<Issue547DbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_Issue547"));
             await db.Database.EnsureCreatedAsync();
 
-
             var tranches = new List<RootEntity>
             {
                 new RootEntity {
@@ -89,7 +88,6 @@ namespace EFCore.BulkExtensions.Tests.IncludeGraph
                     Owned = new OwnedType
                     {
                         Field1 = "F1",
-                        ChildId = 1388,
                         Child = new ChildEntity { Id = 1388, Name = "F1C1" }
                     },
                     OwnedInSeparateTable = new OwnedInSeparateTable
@@ -102,7 +100,6 @@ namespace EFCore.BulkExtensions.Tests.IncludeGraph
                     Owned = new OwnedType
                     {
                         Field1 = "F2",
-                        ChildId = 1234,
                         Child = new ChildEntity { Id = 1234, Name = "F2C2" }
                     },
                     OwnedInSeparateTable = new OwnedInSeparateTable
@@ -121,6 +118,30 @@ namespace EFCore.BulkExtensions.Tests.IncludeGraph
             {
                 Assert.True(a.Owned.ChildId.HasValue);
             }
+
+            var rootEntities = await db.RootEntities
+                .Include(y => y.OwnedInSeparateTable)
+                .Include(y => y.Owned.Child)
+                .ToListAsync();
+
+            foreach (var re in rootEntities)
+            {
+                Assert.NotNull(re.Owned);
+                Assert.NotEmpty(re.Owned.Field1);
+
+                Assert.NotNull(re.Owned.ChildId);
+                Assert.NotNull(re.Owned.Child);
+                Assert.NotEmpty(re.Owned.Child.Name);
+                
+                Assert.NotNull(re.OwnedInSeparateTable);
+                Assert.NotEmpty(re.OwnedInSeparateTable.Flowers);
+            }
+        }
+
+        public void Dispose()
+        {
+            using var db = new Issue547DbContext(ContextUtil.GetOptions<Issue547DbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_Issue547"));
+            db.Database.EnsureDeleted();
         }
     }
 }
