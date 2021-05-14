@@ -379,6 +379,10 @@ namespace EFCore.BulkExtensions
                         var property = navigationProperty.PropertyInfo;
                         FastPropertyDict.Add(property.Name, new FastProperty(property));
 
+                        // If the OwnedType is mapped to the separate table, don't try merge it into its owner
+                        if (OwnedTypeUtil.IsOwnedInSameTableAsOwner(navigationProperty) == false)
+                            continue;
+
                         Type navOwnedType = type.Assembly.GetType(property.PropertyType.FullName);
                         var ownedEntityType = context.Model.FindEntityType(property.PropertyType);
                         if (ownedEntityType == null) // when entity has more then one ownedType (e.g. Address HomeAddress, Address WorkAddress) or one ownedType is in multiple Entities like Audit is usually.
