@@ -86,6 +86,7 @@ namespace EFCore.BulkExtensions.Tests.IncludeGraph
             ContextUtil.DbServer = dbServer;
 
             using var db = new GraphDbContext(ContextUtil.GetOptions<GraphDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_Graph"));
+            await db.Database.EnsureCreatedAsync();
 
             // To ensure there are no stack overflows with circular reference trees, we must test for that.
             // Set all navigation properties so the base navigation and its inverse both have values

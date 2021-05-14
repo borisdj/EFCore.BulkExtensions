@@ -56,10 +56,17 @@ namespace EFCore.BulkExtensions
 
                 foreach (var graphNodeGroup in graphNodesGroupedByType)
                 {
+                    var entityClrType = graphNodeGroup.Key;
+                    var entityType = context.Model.FindEntityType(entityClrType);
+
+                    if (OwnedTypeUtil.IsOwnedInSameTableAsOwner(entityType))
+                    {
+                        continue;
+                    }
+
                     // It is possible the object graph contains duplicate entities (by primary key) but the entities are different object instances in memory.
                     // This an happen when deserializing a nested JSON tree for example. So filter out the duplicates.
                     var entitiesToAction = GetUniqueEntities(context, graphNodeGroup.Select(y => y.Entity)).ToList();
-                    var entityClrType = graphNodeGroup.Key;
                     var tableInfo = TableInfo.CreateInstance(context, entityClrType, entitiesToAction, operationType, bulkConfig);
 
                     if (isAsync)
