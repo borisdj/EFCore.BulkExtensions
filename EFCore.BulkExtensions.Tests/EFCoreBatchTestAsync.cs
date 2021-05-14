@@ -175,7 +175,7 @@ namespace EFCore.BulkExtensions.Tests
             using var context = new TestContext(ContextUtil.GetOptions());
 
             await context.Files.BatchUpdateAsync(new File { DataBytes = null }, updateColumns: new List<string> { nameof(File.DataBytes) }).ConfigureAwait(false);
-            //await context.Files.BatchUpdateAsync(a => new File { DataBytes = null }).ConfigureAwait(false); // can't use expression, there not property access to fix DbType
+            await context.Files.BatchUpdateAsync(a => new File { DataBytes = null }).ConfigureAwait(false);
         }
     }
 }
