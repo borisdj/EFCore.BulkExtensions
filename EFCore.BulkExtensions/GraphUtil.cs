@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace EFCore.BulkExtensions
 {
@@ -95,7 +96,11 @@ namespace EFCore.BulkExtensions
             // i.e WorkOrderSpare.Spare but the Spare entity does not have a Spare.WorkOrderSpares navigation property
             var nestedDependency = GetFlatGraph(dbContext, navigationValue, result);
 
-            if (navigation.IsOnDependent)
+            if (navigation.IsOnDependent
+
+                // A navigation for an OwnedType will be dependent on its owner the in efcore dependency hierarchy,
+                // but technically the Owner depends on the OwnedType if the OwnedType is part of its Owner's schema.
+                || OwnedTypeUtil.IsOwnedInSameTableAsOwner(navigation))
             {
                 graphDependency.DependsOn.Add((navigationValue, navigation));
                 nestedDependency.Dependents.Add((graphEntity, navigation.Inverse ?? navigation));
