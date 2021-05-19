@@ -21,6 +21,7 @@ namespace EFCore.BulkExtensions.Tests
             ContextUtil.DbServer = dbServer;
             using var context = new TestContext(ContextUtil.GetOptions());
             context.Truncate<Document>();
+            bool isSqlite = dbServer == DbServer.Sqlite;
 
             var entities = new List<Document>();
             for (int i = 1; i <= EntitiesNumber; i++)
@@ -29,7 +30,7 @@ namespace EFCore.BulkExtensions.Tests
                 {
                     Content = "Info " + i
                 };
-                if (dbServer == DbServer.Sqlite)
+                if (isSqlite)
                 {
                     entity.DocumentId = Guid.NewGuid();
                     entity.ContentLength = entity.Content.Length;
@@ -46,16 +47,28 @@ namespace EFCore.BulkExtensions.Tests
             Assert.Equal("DefaultData", firstDocument.Tag);
 
             firstDocument.Tag = null;
-            context.BulkInsertOrUpdate(new List<Document> { firstDocument });
-            firstDocument = context.Documents.AsNoTracking().FirstOrDefault();
+            var upsertList = new List<Document> {
+                firstDocument,
+                new Document { Content = "Info " + (count + 1) }, // to test adding new with InsertOrUpdate (entity having Guid DbGenerated)
+                new Document { Content = "Info " + (count + 2) }
+            };
+            if (isSqlite)
+            {
+                upsertList[1].DocumentId = Guid.NewGuid();
+                upsertList[2].DocumentId = Guid.NewGuid();
+            }
+            count += 2;
 
-            Assert.Null(firstDocument.Tag); // OnUpdate columns with Defaults not ommited, should change even to default value, in this case to 'null'
+            context.BulkInsertOrUpdate(upsertList);
+            firstDocument = context.Documents.AsNoTracking().FirstOrDefault();
+            var entitiesCount = context.Documents.Count();
+
+            Assert.Null(firstDocument.Tag); // OnUpdate columns with Defaults not omitted, should change even to default value, in this case to 'null'
 
             Assert.NotEqual(Guid.Empty, firstDocument.DocumentId);
             Assert.Equal(true, firstDocument.IsActive);
             Assert.Equal(firstDocument.Content.Length, firstDocument.ContentLength);
-            Assert.Equal(EntitiesNumber, count);
-
+            Assert.Equal(entitiesCount, count);
         }
 
         [Theory]
