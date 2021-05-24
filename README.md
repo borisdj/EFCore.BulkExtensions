@@ -78,6 +78,7 @@ using (var transaction = context.Database.BeginTransaction())
 
 **BulkInsertOrUpdate** method can be used when there is need for both operations but in one connection to database.<br>
 It makes Update when PK(PrimaryKey) is matched, otherwise does Insert.<br>
+For Sqlite will not work for multiple row to both Insert and Update since it does [not have full MERGE](https://github.com/borisdj/EFCore.BulkExtensions/issues/556) capabilities like SqlServer. Instead list can be split into 2 lists, and call separately BulkInsert and BulkUpdate.<br>
 
 **BulkInsertOrUpdateOrDelete** effectively [synchronizes](https://www.mssqltips.com/sqlservertip/1704/using-merge-in-sql-server-to-insert-update-and-delete-at-the-same-time/) table rows with input data.<br>
 Those in Db that are not found in the list will be deleted.<br>
