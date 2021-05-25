@@ -78,7 +78,6 @@ using (var transaction = context.Database.BeginTransaction())
 
 **BulkInsertOrUpdate** method can be used when there is need for both operations but in one connection to database.<br>
 It makes Update when PK(PrimaryKey) is matched, otherwise does Insert.<br>
-For Sqlite will not work for multiple row to both Insert and Update since it does [not have full MERGE](https://github.com/borisdj/EFCore.BulkExtensions/issues/556) capabilities like SqlServer. Instead list can be split into 2 lists, and call separately BulkInsert and BulkUpdate.<br>
 
 **BulkInsertOrUpdateOrDelete** effectively [synchronizes](https://www.mssqltips.com/sqlservertip/1704/using-merge-in-sql-server-to-insert-update-and-delete-at-the-same-time/) table rows with input data.<br>
 Those in Db that are not found in the list will be deleted.<br>
@@ -140,7 +139,8 @@ Insertion order is implemented with [TOP](https://docs.microsoft.com/en-us/sql/t
 This config should remain true when *SetOutputIdentity* is set to true on Entity containing NotMapped Property. [issues/76](https://github.com/borisdj/EFCore.BulkExtensions/issues/76)<br>
 When using **SetOutputIdentity** Id values will be updated to new ones from database.<br>
 With BulkInsertOrUpdate for those that will be updated it has to match with Id column, or other unique column(s) if using UpdateByProperties.<br>
-
+For Sqlite combination of BulkInsertOrUpdate and IdentityId automatic set will not work properly since it does [not have full MERGE](https://github.com/borisdj/EFCore.BulkExtensions/issues/556) capabilities like SqlServer. Instead list can be split into 2 lists, and call separately BulkInsert and BulkUpdate.<br>
+  
 **SetOutputIdentity** is useful when BulkInsert is done to multiple related tables, that have Identity column.<br>
 After Insert is done to first table, we need Id-s (if using Option 1) that were generated in Db because they are FK(ForeignKey) in second table.<br>
 It is implemented with [OUTPUT](https://docs.microsoft.com/en-us/sql/t-sql/queries/output-clause-transact-sql) as part of MERGE Query, so in this case even the Insert is not done directly to TargetTable but to TempTable and then Merged with TargetTable.<br>
