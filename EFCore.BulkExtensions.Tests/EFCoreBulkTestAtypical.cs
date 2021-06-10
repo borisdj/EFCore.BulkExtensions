@@ -678,5 +678,37 @@ namespace EFCore.BulkExtensions.Tests
             Assert.Equal(3250000, context.Events.SingleOrDefault(a => a.Name == "Event 1").TimeCreated.Ticks % 10000000);
             Assert.Equal(3250000, context.Events.SingleOrDefault(a => a.Name == "Event 2").TimeCreated.Ticks % 10000000);
         }
+
+        [Fact]
+        private void ByteArrayPKBulkReadTest()
+        {
+            ContextUtil.DbServer = DbServer.Sqlite;
+            using var context = new TestContext(ContextUtil.GetOptions());
+
+            var list = context.Archives.ToList();
+            if (list.Count > 0)
+            {
+                context.Archives.RemoveRange(list);
+                context.SaveChanges();
+            }
+
+            var byte1 = new byte[] { 0x10, 0x10 };
+            var byte2 = new byte[] { 0x20, 0x20 };
+            var byte3 = new byte[] { 0x30, 0x30 };
+            context.Archives.AddRange(
+                new Archive { ArchiveId = byte1, Description = "Desc1" },
+                new Archive { ArchiveId = byte2, Description = "Desc2" },
+                new Archive { ArchiveId = byte3, Description = "Desc3" }
+            );
+            context.SaveChanges();
+
+            var entities = new List<Archive>();
+            entities.Add(new Archive { ArchiveId = byte1 });
+            entities.Add(new Archive { ArchiveId = byte2 });
+            context.BulkRead(entities);
+
+            Assert.Equal("Desc1", entities[0].Description);
+            Assert.Equal("Desc2", entities[1].Description);
+        }
     }
 }

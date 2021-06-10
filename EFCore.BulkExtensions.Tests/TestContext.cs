@@ -41,10 +41,13 @@ namespace EFCore.BulkExtensions.Tests
 
         public DbSet<LogPersonReport> LogPersonReports { get; set; }
 
-        public DbSet<Event> Events { get; set; }
         public DbSet<AtypicalRowVersionEntity> AtypicalRowVersionEntities { get; set; }
 
         public DbSet<AtypicalRowVersionConverterEntity> AtypicalRowVersionConverterEntities { get; set; }
+
+        public DbSet<Event> Events { get; set; }
+
+        public DbSet<Archive> Archives { get; set; }
 
         public TestContext(DbContextOptions options) : base(options)
         {
@@ -493,5 +496,11 @@ namespace EFCore.BulkExtensions.Tests
 
         [Column(TypeName = "datetime2(3)")]
         public DateTime TimeCreated { get; set; }
+    }
+
+    public class Archive
+    {
+        public byte[] ArchiveId { get; set; }
+        public string Description { get; set; }
     }
 }

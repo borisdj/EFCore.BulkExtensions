@@ -597,7 +597,19 @@ namespace EFCore.BulkExtensions
             string delimiter = "_"; // TODO: Consider making it Config-urable
             foreach (var propertyName in propertiesNames)
             {
-                uniqueBuilder.Append(fastPropertyDict[propertyName].Get(entity).ToString());
+                var property = fastPropertyDict[propertyName].Get(entity);
+                if (property is Array propertyArray)
+                {
+                    foreach (var element in propertyArray)
+                    {
+                        uniqueBuilder.Append(element.ToString());
+                    }
+                }
+                else
+                {
+                    uniqueBuilder.Append(property.ToString());
+                }
+
                 uniqueBuilder.Append(delimiter);
             }
             string result = uniqueBuilder.ToString();
