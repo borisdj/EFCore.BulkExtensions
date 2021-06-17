@@ -606,7 +606,8 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
 
             foreach (var entity in entities)
             {
-                foreach (var property in properties)
+                var propertiesToLoad = properties.Where(a => !tableInfo.AllNavigationsDictionary.ContainsKey(a.Name) || tableInfo.OwnedTypesDict.ContainsKey(a.Name)); // omit virtual Navigation (except Owned) since it's Getter can cause unwanted Select-s from Db
+                foreach (var property in propertiesToLoad)
                 {
                     var propertyValue = tableInfo.FastPropertyDict.ContainsKey(property.Name) ? tableInfo.FastPropertyDict[property.Name].Get(entity) : null;
 
