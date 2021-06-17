@@ -42,6 +42,9 @@ context.BulkDelete(entitiesList);                 context.BulkDeleteAsync(entiti
 context.BulkRead(entitiesList);                   context.BulkReadAsync(entitiesList);
 context.Truncate<Entity>();                       context.TruncateAsync<Entity>();
 ```
+
+SQLite requires package: [*SQLitePCLRaw.bundle_winsqlite3*](https://docs.microsoft.com/en-us/dotnet/standard/data/sqlite/custom-versions?tabs=netcore-cli) with call to `SQLitePCL.Batteries.Init()`)<br>
+
 **Batch** Extensions are made on *IQueryable* DbSet and can be used as in the following code segment.<br>
 They are done as pure sql and no check is done whether some are prior loaded in memory and are being Tracked.<br>
 (*updateColumns* is optional param in which PropertyNames added explicitly when need update to it's default value)
