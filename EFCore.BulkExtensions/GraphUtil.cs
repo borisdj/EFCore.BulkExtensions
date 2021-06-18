@@ -43,6 +43,12 @@ namespace EFCore.BulkExtensions
 
         private static GraphDependency GetFlatGraph(DbContext dbContext, object graphEntity, IDictionary<object, GraphDependency> result)
         {
+            var entityType = dbContext.Model.FindEntityType(graphEntity.GetType());
+
+            // The entity is not being apart of the DbContext model, do nothing
+            if (entityType is null)
+                return null;
+            
             GraphDependency graphDependency;
 
             if (!result.TryGetValue(graphEntity, out graphDependency))
@@ -56,7 +62,6 @@ namespace EFCore.BulkExtensions
                 return graphDependency;
             }
 
-            var entityType = dbContext.Model.FindEntityType(graphEntity.GetType());
             var entityNavigations = entityType.GetNavigations();
 
             foreach (var navigation in entityNavigations)
@@ -95,6 +100,9 @@ namespace EFCore.BulkExtensions
             // incase the navigationValue entity does not have an explicitly defined navigation property back to its principal / dependent
             // i.e WorkOrderSpare.Spare but the Spare entity does not have a Spare.WorkOrderSpares navigation property
             var nestedDependency = GetFlatGraph(dbContext, navigationValue, result);
+
+            if (nestedDependency is null)
+                return;
 
             if (navigation.IsOnDependent
 
