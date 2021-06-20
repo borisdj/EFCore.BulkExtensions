@@ -343,6 +343,20 @@ namespace EFCore.BulkExtensions
             PropertyColumnNamesCompareDict = propertiesOnCompare.ToDictionary(a => a.Name, b => b.GetColumnName(ObjectIdentifier).Replace("]", "]]"));
             PropertyColumnNamesUpdateDict = propertiesOnUpdate.ToDictionary(a => a.Name, b => b.GetColumnName(ObjectIdentifier).Replace("]", "]]"));
 
+            foreach (var property in allProperties)
+            {
+                var converter = property.GetTypeMapping().Converter;
+
+                if (converter is null)
+                {
+                    continue;
+                }
+
+                var columnName = property.GetColumnName(ObjectIdentifier);
+                ConvertiblePropertyColumnDict.Add(property.Name, columnName);
+                ConvertibleColumnConverterDict.Add(columnName, converter);
+            }
+
             if (loadOnlyPKColumn)
             {
                 if (PrimaryKeysPropertyColumnNameDict.Count() == 0)
@@ -353,19 +367,6 @@ namespace EFCore.BulkExtensions
             {
                 PropertyColumnNamesDict = properties.ToDictionary(a => a.Name, b => b.GetColumnName(ObjectIdentifier).Replace("]", "]]"));
                 ShadowProperties = new HashSet<string>(properties.Where(p => p.IsShadowProperty() && !p.IsForeignKey()).Select(p => p.GetColumnName(ObjectIdentifier)));
-                foreach (var property in allProperties)
-                {
-                    var converter = property.GetTypeMapping().Converter;
-
-                    if (converter is null)
-                    {
-                        continue;
-                    }
-
-                    var columnName = property.GetColumnName(ObjectIdentifier);
-                    ConvertiblePropertyColumnDict.Add(property.Name, columnName);
-                    ConvertibleColumnConverterDict.Add(columnName, converter);
-                }
 
                 foreach (var navigation in entityType.GetNavigations().Where(a => !a.IsCollection && !a.TargetEntityType.IsOwned()))
                 {
