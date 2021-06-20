@@ -387,6 +387,14 @@ namespace EFCore.BulkExtensions.Tests
             Assert.Equal(0, entities[1].ItemId);
             Assert.Equal(3, entities[2].ItemId);
             Assert.Equal(0, entities[3].ItemId);
+
+            var entitiesHist = new List<ItemHistory>();
+            entitiesHist.Add(new ItemHistory { Remark = "some more info 1.1" });
+            var bulkConfigHist = new BulkConfig { UpdateByProperties = new List<string> { nameof(ItemHistory.Remark) } };
+            context.BulkRead(entitiesHist, bulkConfigHist);
+
+            var itemHistoryId = context.ItemHistories.Where(a => a.Remark == "some more info 1.1").FirstOrDefault().ItemHistoryId;
+            Assert.Equal(itemHistoryId, entitiesHist[0].ItemHistoryId);
         }
 
         private void RunDelete(bool isBulk, DbServer dbServer)
