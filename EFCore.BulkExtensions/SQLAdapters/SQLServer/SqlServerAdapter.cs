@@ -602,7 +602,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                 var discriminatorProperty = entityPropertiesDict[discriminatorColumn];
 
                 dataTable.Columns.Add(discriminatorColumn, discriminatorProperty.ClrType);
-                columnsDict.Add(discriminatorColumn, entityType.GetDiscriminatorProperty());
+                columnsDict.Add(discriminatorColumn, entityType.GetDiscriminatorValue());
             }
             bool hasConverterProperties = tableInfo.ConvertiblePropertyColumnDict.Count > 0;
 
