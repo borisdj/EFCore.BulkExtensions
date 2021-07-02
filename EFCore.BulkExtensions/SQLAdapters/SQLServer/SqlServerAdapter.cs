@@ -599,8 +599,10 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
 
             if (discriminatorColumn != null)
             {
-                dataTable.Columns.Add(discriminatorColumn, typeof(string));
-                columnsDict.Add(discriminatorColumn, type.Name);
+                var discriminatorProperty = entityPropertiesDict[discriminatorColumn];
+
+                dataTable.Columns.Add(discriminatorColumn, discriminatorProperty.ClrType);
+                columnsDict.Add(discriminatorColumn, entityType.GetDiscriminatorProperty());
             }
             bool hasConverterProperties = tableInfo.ConvertiblePropertyColumnDict.Count > 0;
 
