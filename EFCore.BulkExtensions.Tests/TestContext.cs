@@ -95,6 +95,8 @@ namespace EFCore.BulkExtensions.Tests
                 modelBuilder.Entity<File>().Property(p => p.VersionChange).ValueGeneratedOnAddOrUpdate().IsConcurrencyToken().HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 modelBuilder.Entity<Address>().Ignore(p => p.Location);
+
+                modelBuilder.Entity<ItemHistory>().ToTable(nameof(ItemHistory));
             }
 
             //modelBuilder.Entity<Modul>(buildAction => { buildAction.HasNoKey(); });
@@ -213,7 +215,7 @@ namespace EFCore.BulkExtensions.Tests
     }
 
     // ItemHistory is used to test bulk Ops to multiple tables(Item and ItemHistory), to test Guid as PK and to test other Schema(his)
-    [Table(nameof(ItemHistory), Schema = "his")]
+    [Table(nameof(ItemHistory), Schema = "his")] // different schema is not supported in Sqlite
     public class ItemHistory
     {
         public Guid ItemHistoryId { get; set; }
