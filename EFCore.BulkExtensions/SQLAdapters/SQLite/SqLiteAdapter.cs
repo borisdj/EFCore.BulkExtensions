@@ -405,7 +405,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
                     }
                     else
                     {
-                        value = entity.GetType().Name; // Set the value for the discriminator column
+                        value = dbContext.Entry(entity).Metadata.GetDiscriminatorValue(); // Set the value for the discriminator column
                     }
                 }
 
