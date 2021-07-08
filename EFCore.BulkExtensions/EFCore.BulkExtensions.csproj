@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
-	<Title>EFCore.BulkExtensions</Title>
+    <Title>EFCore.BulkExtensions</Title>
     <Version>5.2.5</Version>
     <Authors>borisdj</Authors>
     <Description>EntityFramework EF Core Bulk Batch Extensions for Insert Update Delete and Read (CRUD) operations on SQL Server and SQLite</Description>
@@ -20,6 +20,7 @@
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>Keys\EFCore.BulkExtensions.snk</AssemblyOriginatorKeyFile>
     <DelaySign>false</DelaySign>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
