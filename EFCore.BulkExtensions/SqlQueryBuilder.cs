@@ -150,7 +150,7 @@ namespace EFCore.BulkExtensions
             return q;
         }
 
-        public static (string sql, IEnumerable<object> parameters) MergeTable<T>(DbContext context, TableInfo tableInfo, OperationType operationType) where T : class
+        public static (string sql, IEnumerable<object> parameters) MergeTable<T>(DbContext context, TableInfo tableInfo, OperationType operationType, IEnumerable<string> entityPropertyWithDefaultValue = default) where T : class
         {
             List<object> parameters = new List<object>();
             string targetTable = tableInfo.FullTableName;
@@ -167,7 +167,11 @@ namespace EFCore.BulkExtensions
             List<string> insertColumnsNames = (tableInfo.HasIdentity && !keepIdentity) ? nonIdentityColumnsNames : columnsNames;
             if (tableInfo.DefaultValueProperties.Any()) // Properties with DefaultValue exclude OnInsert but keep OnUpdate
             {
-                insertColumnsNames = insertColumnsNames.Where(a => !tableInfo.DefaultValueProperties.Contains(a)).ToList();
+                var defaults = insertColumnsNames.Where(a => tableInfo.DefaultValueProperties.Contains(a)).ToList();
+                //If the entities assign value to properties with default value, don't skip this property 
+                if(entityPropertyWithDefaultValue != default)
+                    defaults = defaults.Where(x => entityPropertyWithDefaultValue.Contains(x)).ToList();
+                insertColumnsNames = insertColumnsNames.Where(a => !defaults.Contains(a)).ToList();
             }
 
             string isUpdateStatsValue = (tableInfo.BulkConfig.CalculateStats) ? ",(CASE $action WHEN 'UPDATE' THEN 1 Else 0 END),(CASE $action WHEN 'DELETE' THEN 1 Else 0 END)" : "";
