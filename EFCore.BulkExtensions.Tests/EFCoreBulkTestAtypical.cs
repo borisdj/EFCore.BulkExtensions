@@ -15,6 +15,75 @@ namespace EFCore.BulkExtensions.Tests
 
         [Theory]
         [InlineData(DbServer.SqlServer)]
+        [InlineData(DbServer.Sqlite)]
+        private void DefaultValuesTest(DbServer dbServer)
+        {
+            ContextUtil.DbServer = dbServer;
+            using var context = new TestContext(ContextUtil.GetOptions());
+            context.Truncate<Document>();
+            bool isSqlite = dbServer == DbServer.Sqlite;
+
+            var entities = new List<Document>() 
+            { 
+                new Document
+                {
+                    DocumentId = Guid.Parse("FE82B1FF-384D-4D49-88D7-D0FB2565D5BC"),
+                    Content = "Info " + 1
+                },
+                new Document
+                {
+                    DocumentId = Guid.Parse("12AF6361-95BC-44F3-A487-C91C440018D8"),
+                    Content = "Info " + 2
+                },
+                new Document
+                {
+                    DocumentId = Guid.Parse("B3A2F9A5-4222-47C3-BEEA-BF50771665D3"),
+                    Content = "Info " + 3
+                },
+                new Document
+                {
+                    DocumentId = Guid.Parse("15E5936C-8021-45F4-A055-2BE89B065D9E"),
+                    Content = "Info " + 4
+                },
+                new Document
+                {
+                    DocumentId = Guid.Parse("22CF94AE-20D3-49DE-83FA-90E79DD94706"),
+                    Content = "Info " + 5
+                },
+                new Document
+                {
+                    DocumentId = Guid.Parse("00C69E47-A08F-49E0-97A6-56C62C9BB47E"),
+                    Content = "Info " + 6
+                },
+                new Document
+                {
+                    DocumentId = Guid.Parse("FF009E75-12CF-49B4-BAB9-F485C931DC91"),
+                    Content = "Info " + 7
+                },
+                new Document
+                {
+                    DocumentId = Guid.Parse("B7A78674-477C-4357-AFD3-36DEB12CE777"),
+                    Content = "Info " + 7
+                }
+            };
+            var firstDocumentUp = entities.FirstOrDefault();
+            context.BulkInsertOrUpdate(entities, bulkAction => bulkAction.SetOutputIdentity = true); // example of setting BulkConfig with Action argument
+
+            var firstDocument = context.Documents.AsNoTracking().OrderBy(x => x.Content).FirstOrDefault();
+
+            var countDb = context.Documents.Count();
+            var countEntities = entities.Count();
+
+            // TEST
+
+            Assert.Equal(countDb, countEntities);
+
+            Assert.Equal(firstDocument.DocumentId, firstDocumentUp.DocumentId);
+        }
+
+
+        [Theory]
+        [InlineData(DbServer.SqlServer)]
         [InlineData(DbServer.Sqlite)] // Does NOT have Computed Columns
         private void ComputedAndDefaultValuesTest(DbServer dbServer)
         {

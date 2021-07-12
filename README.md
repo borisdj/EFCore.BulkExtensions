@@ -43,7 +43,7 @@ context.BulkRead(entitiesList);                   context.BulkReadAsync(entities
 context.Truncate<Entity>();                       context.TruncateAsync<Entity>();
 ```
 
-SQLite requires package: [*SQLitePCLRaw.bundle_e_sqlite3*](https://docs.microsoft.com/en-us/dotnet/standard/data/sqlite/custom-versions?tabs=netcore-cli) with call to `SQLitePCL.Batteries.Init()`)<br>
+SQLite requires package: [*SQLitePCLRaw.bundle_e_sqlite3*](https://docs.microsoft.com/en-us/dotnet/standard/data/sqlite/custom-versions?tabs=netcore-cli) with call to `SQLitePCL.Batteries.Init()`<br>
 
 **Batch** Extensions are made on *IQueryable* DbSet and can be used as in the following code segment.<br>
 They are done as pure sql and no check is done whether some are prior loaded in memory and are being Tracked.<br>

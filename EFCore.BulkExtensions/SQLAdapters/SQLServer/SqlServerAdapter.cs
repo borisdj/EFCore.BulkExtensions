@@ -1,4 +1,5 @@
-﻿using EFCore.BulkExtensions.SqlAdapters;
+﻿using EFCore.BulkExtensions.Helpers;
+using EFCore.BulkExtensions.SqlAdapters;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -121,6 +122,8 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
         protected async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, CancellationToken cancellationToken, bool isAsync) where T : class
         {
             tableInfo.InsertToTempTable = true;
+            var entityPropertyWithDefaultValue = entities.GetPropertiesWithDefaultValue();
+
 
             var dropTempTableIfExists = tableInfo.BulkConfig.UseTempDB;
 
@@ -221,7 +224,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                     }
                 }
 
-                var sqlMergeTable = SqlQueryBuilder.MergeTable<T>(context, tableInfo, operationType);
+                var sqlMergeTable = SqlQueryBuilder.MergeTable<T>(context, tableInfo, operationType, entityPropertyWithDefaultValue);
                 if (isAsync)
                 {
                     await context.Database.ExecuteSqlRawAsync(sqlMergeTable.sql, sqlMergeTable.parameters, cancellationToken).ConfigureAwait(false);
