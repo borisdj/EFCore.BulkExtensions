@@ -488,9 +488,10 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                         columnsDict.Add(property.Name, null);
                     }
                 }
-                else if (entityShadowFkPropertiesDict.ContainsKey(property.Name))
+                else if (entityShadowFkPropertiesDict.ContainsKey(property.Name + "Id") || entityShadowFkPropertiesDict.ContainsKey(property.Name + property.PropertyType.Name + "Id"))
                 {
-                    var fk = entityShadowFkPropertiesDict[property.Name];
+                    string shadowFkPropertyName = entityShadowFkPropertiesDict.ContainsKey(property.Name + "Id") ? property.Name + "Id" : property.Name + property.PropertyType.Name + "Id";
+                    var fk = entityShadowFkPropertiesDict[shadowFkPropertyName];
                     entityPropertiesDict.TryGetValue(fk.GetColumnName(objectIdentifier), out var entityProperty);
                     if (entityProperty == null) // BulkRead
                         continue;
@@ -508,7 +509,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                         propertyType = typeof(byte[]);
                     }
 
-                    if (!columnsDict.ContainsKey(property.Name))
+                    if (!columnsDict.ContainsKey(columnName))
                     {
                         dataTable.Columns.Add(columnName, propertyType);
                         columnsDict.Add(columnName, null);
