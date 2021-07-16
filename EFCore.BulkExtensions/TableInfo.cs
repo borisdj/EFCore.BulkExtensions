@@ -878,7 +878,7 @@ namespace EFCore.BulkExtensions
             {
                 expression = (ctx) => ctx.Set<T>().FromSqlRaw(sqlQuery).AsNoTracking();
             }
-            return ordered ? Expression.Lambda<Func<DbContext, IQueryable<T>>>(OrderBy(typeof(T), expression.Body, PrimaryKeysPropertyColumnNameDict.Select(a => a.Key).First()), expression.Parameters) : expression;
+            return ordered ? Expression.Lambda<Func<DbContext, IQueryable<T>>>(OrderBy(typeof(T), expression.Body, PrimaryKeysPropertyColumnNameDict.Select(a => a.Key).ToList()), expression.Parameters) : expression;
 
             // ALTERNATIVELY OrderBy with DynamicLinq ('using System.Linq.Dynamic.Core;' NuGet required) that eliminates need for custom OrderBy<T> method with Expression.
             //var queryOrdered = query.OrderBy(PrimaryKeys[0]);
@@ -896,20 +896,28 @@ namespace EFCore.BulkExtensions
             {
                 expression = Expression.Call(typeof(EntityFrameworkQueryableExtensions), "AsNoTracking", new Type[] { entityType }, expression);
             }
-            expression = ordered ? OrderBy(entityType, expression, PrimaryKeysPropertyColumnNameDict.Select(a => a.Key).First()) : expression;
+            expression = ordered ? OrderBy(entityType, expression, PrimaryKeysPropertyColumnNameDict.Select(a => a.Key).ToList()) : expression;
             return Expression.Lambda<Func<DbContext, IEnumerable>>(expression, parameter);
 
             // ALTERNATIVELY OrderBy with DynamicLinq ('using System.Linq.Dynamic.Core;' NuGet required) that eliminates need for custom OrderBy<T> method with Expression.
             //var queryOrdered = query.OrderBy(PrimaryKeys[0]);
         }
 
-        private static MethodCallExpression OrderBy(Type entityType, Expression source, string ordering)
+        private static MethodCallExpression OrderBy(Type entityType, Expression source, List<string> orderings)
         {
-            PropertyInfo property = entityType.GetProperty(ordering);
+            var expression = (MethodCallExpression)source;
             ParameterExpression parameter = Expression.Parameter(entityType);
-            MemberExpression propertyAccess = Expression.MakeMemberAccess(parameter, property);
-            LambdaExpression orderByExp = Expression.Lambda(propertyAccess, parameter);
-            return Expression.Call(typeof(Queryable), "OrderBy", new Type[] { entityType, property.PropertyType }, source, Expression.Quote(orderByExp));
+            bool firstArgOrderBy = true;
+            foreach (var ordering in orderings)
+            {
+                PropertyInfo property = entityType.GetProperty(ordering);
+                MemberExpression propertyAccess = Expression.MakeMemberAccess(parameter, property);
+                LambdaExpression orderByExp = Expression.Lambda(propertyAccess, parameter);
+                string methodName = firstArgOrderBy ? "OrderBy" : "ThenBy";
+                expression = Expression.Call(typeof(Queryable), methodName, new Type[] { entityType, property.PropertyType }, expression, Expression.Quote(orderByExp));
+                firstArgOrderBy = false;
+            }
+            return expression;
         }
         #endregion
 
