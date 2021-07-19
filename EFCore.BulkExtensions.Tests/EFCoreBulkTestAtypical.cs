@@ -444,29 +444,32 @@ namespace EFCore.BulkExtensions.Tests
                 //context.ChangeLogs.BatchDelete(); // TODO
                 context.BulkDelete(context.ItemLinks.ToList());
             }
-            context.BulkDelete(context.Items.ToList()); // On table with FK Truncate does not work
+            //context.BulkDelete(context.Items.ToList()); // On table with FK Truncate does not work
 
 
-            for (int i = 1; i < 10; ++i)
+            if (context.Items.Count() == 0)
             {
-                var entity = new Item
+                for (int i = 1; i <= 10; ++i)
                 {
-                    ItemId = 0,
-                    Name = "name " + i,
-                    Description = "info " + Guid.NewGuid().ToString().Substring(0, 3),
-                    Quantity = i % 10,
-                    Price = i / (i % 5 + 1),
-                    TimeUpdated = DateTime.Now,
-                    ItemHistories = new List<ItemHistory>()
-                };
+                    var entity = new Item
+                    {
+                        ItemId = 0,
+                        Name = "name " + i,
+                        Description = "info " + Guid.NewGuid().ToString().Substring(0, 3),
+                        Quantity = i % 10,
+                        Price = i / (i % 5 + 1),
+                        TimeUpdated = DateTime.Now,
+                        ItemHistories = new List<ItemHistory>()
+                    };
 
-                context.Items.Add(entity);
+                    context.Items.Add(entity);
+                }
+                context.SaveChanges();
             }
 
-            context.SaveChanges();
             var items = context.Items.ToList();
             var entities = new List<ItemLink>();
-            for (int i = 0; i <= EntitiesNumber - 1; i++)
+            for (int i = 0; i < EntitiesNumber; i++)
             {
                 entities.Add(new ItemLink
                 {
@@ -474,19 +477,19 @@ namespace EFCore.BulkExtensions.Tests
                     Item = items[i % items.Count]
                 });
             }
-            context.BulkInsert(entities, bulkConfig => bulkConfig.EnableShadowProperties = true);
+            context.BulkInsert(entities);
 
             if (dbServer == DbServer.SqlServer)
             {
                 List<ItemLink> links = context.ItemLinks.ToList();
                 Assert.True(links.Count() > 0, "ItemLink row count");
 
-                // ToDo
-                //foreach (var link in links)
-                //{
-                //    Assert.NotNull(link.Item);
-                //}
+                foreach (var link in links)
+                {
+                    Assert.NotNull(link.Item);
+                }
             }
+            context.Truncate<ItemLink>();
         }
 
         [Theory]

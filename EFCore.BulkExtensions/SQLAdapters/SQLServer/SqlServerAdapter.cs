@@ -452,7 +452,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
             var entityShadowFkPropertiesDict = entityTypeProperties.Where(a => a.IsShadowProperty() &&
                                                                                a.IsForeignKey() &&
                                                                                a.GetContainingForeignKeys().FirstOrDefault()?.DependentToPrincipal?.Name != null)
-                                                                         .ToDictionary(a => a.Name, a => a);
+                                                                         .ToDictionary(x => x.GetContainingForeignKeys().First().DependentToPrincipal.Name, a => a);
             var entityShadowFkPropertyColumnNamesDict = entityShadowFkPropertiesDict.ToDictionary(a => a.Key, a => a.Value.GetColumnName(objectIdentifier));
             var shadowPropertyColumnNamesDict = entityPropertiesDict.Where(a => a.Value.IsShadowProperty()).ToDictionary(a => a.Key, a => a.Value.GetColumnName(objectIdentifier));
 
@@ -491,10 +491,10 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                         columnsDict.Add(property.Name, null);
                     }
                 }
-                else if (entityShadowFkPropertiesDict.ContainsKey(property.Name + "Id") || entityShadowFkPropertiesDict.ContainsKey(property.Name + property.PropertyType.Name + "Id"))
+                else if (entityShadowFkPropertiesDict.ContainsKey(property.Name))
                 {
-                    string shadowFkPropertyName = entityShadowFkPropertiesDict.ContainsKey(property.Name + "Id") ? property.Name + "Id" : property.Name + property.PropertyType.Name + "Id";
-                    var fk = entityShadowFkPropertiesDict[shadowFkPropertyName];
+                    var fk = entityShadowFkPropertiesDict[property.Name];
+
                     entityPropertiesDict.TryGetValue(fk.GetColumnName(objectIdentifier), out var entityProperty);
                     if (entityProperty == null) // BulkRead
                         continue;
@@ -612,7 +612,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
 
             foreach (var entity in entities)
             {
-                var propertiesToLoad = properties.Where(a => !tableInfo.AllNavigationsDictionary.ContainsKey(a.Name) || tableInfo.OwnedTypesDict.ContainsKey(a.Name)); // omit virtual Navigation (except Owned) since it's Getter can cause unwanted Select-s from Db
+                var propertiesToLoad = properties.Where(a => !tableInfo.AllNavigationsDictionary.ContainsKey(a.Name) || entityShadowFkPropertiesDict.ContainsKey(a.Name) || tableInfo.OwnedTypesDict.ContainsKey(a.Name)); // omit virtual Navigation (except Owned and ShadowNavig.) since it's Getter can cause unwanted Select-s from Db
                 foreach (var property in propertiesToLoad)
                 {
                     var propertyValue = tableInfo.FastPropertyDict.ContainsKey(property.Name) ? tableInfo.FastPropertyDict[property.Name].Get(entity) : null;
