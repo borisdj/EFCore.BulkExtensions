@@ -225,13 +225,18 @@ namespace EFCore.BulkExtensions
                         .IgnoreAutoIncludes()
                         .Where((Expression<Func<T, bool>>)tableInfo.BulkConfig.SynchronizeFilter);
                     var batchSql = BatchUtil.GetBatchSql(querable, context, false);
-                    int wherePos = batchSql.Item1.IndexOf("\r\nWHERE ");
+                    var whereClause = $"{Environment.NewLine}WHERE ";
+                    int wherePos = batchSql.Item1.IndexOf(whereClause, StringComparison.OrdinalIgnoreCase);
                     if (wherePos > 0)
                     {
-                        var sqlWhere = batchSql.Item1.Substring(wherePos + 8);
+                        var sqlWhere = batchSql.Item1.Substring(wherePos + whereClause.Length);
                         sqlWhere = sqlWhere.Replace($"[{batchSql.Item2}].", string.Empty);
                         deleteSearchCondition = " AND " + sqlWhere;
                         parameters.AddRange(batchSql.Item6);
+                    }
+                    else
+                    {
+                        throw new InvalidBulkConfigException($"'Bulk{operationType}' SynchronizeFilter expression can not be translated to SQL");
                     }
                 }
 
