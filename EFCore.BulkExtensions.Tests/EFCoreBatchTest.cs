@@ -139,7 +139,7 @@ namespace EFCore.BulkExtensions.Tests
                 context.Parents.Where(parent => parent.ParentId < 5 && !string.IsNullOrEmpty(parent.Details.Notes))
                     .BatchUpdate(parent => new Parent { Description = parent.Details.Notes ?? "Fallback" });
 
-                var actualSqlExecuted = testDbCommandInterceptor.ExecutedNonQueryCommands?.LastOrDefault();
+                var actualSqlExecuted = testDbCommandInterceptor.ExecutedNonQueryCommands?.LastOrDefault().Sql;
                 var expectedSql =
 @"UPDATE p SET  [p].[Description] = (
     SELECT COALESCE([p1].[Notes], N'Fallback')
@@ -154,7 +154,7 @@ WHERE ([p].[ParentId] < 5) AND ([p0].[Notes] IS NOT NULL AND (([p0].[Notes] <> N
                 context.Parents.Where(parent => parent.ParentId == 1)
                     .BatchUpdate(parent => new Parent { Value = parent.Children.Where(child => child.IsEnabled).Sum(child => child.Value) });
 
-                actualSqlExecuted = testDbCommandInterceptor.ExecutedNonQueryCommands?.LastOrDefault();
+                actualSqlExecuted = testDbCommandInterceptor.ExecutedNonQueryCommands?.LastOrDefault().Sql;
                 expectedSql =
 @"UPDATE p SET  [p].[Value] = (
     SELECT SUM([c].[Value])
@@ -173,7 +173,7 @@ WHERE [p].[ParentId] = 1";
                         Value = newValue
                     });
 
-                actualSqlExecuted = testDbCommandInterceptor.ExecutedNonQueryCommands?.LastOrDefault();
+                actualSqlExecuted = testDbCommandInterceptor.ExecutedNonQueryCommands?.LastOrDefault().Sql;
                 expectedSql =
 @"UPDATE p SET  [p].[Description] = (CONVERT(VARCHAR(100), (
     SELECT SUM([c].[Value])

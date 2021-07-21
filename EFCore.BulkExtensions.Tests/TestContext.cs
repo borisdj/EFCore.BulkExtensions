@@ -89,6 +89,9 @@ namespace EFCore.BulkExtensions.Tests
 
             modelBuilder.Entity<Setting>().Property(e => e.Settings).HasConversion<string>();
 
+            modelBuilder.Entity<Parent>().Property(parent => parent.PhoneNumber)
+                .HasColumnType("varchar(12)").HasMaxLength(12).HasField("_phoneNumber").IsRequired();
+
             // [Timestamp] alternative:
             //modelBuilder.Entity<Document>().Property(x => x.RowVersion).HasColumnType("timestamp").ValueGeneratedOnAddOrUpdate().HasConversion(new NumberToBytesConverter<ulong>()).IsConcurrencyToken();
 
@@ -98,17 +101,23 @@ namespace EFCore.BulkExtensions.Tests
 
     public static class ContextUtil
     {
+        // TODO: Pass DbService through all the GetOptions methods as a parameter and eliminate this property so the automated tests
+        // are thread safe
         public static DbServer DbServer { get; set; }
 
         public static DbContextOptions GetOptions(IInterceptor dbInterceptor) => GetOptions(new[] { dbInterceptor });
         public static DbContextOptions GetOptions(IEnumerable<IInterceptor> dbInterceptors = null) => GetOptions<TestContext>(dbInterceptors);
 
         public static DbContextOptions GetOptions<TDbContext>(IEnumerable<IInterceptor> dbInterceptors = null, string databaseName = nameof(EFCoreBulkTest))
-            where TDbContext: DbContext
+            where TDbContext : DbContext
+            => GetOptions<TDbContext>(ContextUtil.DbServer, dbInterceptors, databaseName);
+
+        public static DbContextOptions GetOptions<TDbContext>(DbServer dbServerType, IEnumerable<IInterceptor> dbInterceptors = null, string databaseName = nameof(EFCoreBulkTest))
+            where TDbContext : DbContext
         {
             var optionsBuilder = new DbContextOptionsBuilder<TDbContext>();
 
-            if (DbServer == DbServer.SqlServer)
+            if (dbServerType == DbServer.SqlServer)
             {
                 var connectionString = GetSqlServerConnectionString(databaseName);
 
@@ -118,7 +127,7 @@ namespace EFCore.BulkExtensions.Tests
                 //optionsBuilder.UseSqlServer(connectionString); // Can NOT Test with UseInMemoryDb (Exception: Relational-specific methods can only be used when the context is using a relational)
                 optionsBuilder.UseSqlServer(connectionString, opt => opt.UseNetTopologySuite()); // NetTopologySuite for Geometry / Geometry types
             }
-            else if (DbServer == DbServer.Sqlite)
+            else if (dbServerType == DbServer.Sqlite)
             {
                 string connectionString = GetSqliteConnectionString(databaseName);
                 optionsBuilder.UseSqlite(connectionString);
@@ -129,7 +138,7 @@ namespace EFCore.BulkExtensions.Tests
             }
             else
             {
-                throw new NotSupportedException($"Database {DbServer} is not supported. Only SQL Server and SQLite are Currently supported.");
+                throw new NotSupportedException($"Database {dbServerType} is not supported. Only SQL Server and SQLite are Currently supported.");
             }
 
             if (dbInterceptors?.Any() == true)
@@ -410,6 +419,10 @@ namespace EFCore.BulkExtensions.Tests
         public string Description { get; set; }
         public virtual ParentDetail Details { get; set; }
         public int ParentId { get; set; }
+
+        private string _phoneNumber;
+        public string PhoneNumber { get => _phoneNumber; set => _phoneNumber = value; }
+
         public decimal Value { get; set; }
     }
 
