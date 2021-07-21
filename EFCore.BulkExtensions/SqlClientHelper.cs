@@ -63,6 +63,18 @@ namespace EFCore.BulkExtensions
             // copy properties from original parameter to copy
             newParameter.ParameterName = parameter.ParameterName;
             newParameter.Value = parameter.Value;
+            newParameter.DbType = parameter.DbType;
+
+            if (parameter is Microsoft.Data.SqlClient.SqlParameter microsoftSqlParameter
+                && newParameter is System.Data.SqlClient.SqlParameter newSystemSqlParameter)
+            {
+                newSystemSqlParameter.SqlDbType = microsoftSqlParameter.SqlDbType;
+            }
+            else if(parameter is System.Data.SqlClient.SqlParameter systemSqlParameter
+                && newParameter is Microsoft.Data.SqlClient.SqlParameter newMicrosoftSqlParameter)
+            {
+                newMicrosoftSqlParameter.SqlDbType = systemSqlParameter.SqlDbType;
+            }
 
             return newParameter;
         }
