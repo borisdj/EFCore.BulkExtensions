@@ -63,7 +63,7 @@ namespace EFCore.BulkExtensions.Tests
             string oldPhoneNumber = "7756789999";
             string newPhoneNumber = "3606789999";
 
-            await testContext.Parents
+            _ = await testContext.Parents
                 .Where(parent => parent.PhoneNumber == oldPhoneNumber)
                 .BatchUpdateAsync(parent => new Parent { PhoneNumber = newPhoneNumber })
                 .ConfigureAwait(false);
@@ -75,7 +75,7 @@ namespace EFCore.BulkExtensions.Tests
             Assert.Equal(System.Data.DbType.AnsiString, oldPhoneNumberParameter.DbType);
             Assert.Equal(System.Data.SqlDbType.VarChar, oldPhoneNumberParameter.SqlDbType);
 
-            var newPhoneNumberParameter = (Microsoft.Data.SqlClient.SqlParameter)executedCommand.DbParameters.Single(param => param.ParameterName == "param_1");
+            var newPhoneNumberParameter = (Microsoft.Data.SqlClient.SqlParameter)executedCommand.DbParameters.Single(param => param.ParameterName == "@param_1");
             Assert.Equal(System.Data.DbType.AnsiString, newPhoneNumberParameter.DbType);
             Assert.Equal(System.Data.SqlDbType.VarChar, newPhoneNumberParameter.SqlDbType);
 

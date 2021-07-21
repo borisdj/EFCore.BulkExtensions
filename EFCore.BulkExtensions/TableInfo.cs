@@ -50,6 +50,7 @@ namespace EFCore.BulkExtensions
         public Dictionary<string, string> OutputPropertyColumnNamesDict { get; set; } = new Dictionary<string, string>();
         public Dictionary<string, string> PropertyColumnNamesDict { get; set; } = new Dictionary<string, string>();
         public Dictionary<string, string> ColumnNamesTypesDict { get; set; } = new Dictionary<string, string>();
+        public Dictionary<string, IProperty> ColumnToPropertyDictionary { get; set; } = new Dictionary<string, IProperty>();
         public Dictionary<string, string> PropertyColumnNamesCompareDict { get; set; } = new Dictionary<string, string>();
         public Dictionary<string, string> PropertyColumnNamesUpdateDict { get; set; } = new Dictionary<string, string>();
         public Dictionary<string, FastProperty> FastPropertyDict { get; set; } = new Dictionary<string, FastProperty>();
@@ -138,41 +139,50 @@ namespace EFCore.BulkExtensions
                                                                              // TODO Consider Hash
             }
 
-            var allProperties = entityType.GetProperties().Where(a => a.GetColumnName(ObjectIdentifier) != null);
-            ColumnNamesTypesDict = allProperties.ToDictionary(a => a.GetColumnName(ObjectIdentifier), a => a.GetColumnType());
-
-            bool AreSpecifiedUpdateByProperties = BulkConfig.UpdateByProperties?.Count() > 0;
-            var primaryKeys = entityType.FindPrimaryKey()?.Properties?.ToDictionary(a => a.Name, b => b.GetColumnName(ObjectIdentifier));
-            HasSinglePrimaryKey = primaryKeys?.Count == 1;
-            PrimaryKeysPropertyColumnNameDict = AreSpecifiedUpdateByProperties ? BulkConfig.UpdateByProperties.ToDictionary(a => a, b => allProperties.First(p => p.Name == b).GetColumnName(ObjectIdentifier))
-                                                                               : (primaryKeys ?? new Dictionary<string, string>());
-
-            if (BulkConfig.DateTime2PrecisionForceRound)
+            var allProperties = new List<IProperty>();
+            foreach (var entityProperty in entityType.GetProperties())
             {
-                var propertyMappings = allProperties.Select(a => a.GetTableColumnMappings().ToList());
-                foreach (var propertyMap in propertyMappings)
+                var columnName = entityProperty.GetColumnName(ObjectIdentifier);
+
+                if (columnName == null)
+                    continue;
+
+                allProperties.Add(entityProperty);
+                ColumnNamesTypesDict.Add(columnName, entityProperty.GetColumnType());
+                ColumnToPropertyDictionary.Add(columnName, entityProperty);
+
+                if (BulkConfig.DateTime2PrecisionForceRound)
                 {
-                    IColumn column = propertyMap.FirstOrDefault().Column;
-                    var columnType = column.StoreType;
+                    var columnMappings = entityProperty.GetTableColumnMappings();
+                    var firstMapping = columnMappings.FirstOrDefault();
+                    var columnType = firstMapping.Column.StoreType;
                     if (columnType.StartsWith("datetime2(") && !columnType.EndsWith("7)"))
                     {
                         string precisionText = columnType.Substring(10, 1);
                         int precision = int.Parse(precisionText);
-                        DateTime2PropertiesPrecisionLessThen7Dict.Add(propertyMap.FirstOrDefault().Property.Name, precision); // SqlBulkCopy does Floor instead of Round so Rounding done in memory
+                        DateTime2PropertiesPrecisionLessThen7Dict.Add(firstMapping.Property.Name, precision); // SqlBulkCopy does Floor instead of Round so Rounding done in memory
                     }
                 }
             }
 
+            bool areSpecifiedUpdateByProperties = BulkConfig.UpdateByProperties?.Count() > 0;
+            var primaryKeys = entityType.FindPrimaryKey()?.Properties?.ToDictionary(a => a.Name, b => b.GetColumnName(ObjectIdentifier));
+
+            HasSinglePrimaryKey = primaryKeys?.Count == 1;
+            PrimaryKeysPropertyColumnNameDict = areSpecifiedUpdateByProperties ? BulkConfig.UpdateByProperties.ToDictionary(a => a, b => allProperties.First(p => p.Name == b).GetColumnName(ObjectIdentifier))
+                                                                               : (primaryKeys ?? new Dictionary<string, string>());
+
             // load all derived type properties
             if (entityType.IsAbstract())
             {
-                var extendedAllProperties = allProperties.ToList();
-                foreach (var derived in entityType.GetDirectlyDerivedTypes())
+                foreach (var derivedType in entityType.GetDirectlyDerivedTypes())
                 {
-                    extendedAllProperties.AddRange(derived.GetProperties());
+                    foreach (var derivedProperty in derivedType.GetProperties())
+                    {
+                        if (!allProperties.Contains(derivedProperty))
+                            allProperties.Add(derivedProperty);
+                    }
                 }
-
-                allProperties = extendedAllProperties.Distinct();
             }
 
             var navigations = entityType.GetNavigations();
@@ -238,7 +248,7 @@ namespace EFCore.BulkExtensions
 
             if (AreSpecifiedPropertiesToInclude)
             {
-                if (AreSpecifiedUpdateByProperties) // Adds UpdateByProperties to PropertyToInclude if they are not already explicitly listed
+                if (areSpecifiedUpdateByProperties) // Adds UpdateByProperties to PropertyToInclude if they are not already explicitly listed
                 {
                     foreach (var updateByProperty in BulkConfig.UpdateByProperties)
                     {
@@ -265,6 +275,14 @@ namespace EFCore.BulkExtensions
                 if (property.PropertyInfo != null) // skip Shadow Property
                 {
                     FastPropertyDict.Add(property.Name, new FastProperty(property.PropertyInfo));
+                }
+
+                var converter = property.GetTypeMapping().Converter;
+                if (converter is not null)
+                {
+                    var columnName = property.GetColumnName(ObjectIdentifier);
+                    ConvertiblePropertyColumnDict.Add(property.Name, columnName);
+                    ConvertibleColumnConverterDict.Add(columnName, converter);
                 }
             }
 
@@ -342,20 +360,6 @@ namespace EFCore.BulkExtensions
 
             PropertyColumnNamesCompareDict = propertiesOnCompare.ToDictionary(a => a.Name, b => b.GetColumnName(ObjectIdentifier).Replace("]", "]]"));
             PropertyColumnNamesUpdateDict = propertiesOnUpdate.ToDictionary(a => a.Name, b => b.GetColumnName(ObjectIdentifier).Replace("]", "]]"));
-
-            foreach (var property in allProperties)
-            {
-                var converter = property.GetTypeMapping().Converter;
-
-                if (converter is null)
-                {
-                    continue;
-                }
-
-                var columnName = property.GetColumnName(ObjectIdentifier);
-                ConvertiblePropertyColumnDict.Add(property.Name, columnName);
-                ConvertibleColumnConverterDict.Add(columnName, converter);
-            }
 
             if (loadOnlyPKColumn)
             {
