@@ -16,6 +16,7 @@
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
     <AssemblyVersion>3.6.1.0</AssemblyVersion>
     <FileVersion>3.6.1.0</FileVersion>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>

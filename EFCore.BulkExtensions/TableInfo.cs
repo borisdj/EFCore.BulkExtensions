@@ -49,6 +49,7 @@ namespace EFCore.BulkExtensions
         public Dictionary<string, string> OutputPropertyColumnNamesDict { get; set; } = new Dictionary<string, string>();
         public Dictionary<string, string> PropertyColumnNamesDict { get; set; } = new Dictionary<string, string>();
         public Dictionary<string, string> ColumnNamesTypesDict { get; set; } = new Dictionary<string, string>();
+        public Dictionary<string, IProperty> ColumnToPropertyDictionary { get; set; } = new Dictionary<string, IProperty>();
         public Dictionary<string, string> PropertyColumnNamesCompareDict { get; set; } = new Dictionary<string, string>();
         public Dictionary<string, string> PropertyColumnNamesUpdateDict { get; set; } = new Dictionary<string, string>();
         public Dictionary<string, FastProperty> FastPropertyDict { get; set; } = new Dictionary<string, FastProperty>();
@@ -133,9 +134,14 @@ namespace EFCore.BulkExtensions
             PrimaryKeysPropertyColumnNameDict = AreSpecifiedUpdateByProperties ? BulkConfig.UpdateByProperties.ToDictionary(a => a, b => b)
                                                                                : (primaryKeys ?? new Dictionary<string, string>());
 
-            var allProperties = entityType.GetProperties().AsEnumerable();
+            var allProperties = entityType.GetProperties();
 
-            ColumnNamesTypesDict = allProperties.ToDictionary(a => a.GetColumnName(), a => a.GetColumnType());
+            foreach (var entityProperty in allProperties)
+            {
+                var columnName = entityProperty.GetColumnName();
+                ColumnNamesTypesDict.Add(columnName, entityProperty.GetColumnType());
+                ColumnToPropertyDictionary.Add(columnName, entityProperty);
+            }
 
             // load all derived type properties
             if (entityType.IsAbstract())
