@@ -1,5 +1,6 @@
 ﻿using EFCore.BulkExtensions.SqlAdapters;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -49,6 +50,41 @@ namespace EFCore.BulkExtensions.Tests
             {
                 Assert.EndsWith(" TOP(1)", firstItem.Name);
             }
+        }
+
+        [Fact]
+        public async Task BatchUpdateAsync_correctly_specifies_AnsiString_type_on_the_sql_parameter()
+        {
+            var dbCommandInterceptor = new TestDbCommandInterceptor();
+            var interceptors = new[] { dbCommandInterceptor };
+
+            using var testContext = new TestContext(ContextUtil.GetOptions<TestContext>(DbServer.SqlServer, interceptors));
+
+            string oldPhoneNumber = "7756789999";
+            string newPhoneNumber = "3606789999";
+
+            _ = await testContext.Parents
+                .Where(parent => parent.PhoneNumber == oldPhoneNumber)
+                .BatchUpdateAsync(parent => new Parent { PhoneNumber = newPhoneNumber })
+                .ConfigureAwait(false);
+
+            var executedCommand = dbCommandInterceptor.ExecutedNonQueryCommands.Last();
+            Assert.Equal(2, executedCommand.DbParameters.Count);
+
+            var oldPhoneNumberParameter = (Microsoft.Data.SqlClient.SqlParameter)executedCommand.DbParameters.Single(param => param.ParameterName == "@__oldPhoneNumber_0");
+            Assert.Equal(System.Data.DbType.AnsiString, oldPhoneNumberParameter.DbType);
+            Assert.Equal(System.Data.SqlDbType.VarChar, oldPhoneNumberParameter.SqlDbType);
+
+            var newPhoneNumberParameter = (Microsoft.Data.SqlClient.SqlParameter)executedCommand.DbParameters.Single(param => param.ParameterName == "@param_1");
+            Assert.Equal(System.Data.DbType.AnsiString, newPhoneNumberParameter.DbType);
+            Assert.Equal(System.Data.SqlDbType.VarChar, newPhoneNumberParameter.SqlDbType);
+
+            var expectedSql =
+@"UPDATE p SET  [p].[PhoneNumber] = @param_1 
+FROM [Parent] AS [p]
+WHERE [p].[PhoneNumber] = @__oldPhoneNumber_0";
+
+            Assert.Equal(expectedSql.Replace("\r\n", "\n"), executedCommand.Sql.Replace("\r\n", "\n"));
         }
 
         internal async Task RunDeleteAllAsync(DbServer dbServer)

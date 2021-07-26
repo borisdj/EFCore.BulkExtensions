@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore.Query.Internal;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -204,14 +205,20 @@ namespace EFCore.BulkExtensions
                     if (isDifferentFromDefault || updateColumnExplicit)
                     {
                         sql += $"[{columnName}] = @{columnName}, ";
-                        propertyUpdateValue ??= DBNull.Value;
-                        var param = (IDbDataParameter)Activator.CreateInstance(typeof(Microsoft.Data.SqlClient.SqlParameter));
-                        param.ParameterName = $"@{columnName}";
-                        param.Value = propertyUpdateValue;
-                        if (!isDifferentFromDefault && propertyUpdateValue == DBNull.Value && property.PropertyType == typeof(byte[])) // needed only when having complex type property to be updated to default 'null'
+                        var parameterName = $"@{columnName}";
+                        IDbDataParameter param = TryCreateRelationalMappingParameter(columnName, parameterName, propertyUpdateValue, tableInfo);
+                        if (param == null)
                         {
-                            param.DbType = DbType.Binary; // fix for ByteArray since implicit conversion nvarchar to varbinary(max) is not allowed
+                            propertyUpdateValue ??= DBNull.Value;
+                            param = new Microsoft.Data.SqlClient.SqlParameter();
+                            param.ParameterName = $"@{columnName}";
+                            param.Value = propertyUpdateValue;
+                            if (!isDifferentFromDefault && propertyUpdateValue == DBNull.Value && property.PropertyType == typeof(byte[])) // needed only when having complex type property to be updated to default 'null'
+                            {
+                                param.DbType = DbType.Binary; // fix for ByteArray since implicit conversion nvarchar to varbinary(max) is not allowed
+                            }
                         }
+
                         parameters.Add(param);
                     }
                 }
@@ -285,6 +292,8 @@ namespace EFCore.BulkExtensions
 
             if (expression is ConstantExpression constantExpression)
             {
+                // TODO: I believe the EF query builder inserts constant expressions directly into the SQL.
+                // This should probably match that behavior for the update body
                 AddSqlParameter(sqlColumns, sqlParameters, rootTypeTableInfo, columnName, constantExpression.Value);
                 return;
             }
@@ -444,29 +453,56 @@ namespace EFCore.BulkExtensions
 
         private static void AddSqlParameter(StringBuilder sqlColumns, List<object> sqlParameters, TableInfo tableInfo, string columnName, object value)
         {
-            var parmName = $"param_{sqlParameters.Count}";
+            var paramName = $"@param_{sqlParameters.Count}";
             if (columnName != null && tableInfo.ConvertibleColumnConverterDict.TryGetValue(columnName, out var valueConverter))
             {
                 value = valueConverter.ConvertToProvider.Invoke(value);
             }
+
             // will rely on SqlClientHelper.CorrectParameterType to fix the type before executing
-
-            var columnType = tableInfo.ColumnNamesTypesDict[columnName];
-            var parameter = new Microsoft.Data.SqlClient.SqlParameter(parmName, value ?? DBNull.Value);
-
-            if (value == null && columnType.Contains(DbType.Binary.ToString().ToLower())) //"varbinary(max)".Contains("binary")
+            var sqlParameter = TryCreateRelationalMappingParameter(columnName, paramName, value, tableInfo);
+            if (sqlParameter == null)
             {
-                parameter.DbType = DbType.Binary; // fix for ByteArray since implicit conversion nvarchar to varbinary(max) is not allowed
+                sqlParameter = new Microsoft.Data.SqlClient.SqlParameter(paramName, value ?? DBNull.Value);
+                var columnType = tableInfo.ColumnNamesTypesDict[columnName];
+                if (value == null && columnType.Contains(DbType.Binary.ToString(), StringComparison.OrdinalIgnoreCase)) //"varbinary(max)".Contains("binary")
+                {
+                    sqlParameter.DbType = DbType.Binary; // fix for ByteArray since implicit conversion nvarchar to varbinary(max) is not allowed
+                }
             }
 
-            sqlParameters.Add(parameter);
-            sqlColumns.Append($" @{parmName}");
+            sqlParameters.Add(sqlParameter);
+            sqlColumns.Append($" {paramName}");
         }
 
         private static readonly MethodInfo DbContextSetMethodInfo = 
             typeof(DbContext).GetMethod(nameof(DbContext.Set), BindingFlags.Public | BindingFlags.Instance, null, Array.Empty<Type>(), null);
 
         public static readonly Regex TableAliasPattern = new Regex(@"(?:FROM|JOIN)\s+(\[\S+\]) AS (\[\S+\])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        /// <summary>
+        /// Attempt to create a DbParameter using the <see cref="Microsoft.EntityFrameworkCore.Storage.RelationalTypeMapping.CreateParameter(DbCommand, string, object, bool?)"/>
+        /// call for the specified column name.
+        /// </summary>
+        public static DbParameter TryCreateRelationalMappingParameter(string columnName, string parameterName, object value, TableInfo tableInfo)
+        {
+            if (columnName == null)
+                return null;
+
+            if (!tableInfo.ColumnToPropertyDictionary.TryGetValue(columnName, out var propertyInfo))
+                return null;
+
+            try
+            {
+                var relationalTypeMapping = propertyInfo.GetRelationalTypeMapping();
+
+                using var dbCommand = new Microsoft.Data.SqlClient.SqlCommand();
+                return relationalTypeMapping.CreateParameter(dbCommand, parameterName, value, propertyInfo.IsNullable);
+            }
+            catch (Exception) { }
+
+            return null;
+        }
 
         public static bool TryCreateUpdateBodyNestedQuery(BatchUpdateCreateBodyData createBodyData, Expression expression, MemberAssignment memberAssignment)
         {
