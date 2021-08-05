@@ -188,11 +188,6 @@ namespace EFCore.BulkExtensions
         public int SRID { get; set; } = 4326;
 
         /// <summary>
-        ///     Specifies geometry properties that must be mapped to SQL Server geometry type. By default geometry properties are mapped to SQL Server geography type.
-        /// </summary>
-        public List<string> GeometryPropertiesToMapToSqlGeometryType { get; set; }
-
-        /// <summary>
         ///     Enum with [Flags] attribute which enables specifying one or more options.
         /// </summary>
         /// <value>

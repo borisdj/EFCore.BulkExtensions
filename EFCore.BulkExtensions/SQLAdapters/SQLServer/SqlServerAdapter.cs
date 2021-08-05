@@ -698,7 +698,10 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                     if (propertyValue is Geometry geometryValue && isSqlServer)
                     {
                         geometryValue.SRID = tableInfo.BulkConfig.SRID;
-                        sqlServerBytesWriter.IsGeography = !(tableInfo.BulkConfig.GeometryPropertiesToMapToSqlGeometryType?.Contains(property.Name) ?? false);
+                        if (tableInfo.PropertyColumnNamesDict.ContainsKey(property.Name))
+                        {
+                            sqlServerBytesWriter.IsGeography = tableInfo.ColumnNamesTypesDict[tableInfo.PropertyColumnNamesDict[property.Name]] == "geography"; // "geography" type is default, otherwise it's "geometry" type
+                        }
                         propertyValue = sqlServerBytesWriter.Write(geometryValue);
                     }
 

@@ -511,14 +511,7 @@ namespace EFCore.BulkExtensions.Tests
                     }
                 };
 
-                context.BulkInsertOrUpdate(
-                    entities,
-                    new BulkConfig
-                    {
-                        GeometryPropertiesToMapToSqlGeometryType = new[] {
-                             nameof(Address.LocationGeometry)
-                        }.ToList()
-                    });
+                context.BulkInsertOrUpdate(entities);
             }
 
             using (var context = new TestContext(ContextUtil.GetOptions()))
