@@ -15,6 +15,8 @@ namespace EFCore.BulkExtensions.Tests
 {
     public class TestContext : DbContext
     {
+        public DbSet<Source> Sources { get; set; }
+
         public DbSet<Item> Items { get; set; }
         public DbSet<ItemHistory> ItemHistories { get; set; }
 
@@ -524,4 +526,13 @@ namespace EFCore.BulkExtensions.Tests
         public byte[] ArchiveId { get; set; }
         public string Description { get; set; }
     }
+
+    public class Source
+    {
+        public int SourceId { get; set; }
+        public Status StatusId { get; set; }
+        public Type TypeId { get; set; }
+    }
+    public enum Status : byte { Init, Changed }
+    public enum Type : byte { Undefined, Type1, Type2 }
 }

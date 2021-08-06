@@ -218,7 +218,11 @@ namespace EFCore.BulkExtensions
 
                     if (tableInfo.ConvertibleColumnConverterDict.ContainsKey(columnName))
                     {
-                        propertyUpdateValue = tableInfo.ConvertibleColumnConverterDict[columnName].ConvertToProvider.Invoke(propertyUpdateValue);
+                        bool isEnum = tableInfo.ColumnToPropertyDictionary[columnName].ClrType.IsEnum;
+                        if (!isEnum) // Omit from ConvertibleColumns because there Enum of byte type gets converter to Number which is then different from default enum value // Test: RunBatchUpdateEnum
+                        {
+                            propertyUpdateValue = tableInfo.ConvertibleColumnConverterDict[columnName].ConvertToProvider.Invoke(propertyUpdateValue);
+                        }
                     }
 
                     bool isDifferentFromDefault = propertyUpdateValue != null && propertyUpdateValue?.ToString() != propertyDefaultValue?.ToString();
