@@ -436,10 +436,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
             var ownedEntitiesMappedProperties = new HashSet<string>();
 
             var isSqlServer = context.Database.ProviderName.EndsWith(DbServer.SqlServer.ToString());
-            var sqlServerBytesWriter = new SqlServerBytesWriter
-            {
-                IsGeography = true
-            };
+            var sqlServerBytesWriter = new SqlServerBytesWriter();
 
             var objectIdentifier = tableInfo.ObjectIdentifier;
             type = tableInfo.HasAbstractList ? entities[0].GetType() : type;
@@ -642,6 +639,12 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                     if (tableInfo.HasSpatialType && propertyValue is Geometry geometryValue)
                     {
                         geometryValue.SRID = tableInfo.BulkConfig.SRID;
+
+                        if (tableInfo.PropertyColumnNamesDict.ContainsKey(property.Name))
+                        {
+                            sqlServerBytesWriter.IsGeography = tableInfo.ColumnNamesTypesDict[tableInfo.PropertyColumnNamesDict[property.Name]] == "geography"; // "geography" type is default, otherwise it's "geometry" type
+                        }
+
                         propertyValue = sqlServerBytesWriter.Write(geometryValue);
                     }
 
