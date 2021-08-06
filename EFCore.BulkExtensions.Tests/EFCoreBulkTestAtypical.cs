@@ -601,11 +601,47 @@ namespace EFCore.BulkExtensions.Tests
             var entities = new List<Address> {
                     new Address {
                         Street = "Some Street nn",
-                        Location = new Point(52, 13)
+                        LocationGeography = new Point(52, 13),
+                        LocationGeometry = new Point(52, 13),
                     }
                 };
 
             context.BulkInsertOrUpdate(entities);
+        }
+
+        [Fact]
+        private void GeographyAndGeometryArePersistedCorrectlyTest()
+        {
+            ContextUtil.DbServer = DbServer.SqlServer;
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.BulkDelete(context.Addresses.ToList());
+            }
+
+            var point = new Point(52, 13);
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                var entities = new List<Address> {
+                    new Address {
+                        Street = "Some Street nn",
+                        LocationGeography = point,
+                        LocationGeometry = point
+                    }
+                };
+
+                context.BulkInsertOrUpdate(entities);
+            }
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                var address = context.Addresses.Single();
+                Assert.Equal(point.X, address.LocationGeography.Coordinate.X);
+                Assert.Equal(point.Y, address.LocationGeography.Coordinate.Y);
+                Assert.Equal(point.X, address.LocationGeometry.Coordinate.X);
+                Assert.Equal(point.Y, address.LocationGeometry.Coordinate.Y);
+            }
+
         }
 
         [Fact]

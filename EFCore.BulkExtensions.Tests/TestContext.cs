@@ -89,12 +89,15 @@ namespace EFCore.BulkExtensions.Tests
                 modelBuilder.Entity<Document>().Property(p => p.ContentLength).HasComputedColumnSql($"(CONVERT([int], len([{nameof(Document.Content)}])))");
 
                 modelBuilder.Entity<UdttIntInt>(entity => { entity.HasNoKey(); });
+
+                modelBuilder.Entity<Address>().Property(p => p.LocationGeometry).HasColumnType("geometry");
             }
             else if (Database.IsSqlite())
             {
                 modelBuilder.Entity<File>().Property(p => p.VersionChange).ValueGeneratedOnAddOrUpdate().IsConcurrencyToken().HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-                modelBuilder.Entity<Address>().Ignore(p => p.Location);
+                modelBuilder.Entity<Address>().Ignore(p => p.LocationGeography);
+                modelBuilder.Entity<Address>().Ignore(p => p.LocationGeometry);
 
                 modelBuilder.Entity<ItemHistory>().ToTable(nameof(ItemHistory));
             }
@@ -274,7 +277,8 @@ namespace EFCore.BulkExtensions.Tests
         public int AddressId { get; set; }
         public string Street { get; set; }
 
-        public Geometry Location { get; set; }
+        public Geometry LocationGeography { get; set; }
+        public Geometry LocationGeometry { get; set; }
     }
 
     public class Teacher : Person
