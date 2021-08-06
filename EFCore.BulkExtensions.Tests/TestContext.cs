@@ -15,8 +15,6 @@ namespace EFCore.BulkExtensions.Tests
 {
     public class TestContext : DbContext
     {
-        public DbSet<Source> Sources { get; set; }
-
         public DbSet<Item> Items { get; set; }
         public DbSet<ItemHistory> ItemHistories { get; set; }
 
@@ -50,6 +48,8 @@ namespace EFCore.BulkExtensions.Tests
         public DbSet<Event> Events { get; set; }
 
         public DbSet<Archive> Archives { get; set; }
+
+        public DbSet<Source> Sources { get; set; }
 
         public TestContext(DbContextOptions options) : base(options)
         {

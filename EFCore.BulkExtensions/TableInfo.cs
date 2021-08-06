@@ -607,12 +607,12 @@ namespace EFCore.BulkExtensions
                 {
                     foreach (var element in propertyArray)
                     {
-                        uniqueBuilder.Append(element.ToString());
+                        uniqueBuilder.Append(element?.ToString() ?? "null");
                     }
                 }
                 else
                 {
-                    uniqueBuilder.Append(property.ToString());
+                    uniqueBuilder.Append(property?.ToString() ?? "null");
                 }
 
                 uniqueBuilder.Append(delimiter);
