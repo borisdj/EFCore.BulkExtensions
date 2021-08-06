@@ -8,9 +8,9 @@ namespace EFCore.BulkExtensions.Helpers
     internal static class GenericsHelpers
     {
 
-        internal static IEnumerable<string> GetPropertiesDefaultValue<T>(this T value) where T : class
+        internal static IEnumerable<string> GetPropertiesDefaultValue<T>(this T value, Type type) where T : class
         {
-            Type type = typeof(T);
+            //type not obtained from typeof(T) but sent as arg. for IncludeGraph in which case it's not declared the same way
             // Obtain all fields with type pointer.
             PropertyInfo[] arrayPropertyInfos = type.GetProperties();
             var result = new List<string>();
@@ -25,9 +25,9 @@ namespace EFCore.BulkExtensions.Helpers
             return result;
         }
 
-        internal static IEnumerable<string> GetPropertiesWithDefaultValue<T>(this IEnumerable<T> values) where T : class
+        internal static IEnumerable<string> GetPropertiesWithDefaultValue<T>(this IEnumerable<T> values, Type type) where T : class
         {
-            var result = values.SelectMany(x => x.GetPropertiesDefaultValue()).ToList().Distinct();
+            var result = values.SelectMany(x => x.GetPropertiesDefaultValue(type)).ToList().Distinct();
 
             return result;    
         }
