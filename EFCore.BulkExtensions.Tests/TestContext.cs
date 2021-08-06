@@ -85,7 +85,7 @@ namespace EFCore.BulkExtensions.Tests
 
             if (Database.IsSqlServer())
             {
-                modelBuilder.Entity<Document>().Property(p => p.DocumentId).HasDefaultValueSql("NEWID()");
+                modelBuilder.Entity<Document>().Property(p => p.DocumentId).HasDefaultValueSql("NEWID()"); //"NEWSEQUENTIALID()"
                 modelBuilder.Entity<Document>().Property(p => p.ContentLength).HasComputedColumnSql($"(CONVERT([int], len([{nameof(Document.Content)}])))");
 
                 modelBuilder.Entity<UdttIntInt>(entity => { entity.HasNoKey(); });

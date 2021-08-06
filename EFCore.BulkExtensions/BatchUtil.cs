@@ -108,7 +108,7 @@ namespace EFCore.BulkExtensions
             {
                 resultQuery = $"WITH C AS (SELECT {topStatement}*{sql}) UPDATE C {sqlSET}";
             }
-            if (resultQuery.Contains("ORDER") && !resultQuery.Contains("TOP"))
+            if (resultQuery.Contains("ORDER") && !resultQuery.Contains("TOP")) // When query has ORDER only without TOP(Take) then it is removed since not required and to avoid invalid Sql
             {
                 resultQuery = resultQuery.Split("ORDER", StringSplitOptions.None)[0];
             }
@@ -143,7 +143,7 @@ namespace EFCore.BulkExtensions
                 string tableAliasPrefix = "[" + tableAlias + "].";
                 resultQuery = $"WITH C AS (SELECT {topStatement}*{sql}) UPDATE C SET {sqlColumns.Replace(tableAliasPrefix, "")}";
             }
-            if (resultQuery.Contains("ORDER") && !resultQuery.Contains("TOP"))
+            if (resultQuery.Contains("ORDER") && !resultQuery.Contains("TOP")) // When query has ORDER only without TOP(Take) then it is removed since not required and to avoid invalid Sql
             {
                 resultQuery = resultQuery.Split("ORDER", StringSplitOptions.None)[0];
             }
