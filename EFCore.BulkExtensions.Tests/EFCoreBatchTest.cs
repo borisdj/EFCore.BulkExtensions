@@ -102,7 +102,7 @@ namespace EFCore.BulkExtensions.Tests
             var query = context.Items.AsQueryable();
             if (dbServer == DbServer.SqlServer)
             {
-                query = query.Where(a => a.ItemId <= 500 && a.Price >= price);
+                query = query.Where(a => a.ItemId <= 500 && a.Price >= price);//.OrderBy(n => n.ItemId).Take(500);
             }
             if (dbServer == DbServer.Sqlite)
             {

@@ -103,6 +103,16 @@ namespace EFCore.BulkExtensions
             sqlParameters = ReloadSqlParameters(context, sqlParameters); // Sqlite requires SqliteParameters
 
             var resultQuery = $"{leadingComments}UPDATE {topStatement}{tableAlias}{tableAliasSufixAs} {sqlSET}{sql}";
+
+            if (resultQuery.Contains("ORDER") && resultQuery.Contains("TOP"))
+            {
+                resultQuery = $"WITH C AS (SELECT {topStatement}*{sql}) UPDATE C {sqlSET}";
+            }
+            if (resultQuery.Contains("ORDER") && !resultQuery.Contains("TOP"))
+            {
+                resultQuery = resultQuery.Split("ORDER", StringSplitOptions.None)[0];
+            }
+
             return (resultQuery, sqlParameters);
         }
 
@@ -127,6 +137,17 @@ namespace EFCore.BulkExtensions
                 : createUpdateBodyData.UpdateColumnsSql.Replace($"[{tableAlias}].", "");
 
             var resultQuery = $"{leadingComments}UPDATE {topStatement}{tableAlias}{tableAliasSufixAs} SET {sqlColumns} {sql}";
+
+            if (resultQuery.Contains("ORDER") && resultQuery.Contains("TOP"))
+            {
+                string tableAliasPrefix = "[" + tableAlias + "].";
+                resultQuery = $"WITH C AS (SELECT {topStatement}*{sql}) UPDATE C SET {sqlColumns.Replace(tableAliasPrefix, "")}";
+            }
+            if (resultQuery.Contains("ORDER") && !resultQuery.Contains("TOP"))
+            {
+                resultQuery = resultQuery.Split("ORDER", StringSplitOptions.None)[0];
+            }
+
             return (resultQuery, sqlParameters);
         }
 
