@@ -418,7 +418,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
             }
             return dataTable;
         }
-        
+
         /// <summary>
         /// Common logic for two versions of GetDataTable
         /// </summary>
@@ -457,6 +457,8 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
 
             foreach (var property in properties)
             {
+                var hasDefaultVauleOnInsert = tableInfo.BulkConfig.OperationType == OperationType.Insert && !tableInfo.BulkConfig.SetOutputIdentity && tableInfo.DefaultValueProperties.Contains(property.Name);
+
                 if (entityPropertiesDict.ContainsKey(property.Name))
                 {
                     var propertyEntityType = entityPropertiesDict[property.Name];
@@ -481,7 +483,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                         }
                     }
 
-                    if (!columnsDict.ContainsKey(property.Name))
+                    if (!columnsDict.ContainsKey(property.Name) && !hasDefaultVauleOnInsert)
                     {
                         dataTable.Columns.Add(columnName, propertyType);
                         columnsDict.Add(property.Name, null);
@@ -508,7 +510,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                         propertyType = typeof(byte[]);
                     }
 
-                    if (!columnsDict.ContainsKey(columnName))
+                    if (!columnsDict.ContainsKey(columnName) && !hasDefaultVauleOnInsert)
                     {
                         dataTable.Columns.Add(columnName, propertyType);
                         columnsDict.Add(columnName, null);
@@ -577,7 +579,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                     // If a model has an entity which has a relationship without an explicity defined FK, the data table will already contain the foreign key shadow property
                     if (dataTable.Columns.Contains(columnName))
                         continue;
-                    
+
                     var isConvertible = tableInfo.ConvertibleColumnConverterDict.ContainsKey(columnName);
                     var propertyType = isConvertible ? tableInfo.ConvertibleColumnConverterDict[columnName].ProviderClrType : shadowProperty.ClrType;
 
@@ -612,6 +614,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                 foreach (var property in propertiesToLoad)
                 {
                     var propertyValue = tableInfo.FastPropertyDict.ContainsKey(property.Name) ? tableInfo.FastPropertyDict[property.Name].Get(entity) : null;
+                    var hasDefaultVauleOnInsert = tableInfo.BulkConfig.OperationType == OperationType.Insert && !tableInfo.BulkConfig.SetOutputIdentity && tableInfo.DefaultValueProperties.Contains(property.Name);
 
                     if (tableInfo.BulkConfig.DateTime2PrecisionForceRound && isSqlServer && tableInfo.DateTime2PropertiesPrecisionLessThen7Dict.ContainsKey(property.Name))
                     {
@@ -647,7 +650,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                         propertyValue = sqlServerBytesWriter.Write(geometryValue);
                     }
 
-                    if (entityPropertiesDict.ContainsKey(property.Name))
+                    if (entityPropertiesDict.ContainsKey(property.Name) && !hasDefaultVauleOnInsert)
                     {
                         columnsDict[property.Name] = propertyValue;
                     }
