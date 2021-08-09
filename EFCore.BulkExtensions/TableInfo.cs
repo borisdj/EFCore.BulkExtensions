@@ -748,7 +748,8 @@ namespace EFCore.BulkExtensions
 
         protected void UpdateEntitiesIdentity<T>(DbContext context, TableInfo tableInfo, IList<T> entities, IList<object> entitiesWithOutputIdentity)
         {
-            var identityPropertyName = OutputPropertyColumnNamesDict.SingleOrDefault(a => a.Value == IdentityColumnName).Key;
+            var identityPropertyName = IdentityColumnName != null ? OutputPropertyColumnNamesDict.SingleOrDefault(a => a.Value == IdentityColumnName).Key
+                                                                  : PrimaryKeysPropertyColumnNameDict.FirstOrDefault().Key;
 
             if (BulkConfig.PreserveInsertOrder) // Updates Db changed Columns in entityList
             {
@@ -814,7 +815,8 @@ namespace EFCore.BulkExtensions
         #region CompiledQuery
         public async Task LoadOutputDataAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, CancellationToken cancellationToken, bool isAsync) where T : class
         {
-            bool hasIdentity = OutputPropertyColumnNamesDict.Any(a => a.Value == IdentityColumnName);
+            bool hasIdentity = OutputPropertyColumnNamesDict.Any(a => a.Value == IdentityColumnName) ||
+                               (tableInfo.HasSinglePrimaryKey && tableInfo.DefaultValueProperties.Contains(tableInfo.PrimaryKeysPropertyColumnNameDict.FirstOrDefault().Key));
             int totallNumber = entities.Count;
             if (BulkConfig.SetOutputIdentity && hasIdentity)
             {

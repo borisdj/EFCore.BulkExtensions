@@ -51,6 +51,9 @@ namespace EFCore.BulkExtensions.Tests
 
         public DbSet<Source> Sources { get; set; }
 
+        public DbSet<Department> Departments { get; set; }
+        public DbSet<Division> Divisions { get; set; }
+
         public TestContext(DbContextOptions options) : base(options)
         {
             Database.EnsureCreated();
@@ -87,12 +90,15 @@ namespace EFCore.BulkExtensions.Tests
 
             if (Database.IsSqlServer())
             {
-                modelBuilder.Entity<Document>().Property(p => p.DocumentId).HasDefaultValueSql("NEWID()"); //"NEWSEQUENTIALID()"
+                modelBuilder.Entity<Document>().Property(p => p.DocumentId).HasDefaultValueSql("NEWID()");
                 modelBuilder.Entity<Document>().Property(p => p.ContentLength).HasComputedColumnSql($"(CONVERT([int], len([{nameof(Document.Content)}])))");
 
                 modelBuilder.Entity<UdttIntInt>(entity => { entity.HasNoKey(); });
 
                 modelBuilder.Entity<Address>().Property(p => p.LocationGeometry).HasColumnType("geometry");
+
+                modelBuilder.Entity<Division>().Property(p => p.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
+                modelBuilder.Entity<Department>().Property(p => p.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
             }
             else if (Database.IsSqlite())
             {
@@ -535,4 +541,21 @@ namespace EFCore.BulkExtensions.Tests
     }
     public enum Status : byte { Init, Changed }
     public enum Type : byte { Undefined, Type1, Type2 }
+
+    public class Department
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; }
+
+        public ICollection<Division> Divisions { get; set; }
+    }
+
+    public class Division
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; }
+
+        public Guid DepartmentId { get; set; }
+        public Department Department { get; set; }
+    }
 }
