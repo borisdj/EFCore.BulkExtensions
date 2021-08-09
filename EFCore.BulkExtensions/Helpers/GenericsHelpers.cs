@@ -10,7 +10,7 @@ namespace EFCore.BulkExtensions.Helpers
 
         internal static IEnumerable<string> GetPropertiesDefaultValue<T>(this T value, Type type) where T : class
         {
-            //type not obtained from typeof(T) but sent as arg. for IncludeGraph in which case it's not declared the same way
+            // type not obtained from typeof(T) but sent as arg. for IncludeGraph in which case it's not declared the same way
             // Obtain all fields with type pointer.
             PropertyInfo[] arrayPropertyInfos = type.GetProperties();
             var result = new List<string>();
@@ -18,8 +18,11 @@ namespace EFCore.BulkExtensions.Helpers
             {
                 string name = field.Name;
                 object temp = field.GetValue(value);
-                if (temp == default) result.Add(name);
-                if(temp is Guid && (Guid)temp == Guid.Empty) result.Add(name);
+                object defaultValue = field.GetValue(Activator.CreateInstance(type));
+                if (temp?.ToString() == defaultValue?.ToString())
+                    result.Add(name);
+                if(temp is Guid && (Guid)temp == Guid.Empty)
+                    result.Add(name);
             }
 
             return result;

@@ -124,7 +124,6 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
             tableInfo.InsertToTempTable = true;
             var entityPropertyWithDefaultValue = entities.GetPropertiesWithDefaultValue(type);
 
-
             var dropTempTableIfExists = tableInfo.BulkConfig.UseTempDB;
 
             if (dropTempTableIfExists)
