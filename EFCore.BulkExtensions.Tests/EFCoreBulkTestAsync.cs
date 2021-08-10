@@ -161,11 +161,11 @@ namespace EFCore.BulkExtensions.Tests
 
                     await context.BulkInsertAsync(subEntities);
 
-                    transaction.Commit();
+                    await transaction.CommitAsync();
                 }
                 else if (ContextUtil.DbServer == DbServer.Sqlite)
                 {
-                    using var transaction = context.Database.BeginTransaction();
+                    using var transaction = await context.Database.BeginTransactionAsync();
 
                     var bulkConfig = new BulkConfig()
                     {
@@ -183,7 +183,7 @@ namespace EFCore.BulkExtensions.Tests
                     }
                     await context.BulkInsertAsync(subEntities, bulkConfig);
 
-                    transaction.Commit();
+                    await transaction.CommitAsync();
                 }
             }
             else
