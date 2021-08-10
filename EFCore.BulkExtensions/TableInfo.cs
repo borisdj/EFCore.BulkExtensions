@@ -193,14 +193,13 @@ namespace EFCore.BulkExtensions
             OwnedTypesDict = ownedTypes.ToDictionary(a => a.Name, a => a);
 
             IdentityColumnName = allProperties.SingleOrDefault(a => a.IsPrimaryKey() &&
-                                                                     (a.ClrType.Name.StartsWith("Byte") ||
-                                                                      a.ClrType.Name.StartsWith("SByte") ||
-                                                                      a.ClrType.Name.StartsWith("Int") ||
-                                                                      a.ClrType.Name.StartsWith("UInt") ||
-                                                                      (isSqlServer && a.ClrType.Name.StartsWith("Decimal"))) &&
-                                                                    !a.ClrType.Name.EndsWith("[]") && 
-                                                                    a.ValueGenerated == ValueGenerated.OnAdd
-                                                              )?.GetColumnName(ObjectIdentifier); // ValueGenerated equals OnAdd even for nonIdentity column like Guid so we only type int as second condition
+                                                                    a.ValueGenerated == ValueGenerated.OnAdd && // ValueGenerated equals OnAdd for nonIdentity column like Guid so take only number types
+                                                                    (a.ClrType.Name.StartsWith("Byte") ||
+                                                                     a.ClrType.Name.StartsWith("SByte")||
+                                                                     a.ClrType.Name.StartsWith("Int")  ||
+                                                                     a.ClrType.Name.StartsWith("UInt") ||
+                                                                     (isSqlServer && a.ClrType.Name.StartsWith("Decimal")))
+                                                              )?.GetColumnName(ObjectIdentifier);
 
             // timestamp/row version properties are only set by the Db, the property has a [Timestamp] Attribute or is configured in FluentAPI with .IsRowVersion()
             // They can be identified by the columne type "timestamp" or .IsConcurrencyToken in combination with .ValueGenerated == ValueGenerated.OnAddOrUpdate
