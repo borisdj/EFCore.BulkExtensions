@@ -18,7 +18,7 @@ namespace EFCore.BulkExtensions.Helpers
             {
                 string name = field.Name;
                 object temp = field.GetValue(value);
-                object defaultValue = field.GetValue(Activator.CreateInstance(type));
+                object defaultValue = field.GetValue(Activator.CreateInstance(type, true));
                 if (temp?.ToString() == defaultValue?.ToString())
                     result.Add(name);
                 if(temp is Guid && (Guid)temp == Guid.Empty)
