@@ -186,7 +186,7 @@ context.BulkInsert(entities, b => b.IncludeGraph = true);
 When **CalculateStats** set to True the result returned in `BulkConfig.StatsInfo` (*StatsNumber-Inserted/Updated/Deleted*).<br>
 If used for pure Insert (with Batching) then SetOutputIdentity should also be configured because Merge is required.<br>
 **TrackingEntities** can be set to True if we want to have tracking of entities from BulkRead or if SetOutputIdentity is set.<br>
-**UseTempDB** when set then BulkOperation has to be [inside Transaction](https://github.com/borisdj/EFCore.BulkExtensions/issues/49)<br>
+**UseTempDB** when set then BulkOperation has to be [inside Transaction](https://github.com/borisdj/EFCore.BulkExtensions/issues/49).<br>
 **UniqueTableNameTempDb** when changed to false temp table name will be only 'Temp' without random numbers.<br>
 **CustomDestinationTableName** can be set with 'TableName' only or with 'Schema.TableName'.<br>
 **EnableShadowProperties** to add (normal) Shadow Property and persist value. Disables automatic discrimator, use manual method.<br>
