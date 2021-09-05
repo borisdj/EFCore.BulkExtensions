@@ -153,7 +153,7 @@ namespace EFCore.BulkExtensions
         public List<string> PropertiesToExcludeOnCompare { get; set; }
 
         /// <summary>
-        ///     Selected properties are excluded from being updated, can differ from PropertiesToExclude that can that be used for Insert config only
+        ///     Selected properties are excluded from being updated, can differ from PropertiesToExclude that can be used for Insert config only
         /// </summary>
         public List<string> PropertiesToExcludeOnUpdate { get; set; }
 
@@ -161,7 +161,7 @@ namespace EFCore.BulkExtensions
         ///     Used for specifying custom properties, by which we want update to be done.
         /// </summary>
         /// <remarks>
-        ///     Using it while also having Identity column requires that Id property be excluded with PropertiesToExclude.
+        ///     If Identity column exisit and is not added in UpdateByProp it will be excluded automatically
         /// </remarks>
         public List<string> UpdateByProperties { get; set; }
 

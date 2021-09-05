@@ -722,8 +722,10 @@ namespace EFCore.BulkExtensions
                             idValue = (int)value;
                         else if (idType == typeof(ulong))
                             idValue = (ulong)value;
+                        else if (idType == typeof(decimal))
+                            idValue = (decimal)value;
                         else
-                            idValue = (long)value;
+                            idValue = (long)value; // type 'long' left as default
 
                         identityFastProperty.Set(entity, idValue);
                         i++;
