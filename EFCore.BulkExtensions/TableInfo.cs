@@ -214,7 +214,7 @@ namespace EFCore.BulkExtensions
             var allPropertiesExceptTimeStamp = allProperties.Except(timeStampProperties);
             var properties = allPropertiesExceptTimeStamp.Where(a => a.GetComputedColumnSql() == null);
 
-            var propertiesWithDefaultValues = allPropertiesExceptTimeStamp.Where(a => a.GetDefaultValue() != null || a.GetDefaultValueSql() != null);
+            var propertiesWithDefaultValues = allPropertiesExceptTimeStamp.Where(a => (a.GetDefaultValue() != null || a.GetDefaultValueSql() != null) && !a.IsShadowProperty());
             foreach (var propertyWithDefaultValue in propertiesWithDefaultValues)
             {
                 var propertyType = propertyWithDefaultValue.ClrType;
