@@ -15,7 +15,8 @@ Available on <a href="https://www.nuget.org/packages/EFCore.BulkExtensions/"><im
 Package manager console command for installation: *Install-Package EFCore.BulkExtensions*<br>
 | Nuget | Target          | Used EF v.  | For projects targeting          |
 | ----- | --------------- | ----------- | ------------------------------- |
-| 5.x   | NetStandard 2.1 | EF Core 5.0 | Net 5+                          |
+| 6.x   | Net 6.0         | EF Core 6.0 | Net 6.0+                        |
+| 5.x   | NetStandard 2.1 | EF Core 5.0 | Net 5.0+                        |
 | 3.x   | NetStandard 2.0 | EF Core 3.n | NetCore(3.0+) or NetFrm(4.6.1+) [MoreInfo](https://github.com/borisdj/EFCore.BulkExtensions/issues/271#issuecomment-567117488)|
 | 2.x   | NetStandard 2.0 | EF Core 2.n | NetCore(2.0+) or NetFrm(4.6.1+) |
 | 1.x   | NetStandard 1.4 | EF Core 1.0 | NetCore(1.0+)                   |
