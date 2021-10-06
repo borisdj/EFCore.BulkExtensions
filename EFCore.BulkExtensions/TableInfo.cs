@@ -214,7 +214,13 @@ namespace EFCore.BulkExtensions
             var allPropertiesExceptTimeStamp = allProperties.Except(timeStampProperties);
             var properties = allPropertiesExceptTimeStamp.Where(a => a.GetComputedColumnSql() == null);
 
-            var propertiesWithDefaultValues = allPropertiesExceptTimeStamp.Where(a => (a.GetDefaultValue() != null || a.GetDefaultValueSql() != null) && !a.IsShadowProperty());
+            var propertiesWithDefaultValues = allPropertiesExceptTimeStamp.Where(a =>
+                !a.IsShadowProperty() &&
+                (a.GetDefaultValueSql() != null ||
+                 (a.GetDefaultValue() != null &&
+                  a.ValueGenerated != ValueGenerated.Never
+                  && a.ClrType != typeof(Guid)) // Since .Net_6.0 in EF 'Guid' type has DefaultValue even when not explicitly defined with Annotation or FluentApi
+                ));
             foreach (var propertyWithDefaultValue in propertiesWithDefaultValues)
             {
                 var propertyType = propertyWithDefaultValue.ClrType;
@@ -223,7 +229,8 @@ namespace EFCore.BulkExtensions
                                   : null; // when type does not have parameterless constructor, like String for example, then default value is 'null'
 
                 bool listHasAllDefaultValues = !entities.Any(a => a.GetType().GetProperty(propertyWithDefaultValue.Name).GetValue(a, null)?.ToString() != instance?.ToString());
-                if (listHasAllDefaultValues || PrimaryKeysPropertyColumnNameDict.ContainsKey(propertyWithDefaultValue.Name)) // it is not feasible to have in same list simultaneously both entities groups With and Without default values, they are omitted OnInsert only if all have default values or if it is PK (like Guid DbGenerated)
+                // it is not feasible to have in same list simultaneously both entities groups With and Without default values, they are omitted OnInsert only if all have default values or if it is PK (like Guid DbGenerated)
+                if (listHasAllDefaultValues || (PrimaryKeysPropertyColumnNameDict.ContainsKey(propertyWithDefaultValue.Name) && propertyType == typeof(Guid)))
                 {
                     DefaultValueProperties.Add(propertyWithDefaultValue.Name);
                 }

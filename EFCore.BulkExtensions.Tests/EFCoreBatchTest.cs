@@ -166,7 +166,7 @@ namespace EFCore.BulkExtensions.Tests
     WHERE [p1].[ParentId] = [p].[ParentId]) 
 FROM [Parent] AS [p]
 LEFT JOIN [ParentDetail] AS [p0] ON [p].[ParentId] = [p0].[ParentId]
-WHERE ([p].[ParentId] < 5) AND ([p0].[Notes] IS NOT NULL AND (([p0].[Notes] <> N'') OR [p0].[Notes] IS NULL))";
+WHERE ([p].[ParentId] < 5) AND NOT ([p0].[Notes] IS NULL OR ([p0].[Notes] LIKE N''))";
 
             Assert.Equal(expectedSql.Replace("\r\n", "\n"), actualSqlExecuted.Replace("\r\n", "\n"));
 
@@ -195,7 +195,7 @@ WHERE [p].[ParentId] = 1";
 
             actualSqlExecuted = testDbCommandInterceptor.ExecutedNonQueryCommands?.LastOrDefault().Sql;
             expectedSql =
-@"UPDATE p SET  [p].[Description] = (CONVERT(VARCHAR(100), (
+@"UPDATE p SET  [p].[Description] = (CONVERT(varchar(100), (
     SELECT COALESCE(SUM([c].[Value]), 0.0)
     FROM [Child] AS [c]
     WHERE ([p].[ParentId] = [c].[ParentId]) AND (([c].[IsEnabled] = CAST(1 AS bit)) AND ([c].[Value] = @__p_0))))) , [p].[Value] = @param_1 

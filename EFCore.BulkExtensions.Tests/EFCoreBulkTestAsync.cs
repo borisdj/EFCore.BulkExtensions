@@ -47,11 +47,11 @@ namespace EFCore.BulkExtensions.Tests
 
         [Theory]
         [InlineData(DbServer.SqlServer)]
-        [InlineData(DbServer.Sqlite)]
+        //[InlineData(DbServer.Sqlite)] // has to be run separately as single test, otherwise throws (SQLite Error 1: 'table "#MyTempTable1" already exists'.)
         public async Task SideEffectsTestAsync(DbServer dbServer)
         {
-            await BulkOperationShouldNotCloseOpenConnectionAsync(dbServer, context => context.BulkInsertAsync(new[] { new Item() }));
-            await BulkOperationShouldNotCloseOpenConnectionAsync(dbServer, context => context.BulkUpdateAsync(new[] { new Item() }));
+            await BulkOperationShouldNotCloseOpenConnectionAsync(dbServer, context => context.BulkInsertAsync(new[] { new Item() }), "1");
+            await BulkOperationShouldNotCloseOpenConnectionAsync(dbServer, context => context.BulkUpdateAsync(new[] { new Item() }), "2");
         }
 
         private async Task DeletePreviousDatabaseAsync()
@@ -65,7 +65,7 @@ namespace EFCore.BulkExtensions.Tests
             Debug.WriteLine(percentage);
         }
 
-        private static async Task BulkOperationShouldNotCloseOpenConnectionAsync(DbServer dbServer, Func<TestContext, Task> bulkOperation)
+        private static async Task BulkOperationShouldNotCloseOpenConnectionAsync(DbServer dbServer, Func<TestContext, Task> bulkOperation, string tableSufix)
         {
             ContextUtil.DbServer = dbServer;
             using var context = new TestContext(ContextUtil.GetOptions());
@@ -77,7 +77,7 @@ namespace EFCore.BulkExtensions.Tests
             {
                 // we use a temp table to verify whether the connection has been closed (and re-opened) inside BulkUpdate(Async)
                 var columnName = sqlHelper.DelimitIdentifier("Id");
-                var tableName = sqlHelper.DelimitIdentifier("#MyTempTable");
+                var tableName = sqlHelper.DelimitIdentifier("#MyTempTable" + tableSufix);
                 var createTableSql = $" TABLE {tableName} ({columnName} INTEGER);";
 
                 createTableSql = dbServer switch

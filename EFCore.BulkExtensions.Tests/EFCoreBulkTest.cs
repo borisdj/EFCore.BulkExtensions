@@ -50,11 +50,11 @@ namespace EFCore.BulkExtensions.Tests
         [InlineData(DbServer.Sqlite)]
         public void SideEffectsTest(DbServer dbServer)
         {
-            BulkOperationShouldNotCloseOpenConnection(dbServer, context => context.BulkInsert(new[] { new Item() }));
-            BulkOperationShouldNotCloseOpenConnection(dbServer, context => context.BulkUpdate(new[] { new Item() }));
+            BulkOperationShouldNotCloseOpenConnection(dbServer, context => context.BulkInsert(new[] { new Item() }), "1");
+            BulkOperationShouldNotCloseOpenConnection(dbServer, context => context.BulkUpdate(new[] { new Item() }), "2");
         }
 
-        private static void BulkOperationShouldNotCloseOpenConnection(DbServer dbServer, Action<TestContext> bulkOperation)
+        private static void BulkOperationShouldNotCloseOpenConnection(DbServer dbServer, Action<TestContext> bulkOperation, string tableSufix)
         {
             ContextUtil.DbServer = dbServer;
             using var context = new TestContext(ContextUtil.GetOptions());
@@ -66,7 +66,7 @@ namespace EFCore.BulkExtensions.Tests
             {
                 // we use a temp table to verify whether the connection has been closed (and re-opened) inside BulkUpdate(Async)
                 var columnName = sqlHelper.DelimitIdentifier("Id");
-                var tableName = sqlHelper.DelimitIdentifier("#MyTempTable");
+                var tableName = sqlHelper.DelimitIdentifier("#MyTempTable" + tableSufix);
                 var createTableSql = $" TABLE {tableName} ({columnName} INTEGER);";
 
                 createTableSql = dbServer switch
