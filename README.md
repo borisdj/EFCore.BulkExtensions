@@ -193,7 +193,7 @@ If used for pure Insert (with Batching) then SetOutputIdentity should also be co
 **EnableShadowProperties** to add (normal) Shadow Property and persist value. Disables automatic discrimator, use manual method.<br>
 **IncludeGraph** when set all entites that have relations with main ones from the list are also merged into theirs tables.<br>
 **OmitClauseExistsExcept** removes the clause from Merge statement, useful when need to active triggers even for same data.<br>
-- Also in some [sql collation](https://github.com/borisdj/EFCore.BulkExtensions/issues/641) small and capital letters are considered  same (case-insensitive) so for BulkUpdate set it false.<br>
+_ Also in some [sql collation](https://github.com/borisdj/EFCore.BulkExtensions/issues/641) small and capital letters are considered  same (case-insensitive) so for BulkUpdate set it false.<br>
 **DoNotUpdateIfTimeStampChanged** if set checks TimeStamp for Concurrency, ones with conflict will [not be updated](https://github.com/borisdj/EFCore.BulkExtensions/issues/469#issuecomment-803662721).<br>
 **SRID** Spatial Reference Identifier - for SQL Server with NetTopologySuite.<br>
 **DateTime2PrecisionForceRound** If dbtype datetime2 has precision less then default 7, example 'datetime2(3)' SqlBulkCopy does Floor instead of Round so when this Property is set then Rounding will be done in memory to make sure inserted values are same as with regular SaveChanges.
