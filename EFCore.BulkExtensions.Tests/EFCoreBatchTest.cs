@@ -166,7 +166,7 @@ namespace EFCore.BulkExtensions.Tests
     WHERE [p1].[ParentId] = [p].[ParentId]) 
 FROM [Parent] AS [p]
 LEFT JOIN [ParentDetail] AS [p0] ON [p].[ParentId] = [p0].[ParentId]
-WHERE ([p].[ParentId] < 5) AND NOT ([p0].[Notes] IS NULL OR ([p0].[Notes] LIKE N''))";
+WHERE ([p].[ParentId] < 5) AND ([p0].[Notes] IS NOT NULL AND NOT ([p0].[Notes] LIKE N''))";
 
             Assert.Equal(expectedSql.Replace("\r\n", "\n"), actualSqlExecuted.Replace("\r\n", "\n"));
 
