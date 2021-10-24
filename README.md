@@ -112,7 +112,7 @@ CustomDestinationTableName: null,	          OmitClauseExistsExcept: false,
 TrackingEntities: false,	                  DoNotUpdateIfTimeStampChanged: false,
 WithHoldlock: true,	                          SRID: 4326,
 CalculateStats: false,	                          DateTime2PrecisionForceRound: false,
------------------------
+--------------------------------------------------------------------------------------
 METHOD: SetSynchronizeFilter<T>
 ```
 If we want to change defaults, BulkConfig should be added explicitly with one or more bool properties set to true, and/or int props like **BatchSize** to different number.<br> Config also has DelegateFunc for setting *Underlying-Connection/Transaction*, e.g. in UnderlyingTest.<br>
