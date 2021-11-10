@@ -98,7 +98,7 @@ Note: Bulk ops have optional argument *Type type* that can be set to type of Ent
 
 **Bulk** methods can have optional argument **BulkConfig** with properties (bool, int, object, List<string>):<br>
 ```C#
-PROPERTY : DEFAULTvalue                           SqlBulkCopyOptions: Default
+PROPERTY : DEFAULTvalue
 -----------------------                           PropertiesToInclude: null,
 PreserveInsertOrder: true,                        PropertiesToIncludeOnCompare: null,
 SetOutputIdentity: false,	                  PropertiesToIncludeOnUpdate: null,
@@ -112,6 +112,7 @@ CustomDestinationTableName: null,	          OmitClauseExistsExcept: false,
 TrackingEntities: false,	                  DoNotUpdateIfTimeStampChanged: false,
 WithHoldlock: true,	                          SRID: 4326,
 CalculateStats: false,	                          DateTime2PrecisionForceRound: false,
+SqlBulkCopyOptions: Default                       TemporalColumns: { "PeriodStart", "PeriodEnd" }
 --------------------------------------------------------------------------------------
 METHOD: SetSynchronizeFilter<T>
 ```
@@ -197,6 +198,7 @@ _ Also in some [sql collation](https://github.com/borisdj/EFCore.BulkExtensions/
 **DoNotUpdateIfTimeStampChanged** if set checks TimeStamp for Concurrency, ones with conflict will [not be updated](https://github.com/borisdj/EFCore.BulkExtensions/issues/469#issuecomment-803662721).<br>
 **SRID** Spatial Reference Identifier - for SQL Server with NetTopologySuite.<br>
 **DateTime2PrecisionForceRound** If dbtype datetime2 has precision less then default 7, example 'datetime2(3)' SqlBulkCopy does Floor instead of Round so when this Property is set then Rounding will be done in memory to make sure inserted values are same as with regular SaveChanges.
+**TemporalColumns** are shadow columns used for Temporal table. Default elements 'PeriodStart' and 'PeriodEnd' can be changed if those columns have custom names.
 
 **SqlBulkCopyOptions** is Enum with [[Flags]](https://stackoverflow.com/questions/8447/what-does-the-flags-enum-attribute-mean-in-c) attribute which enables specifying one or more options:<br>
 *Default, KeepIdentity, CheckConstraints, TableLock, KeepNulls, FireTriggers, UseInternalTransaction*<br>
