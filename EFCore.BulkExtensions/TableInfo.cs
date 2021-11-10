@@ -44,6 +44,7 @@ namespace EFCore.BulkExtensions
         public bool ColumnNameContainsSquareBracket { get; set; }
         public bool LoadOnlyPKColumn { get; set; }
         public bool HasSpatialType { get; set; }
+        public bool HasTemporalColumns { get; set; }
         public int NumberOfEntities { get; set; }
 
         public BulkConfig BulkConfig { get; set; }
@@ -143,8 +144,10 @@ namespace EFCore.BulkExtensions
             foreach (var entityProperty in entityType.GetProperties())
             {
                 var columnName = entityProperty.GetColumnName(ObjectIdentifier);
+                bool isTemporalColumn = entityProperty.IsShadowProperty() && entityProperty.ClrType == typeof(DateTime) && BulkConfig.TemporalColumns.Contains(columnName);
+                HasTemporalColumns = HasTemporalColumns || isTemporalColumn;
 
-                if (columnName == null)
+                if (columnName == null || isTemporalColumn)
                     continue;
 
                 allProperties.Add(entityProperty);
@@ -293,6 +296,11 @@ namespace EFCore.BulkExtensions
             }
 
             UpdateByPropertiesAreNullable = properties.Any(a => PrimaryKeysPropertyColumnNameDict.ContainsKey(a.Name) && a.IsNullable);
+
+            if (HasTemporalColumns && BulkConfig.SetOutputIdentity)
+            {
+                throw new InvalidConstraintException("When table has Temporal columns SetOutputIdentity can not be used.");
+            }
 
             if (AreSpecifiedPropertiesToInclude || AreSpecifiedPropertiesToExclude)
             {

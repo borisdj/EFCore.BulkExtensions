@@ -21,6 +21,8 @@ namespace EFCore.BulkExtensions.Tests
         public DbSet<UserRole> UserRoles { get; set; }
 
         public DbSet<Document> Documents { get; set; }
+        public DbSet<Storage> Storages { get; set; }
+
         public DbSet<File> Files { get; set; }
         public DbSet<Person> Persons { get; set; }
         public DbSet<Student> Students { get; set; }
@@ -85,13 +87,15 @@ namespace EFCore.BulkExtensions.Tests
             modelBuilder.Entity<Document>().Property(p => p.IsActive).HasDefaultValue(true);
             modelBuilder.Entity<Document>().Property(p => p.Tag).HasDefaultValue("DefaultData");
 
-            modelBuilder.Entity<Log>().ToTable("Log");
-            modelBuilder.Entity<LogPersonReport>().ToTable("LogPersonReport");
+            modelBuilder.Entity<Log>().ToTable(nameof(Log));
+            modelBuilder.Entity<LogPersonReport>().ToTable(nameof(LogPersonReport));
 
             if (Database.IsSqlServer())
             {
                 modelBuilder.Entity<Document>().Property(p => p.DocumentId).HasDefaultValueSql("NEWID()");
                 modelBuilder.Entity<Document>().Property(p => p.ContentLength).HasComputedColumnSql($"(CONVERT([int], len([{nameof(Document.Content)}])))");
+
+                modelBuilder.Entity<Storage>().ToTable(nameof(Storage), b => b.IsTemporal());
 
                 modelBuilder.Entity<UdttIntInt>(entity => { entity.HasNoKey(); });
 
@@ -310,6 +314,14 @@ namespace EFCore.BulkExtensions.Tests
 
         [DatabaseGenerated(DatabaseGeneratedOption.Computed)] // Computed columns also have to be configured with FluentAPI
         public int ContentLength { get; set; }
+    }
+
+    // For testing Temporal tables (configured via FluentAPI )
+    public class Storage
+    {
+        public Guid StorageId { get; set; }
+
+        public string Data { get; set; }
     }
 
     // For testing TimeStamp Property and Column with Concurrency Lock
