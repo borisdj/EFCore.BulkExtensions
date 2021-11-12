@@ -15,6 +15,27 @@ namespace EFCore.BulkExtensions.Tests
 
         [Theory]
         [InlineData(DbServer.SqlServer)]
+        public void BatchConverterTest(DbServer dbServer)
+        {
+            ContextUtil.DbServer = dbServer;
+
+            using var context = new TestContext(ContextUtil.GetOptions());
+            context.Truncate<Info>();
+
+            var currentDate = DateTime.Today;
+            var entity = new Info { Message = "name A", DateTimeOff = currentDate };
+            context.Infos.Add(entity);
+            context.SaveChanges();
+
+            var updateTo = new Info { Message = "name B Updated" };
+            context.Infos.BatchUpdate(updateTo);
+
+            using var contextRead = new TestContext(ContextUtil.GetOptions());
+            Assert.Equal(currentDate, contextRead.Infos.First().DateTimeOff);
+        }
+
+        [Theory]
+        [InlineData(DbServer.SqlServer)]
         [InlineData(DbServer.Sqlite)]
         public void BatchTest(DbServer dbServer)
         {
