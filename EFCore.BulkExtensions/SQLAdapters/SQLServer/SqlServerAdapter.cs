@@ -184,14 +184,19 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                         context.Database.ExecuteSqlRaw(sqlAddColumn);
                     }
                 }
-                var sqlAlterTableColumnsToNullable = SqlQueryBuilder.AlterTableColumnsToNullable(tableInfo.FullTempOutputTableName, tableInfo);
-                if (isAsync)
+
+                if (operationType == OperationType.InsertOrUpdateDelete)
                 {
-                    await context.Database.ExecuteSqlRawAsync(sqlAlterTableColumnsToNullable, cancellationToken).ConfigureAwait(false);
-                }
-                else
-                {
-                    context.Database.ExecuteSqlRaw(sqlAlterTableColumnsToNullable);
+                    // Output returns all changes including ones Deleted ones with all NULL values, so if TempOutput.Id col not Nullable it breaks
+                    var sqlAlterTableColumnsToNullable = SqlQueryBuilder.AlterTableColumnsToNullable(tableInfo.FullTempOutputTableName, tableInfo);
+                    if (isAsync)
+                    {
+                        await context.Database.ExecuteSqlRawAsync(sqlAlterTableColumnsToNullable, cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        context.Database.ExecuteSqlRaw(sqlAlterTableColumnsToNullable);
+                    }
                 }
             }
 
