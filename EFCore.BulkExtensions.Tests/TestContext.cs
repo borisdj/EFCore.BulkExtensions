@@ -21,6 +21,8 @@ namespace EFCore.BulkExtensions.Tests
         public DbSet<UserRole> UserRoles { get; set; }
 
         public DbSet<Document> Documents { get; set; }
+        public DbSet<Storage> Storages { get; set; }
+
         public DbSet<File> Files { get; set; }
         public DbSet<Person> Persons { get; set; }
         public DbSet<Student> Students { get; set; }
@@ -41,8 +43,18 @@ namespace EFCore.BulkExtensions.Tests
 
         public DbSet<LogPersonReport> LogPersonReports { get; set; }
 
-        public DbSet<Event> Events { get; set; }
         public DbSet<AtypicalRowVersionEntity> AtypicalRowVersionEntities { get; set; }
+
+        public DbSet<AtypicalRowVersionConverterEntity> AtypicalRowVersionConverterEntities { get; set; }
+
+        public DbSet<Event> Events { get; set; }
+
+        public DbSet<Archive> Archives { get; set; }
+
+        public DbSet<Source> Sources { get; set; }
+
+        public DbSet<Department> Departments { get; set; }
+        public DbSet<Division> Divisions { get; set; }
 
         public TestContext(DbContextOptions options) : base(options)
         {
@@ -61,34 +73,46 @@ namespace EFCore.BulkExtensions.Tests
 
             modelBuilder.Entity<UserRole>().HasKey(a => new { a.UserId, a.RoleId });
 
-            modelBuilder.Entity<Info>(e => { e.Property(p => p.ConvertedTime).HasConversion((value) => value.AddDays(1), (value) => value.AddDays(-1)); });
-            modelBuilder.Entity<Info>().Property(e => e.InfoType).HasConversion(new EnumToStringConverter<InfoType>());
+            modelBuilder.Entity<Info>(a => { a.Property(p => p.ConvertedTime).HasConversion((value) => value.AddDays(1), (value) => value.AddDays(-1)); });
+            modelBuilder.Entity<Info>().Property(p => p.InfoType).HasConversion(new EnumToStringConverter<InfoType>());
+            modelBuilder.Entity<Info>().Property(p => p.DateTimeOff).HasConversion(new DateTimeOffsetToBinaryConverter());
 
-            modelBuilder.Entity<Info>(e => { e.Property("LogData").HasColumnName("LogData"); });
-            modelBuilder.Entity<Info>(e => { e.Property("TimeCreated").HasColumnName("TimeCreated"); });
+            modelBuilder.Entity<Info>(e => { e.Property("LogData"); });
+            modelBuilder.Entity<Info>(e => { e.Property("TimeCreated"); });
+            modelBuilder.Entity<Info>(e => { e.Property("Remark"); });
 
-            modelBuilder.Entity<ChangeLog>().OwnsOne(e => e.Audit, b => b.Property(e => e.InfoType).HasConversion(new EnumToStringConverter<InfoType>()));
+            modelBuilder.Entity<ChangeLog>().OwnsOne(a => a.Audit, b => b.Property(p => p.InfoType).HasConversion(new EnumToStringConverter<InfoType>()));
 
             modelBuilder.Entity<Person>().HasIndex(a => a.Name).IsUnique(); // In SQLite UpdateByColumn(nonPK) requires it has UniqueIndex
 
             modelBuilder.Entity<Document>().Property(p => p.IsActive).HasDefaultValue(true);
             modelBuilder.Entity<Document>().Property(p => p.Tag).HasDefaultValue("DefaultData");
 
-            modelBuilder.Entity<Log>().ToTable("Log");
-            modelBuilder.Entity<LogPersonReport>().ToTable("LogPersonReport");
+            modelBuilder.Entity<Log>().ToTable(nameof(Log));
+            modelBuilder.Entity<LogPersonReport>().ToTable(nameof(LogPersonReport));
 
             if (Database.IsSqlServer())
             {
                 modelBuilder.Entity<Document>().Property(p => p.DocumentId).HasDefaultValueSql("NEWID()");
                 modelBuilder.Entity<Document>().Property(p => p.ContentLength).HasComputedColumnSql($"(CONVERT([int], len([{nameof(Document.Content)}])))");
 
+                modelBuilder.Entity<Storage>().ToTable(nameof(Storage), b => b.IsTemporal());
+
                 modelBuilder.Entity<UdttIntInt>(entity => { entity.HasNoKey(); });
+
+                modelBuilder.Entity<Address>().Property(p => p.LocationGeometry).HasColumnType("geometry");
+
+                modelBuilder.Entity<Division>().Property(p => p.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
+                modelBuilder.Entity<Department>().Property(p => p.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
             }
             else if (Database.IsSqlite())
             {
                 modelBuilder.Entity<File>().Property(p => p.VersionChange).ValueGeneratedOnAddOrUpdate().IsConcurrencyToken().HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-                modelBuilder.Entity<Address>().Ignore(p => p.Location);
+                modelBuilder.Entity<Address>().Ignore(p => p.LocationGeography);
+                modelBuilder.Entity<Address>().Ignore(p => p.LocationGeometry);
+
+                modelBuilder.Entity<ItemHistory>().ToTable(nameof(ItemHistory));
             }
 
             if (Database.IsNpgsql())
@@ -106,6 +130,13 @@ namespace EFCore.BulkExtensions.Tests
             modelBuilder.Entity<AtypicalRowVersionEntity>().Property(e => e.RowVersion).HasDefaultValue(0).IsConcurrencyToken().ValueGeneratedOnAddOrUpdate().Metadata.SetBeforeSaveBehavior(PropertySaveBehavior.Save);
             modelBuilder.Entity<AtypicalRowVersionEntity>().Property(e => e.SyncDevice).IsRequired(true).IsConcurrencyToken().HasDefaultValue("");
 
+            modelBuilder.Entity<AtypicalRowVersionConverterEntity>().Property(e => e.RowVersionConverted).HasConversion(new NumberToBytesConverter<long>()).HasColumnType("timestamp").IsRowVersion().IsConcurrencyToken();
+
+            modelBuilder.Entity<Parent>().Property(parent => parent.PhoneNumber)
+                .HasColumnType("varchar(12)").HasMaxLength(12).HasField("_phoneNumber").IsRequired();
+
+            //modelBuilder.Entity<Person>().HasDiscriminator<string>("Discriminator").HasValue<Student>("Student").HasValue<Teacher>("Teacher"); // name of classes are default values
+
             // [Timestamp] alternative:
             //modelBuilder.Entity<Document>().Property(x => x.RowVersion).HasColumnType("timestamp").ValueGeneratedOnAddOrUpdate().HasConversion(new NumberToBytesConverter<ulong>()).IsConcurrencyToken();
 
@@ -115,17 +146,23 @@ namespace EFCore.BulkExtensions.Tests
 
     public static class ContextUtil
     {
+        // TODO: Pass DbService through all the GetOptions methods as a parameter and eliminate this property so the automated tests
+        // are thread safe
         public static DbServer DbServer { get; set; }
 
         public static DbContextOptions GetOptions(IInterceptor dbInterceptor) => GetOptions(new[] { dbInterceptor });
         public static DbContextOptions GetOptions(IEnumerable<IInterceptor> dbInterceptors = null) => GetOptions<TestContext>(dbInterceptors);
 
         public static DbContextOptions GetOptions<TDbContext>(IEnumerable<IInterceptor> dbInterceptors = null, string databaseName = nameof(EFCoreBulkTest))
-            where TDbContext: DbContext
+            where TDbContext : DbContext
+            => GetOptions<TDbContext>(ContextUtil.DbServer, dbInterceptors, databaseName);
+
+        public static DbContextOptions GetOptions<TDbContext>(DbServer dbServerType, IEnumerable<IInterceptor> dbInterceptors = null, string databaseName = nameof(EFCoreBulkTest))
+            where TDbContext : DbContext
         {
             var optionsBuilder = new DbContextOptionsBuilder<TDbContext>();
 
-            if (DbServer == DbServer.SqlServer)
+            if (dbServerType == DbServer.SqlServer)
             {
                 var connectionString = GetSqlServerConnectionString(databaseName);
 
@@ -135,10 +172,11 @@ namespace EFCore.BulkExtensions.Tests
                 //optionsBuilder.UseSqlServer(connectionString); // Can NOT Test with UseInMemoryDb (Exception: Relational-specific methods can only be used when the context is using a relational)
                 optionsBuilder.UseSqlServer(connectionString, opt => opt.UseNetTopologySuite()); // NetTopologySuite for Geometry / Geometry types
             }
-            else if (DbServer == DbServer.Sqlite)
+            else if (dbServerType == DbServer.Sqlite)
             {
                 string connectionString = GetSqliteConnectionString(databaseName);
                 optionsBuilder.UseSqlite(connectionString);
+                SQLitePCL.Batteries.Init();
 
                 // ALTERNATIVELY:
                 //string connectionString = (new SqliteConnectionStringBuilder { DataSource = $"{databaseName}Lite.db" }).ToString();
@@ -155,7 +193,7 @@ namespace EFCore.BulkExtensions.Tests
             }
             else
             {
-                throw new NotSupportedException($"Database {DbServer} is not supported. Only SQL Server and SQLite are Currently supported.");
+                throw new NotSupportedException($"Database {dbServerType} is not supported. Only SQL Server and SQLite are Currently supported.");
             }
 
             if (dbInterceptors?.Any() == true)
@@ -224,7 +262,7 @@ namespace EFCore.BulkExtensions.Tests
     }
 
     // ItemHistory is used to test bulk Ops to multiple tables(Item and ItemHistory), to test Guid as PK and to test other Schema(his)
-    [Table(nameof(ItemHistory), Schema = "his")]
+    [Table(nameof(ItemHistory), Schema = "his")] // different schema is not supported in Sqlite
     public class ItemHistory
     {
         public Guid ItemHistoryId { get; set; }
@@ -272,7 +310,8 @@ namespace EFCore.BulkExtensions.Tests
         public int AddressId { get; set; }
         public string Street { get; set; }
 
-        public Geometry Location { get; set; }
+        public Geometry LocationGeography { get; set; }
+        public Geometry LocationGeometry { get; set; }
     }
 
     public class Teacher : Person
@@ -298,6 +337,14 @@ namespace EFCore.BulkExtensions.Tests
         public int ContentLength { get; set; }
     }
 
+    // For testing Temporal tables (configured via FluentAPI )
+    public class Storage
+    {
+        public Guid StorageId { get; set; }
+
+        public string Data { get; set; }
+    }
+
     // For testing TimeStamp Property and Column with Concurrency Lock
     public class File
     {
@@ -305,7 +352,9 @@ namespace EFCore.BulkExtensions.Tests
         public int FileId { get; set; }
 
         [Required]
-        public string Data { get; set; }
+        public string Description { get; set; }
+
+        public byte[] DataBytes { get; set; }
 
         [Timestamp]
         public byte[] VersionChange { get; set; }
@@ -345,12 +394,16 @@ namespace EFCore.BulkExtensions.Tests
 
         public InfoType InfoType { get; set; }
 
-        public string Note { get; protected set; } // To test protected Setter
+        public string Note { get; protected set; } = "NN"; // To test protected Setter
+
+        public string Remark { get; } // To test without Setter
 
         private DateTime TimeCreated { get; set; } // To test private Property
 
         [Required]
         private string LogData { get { return logData; } set { logData = value; } }
+
+        public DateTimeOffset DateTimeOff { get; set; } // ValueConverter to Binary
 
         public string GetLogData() { return logData; }
         public DateTime GetDateCreated() { return TimeCreated.Date; }
@@ -441,6 +494,10 @@ namespace EFCore.BulkExtensions.Tests
         public string Description { get; set; }
         public virtual ParentDetail Details { get; set; }
         public int ParentId { get; set; }
+
+        private string _phoneNumber;
+        public string PhoneNumber { get => _phoneNumber; set => _phoneNumber = value; }
+
         public decimal Value { get; set; }
     }
 
@@ -485,6 +542,13 @@ namespace EFCore.BulkExtensions.Tests
         public string Name { get; set; }
     }
 
+    public class AtypicalRowVersionConverterEntity
+    {
+        public Guid Id { get; set; }
+        public long RowVersionConverted { get; set; }
+        public string Name { get; set; }
+    }
+
     public class Event // CustomPrecision DateTime Test (SqlServer only)
     {
         public int EventId { get; set; }
@@ -496,5 +560,37 @@ namespace EFCore.BulkExtensions.Tests
 
         [Column(TypeName = "datetime2(3)")]
         public DateTime TimeCreated { get; set; }
+    }
+
+    public class Archive
+    {
+        public byte[] ArchiveId { get; set; }
+        public string Description { get; set; }
+    }
+
+    public class Source
+    {
+        public int SourceId { get; set; }
+        public Status StatusId { get; set; }
+        public Type TypeId { get; set; }
+    }
+    public enum Status : byte { Init, Changed }
+    public enum Type : byte { Undefined, Type1, Type2 }
+
+    public class Department
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; }
+
+        public ICollection<Division> Divisions { get; set; }
+    }
+
+    public class Division
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; }
+
+        public Guid DepartmentId { get; set; }
+        public Department Department { get; set; }
     }
 }

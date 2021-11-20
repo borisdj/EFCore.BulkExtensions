@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -26,8 +27,12 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
             
         public async Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, CancellationToken cancellationToken, bool isAsync)
         {
-            SqliteConnection connection = isAsync ? await OpenAndGetSqliteConnectionAsync(context, tableInfo.BulkConfig, cancellationToken).ConfigureAwait(false)
-                                                        : OpenAndGetSqliteConnection(context, tableInfo.BulkConfig);
+            SqliteConnection connection = tableInfo.SqliteConnection;
+            if (connection == null)
+            {
+                connection = isAsync ? await OpenAndGetSqliteConnectionAsync(context, tableInfo.BulkConfig, cancellationToken).ConfigureAwait(false)
+                                     : OpenAndGetSqliteConnection(context, tableInfo.BulkConfig);
+            }
             bool doExplicitCommit = false;
 
             try
@@ -37,9 +42,19 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
                     //context.Database.UseTransaction(connection.BeginTransaction());
                     doExplicitCommit = true;
                 }
-                var dbTransaction = doExplicitCommit ? connection.BeginTransaction()
-                                                     : context.Database.CurrentTransaction.GetUnderlyingTransaction(tableInfo.BulkConfig);
-                var transaction = (SqliteTransaction)dbTransaction;
+
+                SqliteTransaction transaction = tableInfo.SqliteTransaction;
+                if (transaction == null)
+                {
+                    var dbTransaction = doExplicitCommit ? connection.BeginTransaction()
+                                                         : context.Database.CurrentTransaction.GetUnderlyingTransaction(tableInfo.BulkConfig);
+
+                    transaction = (SqliteTransaction)dbTransaction;
+                }
+                else
+                {
+                    doExplicitCommit = false;
+                }
 
                 var command = GetSqliteCommand(context, type, entities, tableInfo, connection, transaction);
 
@@ -66,13 +81,16 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
             }
             finally
             {
-                if (isAsync)
+                if (doExplicitCommit)
                 {
-                    await context.Database.CloseConnectionAsync().ConfigureAwait(false);
-                }
-                else
-                {
-                    context.Database.CloseConnection();
+                    if (isAsync)
+                    {
+                        await context.Database.CloseConnectionAsync().ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        context.Database.CloseConnection();
+                    }
                 }
             }
         }
@@ -155,12 +173,101 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
         // Read
         public void Read<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress) where T : class
         {
-            throw new NotImplementedException();
+            ReadAsync(context, type, entities, tableInfo, progress, CancellationToken.None, isAsync: false).GetAwaiter().GetResult();
         }
 
-        public Task ReadAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, CancellationToken cancellationToken) where T : class
+        public async Task ReadAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, CancellationToken cancellationToken) where T : class
         {
-            throw new NotImplementedException(); // once implemented add 'async' in method signature
+            await ReadAsync(context, type, entities, tableInfo, progress, cancellationToken, isAsync: true).ConfigureAwait(false);
+        }
+
+        protected async Task ReadAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, CancellationToken cancellationToken, bool isAsync) where T : class
+        {
+            SqliteConnection connection = isAsync ? await OpenAndGetSqliteConnectionAsync(context, tableInfo.BulkConfig, cancellationToken).ConfigureAwait(false)
+                                                        : OpenAndGetSqliteConnection(context, tableInfo.BulkConfig);
+            bool doExplicitCommit = false;
+            SqliteTransaction transaction = null;
+
+            try
+            {
+                if (context.Database.CurrentTransaction == null)
+                {
+                    //context.Database.UseTransaction(connection.BeginTransaction());
+                    doExplicitCommit = true;
+                }
+
+                transaction = doExplicitCommit ? connection.BeginTransaction() 
+                                               : (SqliteTransaction)context.Database.CurrentTransaction.GetUnderlyingTransaction(tableInfo.BulkConfig);
+
+                SqliteCommand command = connection.CreateCommand();
+                command.Transaction = transaction;
+
+                // CREATE
+                command.CommandText = SqlQueryBuilderSqlite.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName);
+                if (isAsync)
+                {
+                    await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    command.ExecuteNonQuery();
+                }
+
+                tableInfo.BulkConfig.OperationType = OperationType.Insert;
+                tableInfo.InsertToTempTable = true;
+                tableInfo.SqliteConnection = connection;
+                tableInfo.SqliteTransaction = transaction;
+                // INSERT
+                if (isAsync)
+                {
+                    await InsertAsync(context, type, entities, tableInfo, progress, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    InsertAsync(context, type, entities, tableInfo, progress, cancellationToken, isAsync: false).GetAwaiter().GetResult();
+                }
+
+                // JOIN
+                List<T> existingEntities;
+                var sqlSelectJoinTable = SqlQueryBuilder.SelectJoinTable(tableInfo);
+                Expression<Func<DbContext, IQueryable<T>>> expression = tableInfo.GetQueryExpression<T>(sqlSelectJoinTable, false);
+                var compiled = EF.CompileQuery(expression); // instead using Compiled queries
+                existingEntities = compiled(context).ToList();
+
+                tableInfo.UpdateReadEntities(type, entities, existingEntities);
+
+                // DROP
+                command.CommandText = SqlQueryBuilderSqlite.DropTable(tableInfo.FullTempTableName);
+                if (isAsync)
+                {
+                    await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    command.ExecuteNonQuery();
+                }
+
+                if (doExplicitCommit)
+                {
+                    transaction.Commit();
+                }
+            }
+            finally
+            {
+                if (doExplicitCommit)
+                {
+                    if (isAsync)
+                    {
+                        await transaction.DisposeAsync();
+                        await context.Database.CloseConnectionAsync().ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        transaction.Dispose();
+                        context.Database.CloseConnection();
+                    }
+                }
+            }
         }
 
         // Truncate
@@ -210,7 +317,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
                     break;
                 case OperationType.InsertOrUpdateDelete:
                     throw new NotSupportedException("'BulkInsertOrUpdateDelete' not supported for Sqlite. Sqlite has only UPSERT statement (analog for MERGE WHEN MATCHED) but no functionality for: 'WHEN NOT MATCHED BY SOURCE THEN DELETE'." +
-                                                    " Another way to achieve this is to BulkRead existing data from DB, split list into sublists ans call separately Bulk methods for Insert, Update, Delete.");
+                                                    " Another way to achieve this is to BulkRead existing data from DB, split list into sublists and call separately Bulk methods for Insert, Update, Delete.");
                 case OperationType.Update:
                     command.CommandText = SqlQueryBuilderSqlite.UpdateSetTable(tableInfo);
                     break;
@@ -298,7 +405,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
                     }
                     else
                     {
-                        value = entity.GetType().Name; // Set the value for the discriminator column
+                        value = dbContext.Entry(entity).Metadata.GetDiscriminatorValue(); // Set the value for the discriminator column
                     }
                 }
 

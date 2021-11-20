@@ -13,7 +13,7 @@ namespace EFCore.BulkExtensions
             type ??= typeof(T);
             using (ActivitySources.StartExecuteActivity(operationType, entities.Count))
             {
-                if (operationType != OperationType.Truncate && entities.Count == 0)
+                if ((operationType != OperationType.Truncate && operationType != OperationType.InsertOrUpdateDelete) && entities.Count == 0)
                 {
                     return;
                 }
@@ -46,12 +46,12 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        public static async Task ExecuteAsync<T>(DbContext context, Type type, IList<T> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress, CancellationToken cancellationToken) where T : class
+        public static async Task ExecuteAsync<T>(DbContext context, Type type, IList<T> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress, CancellationToken cancellationToken = default) where T : class
         {
             type ??= typeof(T);
             using (ActivitySources.StartExecuteActivity(operationType, entities.Count))
             {
-                if (operationType != OperationType.Truncate && entities.Count == 0)
+                if ((operationType != OperationType.Truncate && operationType != OperationType.InsertOrUpdateDelete) && entities.Count == 0)
                 {
                     return;
                 }

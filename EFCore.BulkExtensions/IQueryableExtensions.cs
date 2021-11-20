@@ -32,7 +32,7 @@ namespace EFCore.BulkExtensions
             if (relationalCommandCache != null)
             {
 #pragma warning disable EF1001 // Internal EF Core API usage.
-                command = relationalCommandCache.GetRelationalCommand(parameterValues);
+                command = (IRelationalCommand)relationalCommandCache.GetRelationalCommandTemplate(parameterValues);
 #pragma warning restore EF1001
             }
             else

@@ -15,6 +15,27 @@ namespace EFCore.BulkExtensions.Tests
 
         [Theory]
         [InlineData(DbServer.SqlServer)]
+        public void BatchConverterTest(DbServer dbServer)
+        {
+            ContextUtil.DbServer = dbServer;
+
+            using var context = new TestContext(ContextUtil.GetOptions());
+            context.Truncate<Info>();
+
+            var currentDate = DateTime.Today;
+            var entity = new Info { Message = "name A", DateTimeOff = currentDate };
+            context.Infos.Add(entity);
+            context.SaveChanges();
+
+            var updateTo = new Info { Message = "name B Updated" };
+            context.Infos.BatchUpdate(updateTo);
+
+            using var contextRead = new TestContext(ContextUtil.GetOptions());
+            Assert.Equal(currentDate, contextRead.Infos.First().DateTimeOff);
+        }
+
+        [Theory]
+        [InlineData(DbServer.SqlServer)]
         [InlineData(DbServer.Sqlite)]
         public void BatchTest(DbServer dbServer)
         {
@@ -38,7 +59,10 @@ namespace EFCore.BulkExtensions.Tests
             RunContainsBatchDelete3();
             RunAnyBatchDelete();
 
+            RunBatchUpdateEnum(dbServer);
+
             UpdateSetting(SettingsEnum.Sett1, "Val1UPDATE");
+            UpdateByteArrayToDefault();
 
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
@@ -101,7 +125,7 @@ namespace EFCore.BulkExtensions.Tests
             var query = context.Items.AsQueryable();
             if (dbServer == DbServer.SqlServer)
             {
-                query = query.Where(a => a.ItemId <= 500 && a.Price >= price);
+                query = query.Where(a => a.ItemId <= 500 && a.Price >= price);//.OrderBy(n => n.ItemId).Take(500);
             }
             if (dbServer == DbServer.Sqlite)
             {
@@ -128,6 +152,25 @@ namespace EFCore.BulkExtensions.Tests
             }
         }
 
+        private void RunBatchUpdateEnum(DbServer dbServer)
+        {
+            using var context = new TestContext(ContextUtil.GetOptions());
+
+            context.Truncate<Source>();
+
+            context.Sources.AddRange(new Source[] {
+                new Source { StatusId = Status.Init, TypeId = Type.Type2 },
+                new Source { StatusId = Status.Changed, TypeId = Type.Type2 }
+            });
+            context.SaveChanges();
+
+            var updateValues = new Source() { StatusId = Status.Changed };
+            var updateColumns = new List<string>() { nameof(updateValues.StatusId) };
+            context.Sources.Where(e => e.StatusId == Status.Init).BatchUpdate(updateValues, updateColumns);
+
+            Assert.Equal(Type.Type2, context.Sources.FirstOrDefault().TypeId); // Should remain 'Type.Type2' and not be changed to default 'Type.Undefined'
+        }
+
         private void RunBatchUpdate_UsingNavigationPropertiesThatTranslateToAnInnerQuery()
         {
             var testDbCommandInterceptor = new TestDbCommandInterceptor();
@@ -136,7 +179,7 @@ namespace EFCore.BulkExtensions.Tests
             context.Parents.Where(parent => parent.ParentId < 5 && !string.IsNullOrEmpty(parent.Details.Notes))
                 .BatchUpdate(parent => new Parent { Description = parent.Details.Notes ?? "Fallback" });
 
-            var actualSqlExecuted = testDbCommandInterceptor.ExecutedNonQueryCommands?.LastOrDefault();
+            var actualSqlExecuted = testDbCommandInterceptor.ExecutedNonQueryCommands?.LastOrDefault().Sql;
             var expectedSql =
 @"UPDATE p SET  [p].[Description] = (
     SELECT COALESCE([p1].[Notes], N'Fallback')
@@ -144,14 +187,14 @@ namespace EFCore.BulkExtensions.Tests
     WHERE [p1].[ParentId] = [p].[ParentId]) 
 FROM [Parent] AS [p]
 LEFT JOIN [ParentDetail] AS [p0] ON [p].[ParentId] = [p0].[ParentId]
-WHERE ([p].[ParentId] < 5) AND ([p0].[Notes] IS NOT NULL AND (([p0].[Notes] <> N'') OR [p0].[Notes] IS NULL))";
+WHERE ([p].[ParentId] < 5) AND ([p0].[Notes] IS NOT NULL AND NOT ([p0].[Notes] LIKE N''))";
 
             Assert.Equal(expectedSql.Replace("\r\n", "\n"), actualSqlExecuted.Replace("\r\n", "\n"));
 
             context.Parents.Where(parent => parent.ParentId == 1)
                 .BatchUpdate(parent => new Parent { Value = parent.Children.Where(child => child.IsEnabled).Sum(child => child.Value) });
 
-            actualSqlExecuted = testDbCommandInterceptor.ExecutedNonQueryCommands?.LastOrDefault();
+            actualSqlExecuted = testDbCommandInterceptor.ExecutedNonQueryCommands?.LastOrDefault().Sql;
             expectedSql =
 @"UPDATE p SET  [p].[Value] = (
     SELECT COALESCE(SUM([c].[Value]), 0.0)
@@ -171,9 +214,9 @@ WHERE [p].[ParentId] = 1";
                     Value = newValue
                 });
 
-            actualSqlExecuted = testDbCommandInterceptor.ExecutedNonQueryCommands?.LastOrDefault();
+            actualSqlExecuted = testDbCommandInterceptor.ExecutedNonQueryCommands?.LastOrDefault().Sql;
             expectedSql =
-@"UPDATE p SET  [p].[Description] = (CONVERT(VARCHAR(100), (
+@"UPDATE p SET  [p].[Description] = (CONVERT(varchar(100), (
     SELECT COALESCE(SUM([c].[Value]), 0.0)
     FROM [Child] AS [c]
     WHERE ([p].[ParentId] = [c].[ParentId]) AND (([c].[IsEnabled] = CAST(1 AS bit)) AND ([c].[Value] = @__p_0))))) , [p].[Value] = @param_1 
@@ -359,6 +402,14 @@ WHERE [p].[ParentId] = 1";
             context.Settings.Where(x => x.Settings == settings).BatchUpdate(x => new Setting { Value = value.ToString() });
 
             context.Truncate<Setting>();
+        }
+
+        private void UpdateByteArrayToDefault()
+        {
+            using var context = new TestContext(ContextUtil.GetOptions());
+
+            context.Files.BatchUpdate(new File { DataBytes = null }, updateColumns: new List<string> { nameof(File.DataBytes) });
+            context.Files.BatchUpdate(a => new File { DataBytes = null });
         }
     }
 }

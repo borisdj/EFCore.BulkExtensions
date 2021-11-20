@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore.Diagnostics;
+using System;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Threading;
@@ -8,17 +9,39 @@ namespace EFCore.BulkExtensions.Tests
 {
     public class TestDbCommandInterceptor : DbCommandInterceptor
     {
-        public List<string> AboutToBeExecutedCommands { get; } = new List<string>();
+        /// <summary>
+        /// Information about an intercepted <see cref="System.Data.Common.DbCommand"/>
+        /// </summary>
+        public record DbCommandInformation(IReadOnlyList<DbParameter> DbParameters, string Sql);
 
-        public List<string> ExecutedNonQueryCommands { get; } = new List<string>();
-        public List<string> ExecutedReaderCommands { get; } = new List<string>();
-        public List<string> ExecutedScalarCommands { get; } = new List<string>();
+        public List<DbCommandInformation> AboutToBeExecutedCommands { get; } = new List<DbCommandInformation>();
+
+        public List<DbCommandInformation> ExecutedNonQueryCommands { get; } = new List<DbCommandInformation>();
+        public List<DbCommandInformation> ExecutedReaderCommands { get; } = new List<DbCommandInformation>();
+        public List<DbCommandInformation> ExecutedScalarCommands { get; } = new List<DbCommandInformation>();
+
+        protected DbCommandInformation BuildCommandInformation(DbCommand dbCommand)
+        {
+            _ = dbCommand ?? throw new ArgumentNullException(nameof(dbCommand));
+
+            var dbParameters = new List<DbParameter>();
+            if (dbCommand.Parameters != null)
+            {
+                foreach (DbParameter parameter in dbCommand.Parameters)
+                    dbParameters.Add(parameter);
+            }
+
+            return new DbCommandInformation(dbParameters, dbCommand.CommandText);
+        }
 
         public override int NonQueryExecuted(DbCommand command, CommandExecutedEventData eventData, int result)
         {
             if (command?.CommandText != null)
             {
-                ExecutedNonQueryCommands.Add(command.CommandText);
+                lock (ExecutedNonQueryCommands)
+                {
+                    ExecutedNonQueryCommands.Add(BuildCommandInformation(command));
+                }
             }
 
             return base.NonQueryExecuted(command, eventData, result);
@@ -28,7 +51,10 @@ namespace EFCore.BulkExtensions.Tests
         {
             if (command?.CommandText != null)
             {
-                ExecutedNonQueryCommands.Add(command.CommandText);
+                lock (ExecutedNonQueryCommands)
+                {
+                    ExecutedNonQueryCommands.Add(BuildCommandInformation(command));
+                }
             }
 
             return base.NonQueryExecutedAsync(command, eventData, result, cancellationToken);
@@ -38,7 +64,10 @@ namespace EFCore.BulkExtensions.Tests
         {
             if (command?.CommandText != null)
             {
-                AboutToBeExecutedCommands.Add(command.CommandText);
+                lock (AboutToBeExecutedCommands)
+                {
+                    AboutToBeExecutedCommands.Add(BuildCommandInformation(command));
+                }
             }
 
             return base.NonQueryExecuting(command, eventData, result);
@@ -48,7 +77,10 @@ namespace EFCore.BulkExtensions.Tests
         {
             if (command?.CommandText != null)
             {
-                AboutToBeExecutedCommands.Add(command.CommandText);
+                lock (AboutToBeExecutedCommands)
+                {
+                    AboutToBeExecutedCommands.Add(BuildCommandInformation(command));
+                }
             }
 
             return base.NonQueryExecutingAsync(command, eventData, result, cancellationToken);
@@ -58,7 +90,10 @@ namespace EFCore.BulkExtensions.Tests
         {
             if (command?.CommandText != null)
             {
-                ExecutedReaderCommands.Add(command.CommandText);
+                lock (ExecutedReaderCommands)
+                {
+                    ExecutedReaderCommands.Add(BuildCommandInformation(command));
+                }
             }
 
             return base.ReaderExecuted(command, eventData, result);
@@ -68,7 +103,10 @@ namespace EFCore.BulkExtensions.Tests
         {
             if (command?.CommandText != null)
             {
-                ExecutedReaderCommands.Add(command.CommandText);
+                lock (ExecutedReaderCommands)
+                {
+                    ExecutedReaderCommands.Add(BuildCommandInformation(command));
+                }
             }
 
             return base.ReaderExecutedAsync(command, eventData, result, cancellationToken);
@@ -78,7 +116,10 @@ namespace EFCore.BulkExtensions.Tests
         {
             if (command?.CommandText != null)
             {
-                AboutToBeExecutedCommands.Add(command.CommandText);
+                lock (AboutToBeExecutedCommands)
+                {
+                    AboutToBeExecutedCommands.Add(BuildCommandInformation(command));
+                }
             }
 
             return base.ReaderExecuting(command, eventData, result);
@@ -88,7 +129,10 @@ namespace EFCore.BulkExtensions.Tests
         {
             if (command?.CommandText != null)
             {
-                AboutToBeExecutedCommands.Add(command.CommandText);
+                lock (AboutToBeExecutedCommands)
+                {
+                    AboutToBeExecutedCommands.Add(BuildCommandInformation(command));
+                }
             }
 
             return base.ReaderExecutingAsync(command, eventData, result, cancellationToken);
@@ -98,7 +142,10 @@ namespace EFCore.BulkExtensions.Tests
         {
             if (command?.CommandText != null)
             {
-                ExecutedScalarCommands.Add(command.CommandText);
+                lock (ExecutedScalarCommands)
+                {
+                    ExecutedScalarCommands.Add(BuildCommandInformation(command));
+                }
             }
 
             return base.ScalarExecuted(command, eventData, result);
@@ -108,7 +155,10 @@ namespace EFCore.BulkExtensions.Tests
         {
             if (command?.CommandText != null)
             {
-                ExecutedScalarCommands.Add(command.CommandText);
+                lock (ExecutedScalarCommands)
+                {
+                    ExecutedScalarCommands.Add(BuildCommandInformation(command));
+                }
             }
 
             return base.ScalarExecutedAsync(command, eventData, result, cancellationToken);
@@ -118,7 +168,10 @@ namespace EFCore.BulkExtensions.Tests
         {
             if (command?.CommandText != null)
             {
-                AboutToBeExecutedCommands.Add(command.CommandText);
+                lock (AboutToBeExecutedCommands)
+                {
+                    AboutToBeExecutedCommands.Add(BuildCommandInformation(command));
+                }
             }
 
             return base.ScalarExecuting(command, eventData, result);
@@ -128,7 +181,10 @@ namespace EFCore.BulkExtensions.Tests
         {
             if (command?.CommandText != null)
             {
-                AboutToBeExecutedCommands.Add(command.CommandText);
+                lock (AboutToBeExecutedCommands)
+                {
+                    AboutToBeExecutedCommands.Add(BuildCommandInformation(command));
+                }
             }
 
             return base.ScalarExecutingAsync(command, eventData, result, cancellationToken);

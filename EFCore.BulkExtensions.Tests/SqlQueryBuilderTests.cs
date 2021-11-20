@@ -11,7 +11,7 @@ namespace EFCore.BulkExtensions.Tests
         {
             TableInfo tableInfo = GetTestTableInfo();
             tableInfo.IdentityColumnName = "ItemId";
-            string result = SqlQueryBuilder.MergeTable(tableInfo, OperationType.Insert);
+            string result = SqlQueryBuilder.MergeTable<Item>(null, tableInfo, OperationType.Insert).sql;
 
             string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
                               "ON T.[ItemId] = S.[ItemId] " +
@@ -25,7 +25,7 @@ namespace EFCore.BulkExtensions.Tests
         {
             TableInfo tableInfo = GetTestTableInfo();
             tableInfo.IdentityColumnName = "ItemId";
-            string result = SqlQueryBuilder.MergeTable(tableInfo, OperationType.InsertOrUpdate);
+            string result = SqlQueryBuilder.MergeTable<Item>(null, tableInfo, OperationType.InsertOrUpdate).sql;
 
             string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
                               "ON T.[ItemId] = S.[ItemId] " +
@@ -42,7 +42,7 @@ namespace EFCore.BulkExtensions.Tests
         {
             TableInfo tableInfo = GetTestTableWithCompareInfo();
             tableInfo.IdentityColumnName = "ItemId";
-            string result = SqlQueryBuilder.MergeTable(tableInfo, OperationType.InsertOrUpdate);
+            string result = SqlQueryBuilder.MergeTable<Item>(null, tableInfo, OperationType.InsertOrUpdate).sql;
 
             string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
                               "ON T.[ItemId] = S.[ItemId] " +
@@ -58,7 +58,7 @@ namespace EFCore.BulkExtensions.Tests
         {
             TableInfo tableInfo = GetTestTableWithNoUpdateInfo();
             tableInfo.IdentityColumnName = "ItemId";
-            string result = SqlQueryBuilder.MergeTable(tableInfo, OperationType.InsertOrUpdate);
+            string result = SqlQueryBuilder.MergeTable<Item>(null, tableInfo, OperationType.InsertOrUpdate).sql;
 
             string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
                               "ON T.[ItemId] = S.[ItemId] " +
@@ -75,7 +75,7 @@ namespace EFCore.BulkExtensions.Tests
         {
             TableInfo tableInfo = GetTestTableInfo();
             tableInfo.IdentityColumnName = "ItemId";
-            string result = SqlQueryBuilder.MergeTable(tableInfo, OperationType.Update);
+            string result = SqlQueryBuilder.MergeTable<Item>(null, tableInfo, OperationType.Update).sql;
 
             string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
                               "ON T.[ItemId] = S.[ItemId] " +
@@ -104,7 +104,7 @@ namespace EFCore.BulkExtensions.Tests
         public void MergeTableDeleteDeleteTest()
         {
             var tableInfo = GetTestTableInfo();
-            string result = SqlQueryBuilder.MergeTable(tableInfo, OperationType.Delete);
+            string result = SqlQueryBuilder.MergeTable<Item>(null, tableInfo, OperationType.Delete).sql;
 
             string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
                               "ON T.[ItemId] = S.[ItemId] " +

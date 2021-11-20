@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
+using System.Linq.Expressions;
 
 namespace EFCore.BulkExtensions
 {
@@ -54,12 +55,15 @@ namespace EFCore.BulkExtensions
         public bool UseTempDB { get; set; }
 
         /// <summary>
-        ///     ToDo
+        ///     When set to false temp table name will be only 'Temp' without random numbers
         /// </summary>
+        /// <value>
+        ///     Default value is <c>true</c>.
+        /// </value>
         public bool UniqueTableNameTempDb { get; set; } = true;
 
         /// <summary>
-        ///     Enables specifying custom name of tabel in Db that does not have to be mapped to Entity.
+        ///     Enables specifying custom name of table in Db that does not have to be mapped to Entity.
         /// </summary>
         /// <value>
         ///     Can be set with 'TableName' only or with 'Schema.TableName'.
@@ -91,7 +95,7 @@ namespace EFCore.BulkExtensions
         ///     Ignore handling RowVersion column
         /// </summary>
         /// <value>
-        ///     Default value is <c>false</c>, if table have any RowVersion column, it will have special handling and need to be binary
+        ///     Default value is <c>false</c>, if table have any RowVersion column, it will have special handling and needs to be binary
         /// </value>
         public bool IgnoreRowVersion { get; set; } = false;
 
@@ -149,7 +153,7 @@ namespace EFCore.BulkExtensions
         public List<string> PropertiesToExcludeOnCompare { get; set; }
 
         /// <summary>
-        ///     Selected properties are excluded from being updated, can differ from PropertiesToExclude that can that be used for Insert config only
+        ///     Selected properties are excluded from being updated, can differ from PropertiesToExclude that can be used for Insert config only
         /// </summary>
         public List<string> PropertiesToExcludeOnUpdate { get; set; }
 
@@ -157,7 +161,7 @@ namespace EFCore.BulkExtensions
         ///     Used for specifying custom properties, by which we want update to be done.
         /// </summary>
         /// <remarks>
-        ///     Using it while also having Identity column requires that Id property be excluded with PropertiesToExclude.
+        ///     If Identity column exisit and is not added in UpdateByProp it will be excluded automatically
         /// </remarks>
         public List<string> UpdateByProperties { get; set; }
 
@@ -167,6 +171,11 @@ namespace EFCore.BulkExtensions
         public bool EnableShadowProperties { get; set; }
 
         /// <summary>
+        ///    Shadow columns used for Temporal table. Has defaults elements: 'PeriodStart' and 'PeriodEnd'. Can be changed if temporal columns have custom names.
+        /// </summary>
+        public List<string> TemporalColumns { get; set; } = new List<string> { "PeriodStart", "PeriodEnd" };
+        
+        /// <summary>
         ///     When set all entites that have relations with main ones from the list are also merged into theirs tables.
         /// </summary>
         /// <remarks>
@@ -175,7 +184,7 @@ namespace EFCore.BulkExtensions
         public bool IncludeGraph { get; set; }
 
         /// <summary>
-        ///     Removes the clause 'EXISTS ... EXCEPT' from Merge statement, useful when need to active triggers even for same data.
+        ///     Removes the clause 'EXISTS ... EXCEPT' from Merge statement which then updates even same data, useful when need to always active triggers.
         /// </summary>
         public bool OmitClauseExistsExcept { get; set; }
 
@@ -211,11 +220,21 @@ namespace EFCore.BulkExtensions
         /// </value>
         public Microsoft.Data.SqlClient.SqlBulkCopyOptions SqlBulkCopyOptions { get; set; } // is superset of System.Data.SqlClient.SqlBulkCopyOptions, gets converted to the desired type
 
+        /// <summary>
+        ///     A filter on entities to delete when using BulkInsertOrUpdateOrDelete.
+        /// </summary>
+        public void SetSynchronizeFilter<T>(Expression<Func<T, bool>> filter) where T : class
+        {
+            SynchronizeFilter = filter;
+        }
+
         public Func<DbConnection, DbConnection> UnderlyingConnection { get; set; }
 
         public Func<DbTransaction, DbTransaction> UnderlyingTransaction { get; set; }
 
         internal OperationType OperationType { get; set; }
+
+        internal object SynchronizeFilter { get; private set; }
     }
 
     public class StatsInfo

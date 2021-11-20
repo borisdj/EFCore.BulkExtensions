@@ -1,4 +1,5 @@
-﻿using EFCore.BulkExtensions.SqlAdapters;
+﻿using EFCore.BulkExtensions.Helpers;
+using EFCore.BulkExtensions.SqlAdapters;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -30,9 +31,10 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
             await InsertAsync(context, type, entities, tableInfo, progress, cancellationToken, isAsync: true).ConfigureAwait(false);
         }
         // Publish Async and NonAsync are merged into single operation flow with protected method using arg: bool isAsync (keeps code DRY)
+        // https://docs.microsoft.com/en-us/archive/msdn-magazine/2015/july/async-programming-brownfield-async-development#the-flag-argument-hack
         protected async Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, CancellationToken cancellationToken, bool isAsync)
         {
-            tableInfo.CheckToSetIdentityForPreserveOrder(entities);
+            tableInfo.CheckToSetIdentityForPreserveOrder(tableInfo, entities);
             if (isAsync)
             {
                 await context.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
@@ -102,7 +104,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
             }
             if (!tableInfo.CreatedOutputTable)
             {
-                tableInfo.CheckToSetIdentityForPreserveOrder(entities, reset: true);
+                tableInfo.CheckToSetIdentityForPreserveOrder(tableInfo, entities, reset: true);
             }
         }
 
@@ -120,6 +122,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
         protected async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, CancellationToken cancellationToken, bool isAsync) where T : class
         {
             tableInfo.InsertToTempTable = true;
+            var entityPropertyWithDefaultValue = entities.GetPropertiesWithDefaultValue(type);
 
             var dropTempTableIfExists = tableInfo.BulkConfig.UseTempDB;
 
@@ -133,8 +136,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                 else
                 {
                     context.Database.ExecuteSqlRaw(sqlDropTable);
-                }
-            }
+                }            }
 
             var sqlCreateTableCopy = SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo);
             if (isAsync)
@@ -182,14 +184,19 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                         context.Database.ExecuteSqlRaw(sqlAddColumn);
                     }
                 }
-                var sqlAlterTableColumnsToNullable = SqlQueryBuilder.AlterTableColumnsToNullable(tableInfo.FullTempOutputTableName, tableInfo);
-                if (isAsync)
+
+                if (operationType == OperationType.InsertOrUpdateDelete)
                 {
-                    await context.Database.ExecuteSqlRawAsync(sqlAlterTableColumnsToNullable, cancellationToken).ConfigureAwait(false);
-                }
-                else
-                {
-                    context.Database.ExecuteSqlRaw(sqlAlterTableColumnsToNullable);
+                    // Output returns all changes including Deleted rows with all NULL values, so if TempOutput.Id col not Nullable it breaks
+                    var sqlAlterTableColumnsToNullable = SqlQueryBuilder.AlterTableColumnsToNullable(tableInfo.FullTempOutputTableName, tableInfo);
+                    if (isAsync)
+                    {
+                        await context.Database.ExecuteSqlRawAsync(sqlAlterTableColumnsToNullable, cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        context.Database.ExecuteSqlRaw(sqlAlterTableColumnsToNullable);
+                    }
                 }
             }
 
@@ -220,14 +227,14 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                     }
                 }
 
-                var sqlMergeTable = SqlQueryBuilder.MergeTable(tableInfo, operationType);
+                var sqlMergeTable = SqlQueryBuilder.MergeTable<T>(context, tableInfo, operationType, entityPropertyWithDefaultValue);
                 if (isAsync)
                 {
-                    await context.Database.ExecuteSqlRawAsync(sqlMergeTable, cancellationToken).ConfigureAwait(false);
+                    await context.Database.ExecuteSqlRawAsync(sqlMergeTable.sql, sqlMergeTable.parameters, cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
-                    context.Database.ExecuteSqlRaw(sqlMergeTable);
+                    context.Database.ExecuteSqlRaw(sqlMergeTable.sql, sqlMergeTable.parameters);
                 }
 
                 if (tableInfo.CreatedOutputTable)
@@ -326,7 +333,12 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
 
                 var sqlSelectJoinTable = SqlQueryBuilder.SelectJoinTable(tableInfo);
 
-                tableInfo.PropertyColumnNamesDict = previousPropertyColumnNamesDict;
+                tableInfo.PropertyColumnNamesDict = previousPropertyColumnNamesDict; // TODO Consider refactor and integrate with TimeStampPropertyName, also check for Calculated props.
+                                                                                     // Output only PropertisToInclude and for getting Id with SetOutputIdentity
+                if (tableInfo.TimeStampPropertyName != null && !tableInfo.PropertyColumnNamesDict.ContainsKey(tableInfo.TimeStampPropertyName))
+                {
+                    tableInfo.PropertyColumnNamesDict.Add(tableInfo.TimeStampPropertyName, tableInfo.TimeStampColumnName);
+                }
 
                 List<T> existingEntities;
                 if (typeof(T) == type)
@@ -343,6 +355,11 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                 }
 
                 tableInfo.UpdateReadEntities(type, entities, existingEntities);
+
+                if (tableInfo.TimeStampPropertyName != null && !tableInfo.PropertyColumnNamesDict.ContainsKey(tableInfo.TimeStampPropertyName))
+                {
+                    tableInfo.PropertyColumnNamesDict.Remove(tableInfo.TimeStampPropertyName);
+                }
             }
             finally
             {
@@ -405,7 +422,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
             }
             return dataTable;
         }
-        
+
         /// <summary>
         /// Common logic for two versions of GetDataTable
         /// </summary>
@@ -422,21 +439,20 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
             var ownedEntitiesMappedProperties = new HashSet<string>();
 
             var isSqlServer = context.Database.ProviderName.EndsWith(DbServer.SqlServer.ToString());
-            var sqlServerBytesWriter = new SqlServerBytesWriter
-            {
-                IsGeography = true
-            };
+            var sqlServerBytesWriter = new SqlServerBytesWriter();
 
             var objectIdentifier = tableInfo.ObjectIdentifier;
             type = tableInfo.HasAbstractList ? entities[0].GetType() : type;
             var entityType = context.Model.FindEntityType(type);
             var entityTypeProperties = entityType.GetProperties();
-            var entityPropertiesDict = entityTypeProperties.Where(a => tableInfo.PropertyColumnNamesDict.ContainsKey(a.Name) || a.Name == tableInfo.TimeStampPropertyName).ToDictionary(a => a.Name, a => a);
+            var entityPropertiesDict = entityTypeProperties.Where(a => tableInfo.PropertyColumnNamesDict.ContainsKey(a.Name) ||
+                                                                       (tableInfo.BulkConfig.OperationType != OperationType.Read && a.Name == tableInfo.TimeStampPropertyName))
+                                                           .ToDictionary(a => a.Name, a => a);
             var entityNavigationOwnedDict = entityType.GetNavigations().Where(a => a.TargetEntityType.IsOwned()).ToDictionary(a => a.Name, a => a);
             var entityShadowFkPropertiesDict = entityTypeProperties.Where(a => a.IsShadowProperty() &&
                                                                                a.IsForeignKey() &&
                                                                                a.GetContainingForeignKeys().FirstOrDefault()?.DependentToPrincipal?.Name != null)
-                                                                         .ToDictionary(a => a.Name, a => a);
+                                                                         .ToDictionary(x => x.GetContainingForeignKeys().First().DependentToPrincipal.Name, a => a);
             var entityShadowFkPropertyColumnNamesDict = entityShadowFkPropertiesDict.ToDictionary(a => a.Key, a => a.Value.GetColumnName(objectIdentifier));
             var shadowPropertyColumnNamesDict = entityPropertiesDict.Where(a => a.Value.IsShadowProperty()).ToDictionary(a => a.Key, a => a.Value.GetColumnName(objectIdentifier));
 
@@ -445,6 +461,8 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
 
             foreach (var property in properties)
             {
+                var hasDefaultVauleOnInsert = tableInfo.BulkConfig.OperationType == OperationType.Insert && !tableInfo.BulkConfig.SetOutputIdentity && tableInfo.DefaultValueProperties.Contains(property.Name);
+
                 if (entityPropertiesDict.ContainsKey(property.Name))
                 {
                     var propertyEntityType = entityPropertiesDict[property.Name];
@@ -469,7 +487,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                         }
                     }
 
-                    if (!columnsDict.ContainsKey(property.Name))
+                    if (!columnsDict.ContainsKey(property.Name) && !hasDefaultVauleOnInsert)
                     {
                         dataTable.Columns.Add(columnName, propertyType);
                         columnsDict.Add(property.Name, null);
@@ -478,6 +496,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                 else if (entityShadowFkPropertiesDict.ContainsKey(property.Name))
                 {
                     var fk = entityShadowFkPropertiesDict[property.Name];
+
                     entityPropertiesDict.TryGetValue(fk.GetColumnName(objectIdentifier), out var entityProperty);
                     if (entityProperty == null) // BulkRead
                         continue;
@@ -495,7 +514,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                         propertyType = typeof(byte[]);
                     }
 
-                    if (!columnsDict.ContainsKey(property.Name))
+                    if (!columnsDict.ContainsKey(columnName) && !hasDefaultVauleOnInsert)
                     {
                         dataTable.Columns.Add(columnName, propertyType);
                         columnsDict.Add(columnName, null);
@@ -564,7 +583,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                     // If a model has an entity which has a relationship without an explicity defined FK, the data table will already contain the foreign key shadow property
                     if (dataTable.Columns.Contains(columnName))
                         continue;
-                    
+
                     var isConvertible = tableInfo.ConvertibleColumnConverterDict.ContainsKey(columnName);
                     var propertyType = isConvertible ? tableInfo.ConvertibleColumnConverterDict[columnName].ProviderClrType : shadowProperty.ClrType;
 
@@ -586,16 +605,20 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
 
             if (discriminatorColumn != null)
             {
-                dataTable.Columns.Add(discriminatorColumn, typeof(string));
-                columnsDict.Add(discriminatorColumn, type.Name);
+                var discriminatorProperty = entityPropertiesDict[discriminatorColumn];
+
+                dataTable.Columns.Add(discriminatorColumn, discriminatorProperty.ClrType);
+                columnsDict.Add(discriminatorColumn, entityType.GetDiscriminatorValue());
             }
             bool hasConverterProperties = tableInfo.ConvertiblePropertyColumnDict.Count > 0;
 
             foreach (var entity in entities)
             {
-                foreach (var property in properties)
+                var propertiesToLoad = properties.Where(a => !tableInfo.AllNavigationsDictionary.ContainsKey(a.Name) || entityShadowFkPropertiesDict.ContainsKey(a.Name) || tableInfo.OwnedTypesDict.ContainsKey(a.Name)); // omit virtual Navigation (except Owned and ShadowNavig.) since it's Getter can cause unwanted Select-s from Db
+                foreach (var property in propertiesToLoad)
                 {
                     var propertyValue = tableInfo.FastPropertyDict.ContainsKey(property.Name) ? tableInfo.FastPropertyDict[property.Name].Get(entity) : null;
+                    var hasDefaultVauleOnInsert = tableInfo.BulkConfig.OperationType == OperationType.Insert && !tableInfo.BulkConfig.SetOutputIdentity && tableInfo.DefaultValueProperties.Contains(property.Name);
 
                     if (tableInfo.BulkConfig.DateTime2PrecisionForceRound && isSqlServer && tableInfo.DateTime2PropertiesPrecisionLessThen7Dict.ContainsKey(property.Name))
                     {
@@ -622,10 +645,16 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                     if (tableInfo.HasSpatialType && propertyValue is Geometry geometryValue)
                     {
                         geometryValue.SRID = tableInfo.BulkConfig.SRID;
+
+                        if (tableInfo.PropertyColumnNamesDict.ContainsKey(property.Name))
+                        {
+                            sqlServerBytesWriter.IsGeography = tableInfo.ColumnNamesTypesDict[tableInfo.PropertyColumnNamesDict[property.Name]] == "geography"; // "geography" type is default, otherwise it's "geometry" type
+                        }
+
                         propertyValue = sqlServerBytesWriter.Write(geometryValue);
                     }
 
-                    if (entityPropertiesDict.ContainsKey(property.Name))
+                    if (entityPropertiesDict.ContainsKey(property.Name) && !hasDefaultVauleOnInsert)
                     {
                         columnsDict[property.Name] = propertyValue;
                     }
@@ -689,7 +718,8 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
             string discriminatorColumn = null;
             if (!tableInfo.BulkConfig.EnableShadowProperties && tableInfo.ShadowProperties.Count > 0)
             {
-                discriminatorColumn = tableInfo.ShadowProperties.ElementAt(0);
+                var stringColumns = tableInfo.ColumnNamesTypesDict.Where(a => a.Value.Contains("char")).Select(a => a.Key).ToList();
+                discriminatorColumn = tableInfo.ShadowProperties.Where(a => stringColumns.Contains(a)).ElementAt(0);
             }
             return discriminatorColumn;
         }

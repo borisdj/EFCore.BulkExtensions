@@ -1,7 +1,9 @@
 ﻿using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 
 namespace EFCore.BulkExtensions
 {
@@ -37,7 +39,7 @@ namespace EFCore.BulkExtensions
             return q;
         }
 
-        // Not used for TableCopy since order of columns is not the same as of original table, that is required for the MERGE (insted after creation columns are Altered to Nullable)
+        // Not used for TableCopy since order of columns is not the same as of original table, that is required for the MERGE (instead after creation, columns are Altered to Nullable)
         public static string CreateTable(string newTableName, TableInfo tableInfo, bool isOutputTable = false)
         {
             List<string> columnsNames = (isOutputTable ? tableInfo.OutputPropertyColumnNamesDict : tableInfo.PropertyColumnNamesDict).Values.ToList();
@@ -148,8 +150,9 @@ namespace EFCore.BulkExtensions
             return q;
         }
 
-        public static string MergeTable(TableInfo tableInfo, OperationType operationType)
+        public static (string sql, IEnumerable<object> parameters) MergeTable<T>(DbContext context, TableInfo tableInfo, OperationType operationType, IEnumerable<string> entityPropertyWithDefaultValue = default) where T : class
         {
+            List<object> parameters = new List<object>();
             string targetTable = tableInfo.FullTableName;
             string sourceTable = tableInfo.FullTempTableName;
             bool keepIdentity = tableInfo.BulkConfig.SqlBulkCopyOptions.HasFlag(SqlBulkCopyOptions.KeepIdentity);
@@ -162,6 +165,14 @@ namespace EFCore.BulkExtensions
             List<string> compareColumnNames = columnsNamesOnCompare.Where(a => !a.Equals(tableInfo.IdentityColumnName, StringComparison.OrdinalIgnoreCase)).ToList();
             List<string> updateColumnNames = columnsNamesOnUpdate.Where(a => !a.Equals(tableInfo.IdentityColumnName, StringComparison.OrdinalIgnoreCase)).ToList();
             List<string> insertColumnsNames = (tableInfo.HasIdentity && !keepIdentity) ? nonIdentityColumnsNames : columnsNames;
+            if (tableInfo.DefaultValueProperties.Any()) // Properties with DefaultValue exclude OnInsert but keep OnUpdate
+            {
+                var defaults = insertColumnsNames.Where(a => tableInfo.DefaultValueProperties.Contains(a)).ToList();
+                //If the entities assign value to properties with default value, don't skip this property 
+                if(entityPropertyWithDefaultValue != default)
+                    defaults = defaults.Where(x => entityPropertyWithDefaultValue.Contains(x)).ToList();
+                insertColumnsNames = insertColumnsNames.Where(a => !defaults.Contains(a)).ToList();
+            }
 
             string isUpdateStatsValue = (tableInfo.BulkConfig.CalculateStats) ? ",(CASE $action WHEN 'UPDATE' THEN 1 Else 0 END),(CASE $action WHEN 'DELETE' THEN 1 Else 0 END)" : "";
 
@@ -184,24 +195,52 @@ namespace EFCore.BulkExtensions
                      $" VALUES ({GetCommaSeparatedColumns(insertColumnsNames, "S")})";
             }
 
-            if ((operationType == OperationType.Update || operationType == OperationType.InsertOrUpdate ||
-                 operationType == OperationType.InsertOrUpdateDelete) & updateColumnNames.Count > 0)
+            if (operationType == OperationType.Update || operationType == OperationType.InsertOrUpdate || operationType == OperationType.InsertOrUpdateDelete)
             {
-
-                q += $" WHEN MATCHED" +
-                     (tableInfo.BulkConfig.OmitClauseExistsExcept || tableInfo.HasSpatialType ? "" : // The data type Geography (Spatial) cannot be used as an operand to the UNION, INTERSECT or EXCEPT operators because it is not comparable
-                      $" AND EXISTS (SELECT {GetCommaSeparatedColumns(compareColumnNames, "S")}" + // EXISTS better handles nulls
-                      $" EXCEPT SELECT {GetCommaSeparatedColumns(compareColumnNames, "T")})"       // EXCEPT does not update if all values are same
-                     ) +
-                     (!tableInfo.BulkConfig.DoNotUpdateIfTimeStampChanged || tableInfo.TimeStampColumnName == null ? "" :
-                      $" AND S.[{tableInfo.TimeStampColumnName}] = T.[{tableInfo.TimeStampColumnName}]"
-                     ) +
-                     $" THEN UPDATE SET {GetCommaSeparatedColumns(updateColumnNames, "T", "S")}";
+                if (updateColumnNames.Count == 0 && operationType == OperationType.Update)
+                {
+                    throw new InvalidBulkConfigException($"'Bulk{operationType}' operation can not have zero columns to update.");
+                }
+                else if (updateColumnNames.Count > 0)
+                {
+                    q += $" WHEN MATCHED" +
+                         (tableInfo.BulkConfig.OmitClauseExistsExcept || tableInfo.HasSpatialType ? "" : // The data type Geography (Spatial) cannot be used as an operand to the UNION, INTERSECT or EXCEPT operators because it is not comparable
+                          $" AND EXISTS (SELECT {GetCommaSeparatedColumns(compareColumnNames, "S")}" + // EXISTS better handles nulls
+                          $" EXCEPT SELECT {GetCommaSeparatedColumns(compareColumnNames, "T")})"       // EXCEPT does not update if all values are same
+                         ) +
+                         (!tableInfo.BulkConfig.DoNotUpdateIfTimeStampChanged || tableInfo.TimeStampColumnName == null ? "" :
+                          $" AND S.[{tableInfo.TimeStampColumnName}] = T.[{tableInfo.TimeStampColumnName}]"
+                         ) +
+                         $" THEN UPDATE SET {GetCommaSeparatedColumns(updateColumnNames, "T", "S")}";
+                }
             }
 
             if (operationType == OperationType.InsertOrUpdateDelete)
             {
-                q += $" WHEN NOT MATCHED BY SOURCE THEN DELETE";
+                string deleteSearchCondition = string.Empty;
+                if (tableInfo.BulkConfig.SynchronizeFilter != null)
+                {
+                    var querable = context.Set<T>()
+                        .IgnoreQueryFilters()
+                        .IgnoreAutoIncludes()
+                        .Where((Expression<Func<T, bool>>)tableInfo.BulkConfig.SynchronizeFilter);
+                    var batchSql = BatchUtil.GetBatchSql(querable, context, false);
+                    var whereClause = $"{Environment.NewLine}WHERE ";
+                    int wherePos = batchSql.Item1.IndexOf(whereClause, StringComparison.OrdinalIgnoreCase);
+                    if (wherePos > 0)
+                    {
+                        var sqlWhere = batchSql.Item1.Substring(wherePos + whereClause.Length);
+                        sqlWhere = sqlWhere.Replace($"[{batchSql.Item2}].", string.Empty);
+                        deleteSearchCondition = " AND " + sqlWhere;
+                        parameters.AddRange(batchSql.Item6);
+                    }
+                    else
+                    {
+                        throw new InvalidBulkConfigException($"'Bulk{operationType}' SynchronizeFilter expression can not be translated to SQL");
+                    }
+                }
+
+                q += " WHEN NOT MATCHED BY SOURCE" + deleteSearchCondition + " THEN DELETE";
             }
             if (operationType == OperationType.Delete)
             {
@@ -222,7 +261,7 @@ namespace EFCore.BulkExtensions
                      $" INTO {tableInfo.FullTempOutputTableName}";
             }
             q += ";";
-            return q;
+            return (sql: q, parameters: parameters);
         }
 
         public static string TruncateTable(string tableName)

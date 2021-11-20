@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore.Query.Internal;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -102,6 +103,16 @@ namespace EFCore.BulkExtensions
             sqlParameters = ReloadSqlParameters(context, sqlParameters); // Sqlite requires SqliteParameters
 
             var resultQuery = $"{leadingComments}UPDATE {topStatement}{tableAlias}{tableAliasSufixAs} {sqlSET}{sql}";
+
+            if (resultQuery.Contains("ORDER") && resultQuery.Contains("TOP"))
+            {
+                resultQuery = $"WITH C AS (SELECT {topStatement}*{sql}) UPDATE C {sqlSET}";
+            }
+            if (resultQuery.Contains("ORDER") && !resultQuery.Contains("TOP")) // When query has ORDER only without TOP(Take) then it is removed since not required and to avoid invalid Sql
+            {
+                resultQuery = resultQuery.Split("ORDER", StringSplitOptions.None)[0];
+            }
+
             return (resultQuery, sqlParameters);
         }
 
@@ -126,6 +137,17 @@ namespace EFCore.BulkExtensions
                 : createUpdateBodyData.UpdateColumnsSql.Replace($"[{tableAlias}].", "");
 
             var resultQuery = $"{leadingComments}UPDATE {topStatement}{tableAlias}{tableAliasSufixAs} SET {sqlColumns} {sql}";
+
+            if (resultQuery.Contains("ORDER") && resultQuery.Contains("TOP"))
+            {
+                string tableAliasPrefix = "[" + tableAlias + "].";
+                resultQuery = $"WITH C AS (SELECT {topStatement}*{sql}) UPDATE C SET {sqlColumns.Replace(tableAliasPrefix, "")}";
+            }
+            if (resultQuery.Contains("ORDER") && !resultQuery.Contains("TOP")) // When query has ORDER only without TOP(Take) then it is removed since not required and to avoid invalid Sql
+            {
+                resultQuery = resultQuery.Split("ORDER", StringSplitOptions.None)[0];
+            }
+
             return (resultQuery, sqlParameters);
         }
 
@@ -196,17 +218,33 @@ namespace EFCore.BulkExtensions
 
                     if (tableInfo.ConvertibleColumnConverterDict.ContainsKey(columnName))
                     {
-                        propertyUpdateValue = tableInfo.ConvertibleColumnConverterDict[columnName].ConvertToProvider.Invoke(propertyUpdateValue);
+                        bool isEnum = tableInfo.ColumnToPropertyDictionary[columnName].ClrType.IsEnum;
+                        if (!isEnum) // Omit from ConvertibleColumns because there Enum of byte type gets converter to Number which is then different from default enum value // Test: RunBatchUpdateEnum
+                        {
+                            propertyUpdateValue = tableInfo.ConvertibleColumnConverterDict[columnName].ConvertToProvider.Invoke(propertyUpdateValue);
+                            propertyDefaultValue = tableInfo.ConvertibleColumnConverterDict[columnName].ConvertToProvider.Invoke(propertyDefaultValue);
+                        }
                     }
 
                     bool isDifferentFromDefault = propertyUpdateValue != null && propertyUpdateValue?.ToString() != propertyDefaultValue?.ToString();
-                    if (isDifferentFromDefault || (updateColumns != null && updateColumns.Contains(propertyName)))
+                    bool updateColumnExplicit = updateColumns != null && updateColumns.Contains(propertyName);
+                    if (isDifferentFromDefault || updateColumnExplicit)
                     {
                         sql += $"[{columnName}] = @{columnName}, ";
-                        propertyUpdateValue ??= DBNull.Value;
-                        var param = (IDbDataParameter)Activator.CreateInstance(typeof(Microsoft.Data.SqlClient.SqlParameter));
-                        param.ParameterName = $"@{columnName}";
-                        param.Value = propertyUpdateValue;
+                        var parameterName = $"@{columnName}";
+                        IDbDataParameter param = TryCreateRelationalMappingParameter(columnName, parameterName, propertyUpdateValue, tableInfo);
+                        if (param == null)
+                        {
+                            propertyUpdateValue ??= DBNull.Value;
+                            param = new Microsoft.Data.SqlClient.SqlParameter();
+                            param.ParameterName = $"@{columnName}";
+                            param.Value = propertyUpdateValue;
+                            if (!isDifferentFromDefault && propertyUpdateValue == DBNull.Value && property.PropertyType == typeof(byte[])) // needed only when having complex type property to be updated to default 'null'
+                            {
+                                param.DbType = DbType.Binary; // fix for ByteArray since implicit conversion nvarchar to varbinary(max) is not allowed
+                            }
+                        }
+
                         parameters.Add(param);
                     }
                 }
@@ -280,6 +318,8 @@ namespace EFCore.BulkExtensions
 
             if (expression is ConstantExpression constantExpression)
             {
+                // TODO: I believe the EF query builder inserts constant expressions directly into the SQL.
+                // This should probably match that behavior for the update body
                 AddSqlParameter(sqlColumns, sqlParameters, rootTypeTableInfo, columnName, constantExpression.Value);
                 return;
             }
@@ -375,7 +415,8 @@ namespace EFCore.BulkExtensions
             var queryCompiler = typeof(EntityQueryProvider).GetField("_queryCompiler", bindingFlags).GetValue(query.Provider);
             var queryContextFactory = queryCompiler.GetType().GetField("_queryContextFactory", bindingFlags).GetValue(queryCompiler);
 
-            var dependencies = typeof(RelationalQueryContextFactory).GetField("_dependencies", bindingFlags).GetValue(queryContextFactory);
+            var dependencies = typeof(RelationalQueryContextFactory).GetProperty("Dependencies", bindingFlags).GetValue(queryContextFactory);
+
             var queryContextDependencies = typeof(DbContext).Assembly.GetType(typeof(QueryContextDependencies).FullName);
             var stateManagerProperty = queryContextDependencies.GetProperty("StateManager", bindingFlags | BindingFlags.Public).GetValue(dependencies);
             var stateManager = (IStateManager)stateManagerProperty;
@@ -439,20 +480,56 @@ namespace EFCore.BulkExtensions
 
         private static void AddSqlParameter(StringBuilder sqlColumns, List<object> sqlParameters, TableInfo tableInfo, string columnName, object value)
         {
-            var parmName = $"param_{sqlParameters.Count}";
+            var paramName = $"@param_{sqlParameters.Count}";
             if (columnName != null && tableInfo.ConvertibleColumnConverterDict.TryGetValue(columnName, out var valueConverter))
             {
                 value = valueConverter.ConvertToProvider.Invoke(value);
             }
+
             // will rely on SqlClientHelper.CorrectParameterType to fix the type before executing
-            sqlParameters.Add(new Microsoft.Data.SqlClient.SqlParameter(parmName, value ?? DBNull.Value));
-            sqlColumns.Append($" @{parmName}");
+            var sqlParameter = TryCreateRelationalMappingParameter(columnName, paramName, value, tableInfo);
+            if (sqlParameter == null)
+            {
+                sqlParameter = new Microsoft.Data.SqlClient.SqlParameter(paramName, value ?? DBNull.Value);
+                var columnType = tableInfo.ColumnNamesTypesDict[columnName];
+                if (value == null && columnType.Contains(DbType.Binary.ToString(), StringComparison.OrdinalIgnoreCase)) //"varbinary(max)".Contains("binary")
+                {
+                    sqlParameter.DbType = DbType.Binary; // fix for ByteArray since implicit conversion nvarchar to varbinary(max) is not allowed
+                }
+            }
+
+            sqlParameters.Add(sqlParameter);
+            sqlColumns.Append($" {paramName}");
         }
 
         private static readonly MethodInfo DbContextSetMethodInfo = 
             typeof(DbContext).GetMethod(nameof(DbContext.Set), BindingFlags.Public | BindingFlags.Instance, null, Array.Empty<Type>(), null);
 
         public static readonly Regex TableAliasPattern = new Regex(@"(?:FROM|JOIN)\s+(\[\S+\]) AS (\[\S+\])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        /// <summary>
+        /// Attempt to create a DbParameter using the <see cref="Microsoft.EntityFrameworkCore.Storage.RelationalTypeMapping.CreateParameter(DbCommand, string, object, bool?)"/>
+        /// call for the specified column name.
+        /// </summary>
+        public static DbParameter TryCreateRelationalMappingParameter(string columnName, string parameterName, object value, TableInfo tableInfo)
+        {
+            if (columnName == null)
+                return null;
+
+            if (!tableInfo.ColumnToPropertyDictionary.TryGetValue(columnName, out var propertyInfo))
+                return null;
+
+            try
+            {
+                var relationalTypeMapping = propertyInfo.GetRelationalTypeMapping();
+
+                using var dbCommand = new Microsoft.Data.SqlClient.SqlCommand();
+                return relationalTypeMapping.CreateParameter(dbCommand, parameterName, value, propertyInfo.IsNullable);
+            }
+            catch (Exception) { }
+
+            return null;
+        }
 
         public static bool TryCreateUpdateBodyNestedQuery(BatchUpdateCreateBodyData createBodyData, Expression expression, MemberAssignment memberAssignment)
         {

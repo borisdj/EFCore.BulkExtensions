@@ -15,12 +15,93 @@ namespace EFCore.BulkExtensions.Tests
 
         [Theory]
         [InlineData(DbServer.SqlServer)]
+        [InlineData(DbServer.Sqlite)]
+        private void DefaultValuesTest(DbServer dbServer)
+        {
+            ContextUtil.DbServer = dbServer;
+            using var context = new TestContext(ContextUtil.GetOptions());
+            context.Truncate<Document>();
+            context.Documents.BatchDelete();
+            bool isSqlite = dbServer == DbServer.Sqlite;
+
+            var entities = new List<Document>() 
+            {
+                new Document { DocumentId = Guid.Parse("15E5936C-8021-45F4-A055-2BE89B065D9E"), Content = "Info " + 1 },
+                new Document { DocumentId = Guid.Parse("00C69E47-A08F-49E0-97A6-56C62C9BB47E"), Content = "Info " + 2 },
+                new Document { DocumentId = Guid.Parse("22CF94AE-20D3-49DE-83FA-90E79DD94706"), Content = "Info " + 3 },
+                new Document { DocumentId = Guid.Parse("B3A2F9A5-4222-47C3-BEEA-BF50771665D3"), Content = "Info " + 4 },
+                new Document { DocumentId = Guid.Parse("12AF6361-95BC-44F3-A487-C91C440018D8"), Content = "Info " + 5 },
+            };
+            var firstDocumentUp = entities.FirstOrDefault();
+            context.BulkInsertOrUpdate(entities, bulkConfig => bulkConfig.SetOutputIdentity = true); // example of setting BulkConfig with Action argument
+
+            var firstDocument = context.Documents.AsNoTracking().OrderBy(x => x.Content).FirstOrDefault();
+
+            var countDb = context.Documents.Count();
+            var countEntities = entities.Count();
+
+            // TEST
+
+            Assert.Equal(countDb, countEntities);
+
+            Assert.Equal(firstDocument.DocumentId, firstDocumentUp.DocumentId);
+        }
+
+        [Theory]
+        [InlineData(DbServer.SqlServer)]
+        private void TemporalTableTest(DbServer dbServer)
+        {
+            ContextUtil.DbServer = dbServer;
+            using var context = new TestContext(ContextUtil.GetOptions());
+            //context.Truncate<Document>(); // Can not be used because table is Temporal, so BatchDelete used instead
+            context.Storages.BatchDelete();
+
+            var entities = new List<Storage>()
+            {
+                new Storage { StorageId = Guid.NewGuid(), Data = "Info " + 1 },
+                new Storage { StorageId = Guid.NewGuid(), Data = "Info " + 2 },
+                new Storage { StorageId = Guid.NewGuid(), Data = "Info " + 3 },
+            };
+            context.BulkInsert(entities); // example of setting BulkConfig with Action argument
+
+            var countDb = context.Storages.Count();
+            var countEntities = entities.Count();
+
+            // TEST
+            Assert.Equal(countDb, countEntities);
+        }
+
+        [Theory]
+        [InlineData(DbServer.SqlServer)]
+        private void RunDefaultPKInsertWithGraph(DbServer dbServer)
+        {
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                var department = new Department
+                {
+                    Name = "Software",
+                    Divisions = new List<Division>
+                    {
+                        new Division{Name = "Student A"},
+                        new Division{Name = "Student B"},
+                        new Division{Name = "Student C"},
+                    }
+                };
+
+                context.BulkInsert(new List<Department> { department }, new BulkConfig { IncludeGraph = true });
+            };
+        }
+
+
+        [Theory]
+        [InlineData(DbServer.SqlServer)]
         [InlineData(DbServer.Sqlite)] // Does NOT have Computed Columns
         private void ComputedAndDefaultValuesTest(DbServer dbServer)
         {
             ContextUtil.DbServer = dbServer;
             using var context = new TestContext(ContextUtil.GetOptions());
             context.Truncate<Document>();
+            bool isSqlite = dbServer == DbServer.Sqlite;
 
             var entities = new List<Document>();
             for (int i = 1; i <= EntitiesNumber; i++)
@@ -29,7 +110,7 @@ namespace EFCore.BulkExtensions.Tests
                 {
                     Content = "Info " + i
                 };
-                if (dbServer == DbServer.Sqlite)
+                if (isSqlite)
                 {
                     entity.DocumentId = Guid.NewGuid();
                     entity.ContentLength = entity.Content.Length;
@@ -38,13 +119,36 @@ namespace EFCore.BulkExtensions.Tests
             }
             context.BulkInsert(entities, bulkAction => bulkAction.SetOutputIdentity = true); // example of setting BulkConfig with Action argument
 
+            var firstDocument = context.Documents.AsNoTracking().FirstOrDefault();
+            var count = context.Documents.Count();
+
             // TEST
-            var documents = context.Documents.ToList();
-            Assert.Equal(EntitiesNumber, documents.Count());
-            var firstDocument = documents[0];
+
+            Assert.Equal("DefaultData", firstDocument.Tag);
+
+            firstDocument.Tag = null;
+            var upsertList = new List<Document> {
+                firstDocument,
+                new Document { Content = "Info " + (count + 1) }, // to test adding new with InsertOrUpdate (entity having Guid DbGenerated)
+                new Document { Content = "Info " + (count + 2) }
+            };
+            if (isSqlite)
+            {
+                upsertList[1].DocumentId = Guid.NewGuid();
+                upsertList[2].DocumentId = Guid.NewGuid();
+            }
+            count += 2;
+
+            context.BulkInsertOrUpdate(upsertList);
+            firstDocument = context.Documents.AsNoTracking().FirstOrDefault();
+            var entitiesCount = context.Documents.Count();
+
+            Assert.Null(firstDocument.Tag); // OnUpdate columns with Defaults not omitted, should change even to default value, in this case to 'null'
+
             Assert.NotEqual(Guid.Empty, firstDocument.DocumentId);
-            Assert.Equal(firstDocument.Content.Length, firstDocument.ContentLength);
             Assert.Equal(true, firstDocument.IsActive);
+            Assert.Equal(firstDocument.Content.Length, firstDocument.ContentLength);
+            Assert.Equal(entitiesCount, count);
         }
 
         [Theory]
@@ -62,19 +166,32 @@ namespace EFCore.BulkExtensions.Tests
             {
                 var entity = new File
                 {
-                    Data = "Some data " + i
+                    Description = "Some data " + i
                 };
                 entities.Add(entity);
             }
             context.BulkInsert(entities, bulkAction => bulkAction.SetOutputIdentity = true); // example of setting BulkConfig with Action argument
 
+            // Test BulkRead
+            var entitiesRead = new List<File>
+            {
+                new File { Description = "Some data 1" },
+                new File { Description = "Some data 2" }
+            };
+            context.BulkRead(entitiesRead, new BulkConfig
+            {
+                UpdateByProperties = new List<string> { nameof(File.Description) }
+            });
+            Assert.Equal(1, entitiesRead.First().FileId);
+            Assert.NotNull(entitiesRead.First().VersionChange);
+
             // For testing concurrency conflict (UPDATE changes RowVersion which is TimeStamp column)
-            context.Database.ExecuteSqlRaw("UPDATE dbo.[File] SET Data = 'Some data 1 PRE CHANGE' WHERE [Id] = 1;");
+            context.Database.ExecuteSqlRaw("UPDATE dbo.[File] SET Description = 'Some data 1 PRE CHANGE' WHERE [Id] = 1;");
 
             var entitiesToUpdate = entities.Take(10).ToList();
             foreach (var entityToUpdate in entitiesToUpdate)
             {
-                entityToUpdate.Data += " UPDATED";
+                entityToUpdate.Description += " UPDATED";
             }
 
             using var transaction = context.Database.BeginTransaction();
@@ -138,9 +255,20 @@ namespace EFCore.BulkExtensions.Tests
             }
             context.BulkUpdate(entitiesToUpdate);
 
+            var entitiesToUpsert = new List<UserRole>()
+            {
+                new UserRole { UserId = 1, RoleId = 1 },
+                new UserRole { UserId = 2, RoleId = 2 },
+                new UserRole { UserId = 100, RoleId = 10 },
+            };
+
             // TEST
             var entities = context.UserRoles.ToList();
             Assert.Equal(EntitiesNumber, entities.Count());
+
+            context.BulkInsertOrUpdate(entitiesToUpsert, new BulkConfig { PropertiesToInclude = new List<string> { nameof(UserRole.UserId), nameof(UserRole.RoleId) } });
+            var entitiesFinal = context.UserRoles.ToList();
+            Assert.Equal(EntitiesNumber + 1, entitiesFinal.Count());
         }
 
         [Theory]
@@ -327,29 +455,32 @@ namespace EFCore.BulkExtensions.Tests
                 //context.ChangeLogs.BatchDelete(); // TODO
                 context.BulkDelete(context.ItemLinks.ToList());
             }
-            context.BulkDelete(context.Items.ToList()); // On table with FK Truncate does not work
+            //context.BulkDelete(context.Items.ToList()); // On table with FK Truncate does not work
 
 
-            for (int i = 1; i < 10; ++i)
+            if (context.Items.Count() == 0)
             {
-                var entity = new Item
+                for (int i = 1; i <= 10; ++i)
                 {
-                    ItemId = 0,
-                    Name = "name " + i,
-                    Description = "info " + Guid.NewGuid().ToString().Substring(0, 3),
-                    Quantity = i % 10,
-                    Price = i / (i % 5 + 1),
-                    TimeUpdated = DateTime.Now,
-                    ItemHistories = new List<ItemHistory>()
-                };
+                    var entity = new Item
+                    {
+                        ItemId = 0,
+                        Name = "name " + i,
+                        Description = "info " + Guid.NewGuid().ToString().Substring(0, 3),
+                        Quantity = i % 10,
+                        Price = i / (i % 5 + 1),
+                        TimeUpdated = DateTime.Now,
+                        ItemHistories = new List<ItemHistory>()
+                    };
 
-                context.Items.Add(entity);
+                    context.Items.Add(entity);
+                }
+                context.SaveChanges();
             }
 
-            context.SaveChanges();
             var items = context.Items.ToList();
             var entities = new List<ItemLink>();
-            for (int i = 0; i <= EntitiesNumber - 1; i++)
+            for (int i = 0; i < EntitiesNumber; i++)
             {
                 entities.Add(new ItemLink
                 {
@@ -361,14 +492,52 @@ namespace EFCore.BulkExtensions.Tests
 
             if (dbServer == DbServer.SqlServer)
             {
-                context.BulkRead(entities);
-                foreach (var entity in entities)
+                List<ItemLink> links = context.ItemLinks.ToList();
+                Assert.True(links.Count() > 0, "ItemLink row count");
+
+                foreach (var link in links)
                 {
-                    Assert.NotNull(entity.Item);
+                    Assert.NotNull(link.Item);
                 }
             }
+            context.Truncate<ItemLink>();
+        }
 
-            context.BulkDelete(context.ItemLinks.ToList());
+        [Theory]
+        [InlineData(DbServer.SqlServer)]
+        private void UpsertWithOutputSortTest(DbServer dbServer)
+        {
+            ContextUtil.DbServer = dbServer;
+            using var context = new TestContext(ContextUtil.GetOptions());
+
+            new EFCoreBatchTest().RunDeleteAll(dbServer);
+
+            var entitiesInitial = new List<Item>();
+            for (int i = 1; i <= 10; ++i)
+            {
+                var entity = new Item { Name = "name " + i };
+                entitiesInitial.Add(entity);
+            }
+            context.Items.AddRange(entitiesInitial);
+            context.SaveChanges();
+
+            var entities = new List<Item>()
+            {
+                new Item { ItemId = 0, Name = "name " + 11 + " New" },
+                new Item { ItemId = 6, Name = "name " + 6 + " Updated" },
+                new Item { ItemId = 5, Name = "name " + 5 + " Updated" },
+                new Item { ItemId = 0, Name = "name " + 12 + " New" }
+            };
+            context.BulkInsertOrUpdate(entities, new BulkConfig() { SetOutputIdentity = true });
+
+            Assert.Equal(11, entities[0].ItemId);
+            Assert.Equal(6, entities[1].ItemId);
+            Assert.Equal(5, entities[2].ItemId);
+            Assert.Equal(12, entities[3].ItemId);
+            Assert.Equal("name " + 11 + " New", entities[0].Name);
+            Assert.Equal("name " + 6 + " Updated", entities[1].Name);
+            Assert.Equal("name " + 5 + " Updated", entities[2].Name);
+            Assert.Equal("name " + 12 + " New", entities[3].Name);
         }
 
         [Theory]
@@ -443,11 +612,47 @@ namespace EFCore.BulkExtensions.Tests
             var entities = new List<Address> {
                     new Address {
                         Street = "Some Street nn",
-                        Location = new Point(52, 13)
+                        LocationGeography = new Point(52, 13),
+                        LocationGeometry = new Point(52, 13),
                     }
                 };
 
             context.BulkInsertOrUpdate(entities);
+        }
+
+        [Fact]
+        private void GeographyAndGeometryArePersistedCorrectlyTest()
+        {
+            ContextUtil.DbServer = DbServer.SqlServer;
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.BulkDelete(context.Addresses.ToList());
+            }
+
+            var point = new Point(52, 13);
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                var entities = new List<Address> {
+                    new Address {
+                        Street = "Some Street nn",
+                        LocationGeography = point,
+                        LocationGeometry = point
+                    }
+                };
+
+                context.BulkInsertOrUpdate(entities);
+            }
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                var address = context.Addresses.Single();
+                Assert.Equal(point.X, address.LocationGeography.Coordinate.X);
+                Assert.Equal(point.Y, address.LocationGeography.Coordinate.Y);
+                Assert.Equal(point.X, address.LocationGeometry.Coordinate.X);
+                Assert.Equal(point.Y, address.LocationGeometry.Coordinate.Y);
+            }
+
         }
 
         [Fact]
@@ -518,14 +723,22 @@ namespace EFCore.BulkExtensions.Tests
         {
             ContextUtil.DbServer = DbServer.SqlServer;
             using var context = new TestContext(ContextUtil.GetOptions());
+            context.AtypicalRowVersionEntities.BatchDelete();
+            context.AtypicalRowVersionConverterEntities.BatchDelete();
 
             var bulk = new List<AtypicalRowVersionEntity>();
             for (var i = 0; i < 100; i++)
                 bulk.Add(new AtypicalRowVersionEntity { Id = Guid.NewGuid(), Name = $"Row {i}", RowVersion = i, SyncDevice = "Test" });
 
-            Assert.Throws(typeof(InvalidOperationException), () => context.BulkInsertOrUpdate(bulk));
+            //Assert.Throws<InvalidOperationException>(() => context.BulkInsertOrUpdate(bulk)); // commented since when running in Debug mode it pauses on Exception
             context.BulkInsertOrUpdate(bulk, new BulkConfig { IgnoreRowVersion = true });
             Assert.Equal(bulk.Count(), context.AtypicalRowVersionEntities.Count());
+
+            var bulk2 = new List<AtypicalRowVersionConverterEntity>();
+            for (var i = 0; i < 100; i++)
+                bulk2.Add(new AtypicalRowVersionConverterEntity { Id = Guid.NewGuid(), Name = $"Row {i}" });
+            context.BulkInsertOrUpdate(bulk2);
+            Assert.Equal(bulk2.Count(), context.AtypicalRowVersionConverterEntities.Count());
         }
 
         private int GetLastRowId(DbContext context, string tableName)
@@ -584,6 +797,38 @@ namespace EFCore.BulkExtensions.Tests
             // TEST
             Assert.Equal(3250000, context.Events.SingleOrDefault(a => a.Name == "Event 1").TimeCreated.Ticks % 10000000);
             Assert.Equal(3250000, context.Events.SingleOrDefault(a => a.Name == "Event 2").TimeCreated.Ticks % 10000000);
+        }
+
+        [Fact]
+        private void ByteArrayPKBulkReadTest()
+        {
+            ContextUtil.DbServer = DbServer.Sqlite;
+            using var context = new TestContext(ContextUtil.GetOptions());
+
+            var list = context.Archives.ToList();
+            if (list.Count > 0)
+            {
+                context.Archives.RemoveRange(list);
+                context.SaveChanges();
+            }
+
+            var byte1 = new byte[] { 0x10, 0x10 };
+            var byte2 = new byte[] { 0x20, 0x20 };
+            var byte3 = new byte[] { 0x30, 0x30 };
+            context.Archives.AddRange(
+                new Archive { ArchiveId = byte1, Description = "Desc1" },
+                new Archive { ArchiveId = byte2, Description = "Desc2" },
+                new Archive { ArchiveId = byte3, Description = "Desc3" }
+            );
+            context.SaveChanges();
+
+            var entities = new List<Archive>();
+            entities.Add(new Archive { ArchiveId = byte1 });
+            entities.Add(new Archive { ArchiveId = byte2 });
+            context.BulkRead(entities);
+
+            Assert.Equal("Desc1", entities[0].Description);
+            Assert.Equal("Desc2", entities[1].Description);
         }
     }
 }
