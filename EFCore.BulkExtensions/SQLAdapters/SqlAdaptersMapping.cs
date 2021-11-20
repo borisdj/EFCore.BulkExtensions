@@ -9,7 +9,7 @@ namespace EFCore.BulkExtensions.SqlAdapters
     {
         SqlServer,
         Sqlite,
-        //PostgreSql, // ProviderName can be added as  optional Attribute of Enum so it can be defined when not the same, like Npgsql for PostgreSql
+        PostgreSql, // ProviderName can be added as  optional Attribute of Enum so it can be defined when not the same, like Npgsql for PostgreSql
         //MySql,
     }
 
@@ -18,15 +18,16 @@ namespace EFCore.BulkExtensions.SqlAdapters
         public static readonly Dictionary<DbServer, ISqlOperationsAdapter> SqlOperationAdapterMapping =
             new Dictionary<DbServer, ISqlOperationsAdapter>
             {
+                {DbServer.SqlServer, new SqlOperationsServerAdapter()},
                 {DbServer.Sqlite, new SqLiteOperationsAdapter()},
-                {DbServer.SqlServer, new SqlOperationsServerAdapter()}
+                {DbServer.PostgreSql, new SqLiteOperationsAdapter()},
             };
 
         public static readonly Dictionary<DbServer, IQueryBuilderSpecialization> SqlQueryBuilderSpecializationMapping =
             new Dictionary<DbServer, IQueryBuilderSpecialization>
             {
+                {DbServer.SqlServer, new SqlServerDialect()},
                 {DbServer.Sqlite, new SqLiteDialect()},
-                {DbServer.SqlServer, new SqlServerDialect()}
             };
 
         public static ISqlOperationsAdapter CreateBulkOperationsAdapter(DbContext context)

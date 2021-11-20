@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Caching.Memory;
+using Npgsql;
+using NpgsqlTypes;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -22,13 +24,49 @@ namespace EFCore.BulkExtensions.Tests
         [Theory]
         [InlineData(DbServer.SqlServer, true)]
         [InlineData(DbServer.Sqlite, true)]
+        [InlineData(DbServer.PostgreSql, true)]
         //[InlineData(DbServer.SqlServer, false)] // for speed comparison with Regular EF CUD operations
         public void OperationsTest(DbServer dbServer, bool isBulk)
         {
             ContextUtil.DbServer = dbServer;
 
+            using var context = new TestContext(ContextUtil.GetOptions());
+            var c = context.Items;
+
+            var connection = (NpgsqlConnection)context.Database.GetDbConnection();
+            connection.Open();
+
+            using var command = connection.CreateCommand();
+
+            context.Database.ExecuteSqlRaw("DROP TABLE data");
+            context.Database.ExecuteSqlRaw("CREATE TABLE data (field_text TEXT, field_int2 SMALLINT, field_int4 INTEGER)");
+
+            /*command.CommandText = $"DROP TABLE data";
+            command.ExecuteNonQuery();
+
+            command.CommandText = $"CREATE TABLE data (field_text TEXT, field_int2 SMALLINT, field_int4 INTEGER)";
+            command.ExecuteNonQuery();*/
+
+            using (var writer = connection.BeginBinaryImport("COPY data (field_text, field_int2) FROM STDIN (FORMAT BINARY)"))
+            {
+                writer.StartRow();
+                writer.Write("Hello");
+                writer.Write(8, NpgsqlDbType.Smallint);
+
+                writer.StartRow();
+                writer.Write("Goodbye");
+                writer.WriteNull();
+
+                writer.Complete();
+            }
+
+            command.CommandText = "SELECT COUNT(*) FROM data";
+            var count = command.ExecuteScalar();
+
+            Assert.Equal(count.ToString(), "2");
+
             //DeletePreviousDatabase();
-            new EFCoreBatchTest().RunDeleteAll(dbServer);
+            /*new EFCoreBatchTest().RunDeleteAll(dbServer);
 
             RunInsert(isBulk);
             RunInsertOrUpdate(isBulk, dbServer);
@@ -37,7 +75,7 @@ namespace EFCore.BulkExtensions.Tests
             {
                 RunRead(isBulk); // Not Yet supported for Sqlite
                 RunInsertOrUpdateOrDelete(isBulk); // Not Yet supported for Sqlite
-            }
+            }*/
             //RunDelete(isBulk, dbServer);
 
             //CheckQueryCache();

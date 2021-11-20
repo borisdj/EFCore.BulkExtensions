@@ -91,6 +91,12 @@ namespace EFCore.BulkExtensions.Tests
                 modelBuilder.Entity<Address>().Ignore(p => p.Location);
             }
 
+            if (Database.IsNpgsql())
+            {
+                modelBuilder.Entity<Event>().Property(p => p.TimeCreated).HasColumnType("timestamp");
+                modelBuilder.Entity<Address>().Ignore(p => p.Location);
+            }
+
             //modelBuilder.Entity<Modul>(buildAction => { buildAction.HasNoKey(); });
             modelBuilder.Entity<Modul>().Property(et => et.Code).ValueGeneratedNever();
 
@@ -138,6 +144,15 @@ namespace EFCore.BulkExtensions.Tests
                 //string connectionString = (new SqliteConnectionStringBuilder { DataSource = $"{databaseName}Lite.db" }).ToString();
                 //optionsBuilder.UseSqlite(new SqliteConnection(connectionString));
             }
+            else if (DbServer == DbServer.PostgreSql)
+            {
+                string connectionString = GetPostgreSqlConnectionString(databaseName);
+                optionsBuilder.UseNpgsql(connectionString);
+
+                // ALTERNATIVELY:
+                //string connectionString = (new SqliteConnectionStringBuilder { DataSource = $"{databaseName}Lite.db" }).ToString();
+                //optionsBuilder.UseSqlite(new SqliteConnection(connectionString));
+            }
             else
             {
                 throw new NotSupportedException($"Database {DbServer} is not supported. Only SQL Server and SQLite are Currently supported.");
@@ -168,6 +183,11 @@ namespace EFCore.BulkExtensions.Tests
         public static string GetSqliteConnectionString(string databaseName)
         {
             return GetConfiguration().GetConnectionString("Sqlite").Replace("{databaseName}", databaseName);
+        }
+
+        public static string GetPostgreSqlConnectionString(string databaseName)
+        {
+            return $"Server=localhost;Port=5432;Database={databaseName};User Id=postgres;Password=Pstgr.21;";
         }
     }
 
