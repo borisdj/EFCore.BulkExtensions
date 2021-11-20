@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Caching.Memory;
+using Npgsql;
+using NpgsqlTypes;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -53,24 +55,58 @@ namespace EFCore.BulkExtensions.Tests
         [Theory]
         [InlineData(DbServer.SqlServer, true)]
         [InlineData(DbServer.Sqlite, true)]
+        [InlineData(DbServer.PostgreSql, true)]
         //[InlineData(DbServer.SqlServer, false)] // for speed comparison with Regular EF CUD operations
         public void OperationsTest(DbServer dbServer, bool isBulk)
         {
             ContextUtil.DbServer = dbServer;
 
+            using var context = new TestContext(ContextUtil.GetOptions());
+            var c = context.Items;
+
+            var connection = (NpgsqlConnection)context.Database.GetDbConnection();
+            connection.Open();
+
+            using var command = connection.CreateCommand();
+
+            context.Database.ExecuteSqlRaw("DROP TABLE data");
+            context.Database.ExecuteSqlRaw("CREATE TABLE data (field_text TEXT, field_int2 SMALLINT, field_int4 INTEGER)");
+
+            /*command.CommandText = $"DROP TABLE data";
+            command.ExecuteNonQuery();
+
+            command.CommandText = $"CREATE TABLE data (field_text TEXT, field_int2 SMALLINT, field_int4 INTEGER)";
+            command.ExecuteNonQuery();*/
+
+            using (var writer = connection.BeginBinaryImport("COPY data (field_text, field_int2) FROM STDIN (FORMAT BINARY)"))
+            {
+                writer.StartRow();
+                writer.Write("Hello");
+                writer.Write(8, NpgsqlDbType.Smallint);
+
+                writer.StartRow();
+                writer.Write("Goodbye");
+                writer.WriteNull();
+
+                writer.Complete();
+            }
+
+            command.CommandText = "SELECT COUNT(*) FROM data";
+            var count = command.ExecuteScalar();
+
+            Assert.Equal(count.ToString(), "2");
+
             //DeletePreviousDatabase();
-            new EFCoreBatchTest().RunDeleteAll(dbServer);
+            /*new EFCoreBatchTest().RunDeleteAll(dbServer);
 
             RunInsert(isBulk);
             RunInsertOrUpdate(isBulk, dbServer);
             RunUpdate(isBulk, dbServer);
-
-            RunRead(isBulk);
-
             if (dbServer == DbServer.SqlServer)
             {
-                RunInsertOrUpdateOrDelete(isBulk); // Not supported for Sqlite (has only UPSERT), instead use BulkRead, then split list into sublists and call separately Bulk methods for Insert, Update, Delete.
-            }
+                RunRead(isBulk); // Not Yet supported for Sqlite
+                RunInsertOrUpdateOrDelete(isBulk); // Not Yet supported for Sqlite
+            }*/
             //RunDelete(isBulk, dbServer);
 
             //CheckQueryCache();
@@ -81,11 +117,11 @@ namespace EFCore.BulkExtensions.Tests
         [InlineData(DbServer.Sqlite)]
         public void SideEffectsTest(DbServer dbServer)
         {
-            BulkOperationShouldNotCloseOpenConnection(dbServer, context => context.BulkInsert(new[] { new Item() }), "1");
-            BulkOperationShouldNotCloseOpenConnection(dbServer, context => context.BulkUpdate(new[] { new Item() }), "2");
+            BulkOperationShouldNotCloseOpenConnection(dbServer, context => context.BulkInsert(new[] { new Item() }));
+            BulkOperationShouldNotCloseOpenConnection(dbServer, context => context.BulkUpdate(new[] { new Item() }));
         }
 
-        private static void BulkOperationShouldNotCloseOpenConnection(DbServer dbServer, Action<TestContext> bulkOperation, string tableSufix)
+        private static void BulkOperationShouldNotCloseOpenConnection(DbServer dbServer, Action<TestContext> bulkOperation)
         {
             ContextUtil.DbServer = dbServer;
             using var context = new TestContext(ContextUtil.GetOptions());
@@ -97,7 +133,7 @@ namespace EFCore.BulkExtensions.Tests
             {
                 // we use a temp table to verify whether the connection has been closed (and re-opened) inside BulkUpdate(Async)
                 var columnName = sqlHelper.DelimitIdentifier("Id");
-                var tableName = sqlHelper.DelimitIdentifier("#MyTempTable" + tableSufix);
+                var tableName = sqlHelper.DelimitIdentifier("#MyTempTable");
                 var createTableSql = $" TABLE {tableName} ({columnName} INTEGER);";
 
                 createTableSql = dbServer switch
@@ -300,18 +336,13 @@ namespace EFCore.BulkExtensions.Tests
                     TimeUpdated = dateTimeNow
                 });
             }
-
-            int? keepEntityItemId = null;
             if (isBulk)
             {
                 var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
-
-                keepEntityItemId = 3;
-                bulkConfig.SetSynchronizeFilter<Item>(e => e.ItemId != keepEntityItemId.Value);
                 context.BulkInsertOrUpdateOrDelete(entities, bulkConfig, (a) => WriteProgress(a));
                 Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberInserted);
                 Assert.Equal(EntitiesNumber / 2, bulkConfig.StatsInfo.StatsNumberUpdated);
-                Assert.Equal((EntitiesNumber / 2) - 1, bulkConfig.StatsInfo.StatsNumberDeleted);
+                Assert.Equal(EntitiesNumber / 2, bulkConfig.StatsInfo.StatsNumberDeleted);
             }
             else
             {
@@ -327,27 +358,11 @@ namespace EFCore.BulkExtensions.Tests
             Item firstEntity = context.Items.OrderBy(a => a.ItemId).FirstOrDefault();
             Item lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
 
-            Assert.Equal((EntitiesNumber / 2) + (keepEntityItemId != null ? 1 : 0), entitiesCount);
+            Assert.Equal(EntitiesNumber / 2, entitiesCount);
             Assert.NotNull(firstEntity);
             Assert.Equal("name InsertOrUpdateOrDelete 2", firstEntity.Name);
             Assert.NotNull(lastEntity);
             Assert.Equal("name InsertOrUpdateOrDelete " + EntitiesNumber, lastEntity.Name);
-
-            if (keepEntityItemId != null)
-            {
-                Assert.NotNull(context.Items.Where(x => x.ItemId == keepEntityItemId.Value).FirstOrDefault());
-            }
-
-            if (isBulk)
-            {
-                var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
-                bulkConfig.SetSynchronizeFilter<Item>(e => e.ItemId != keepEntityItemId.Value);
-                context.BulkInsertOrUpdateOrDelete(new List<Item>(), bulkConfig);
-
-                var storedEntities = context.Items.ToList();
-                Assert.Single(storedEntities);
-                Assert.Equal(3, storedEntities[0].ItemId);
-            }
         }
 
         private void RunUpdate(bool isBulk, DbServer dbServer)
@@ -418,14 +433,6 @@ namespace EFCore.BulkExtensions.Tests
             Assert.Equal(0, entities[1].ItemId);
             Assert.Equal(3, entities[2].ItemId);
             Assert.Equal(0, entities[3].ItemId);
-
-            var entitiesHist = new List<ItemHistory>();
-            entitiesHist.Add(new ItemHistory { Remark = "some more info 1.1" });
-            var bulkConfigHist = new BulkConfig { UpdateByProperties = new List<string> { nameof(ItemHistory.Remark) } };
-            context.BulkRead(entitiesHist, bulkConfigHist);
-
-            var itemHistoryId = context.ItemHistories.Where(a => a.Remark == "some more info 1.1").FirstOrDefault().ItemHistoryId;
-            Assert.Equal(itemHistoryId, entitiesHist[0].ItemHistoryId);
         }
 
         private void RunDelete(bool isBulk, DbServer dbServer)
