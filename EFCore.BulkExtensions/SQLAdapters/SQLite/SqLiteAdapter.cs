@@ -1,4 +1,5 @@
 ﻿using EFCore.BulkExtensions.SqlAdapters;
+using EFCore.BulkExtensions.SQLAdapters.SQLServer;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using System;

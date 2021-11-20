@@ -1,9 +1,11 @@
 using EFCore.BulkExtensions.SqlAdapters;
+using EFCore.BulkExtensions.SQLAdapters.SQLServer;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Npgsql;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -74,6 +76,9 @@ namespace EFCore.BulkExtensions
 
         internal SqliteConnection SqliteConnection { get; set; }
         internal SqliteTransaction SqliteTransaction { get; set; }
+
+        internal NpgsqlConnection NpgsqlConnection { get; set; }
+        internal NpgsqlTransaction NpgsqlTransaction { get; set; }
 
         public static TableInfo CreateInstance<T>(DbContext context, Type type, IList<T> entities, OperationType operationType, BulkConfig bulkConfig)
         {

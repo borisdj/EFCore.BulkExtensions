@@ -1,4 +1,5 @@
-﻿using EFCore.BulkExtensions.SQLAdapters.SQLite;
+﻿using EFCore.BulkExtensions.SQLAdapters.PostgreSql;
+using EFCore.BulkExtensions.SQLAdapters.SQLite;
 using EFCore.BulkExtensions.SQLAdapters.SQLServer;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
@@ -9,7 +10,7 @@ namespace EFCore.BulkExtensions.SqlAdapters
     {
         SqlServer,
         Sqlite,
-        //PostgreSql, // ProviderName can be added as  optional Attribute of Enum so it can be defined when not the same, like Npgsql for PostgreSql
+        PostgreSql, // ProviderName can be added as  optional Attribute of Enum so it can be defined when not the same, like Npgsql for PostgreSql
         //MySql,
     }
 
@@ -19,14 +20,16 @@ namespace EFCore.BulkExtensions.SqlAdapters
             new Dictionary<DbServer, ISqlOperationsAdapter>
             {
                 {DbServer.Sqlite, new SqLiteOperationsAdapter()},
-                {DbServer.SqlServer, new SqlOperationsServerAdapter()}
+                {DbServer.SqlServer, new SqlOperationsServerAdapter()},
+                {DbServer.PostgreSql, new PostgreSqlAdapter()}
             };
 
         public static readonly Dictionary<DbServer, IQueryBuilderSpecialization> SqlQueryBuilderSpecializationMapping =
             new Dictionary<DbServer, IQueryBuilderSpecialization>
             {
                 {DbServer.Sqlite, new SqLiteDialect()},
-                {DbServer.SqlServer, new SqlServerDialect()}
+                {DbServer.SqlServer, new SqlServerDialect()},
+                {DbServer.PostgreSql, new SqlServerDialect()}
             };
 
         public static ISqlOperationsAdapter CreateBulkOperationsAdapter(DbContext context)
@@ -48,7 +51,10 @@ namespace EFCore.BulkExtensions.SqlAdapters
 
         public static DbServer GetDatabaseType(DbContext context)
         {
-            return context.Database.ProviderName.EndsWith(DbServer.Sqlite.ToString()) ? DbServer.Sqlite : DbServer.SqlServer;
+            var databaseType = context.Database.ProviderName.EndsWith(DbServer.Sqlite.ToString()) ? DbServer.Sqlite : DbServer.SqlServer;
+            if(context.Database.ProviderName.StartsWith("Npgsql"))
+                databaseType = DbServer.PostgreSql;
+            return databaseType;
         }
     }
 }

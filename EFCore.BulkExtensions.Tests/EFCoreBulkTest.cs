@@ -20,6 +20,37 @@ namespace EFCore.BulkExtensions.Tests
         private static Func<TestContext, IEnumerable<Item>> AllItemsQuery = EF.CompileQuery<TestContext, IEnumerable<Item>>(ctx => ctx.Items.AsNoTracking());
 
         [Theory]
+        [InlineData(DbServer.PostgreSql, true)]
+        public void InsertTestPostgeSql(DbServer dbServer, bool isBulk)
+        {
+            ContextUtil.DbServer = dbServer;
+
+            //new EFCoreBatchTest().RunDeleteAll(dbServer);
+
+            //RunInsert(isBulk);
+
+            var currentDay = DateTime.Today;
+
+            var entities = new List<Item>();
+            for (int i = 1; i <= 2; i++)
+            {
+                var entity = new Item
+                {
+                    //ItemId = i,
+                    Name = "Name " + i,
+                    Description = "info " + i,
+                    Quantity = i,
+                    Price = 0.1m * i,
+                    TimeUpdated = currentDay
+                };
+                entities.Add(entity);
+            }
+            using var context = new TestContext(ContextUtil.GetOptions());
+
+            context.BulkInsert(entities);
+        }
+
+        [Theory]
         [InlineData(DbServer.SqlServer, true)]
         [InlineData(DbServer.Sqlite, true)]
         //[InlineData(DbServer.SqlServer, false)] // for speed comparison with Regular EF CUD operations

@@ -105,14 +105,23 @@ namespace EFCore.BulkExtensions.Tests
                 modelBuilder.Entity<Division>().Property(p => p.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
                 modelBuilder.Entity<Department>().Property(p => p.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
             }
-            else if (Database.IsSqlite())
+
+            if (Database.IsSqlite() || Database.IsNpgsql())
+            {
+                modelBuilder.Entity<Address>().Ignore(p => p.LocationGeography);
+                modelBuilder.Entity<Address>().Ignore(p => p.LocationGeometry);
+            }
+
+            if (Database.IsSqlite())
             {
                 modelBuilder.Entity<File>().Property(p => p.VersionChange).ValueGeneratedOnAddOrUpdate().IsConcurrencyToken().HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-                modelBuilder.Entity<Address>().Ignore(p => p.LocationGeography);
-                modelBuilder.Entity<Address>().Ignore(p => p.LocationGeometry);
-
                 modelBuilder.Entity<ItemHistory>().ToTable(nameof(ItemHistory));
+            }
+
+            if (Database.IsNpgsql())
+            {
+                modelBuilder.Entity<Event>().Property(p => p.TimeCreated).HasColumnType("timestamp");
             }
 
             //modelBuilder.Entity<Modul>(buildAction => { buildAction.HasNoKey(); });
@@ -124,7 +133,10 @@ namespace EFCore.BulkExtensions.Tests
             modelBuilder.Entity<AtypicalRowVersionEntity>().Property(e => e.RowVersion).HasDefaultValue(0).IsConcurrencyToken().ValueGeneratedOnAddOrUpdate().Metadata.SetBeforeSaveBehavior(PropertySaveBehavior.Save);
             modelBuilder.Entity<AtypicalRowVersionEntity>().Property(e => e.SyncDevice).IsRequired(true).IsConcurrencyToken().HasDefaultValue("");
 
-            modelBuilder.Entity<AtypicalRowVersionConverterEntity>().Property(e => e.RowVersionConverted).HasConversion(new NumberToBytesConverter<long>()).HasColumnType("timestamp").IsRowVersion().IsConcurrencyToken();
+            if (!Database.IsNpgsql())
+            {
+                modelBuilder.Entity<AtypicalRowVersionConverterEntity>().Property(e => e.RowVersionConverted).HasConversion(new NumberToBytesConverter<long>()).HasColumnType("timestamp").IsRowVersion().IsConcurrencyToken();
+            }
 
             modelBuilder.Entity<Parent>().Property(parent => parent.PhoneNumber)
                 .HasColumnType("varchar(12)").HasMaxLength(12).HasField("_phoneNumber").IsRequired();
@@ -176,6 +188,11 @@ namespace EFCore.BulkExtensions.Tests
                 //string connectionString = (new SqliteConnectionStringBuilder { DataSource = $"{databaseName}Lite.db" }).ToString();
                 //optionsBuilder.UseSqlite(new SqliteConnection(connectionString));
             }
+            else if (DbServer == DbServer.PostgreSql)
+            {
+                string connectionString = GetPostgreSqlConnectionString(databaseName);
+                optionsBuilder.UseNpgsql(connectionString);
+            }
             else
             {
                 throw new NotSupportedException($"Database {dbServerType} is not supported. Only SQL Server and SQLite are Currently supported.");
@@ -206,6 +223,11 @@ namespace EFCore.BulkExtensions.Tests
         public static string GetSqliteConnectionString(string databaseName)
         {
             return GetConfiguration().GetConnectionString("Sqlite").Replace("{databaseName}", databaseName);
+        }
+
+        public static string GetPostgreSqlConnectionString(string databaseName)
+        {
+            return GetConfiguration().GetConnectionString("PostgreSql").Replace("{databaseName}", databaseName);
         }
     }
 
