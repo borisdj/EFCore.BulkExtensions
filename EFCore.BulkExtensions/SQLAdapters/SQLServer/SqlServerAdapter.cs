@@ -136,7 +136,8 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                 else
                 {
                     context.Database.ExecuteSqlRaw(sqlDropTable);
-                }            }
+                }
+            }
 
             var sqlCreateTableCopy = SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo);
             if (isAsync)

@@ -1,14 +1,11 @@
-﻿using EFCore.BulkExtensions.SqlAdapters;
-using EFCore.BulkExtensions.SQLAdapters.SQLite;
-using Microsoft.Data.Sqlite;
+﻿using EFCore.BulkExtensions.Helpers;
+using EFCore.BulkExtensions.SqlAdapters;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
-using NpgsqlTypes;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -40,14 +37,19 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
             
             try
             {
-                var sqlCopy = SqlQueryBuilderPostgreSql.InsertIntoTable(tableInfo, OperationType.Insert);
+                string sqlCopy = SqlQueryBuilderPostgreSql.InsertIntoTable(tableInfo, tableInfo.InsertToTempTable ? OperationType.InsertOrUpdate : OperationType.Insert);
 
                 using (var writer = connection.BeginBinaryImport(sqlCopy))
                 {
+                    var uniquColumnName = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList().FirstOrDefault();
+                    var propertiesColumnDict = (tableInfo.InsertToTempTable && tableInfo.IdentityColumnName == uniquColumnName)
+                                               ? tableInfo.PropertyColumnNamesDict
+                                               : tableInfo.PropertyColumnNamesDict.Where(a => a.Value != tableInfo.IdentityColumnName);
+                    var propertiesNames = propertiesColumnDict.Select(a => a.Key).ToList();
+
                     foreach (var entity in entities)
                     {
                         writer.StartRow();
-                        var propertiesNames = tableInfo.PropertyColumnNamesDict.Where(a => a.Value != tableInfo.IdentityColumnName).Select(a => a.Key).ToList();
                         foreach (var propertyName in propertiesNames)
                         {
                             var propertyValue = tableInfo.FastPropertyDict.ContainsKey(propertyName) ? tableInfo.FastPropertyDict[propertyName].Get(entity) : null;
@@ -93,7 +95,88 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
 
         protected async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, CancellationToken cancellationToken, bool isAsync) where T : class
         {
-            throw new NotImplementedException();
+            tableInfo.InsertToTempTable = true;
+            var entityPropertyWithDefaultValue = entities.GetPropertiesWithDefaultValue(type);
+
+            var sqlCreateTableCopy = SqlQueryBuilderPostgreSql.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo);
+            if (isAsync)
+            {
+                await context.Database.ExecuteSqlRawAsync(sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                context.Database.ExecuteSqlRaw(sqlCreateTableCopy);
+            }
+
+            bool hasUniqueConstrain = await CheckHasUniqueConstrainAsync(context, tableInfo, cancellationToken, isAsync);
+            bool doDropUniqueConstrain = false;
+
+            try
+            {
+                if (isAsync)
+                {
+                    await InsertAsync(context, type, entities, tableInfo, progress, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    Insert(context, type, entities, tableInfo, progress);
+                }
+
+                if (!hasUniqueConstrain)
+                {
+                    string createUniqueIndex = SqlQueryBuilderPostgreSql.CreateUniqueIndex(tableInfo);
+                    string createUniqueConstrain = SqlQueryBuilderPostgreSql.CreateUniqueConstrain(tableInfo);
+                    if (isAsync)
+                    {
+                        await context.Database.ExecuteSqlRawAsync(createUniqueIndex, cancellationToken).ConfigureAwait(false);
+                        await context.Database.ExecuteSqlRawAsync(createUniqueConstrain, cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        context.Database.ExecuteSqlRaw(createUniqueIndex);
+                        context.Database.ExecuteSqlRaw(createUniqueConstrain);
+                    }
+                    doDropUniqueConstrain = true;
+                }
+
+                var sqlMergeTable = SqlQueryBuilderPostgreSql.MergeTable<T>(context, tableInfo, operationType, entityPropertyWithDefaultValue);
+                if (isAsync)
+                {
+                    await context.Database.ExecuteSqlRawAsync(sqlMergeTable, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    context.Database.ExecuteSqlRaw(sqlMergeTable);
+                }
+            }
+            finally
+            {
+                if (doDropUniqueConstrain)
+                {
+                    string dropUniqueConstrain = SqlQueryBuilderPostgreSql.DropUniqueConstrain(tableInfo);
+                    if (isAsync)
+                    {
+                        await context.Database.ExecuteSqlRawAsync(dropUniqueConstrain, cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        context.Database.ExecuteSqlRaw(dropUniqueConstrain);
+                    }
+                }
+
+                if (!tableInfo.BulkConfig.UseTempDB)
+                {
+                    var sqlDropTable = SqlQueryBuilderPostgreSql.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
+                    if (isAsync)
+                    {
+                        await context.Database.ExecuteSqlRawAsync(sqlDropTable, cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        context.Database.ExecuteSqlRaw(sqlDropTable);
+                    }
+                }
+            }
         }
 
         // Read
@@ -159,41 +242,43 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
         }
         #endregion
 
-        internal static NpgsqlCommand GetCommand<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, NpgsqlConnection connection, NpgsqlTransaction transaction)
+        internal async Task<bool> CheckHasUniqueConstrainAsync(DbContext context, TableInfo tableInfo, CancellationToken cancellationToken, bool isAsync)
         {
-            NpgsqlCommand command = connection.CreateCommand();
-            command.Transaction = transaction;
+            string countUniqueConstrain = SqlQueryBuilderPostgreSql.CountUniqueConstrain(tableInfo);
 
-            var operationType = tableInfo.BulkConfig.OperationType;
-
-            switch (operationType)
+            bool hasUniqueConstrain = false;
+            using (var command = context.Database.GetDbConnection().CreateCommand())
             {
-                case OperationType.Insert:
-                    command.CommandText = SqlQueryBuilderSqlite.InsertIntoTable(tableInfo, OperationType.Insert);
-                    break;
-                /*case OperationType.InsertOrUpdate:
-                    command.CommandText = SqlQueryBuilderSqlite.InsertIntoTable(tableInfo, OperationType.InsertOrUpdate);
-                    break;
-                case OperationType.InsertOrUpdateDelete:
-                    throw new NotSupportedException("'BulkInsertOrUpdateDelete' not supported for Sqlite. Sqlite has only UPSERT statement (analog for MERGE WHEN MATCHED) but no functionality for: 'WHEN NOT MATCHED BY SOURCE THEN DELETE'." +
-                                                    " Another way to achieve this is to BulkRead existing data from DB, split list into sublists and call separately Bulk methods for Insert, Update, Delete.");
-                case OperationType.Update:
-                    command.CommandText = SqlQueryBuilderSqlite.UpdateSetTable(tableInfo);
-                    break;
-                case OperationType.Delete:
-                    command.CommandText = SqlQueryBuilderSqlite.DeleteFromTable(tableInfo);
-                    break;*/
+                //command.CommandText = @"SELECT COUNT(*) FROM ""Item""";
+                //var count = command.ExecuteScalar();
+
+                command.CommandText = countUniqueConstrain;
+                context.Database.OpenConnection();
+
+                if (isAsync)
+                {
+                    using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+                    if (reader.HasRows)
+                    {
+                        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                        {
+                            hasUniqueConstrain = (long)reader[0] == 1;
+                        }
+                    }
+                }
+                else
+                {
+                    using var reader = command.ExecuteReader();
+                    if (reader.HasRows)
+                    {
+                        while (reader.Read())
+                        {
+                            hasUniqueConstrain = (long)reader[0] == 1;
+                        }
+                    }
+                }
             }
-
-            /*var shadowProperties = tableInfo.ShadowProperties;
-            foreach (var shadowProperty in shadowProperties)
-            {
-                var parameter = new SqliteParameter($"@{shadowProperty}", typeof(string));
-                command.Parameters.Add(parameter);
-            }*/
-
-            command.Prepare(); // Not Required but called for efficiency (prepared should be little faster)
-            return command;
+            return hasUniqueConstrain;
         }
     }
 }

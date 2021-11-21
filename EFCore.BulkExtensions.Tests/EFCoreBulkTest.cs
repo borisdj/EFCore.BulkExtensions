@@ -27,9 +27,10 @@ namespace EFCore.BulkExtensions.Tests
         {
             ContextUtil.DbServer = dbServer;
 
-            //new EFCoreBatchTest().RunDeleteAll(dbServer);
+            using var context = new TestContext(ContextUtil.GetOptions());
 
-            //RunInsert(isBulk);
+            context.Database.ExecuteSqlRaw($@"DELETE FROM ""{nameof(Item)}""");
+            context.Database.ExecuteSqlRaw($@"ALTER SEQUENCE ""{nameof(Item)}_{nameof(Item.ItemId)}_seq"" RESTART WITH 1");
 
             var currentDay = DateTime.Today;
 
@@ -47,15 +48,56 @@ namespace EFCore.BulkExtensions.Tests
                 };
                 entities.Add(entity);
             }
-            using var context = new TestContext(ContextUtil.GetOptions());
+
+            var entities2 = new List<Item>();
+            for (int i = 2; i <= 3; i++)
+            {
+                var entity = new Item
+                {
+                    ItemId = i,
+                    Name = "Name " + i,
+                    Description = "UPDATE " + i,
+                    Quantity = i,
+                    Price = 0.1m * i,
+                    TimeUpdated = currentDay
+                };
+                entities2.Add(entity);
+            }
+
+            var entities3 = new List<Item>();
+            for (int i = 3; i <= 4; i++)
+            {
+                var entity = new Item
+                {
+                    //ItemId = i,
+                    Name = "Name " + i,
+                    Description = "CHANGE " + i,
+                    Quantity = i,
+                    Price = 0.1m * i,
+                    TimeUpdated = currentDay
+                };
+                entities3.Add(entity);
+            }
 
             context.BulkInsert(entities);
+
+            Assert.Equal("info 1", context.Items.Where(a => a.Name == "Name 1").AsNoTracking().FirstOrDefault().Description);
+            Assert.Equal("info 2", context.Items.Where(a => a.Name == "Name 2").AsNoTracking().FirstOrDefault().Description);
+
+            context.BulkInsertOrUpdate(entities2);
+
+            Assert.Equal("UPDATE 2", context.Items.Where(a => a.Name == "Name 2").AsNoTracking().FirstOrDefault().Description);
+            Assert.Equal("UPDATE 3", context.Items.Where(a => a.Name == "Name 3").AsNoTracking().FirstOrDefault().Description);
+
+            context.BulkInsertOrUpdate(entities3, new BulkConfig { UpdateByProperties = new List<string> { nameof(Item.Name) } });
+
+            Assert.Equal("CHANGE 3", context.Items.Where(a => a.Name == "Name 3").AsNoTracking().FirstOrDefault().Description);
+            Assert.Equal("CHANGE 4", context.Items.Where(a => a.Name == "Name 4").AsNoTracking().FirstOrDefault().Description);
         }
 
         [Theory]
         [InlineData(DbServer.SqlServer, true)]
         [InlineData(DbServer.Sqlite, true)]
-        [InlineData(DbServer.PostgreSql, true)]
         //[InlineData(DbServer.SqlServer, false)] // for speed comparison with Regular EF CUD operations
         public void OperationsTest(DbServer dbServer, bool isBulk)
         {
