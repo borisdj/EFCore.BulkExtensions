@@ -30,7 +30,7 @@ If you would like to support the Project by making a Donation ($10) *#BuyMeBeer*
 [![Button](https://img.shields.io/badge/donate-Nano-9cf.svg)](https://borisdj.github.io/pages/donation/donate-nano.html)([0 fee](https://nano.org/))<br>
 Please read [CONTRIBUTING](CONTRIBUTING.md) for details on code of conduct, and the process for submitting pull requests.<br>
 [![NuGet](https://img.shields.io/npm/l/express.svg)](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE)<br>
-[**Contact**](https://docs.google.com/forms/d/e/1FAIpQLSfcUe15zxZS_YI6zZIt-l3L0mpmQRPUsaoxylfgFTfSVu_gmg/viewform) for Development & Consulting.
+[**ContactForm**](https://docs.google.com/forms/d/e/1FAIpQLSfcUe15zxZS_YI6zZIt-l3L0mpmQRPUsaoxylfgFTfSVu_gmg/viewform) for Development & Consulting.
 
 ## Usage
 It's pretty simple and straightforward.<br>
@@ -45,8 +45,8 @@ context.BulkRead(entitiesList);                   context.BulkReadAsync(entities
 context.Truncate<Entity>();                       context.TruncateAsync<Entity>();
 ```
 
-PostgreSQL currently supports only methods Insert and Upsert.<br>
-SQLite requires package: [*SQLitePCLRaw.bundle_e_sqlite3*](https://docs.microsoft.com/en-us/dotnet/standard/data/sqlite/custom-versions?tabs=netcore-cli) with call to `SQLitePCL.Batteries.Init()`<br>
+**-PostgreSQL** currently supports only methods Insert and Upsert.<br>
+**-SQLite** requires package: [*SQLitePCLRaw.bundle_e_sqlite3*](https://docs.microsoft.com/en-us/dotnet/standard/data/sqlite/custom-versions?tabs=netcore-cli) with call to `SQLitePCL.Batteries.Init()`<br>
 
 **Batch** Extensions are made on *IQueryable* DbSet and can be used as in the following code segment.<br>
 They are done as pure sql and no check is done whether some are prior loaded in memory and are being Tracked.<br>
