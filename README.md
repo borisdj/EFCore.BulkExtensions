@@ -30,7 +30,7 @@ If you would like to support the Project by making a Donation ($10) *#BuyMeBeer*
 [![Button](https://img.shields.io/badge/donate-Nano-9cf.svg)](https://borisdj.github.io/pages/donation/donate-nano.html)([0 fee](https://nano.org/))<br>
 Please read [CONTRIBUTING](CONTRIBUTING.md) for details on code of conduct, and the process for submitting pull requests.<br>
 [![NuGet](https://img.shields.io/npm/l/express.svg)](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE)<br>
-Want to **Contact** us for Hire (Development & Consulting): [www.codis.tech](http://www.codis.tech)
+[**Contact**](https://docs.google.com/forms/d/e/1FAIpQLSfcUe15zxZS_YI6zZIt-l3L0mpmQRPUsaoxylfgFTfSVu_gmg/viewform) for Development & Consulting.
 
 ## Usage
 It's pretty simple and straightforward.<br>
