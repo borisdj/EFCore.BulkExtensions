@@ -103,52 +103,19 @@ namespace EFCore.BulkExtensions.Tests
         {
             ContextUtil.DbServer = dbServer;
 
-            using var context = new TestContext(ContextUtil.GetOptions());
-            var c = context.Items;
-
-            var connection = (NpgsqlConnection)context.Database.GetDbConnection();
-            connection.Open();
-
-            using var command = connection.CreateCommand();
-
-            context.Database.ExecuteSqlRaw("DROP TABLE data");
-            context.Database.ExecuteSqlRaw("CREATE TABLE data (field_text TEXT, field_int2 SMALLINT, field_int4 INTEGER)");
-
-            /*command.CommandText = $"DROP TABLE data";
-            command.ExecuteNonQuery();
-
-            command.CommandText = $"CREATE TABLE data (field_text TEXT, field_int2 SMALLINT, field_int4 INTEGER)";
-            command.ExecuteNonQuery();*/
-
-            using (var writer = connection.BeginBinaryImport("COPY data (field_text, field_int2) FROM STDIN (FORMAT BINARY)"))
-            {
-                writer.StartRow();
-                writer.Write("Hello");
-                writer.Write(8, NpgsqlDbType.Smallint);
-
-                writer.StartRow();
-                writer.Write("Goodbye");
-                writer.WriteNull();
-
-                writer.Complete();
-            }
-
-            command.CommandText = "SELECT COUNT(*) FROM data";
-            var count = command.ExecuteScalar();
-
-            Assert.Equal(count.ToString(), "2");
-
             //DeletePreviousDatabase();
-            /*new EFCoreBatchTest().RunDeleteAll(dbServer);
+            new EFCoreBatchTest().RunDeleteAll(dbServer);
 
             RunInsert(isBulk);
             RunInsertOrUpdate(isBulk, dbServer);
             RunUpdate(isBulk, dbServer);
+
+            RunRead(isBulk);
+
             if (dbServer == DbServer.SqlServer)
             {
-                RunRead(isBulk); // Not Yet supported for Sqlite
-                RunInsertOrUpdateOrDelete(isBulk); // Not Yet supported for Sqlite
-            }*/
+                RunInsertOrUpdateOrDelete(isBulk); // Not supported for Sqlite (has only UPSERT), instead use BulkRead, then split list into sublists and call separately Bulk methods for Insert, Update, Delete.
+            }
             //RunDelete(isBulk, dbServer);
 
             //CheckQueryCache();
