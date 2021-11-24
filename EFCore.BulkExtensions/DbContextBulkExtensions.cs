@@ -62,23 +62,23 @@ namespace EFCore.BulkExtensions
         #region BulkInsertOrUpdateOrDelete
         public static void BulkInsertOrUpdateOrDelete<T>(this DbContext context, IList<T> entities, BulkConfig bulkConfig = null, Action<decimal> progress = null, Type type = null) where T : class
         {
-            DbContextBulkTransaction.Execute(context, type, entities, OperationType.InsertOrUpdateDelete, bulkConfig, progress);
+            DbContextBulkTransaction.Execute(context, type, entities, OperationType.InsertOrUpdateOrDelete, bulkConfig, progress);
         }
         public static Task BulkInsertOrUpdateOrDeleteAsync<T>(this DbContext context, IList<T> entities, BulkConfig bulkConfig = null, Action<decimal> progress = null, Type type = null, CancellationToken cancellationToken = default) where T : class
         {
-            return DbContextBulkTransaction.ExecuteAsync(context, type, entities, OperationType.InsertOrUpdateDelete, bulkConfig, progress, cancellationToken);
+            return DbContextBulkTransaction.ExecuteAsync(context, type, entities, OperationType.InsertOrUpdateOrDelete, bulkConfig, progress, cancellationToken);
         }
         public static void BulkInsertOrUpdateOrDelete<T>(this DbContext context, IList<T> entities, Action<BulkConfig> bulkAction, Action<decimal> progress = null, Type type = null) where T : class
         {
             BulkConfig bulkConfig = new BulkConfig();
             bulkAction?.Invoke(bulkConfig);
-            DbContextBulkTransaction.Execute(context, type, entities, OperationType.InsertOrUpdateDelete, bulkConfig, progress);
+            DbContextBulkTransaction.Execute(context, type, entities, OperationType.InsertOrUpdateOrDelete, bulkConfig, progress);
         }
         public static Task BulkInsertOrUpdateOrDeleteAsync<T>(this DbContext context, IList<T> entities, Action<BulkConfig> bulkAction, Action<decimal> progress = null, Type type = null, CancellationToken cancellationToken = default) where T : class
         {
             BulkConfig bulkConfig = new BulkConfig();
             bulkAction?.Invoke(bulkConfig);
-            return DbContextBulkTransaction.ExecuteAsync(context, type, entities, OperationType.InsertOrUpdateDelete, bulkConfig, progress, cancellationToken);
+            return DbContextBulkTransaction.ExecuteAsync(context, type, entities, OperationType.InsertOrUpdateOrDelete, bulkConfig, progress, cancellationToken);
         }
         #endregion
 

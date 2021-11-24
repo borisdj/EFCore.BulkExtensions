@@ -316,7 +316,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
                 case OperationType.InsertOrUpdate:
                     command.CommandText = SqlQueryBuilderSqlite.InsertIntoTable(tableInfo, OperationType.InsertOrUpdate);
                     break;
-                case OperationType.InsertOrUpdateDelete:
+                case OperationType.InsertOrUpdateOrDelete:
                     throw new NotSupportedException("'BulkInsertOrUpdateDelete' not supported for Sqlite. Sqlite has only UPSERT statement (analog for MERGE WHEN MATCHED) but no functionality for: 'WHEN NOT MATCHED BY SOURCE THEN DELETE'." +
                                                     " Another way to achieve this is to BulkRead existing data from DB, split list into sublists and call separately Bulk methods for Insert, Update, Delete.");
                 case OperationType.Update:

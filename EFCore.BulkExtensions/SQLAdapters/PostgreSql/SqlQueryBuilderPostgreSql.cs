@@ -37,19 +37,53 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
         {
             var columnsList = GetColumnList(tableInfo, operationType);
 
-            var commaSeparatedColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsList).Replace("[", @"""").Replace("]", @"""");
+            if (operationType == OperationType.InsertOrUpdateOrDelete)
+            {
+                throw new NotImplementedException($"For Postgres method {OperationType.InsertOrUpdateOrDelete} is not yet supported. Use combination of InsertOrUpdate with Read and Delete");
+            }
 
-            var updateByColumns = SqlQueryBuilder.GetCommaSeparatedColumns(tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList()).Replace("[", @"""").Replace("]", @"""");
+            string q;
+            if (operationType == OperationType.Read)
+            {
+                var readByColumns = SqlQueryBuilder.GetCommaSeparatedColumns(tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList(), tableInfo.FullTableName, tableInfo.FullTempTableName);
 
-            var columnsListEquals = GetColumnList(tableInfo, OperationType.Insert);
-            var equalsColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsListEquals, equalsTable : "EXCLUDED").Replace("[", @"""").Replace("]", @"""");
+                q = $"SELECT {tableInfo.FullTableName}.* FROM {tableInfo.FullTableName} " +
+                    $"JOIN {tableInfo.FullTempTableName} " +
+                    $"USING ({readByColumns})"; //$"ON ({tableInfo.FullTableName}.readByColumns = {tableInfo.FullTempTableName}.readByColumns);";
+            }
+            if (operationType == OperationType.Delete)
+            {
+                var deleteByColumns = SqlQueryBuilder.GetCommaSeparatedColumns(tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList(), tableInfo.FullTableName, tableInfo.FullTempTableName);
+                deleteByColumns = deleteByColumns.Replace("[", @"""").Replace("]", @"""");
 
-            var q = $"INSERT INTO {tableInfo.FullTableName} ({commaSeparatedColumns}) " +
+                q = $"DELETE FROM {tableInfo.FullTableName} " +
+                    $"USING {tableInfo.FullTempTableName} " +
+                    $@"WHERE {deleteByColumns}";
+            }
+            else
+            {
+                var commaSeparatedColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsList).Replace("[", @"""").Replace("]", @"""");
+
+                var updateByColumns = SqlQueryBuilder.GetCommaSeparatedColumns(tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList()).Replace("[", @"""").Replace("]", @"""");
+
+                var columnsListEquals = GetColumnList(tableInfo, OperationType.Insert);
+                var equalsColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsListEquals, equalsTable: "EXCLUDED").Replace("[", @"""").Replace("]", @"""");
+
+                q = $"INSERT INTO {tableInfo.FullTableName} ({commaSeparatedColumns}) " +
                     $"(SELECT {commaSeparatedColumns} FROM {tableInfo.FullTempTableName}) " +
                     $"ON CONFLICT ({updateByColumns}) " +
-                    $"DO UPDATE SET {equalsColumns};";
+                    $"DO UPDATE SET {equalsColumns}";
+
+                if (tableInfo.CreatedOutputTable)
+                {
+                    var allColumnsList = tableInfo.PropertyColumnNamesDict.Values.ToList();
+                    string commaSeparatedColumnsNames = SqlQueryBuilder.GetCommaSeparatedColumns(allColumnsList).Replace("[", @"""").Replace("]", @"""");
+                    q += $" RETURNING {commaSeparatedColumnsNames}";
+                }
+            }
 
             q = q.Replace("[", @"""").Replace("]", @"""");
+            q += ";";
             return q;
         }
 
@@ -131,6 +165,37 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
             var q = $@"ALTER TABLE ""{tableName}""" +
                     $@"DROP CONSTRAINT ""{uniquConstrainName}"";";
             return q;
+        }
+
+        public static string RestructureForBatch(string sql, bool isDelete = false)
+        {
+            sql = sql.Replace("[", @"""").Replace("]", @"""");
+
+            if (isDelete)
+            {
+                //FROM
+                // DELETE i FROM "Item" AS i WHERE i."ItemId" <= 1"
+                //TO
+                // DELETE FROM "Item" AS i WHERE i."ItemId" <= 1"
+                //WOULD ALSO WORK
+                // DELETE FROM "Item" WHERE "ItemId" <= 1
+
+                sql = sql.Replace("DELETE i", "DELETE ");
+            }
+            else
+            {
+                //FROM
+                // UPDATE i SET "Description" = @Description, "Price\" = @Price FROM "Item" AS i WHERE i."ItemId" <= 1
+                //TO
+                // UPDATE "Item" AS i SET "Description" = 'Update N', "Price" = 1.5 FROM "Item" WHERE i."ItemId" <= 1
+                //WOULD ALSO WORK
+                // UPDATE "Item" SET "Description" = 'Update N', "Price" = 1.5 FROM "Item" WHERE "ItemId" <= 1
+
+                string tableAS = sql.Substring(sql.IndexOf("FROM") + 4, sql.IndexOf("AS i") - sql.IndexOf("FROM"));
+                sql = sql.Replace("AS i", "");
+                sql = sql.Replace("UPDATE i", "UPDATE " + tableAS);
+            }
+            return sql;
         }
     }
 }

@@ -18,7 +18,7 @@ namespace EFCore.BulkExtensions.SqlAdapters
 
         string GetBinaryExpressionAddOperation(BinaryExpression binaryExpression);
 
-        (string, string) GetBatchSqlReformatTableAliasAndTopStatement(string sqlQuery);
+        (string, string) GetBatchSqlReformatTableAliasAndTopStatement(string sqlQuery, DbServer databaseType);
 
         ExtractedTableAlias GetBatchSqlExtractTableAliasFromQuery(string fullQuery, string tableAlias, string tableAliasSuffixAs);
     }

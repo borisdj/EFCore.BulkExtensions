@@ -715,7 +715,7 @@ namespace EFCore.BulkExtensions
             if (doSetIdentityColumnsForInsertOrder)
             {
                 bool sortEntities = !reset && BulkConfig.SetOutputIdentity &&
-                                    (operationType == OperationType.Update || operationType == OperationType.InsertOrUpdate || operationType == OperationType.InsertOrUpdateDelete);
+                                    (operationType == OperationType.Update || operationType == OperationType.InsertOrUpdate || operationType == OperationType.InsertOrUpdateOrDelete);
                 var entitiesExistingDict = new Dictionary<long, T>();
                 var entitiesNew = new List<T>();
                 var entitiesSorted = new List<T>();
@@ -767,7 +767,7 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        protected void UpdateEntitiesIdentity<T>(DbContext context, TableInfo tableInfo, IList<T> entities, IList<object> entitiesWithOutputIdentity)
+        public void UpdateEntitiesIdentity<T>(DbContext context, TableInfo tableInfo, IList<T> entities, IList<object> entitiesWithOutputIdentity)
         {
             var identifierPropertyName = IdentityColumnName != null ? OutputPropertyColumnNamesDict.SingleOrDefault(a => a.Value == IdentityColumnName).Key // it Identity autoincrement 
                                                                     : PrimaryKeysPropertyColumnNameDict.FirstOrDefault().Key;                               // or PK with default sql value

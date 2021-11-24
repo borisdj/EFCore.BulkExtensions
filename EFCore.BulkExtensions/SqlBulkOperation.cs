@@ -12,7 +12,7 @@ namespace EFCore.BulkExtensions
     {
         Insert,
         InsertOrUpdate,
-        InsertOrUpdateDelete,
+        InsertOrUpdateOrDelete,
         Update,
         Delete,
         Read,
