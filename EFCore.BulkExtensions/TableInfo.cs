@@ -411,7 +411,7 @@ namespace EFCore.BulkExtensions
                         var ownedEntityType = context.Model.FindEntityType(property.PropertyType);
                         if (ownedEntityType == null) // when entity has more then one ownedType (e.g. Address HomeAddress, Address WorkAddress) or one ownedType is in multiple Entities like Audit is usually.
                         {
-                            ownedEntityType = context.Model.GetEntityTypes().SingleOrDefault(a => a.DefiningNavigationName == property.Name && a.DefiningEntityType.Name == entityType.Name);
+                            ownedEntityType = context.Model.GetEntityTypes().SingleOrDefault(x => x.ClrType == property.PropertyType && x.Name.StartsWith(entityType.Name));
                         }
                         var ownedEntityProperties = ownedEntityType.GetProperties().ToList();
                         var ownedEntityPropertyNameColumnNameDict = new Dictionary<string, string>();
