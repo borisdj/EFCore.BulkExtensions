@@ -1,4 +1,6 @@
 using EFCore.BulkExtensions.SqlAdapters;
+using EFCore.BulkExtensions.SQLAdapters.PostgreSql;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
 using Microsoft.EntityFrameworkCore.Query;
@@ -83,6 +85,18 @@ namespace EFCore.BulkExtensions
                 resultQuery = $"{leadingComments}DELETE {topStatement}{tableAlias}{sql}";
             }
 
+            if (databaseType == DbServer.PostgreSql)
+            {
+                resultQuery = SqlQueryBuilderPostgreSql.RestructureForBatch(resultQuery, isDelete: true);
+
+                var npgsqlParameters = new List<object>();
+                foreach (var param in innerParameters)
+                {
+                    npgsqlParameters.Add(new Npgsql.NpgsqlParameter(((SqlParameter)param).ParameterName, ((SqlParameter)param).Value));
+                }
+                innerParameters = npgsqlParameters;
+            }
+
             return (resultQuery, new List<object>(innerParameters));
         }
 
@@ -111,6 +125,19 @@ namespace EFCore.BulkExtensions
             if (resultQuery.Contains("ORDER") && !resultQuery.Contains("TOP")) // When query has ORDER only without TOP(Take) then it is removed since not required and to avoid invalid Sql
             {
                 resultQuery = resultQuery.Split("ORDER", StringSplitOptions.None)[0];
+            }
+
+            var databaseType = SqlAdaptersMapping.GetDatabaseType(context);
+            if (databaseType == DbServer.PostgreSql)
+            {
+                resultQuery = SqlQueryBuilderPostgreSql.RestructureForBatch(resultQuery);
+
+                var npgsqlParameters = new List<object>();
+                foreach (var param in sqlParameters)
+                {
+                    npgsqlParameters.Add(new Npgsql.NpgsqlParameter(((SqlParameter)param).ParameterName, ((SqlParameter)param).Value));
+                }
+                sqlParameters = npgsqlParameters;
             }
 
             return (resultQuery, sqlParameters);
@@ -148,6 +175,21 @@ namespace EFCore.BulkExtensions
                 resultQuery = resultQuery.Split("ORDER", StringSplitOptions.None)[0];
             }
 
+            var databaseType = SqlAdaptersMapping.GetDatabaseType(context);
+            if (databaseType == DbServer.PostgreSql)
+            {
+                resultQuery = SqlQueryBuilderPostgreSql.RestructureForBatch(resultQuery);
+
+                var npgsqlParameters = new List<object>();
+                foreach (var param in sqlParameters)
+                {
+                    npgsqlParameters.Add(new Npgsql.NpgsqlParameter(((SqlParameter)param).ParameterName, ((SqlParameter)param).Value));
+                }
+                sqlParameters = npgsqlParameters;
+            }
+
+            return (resultQuery, sqlParameters);
+
             return (resultQuery, sqlParameters);
         }
 
@@ -167,7 +209,8 @@ namespace EFCore.BulkExtensions
             string tableAliasSufixAs = string.Empty;
             string topStatement;
 
-            (tableAlias, topStatement) = sqlQueryBuilder.GetBatchSqlReformatTableAliasAndTopStatement(sqlQuery);
+            var databaseType = SqlAdaptersMapping.GetDatabaseType(context);
+            (tableAlias, topStatement) = sqlQueryBuilder.GetBatchSqlReformatTableAliasAndTopStatement(sqlQuery, databaseType);
 
             int indexFrom = sqlQuery.IndexOf(Environment.NewLine, StringComparison.Ordinal);
             string sql = sqlQuery.Substring(indexFrom, sqlQuery.Length - indexFrom);

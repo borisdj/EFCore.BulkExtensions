@@ -19,17 +19,17 @@ namespace EFCore.BulkExtensions.SqlAdapters
         public static readonly Dictionary<DbServer, ISqlOperationsAdapter> SqlOperationAdapterMapping =
             new Dictionary<DbServer, ISqlOperationsAdapter>
             {
-                {DbServer.Sqlite, new SqLiteOperationsAdapter()},
                 {DbServer.SqlServer, new SqlOperationsServerAdapter()},
+                {DbServer.Sqlite, new SqLiteOperationsAdapter()},
                 {DbServer.PostgreSql, new PostgreSqlAdapter()}
             };
 
         public static readonly Dictionary<DbServer, IQueryBuilderSpecialization> SqlQueryBuilderSpecializationMapping =
             new Dictionary<DbServer, IQueryBuilderSpecialization>
             {
-                {DbServer.Sqlite, new SqLiteDialect()},
                 {DbServer.SqlServer, new SqlServerDialect()},
-                {DbServer.PostgreSql, new SqlServerDialect()}
+                {DbServer.Sqlite, new SqLiteDialect()},
+                {DbServer.PostgreSql, new PostgreSqlDialect()}
             };
 
         public static ISqlOperationsAdapter CreateBulkOperationsAdapter(DbContext context)

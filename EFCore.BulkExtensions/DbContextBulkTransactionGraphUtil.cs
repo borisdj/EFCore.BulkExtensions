@@ -26,7 +26,7 @@ namespace EFCore.BulkExtensions
         {
             if (operationType != OperationType.Insert
                        && operationType != OperationType.InsertOrUpdate
-                       && operationType != OperationType.InsertOrUpdateDelete
+                       && operationType != OperationType.InsertOrUpdateOrDelete
                        && operationType != OperationType.Update)
                 throw new InvalidBulkConfigException($"{nameof(BulkConfig)}.{nameof(BulkConfig.IncludeGraph)} only supports Insert or Update operations.");
 

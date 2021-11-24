@@ -140,13 +140,31 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
                 }
 
                 var sqlMergeTable = SqlQueryBuilderPostgreSql.MergeTable<T>(context, tableInfo, operationType, entityPropertyWithDefaultValue);
-                if (isAsync)
+                if (operationType != OperationType.Read && (!tableInfo.BulkConfig.SetOutputIdentity || operationType == OperationType.Delete))
                 {
-                    await context.Database.ExecuteSqlRawAsync(sqlMergeTable, cancellationToken).ConfigureAwait(false);
+                    if (isAsync)
+                    {
+                        await context.Database.ExecuteSqlRawAsync(sqlMergeTable, cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        context.Database.ExecuteSqlRaw(sqlMergeTable);
+                    }
                 }
                 else
                 {
-                    context.Database.ExecuteSqlRaw(sqlMergeTable);
+                    var returningQuery = context.Set<T>().FromSqlRaw(sqlMergeTable);
+                    List<T> outputEntities;
+                    if (isAsync)
+                    {
+                        outputEntities = await returningQuery.ToListAsync(cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        outputEntities = returningQuery.ToList();
+                    }
+                    List<object> outputObjects = outputEntities.Cast<object>().ToList();
+                    tableInfo.UpdateEntitiesIdentity(context, tableInfo, entities, outputObjects);
                 }
             }
             finally
@@ -192,7 +210,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
 
         protected async Task ReadAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, CancellationToken cancellationToken, bool isAsync) where T : class
         {
-            throw new NotImplementedException();
+            await MergeAsync(context, type, entities, tableInfo, OperationType.Read, progress, cancellationToken, isAsync);
         }
 
         // Truncate

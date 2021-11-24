@@ -189,13 +189,13 @@ namespace EFCore.BulkExtensions
                     $"ON {GetANDSeparatedColumns(primaryKeys, "T", "S", tableInfo.UpdateByPropertiesAreNullable)}";
             q += (primaryKeys.Count() == 0) ? "1=0" : "";
 
-            if (operationType == OperationType.Insert || operationType == OperationType.InsertOrUpdate || operationType == OperationType.InsertOrUpdateDelete)
+            if (operationType == OperationType.Insert || operationType == OperationType.InsertOrUpdate || operationType == OperationType.InsertOrUpdateOrDelete)
             {
                 q += $" WHEN NOT MATCHED BY TARGET THEN INSERT ({GetCommaSeparatedColumns(insertColumnsNames)})" +
                      $" VALUES ({GetCommaSeparatedColumns(insertColumnsNames, "S")})";
             }
 
-            if (operationType == OperationType.Update || operationType == OperationType.InsertOrUpdate || operationType == OperationType.InsertOrUpdateDelete)
+            if (operationType == OperationType.Update || operationType == OperationType.InsertOrUpdate || operationType == OperationType.InsertOrUpdateOrDelete)
             {
                 if (updateColumnNames.Count == 0 && operationType == OperationType.Update)
                 {
@@ -215,7 +215,7 @@ namespace EFCore.BulkExtensions
                 }
             }
 
-            if (operationType == OperationType.InsertOrUpdateDelete)
+            if (operationType == OperationType.InsertOrUpdateOrDelete)
             {
                 string deleteSearchCondition = string.Empty;
                 if (tableInfo.BulkConfig.SynchronizeFilter != null)
@@ -249,7 +249,7 @@ namespace EFCore.BulkExtensions
             if (tableInfo.CreatedOutputTable)
             {
                 string commaSeparatedColumnsNames;
-                if (operationType == OperationType.InsertOrUpdateDelete || operationType == OperationType.Delete)
+                if (operationType == OperationType.InsertOrUpdateOrDelete || operationType == OperationType.Delete)
                 {
                     commaSeparatedColumnsNames = string.Join(", ", outputColumnsNames.Select(x => $"COALESCE(INSERTED.[{x}], DELETED.[{x}])"));
                 }

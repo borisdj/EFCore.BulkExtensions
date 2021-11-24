@@ -11,7 +11,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
     {
         private static readonly int SelectStatementLength = "SELECT".Length;
 
-        public List<object> ReloadSqlParameters(DbContext context, List<object> sqlParameters)
+        public virtual List<object> ReloadSqlParameters(DbContext context, List<object> sqlParameters)
         {
             var sqlParametersReloaded = new List<object>();
             foreach (var parameter in sqlParameters)
@@ -31,11 +31,11 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
             return "+";
         }
 
-        public (string, string) GetBatchSqlReformatTableAliasAndTopStatement(string sqlQuery)
+        public (string, string) GetBatchSqlReformatTableAliasAndTopStatement(string sqlQuery, DbServer databaseType)
         {
-            var isSqlServer = true;  // SqlServer : PostrgeSql; // TODO change to specific type
-            var escapeSymbolEnd = isSqlServer ? "]" : ".";
-            var escapeSymbolStart = isSqlServer ? "[" : " "; // SqlServer : PostrgeSql;
+            var isPostgreSql = databaseType == DbServer.PostgreSql;
+            var escapeSymbolEnd = isPostgreSql ? "." : "]";
+            var escapeSymbolStart = isPostgreSql ? " " : "["; // SqlServer : PostrgeSql;
             var tableAliasEnd = sqlQuery.Substring(SelectStatementLength, sqlQuery.IndexOf(escapeSymbolEnd, StringComparison.Ordinal) - SelectStatementLength); // " TOP(10) [table_alias" / " [table_alias" : " table_alias"
             var tableAliasStartIndex = tableAliasEnd.IndexOf(escapeSymbolStart, StringComparison.Ordinal);
             var tableAlias = tableAliasEnd.Substring(tableAliasStartIndex + escapeSymbolStart.Length); // "table_alias"

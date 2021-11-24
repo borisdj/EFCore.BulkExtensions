@@ -79,20 +79,52 @@ namespace EFCore.BulkExtensions.Tests
                 entities3.Add(entity);
             }
 
+            // INSERT
             context.BulkInsert(entities);
 
             Assert.Equal("info 1", context.Items.Where(a => a.Name == "Name 1").AsNoTracking().FirstOrDefault().Description);
             Assert.Equal("info 2", context.Items.Where(a => a.Name == "Name 2").AsNoTracking().FirstOrDefault().Description);
 
+            // UPDATE
             context.BulkInsertOrUpdate(entities2);
 
             Assert.Equal("UPDATE 2", context.Items.Where(a => a.Name == "Name 2").AsNoTracking().FirstOrDefault().Description);
             Assert.Equal("UPDATE 3", context.Items.Where(a => a.Name == "Name 3").AsNoTracking().FirstOrDefault().Description);
 
-            context.BulkInsertOrUpdate(entities3, new BulkConfig { UpdateByProperties = new List<string> { nameof(Item.Name) } });
+            var configUpdateBy = new BulkConfig { UpdateByProperties = new List<string> { nameof(Item.Name) } };
+
+            configUpdateBy.SetOutputIdentity = true;
+            context.BulkUpdate(entities3, configUpdateBy);
+
+            Assert.Equal(3, entities3[0].ItemId); // to test Output
+            Assert.Equal(4, entities3[1].ItemId);
 
             Assert.Equal("CHANGE 3", context.Items.Where(a => a.Name == "Name 3").AsNoTracking().FirstOrDefault().Description);
             Assert.Equal("CHANGE 4", context.Items.Where(a => a.Name == "Name 4").AsNoTracking().FirstOrDefault().Description);
+
+
+            // DELETE
+            context.BulkDelete(new List<Item>() { entities2[1] }, configUpdateBy);
+
+
+            // READ
+            var secondEntity = new List<Item>() { entities[1] };
+            Assert.Equal(0, secondEntity.FirstOrDefault().ItemId);
+            context.BulkRead(secondEntity, configUpdateBy);
+            Assert.Equal(2, secondEntity.FirstOrDefault().ItemId);
+
+
+            // BATCH
+            var query = context.Items.AsQueryable().Where(a => a.ItemId <= 1);
+            query.BatchUpdate(new Item { Description = "UPDATE N", Price = 1.5m }/*, updateColumns*/);
+
+            var query2 = context.Items.AsQueryable().Where(a => a.ItemId > 1 && a.ItemId < 3);
+            query.BatchDelete();
+
+            //var incrementStep = 100;
+            //var suffix = " Concatenated";
+            //query.BatchUpdate(a => new Item { Name = a.Name + suffix, Quantity = a.Quantity + incrementStep }); // example of BatchUpdate Increment/Decrement value in variable
+
         }
 
         [Theory]
@@ -103,53 +135,20 @@ namespace EFCore.BulkExtensions.Tests
         {
             ContextUtil.DbServer = dbServer;
 
-            using var context = new TestContext(ContextUtil.GetOptions());
-            var c = context.Items;
-
-            var connection = (NpgsqlConnection)context.Database.GetDbConnection();
-            connection.Open();
-
-            using var command = connection.CreateCommand();
-
-            context.Database.ExecuteSqlRaw("DROP TABLE data");
-            context.Database.ExecuteSqlRaw("CREATE TABLE data (field_text TEXT, field_int2 SMALLINT, field_int4 INTEGER)");
-
-            /*command.CommandText = $"DROP TABLE data";
-            command.ExecuteNonQuery();
-
-            command.CommandText = $"CREATE TABLE data (field_text TEXT, field_int2 SMALLINT, field_int4 INTEGER)";
-            command.ExecuteNonQuery();*/
-
-            using (var writer = connection.BeginBinaryImport("COPY data (field_text, field_int2) FROM STDIN (FORMAT BINARY)"))
-            {
-                writer.StartRow();
-                writer.Write("Hello");
-                writer.Write(8, NpgsqlDbType.Smallint);
-
-                writer.StartRow();
-                writer.Write("Goodbye");
-                writer.WriteNull();
-
-                writer.Complete();
-            }
-
-            command.CommandText = "SELECT COUNT(*) FROM data";
-            var count = command.ExecuteScalar();
-
-            Assert.Equal(count.ToString(), "2");
-
             //DeletePreviousDatabase();
-            /*new EFCoreBatchTest().RunDeleteAll(dbServer);
+            new EFCoreBatchTest().RunDeleteAll(dbServer);
 
             RunInsert(isBulk);
             RunInsertOrUpdate(isBulk, dbServer);
             RunUpdate(isBulk, dbServer);
+
+            RunRead(isBulk);
+
             if (dbServer == DbServer.SqlServer)
             {
-                RunRead(isBulk); // Not Yet supported for Sqlite
-                RunInsertOrUpdateOrDelete(isBulk); // Not Yet supported for Sqlite
-            }*/
-            //RunDelete(isBulk, dbServer);
+                RunInsertOrUpdateOrDelete(isBulk); // Not supported for Sqlite (has only UPSERT), instead use BulkRead, then split list into sublists and call separately Bulk methods for Insert, Update, Delete.
+            }
+            RunDelete(isBulk, dbServer);
 
             //CheckQueryCache();
         }
@@ -190,6 +189,10 @@ namespace EFCore.BulkExtensions.Tests
                 bulkOperation(context);
 
                 context.Database.ExecuteSqlRaw($"SELECT {columnName} FROM {tableName}");
+            }
+            catch (Exception ex)
+            {
+                // Table already exist
             }
             finally
             {
