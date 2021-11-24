@@ -45,7 +45,6 @@ context.BulkRead(entitiesList);                   context.BulkReadAsync(entities
 context.Truncate<Entity>();                       context.TruncateAsync<Entity>();
 ```
 
-**-PostgreSQL** currently supports only methods Insert and Upsert.<br>
 **-SQLite** requires package: [*SQLitePCLRaw.bundle_e_sqlite3*](https://docs.microsoft.com/en-us/dotnet/standard/data/sqlite/custom-versions?tabs=netcore-cli) with call to `SQLitePCL.Batteries.Init()`<br>
 
 **Batch** Extensions are made on *IQueryable* DbSet and can be used as in the following code segment.<br>
@@ -89,7 +88,7 @@ It makes Update when PK(PrimaryKey) is matched, otherwise does Insert.<br>
 Those in Db that are not found in the list will be deleted.<br>
 Partial Sync can be done on table subset using expression set on config with method:<br>
 `bulkConfig.SetSynchronizeFilter<Item>(a => a.Quantity > 0);`<br>
-For Sqlite Not supported since lite only has UPSERT statement. Way to achieve there sync functionality is to Select or BulkRead existing data from DB, split list into sublists and call separately Bulk methods for BulkInsertOrUpdate and Delete.
+Not supported nor Sqlite(lite only has UPSERT statement) nor currently for PostgreSql. Way to achieve there sync functionality is to Select or BulkRead existing data from DB, split list into sublists and call separately Bulk methods for BulkInsertOrUpdate and Delete.
 
 **BulkRead** does SELECT and JOIN based on one or more Unique columns that are specified in Config `UpdateByProperties`.<br>
 More info in the [Example](https://github.com/borisdj/EFCore.BulkExtensions#read-example) at the bottom.
