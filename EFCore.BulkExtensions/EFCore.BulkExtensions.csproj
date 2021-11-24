@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <Title>EFCore.BulkExtensions</Title>
+    <PackageId>EFCore.BulkExtensions-Vooban</PackageId>
     <Version>6.0.4</Version>
     <Authors>borisdj</Authors>
     <Description>EntityFramework EF Core Bulk Batch Extensions for Insert Update Delete and Read (CRUD) operations on SQL Server and SQLite</Description>
