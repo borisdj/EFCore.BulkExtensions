@@ -839,7 +839,7 @@ namespace EFCore.BulkExtensions
         {
             bool hasIdentity = OutputPropertyColumnNamesDict.Any(a => a.Value == IdentityColumnName) ||
                                (tableInfo.HasSinglePrimaryKey && tableInfo.DefaultValueProperties.Contains(tableInfo.PrimaryKeysPropertyColumnNameDict.FirstOrDefault().Key));
-            int totallNumber = entities.Count;
+            int totalNumber = entities.Count;
             if (BulkConfig.SetOutputIdentity && hasIdentity)
             {
                 string sqlQuery = SqlQueryBuilder.SelectFromOutputTable(this);
@@ -849,7 +849,7 @@ namespace EFCore.BulkExtensions
 
                 //var entitiesObjects = entities.Cast<object>().ToList();
                 UpdateEntitiesIdentity(context, tableInfo, entities, entitiesWithOutputIdentity);
-                totallNumber = entitiesWithOutputIdentity.Count;
+                totalNumber = entitiesWithOutputIdentity.Count;
             }
             if (BulkConfig.CalculateStats)
             {
@@ -869,7 +869,7 @@ namespace EFCore.BulkExtensions
                 {
                     StatsNumberUpdated = numberUpdated,
                     StatsNumberDeleted = numberDeleted,
-                    StatsNumberInserted = totallNumber - numberUpdated - numberDeleted
+                    StatsNumberInserted = totalNumber - numberUpdated - numberDeleted
                 };
             }
         }
