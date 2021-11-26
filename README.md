@@ -115,7 +115,7 @@ TrackingEntities: false,	                  DoNotUpdateIfTimeStampChanged: false,
 WithHoldlock: true,	                          SRID: 4326,
 CalculateStats: false,	                          DateTime2PrecisionForceRound: false,
 SqlBulkCopyOptions: Default                       TemporalColumns: { "PeriodStart", "PeriodEnd" },
-                                            OnSaveChangesSetFK: true,  
+                                                  OnSaveChangesSetFK: true,  
 --------------------------------------------------------------------------------------
 METHOD: SetSynchronizeFilter<T>
 ```
@@ -202,7 +202,7 @@ _ Also in some [sql collation](https://github.com/borisdj/EFCore.BulkExtensions/
 **DoNotUpdateIfTimeStampChanged** if set checks TimeStamp for Concurrency, ones with conflict will [not be updated](https://github.com/borisdj/EFCore.BulkExtensions/issues/469#issuecomment-803662721).<br>
 **SRID** Spatial Reference Identifier - for SQL Server with NetTopologySuite.<br>
 **DateTime2PrecisionForceRound** If dbtype datetime2 has precision less then default 7, example 'datetime2(3)' SqlBulkCopy does Floor instead of Round so when this Property is set then Rounding will be done in memory to make sure inserted values are same as with regular SaveChanges.<br>
-**TemporalColumns** are shadow columns used for Temporal table. Default elements 'PeriodStart' and 'PeriodEnd' can be changed if those columns have custom names.
+**TemporalColumns** are shadow columns used for Temporal table. Default elements 'PeriodStart' and 'PeriodEnd' can be changed if those columns have custom names.<br>
 **OnSaveChangesSetFK** is used only for BulkSaveChanges. When multiply entries have FK relationship which is Db generated, this set proper value after reading parent PK from Db. IF PK are generated in memory like are some Guid then this can be set to false for better efficiency.
   
 **SqlBulkCopyOptions** is Enum with [[Flags]](https://stackoverflow.com/questions/8447/what-does-the-flags-enum-attribute-mean-in-c) attribute which enables specifying one or more options:<br>
