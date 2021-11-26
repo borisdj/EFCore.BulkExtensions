@@ -140,7 +140,7 @@ If we want Insert only new and skip existing ones in Db (Insert_if_not_Exist) th
 Additionaly there is **UpdateByProperties** for specifying custom properties, by which we want update to be done.<br>
 When setting multiple props in UpdateByProps then match done by columns combined, like unique constrain based on those cols.<br>
 Using UpdateByProperties while also having Identity column requires that Id property be [Excluded](https://github.com/borisdj/EFCore.BulkExtensions/issues/131).<br>
-Also with PostgreSQL when matching is done it requires UniqueIndex so for custom UpdateByProperties that do not have it is temporarily created but in that case method can not be in transation (throws: *current transaction is aborted; CREATE INDEX CONCURRENTLY cannot run inside a transaction block*)
+Also with PostgreSQL when matching is done it requires UniqueIndex so for custom UpdateByProperties that do not have it is temporarily created but in that case method can not be in transation (throws: *current transaction is aborted; CREATE INDEX CONCURRENTLY cannot run inside a transaction block*).<br>
 If **NotifyAfter** is not set it will have same value as _BatchSize_ while **BulkCopyTimeout** when not set has SqlBulkCopy default which is 30 seconds and if set to 0 it indicates no limit.<br><br>
 _SetOutputIdentity_ have purpose only when PK has Identity (usually *int* type with AutoIncrement), while if PK is Guid(sequential) created in Application there is no need for them.<br>
 Also Tables with Composite Keys have no Identity column so no functionality for them in that case either.
