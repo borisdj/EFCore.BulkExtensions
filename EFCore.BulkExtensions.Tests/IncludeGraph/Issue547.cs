@@ -73,7 +73,7 @@ namespace EFCore.BulkExtensions.Tests.IncludeGraph
     public class Issue547 : IDisposable
     {
         [Theory]
-        [InlineData(DbServer.SqlServer)]
+        [InlineData(DbServer.SQLServer)]
         public async Task Test(DbServer dbServer)
         {
             ContextUtil.DbServer = dbServer;

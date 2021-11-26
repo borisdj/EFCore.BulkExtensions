@@ -14,8 +14,8 @@ namespace EFCore.BulkExtensions.Tests
         protected int EntitiesNumber => 1000;
 
         [Theory]
-        [InlineData(DbServer.SqlServer)]
-        [InlineData(DbServer.Sqlite)]
+        [InlineData(DbServer.SQLServer)]
+        [InlineData(DbServer.SQLite)]
         public async Task BatchTestAsync(DbServer dbServer)
         {
             ContextUtil.DbServer = dbServer;
@@ -25,7 +25,7 @@ namespace EFCore.BulkExtensions.Tests
             await RunBatchUpdateAsync(dbServer);
 
             int deletedEntities = 1;
-            if (dbServer == DbServer.SqlServer)
+            if (dbServer == DbServer.SQLServer)
             {
                 deletedEntities = await RunTopBatchDeleteAsync();
             }
@@ -46,7 +46,7 @@ namespace EFCore.BulkExtensions.Tests
             Assert.StartsWith("name ", lastItem.Name);
             Assert.EndsWith(" Concatenated", lastItem.Name);
 
-            if (dbServer == DbServer.SqlServer)
+            if (dbServer == DbServer.SQLServer)
             {
                 Assert.EndsWith(" TOP(1)", firstItem.Name);
             }
@@ -58,7 +58,7 @@ namespace EFCore.BulkExtensions.Tests
             var dbCommandInterceptor = new TestDbCommandInterceptor();
             var interceptors = new[] { dbCommandInterceptor };
 
-            using var testContext = new TestContext(ContextUtil.GetOptions<TestContext>(DbServer.SqlServer, interceptors));
+            using var testContext = new TestContext(ContextUtil.GetOptions<TestContext>(DbServer.SQLServer, interceptors));
 
             string oldPhoneNumber = "7756789999";
             string newPhoneNumber = "3606789999";
@@ -99,8 +99,8 @@ WHERE [p].[PhoneNumber] = @__oldPhoneNumber_0";
             // RESET AutoIncrement
             string deleteTableSql = dbServer switch
             {
-                DbServer.SqlServer => $"DBCC CHECKIDENT('[dbo].[{nameof(Item)}]', RESEED, 0);",
-                DbServer.Sqlite => $"DELETE FROM sqlite_sequence WHERE name = '{nameof(Item)}';",
+                DbServer.SQLServer => $"DBCC CHECKIDENT('[dbo].[{nameof(Item)}]', RESEED, 0);",
+                DbServer.SQLite => $"DELETE FROM sqlite_sequence WHERE name = '{nameof(Item)}';",
                 _ => throw new ArgumentException($"Unknown database type: '{dbServer}'.", nameof(dbServer)),
             };
             context.Database.ExecuteSqlRaw(deleteTableSql);
@@ -139,11 +139,11 @@ WHERE [p].[PhoneNumber] = @__oldPhoneNumber_0";
             decimal price = 0;
 
             var query = context.Items.AsQueryable();
-            if (dbServer == DbServer.SqlServer)
+            if (dbServer == DbServer.SQLServer)
             {
                 query = query.Where(a => a.ItemId <= 500 && a.Price >= price);
             }
-            if (dbServer == DbServer.Sqlite)
+            if (dbServer == DbServer.SQLite)
             {
                 query = query.Where(a => a.ItemId <= 500); // Sqlite currently does Not support multiple conditions
             }
@@ -152,7 +152,7 @@ WHERE [p].[PhoneNumber] = @__oldPhoneNumber_0";
 
             await query.BatchUpdateAsync(a => new Item { Name = a.Name + " Concatenated", Quantity = a.Quantity + 100, Price = null }); // example of BatchUpdate value Increment/Decrement
 
-            if (dbServer == DbServer.SqlServer) // Sqlite currently does Not support Take(): LIMIT
+            if (dbServer == DbServer.SQLServer) // Sqlite currently does Not support Take(): LIMIT
             {
                 query = context.Items.Where(a => a.ItemId <= 500 && a.Price == null);
                 await query.Take(1).BatchUpdateAsync(a => new Item { Name = a.Name + " TOP(1)", Quantity = a.Quantity + 100 }); // example of BatchUpdate with TOP(1)
@@ -166,7 +166,7 @@ WHERE [p].[PhoneNumber] = @__oldPhoneNumber_0";
                                             .BatchUpdateAsync(a => new Item() { TimeUpdated = DateTime.Now })
                                             .ConfigureAwait(false);
 
-            if (dbServer == DbServer.SqlServer) // Sqlite Not supported
+            if (dbServer == DbServer.SQLServer) // Sqlite Not supported
             {
                 var newValue = 5;
                 await context.Parents.Where(parent => parent.ParentId == 1)

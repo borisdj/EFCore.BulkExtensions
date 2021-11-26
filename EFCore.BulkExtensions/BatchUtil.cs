@@ -36,7 +36,7 @@ namespace EFCore.BulkExtensions
             var databaseType = SqlAdaptersMapping.GetDatabaseType(context);
 
             string resultQuery;
-            if (databaseType == DbServer.SqlServer)
+            if (databaseType == DbServer.SQLServer)
             {
                 tableAlias = $"[{tableAlias}]";
                 int outerQueryOrderByIndex = -1;
@@ -85,7 +85,7 @@ namespace EFCore.BulkExtensions
                 resultQuery = $"{leadingComments}DELETE {topStatement}{tableAlias}{sql}";
             }
 
-            if (databaseType == DbServer.PostgreSql)
+            if (databaseType == DbServer.PostgreSQL)
             {
                 resultQuery = SqlQueryBuilderPostgreSql.RestructureForBatch(resultQuery, isDelete: true);
 
@@ -128,7 +128,7 @@ namespace EFCore.BulkExtensions
             }
 
             var databaseType = SqlAdaptersMapping.GetDatabaseType(context);
-            if (databaseType == DbServer.PostgreSql)
+            if (databaseType == DbServer.PostgreSQL)
             {
                 resultQuery = SqlQueryBuilderPostgreSql.RestructureForBatch(resultQuery);
 
@@ -159,7 +159,7 @@ namespace EFCore.BulkExtensions
             CreateUpdateBody(createUpdateBodyData, expression.Body);
 
             var sqlParameters = ReloadSqlParameters(context, createUpdateBodyData.SqlParameters); // Sqlite requires SqliteParameters
-            var sqlColumns = (createUpdateBodyData.DatabaseType == DbServer.SqlServer) 
+            var sqlColumns = (createUpdateBodyData.DatabaseType == DbServer.SQLServer) 
                 ? createUpdateBodyData.UpdateColumnsSql
                 : createUpdateBodyData.UpdateColumnsSql.Replace($"[{tableAlias}].", "");
 
@@ -176,7 +176,7 @@ namespace EFCore.BulkExtensions
             }
 
             var databaseType = SqlAdaptersMapping.GetDatabaseType(context);
-            if (databaseType == DbServer.PostgreSql)
+            if (databaseType == DbServer.PostgreSQL)
             {
                 resultQuery = SqlQueryBuilderPostgreSql.RestructureForBatch(resultQuery);
 

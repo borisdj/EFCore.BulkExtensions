@@ -33,7 +33,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
 
         public (string, string) GetBatchSqlReformatTableAliasAndTopStatement(string sqlQuery, DbServer databaseType)
         {
-            var isPostgreSql = databaseType == DbServer.PostgreSql;
+            var isPostgreSql = databaseType == DbServer.PostgreSQL;
             var escapeSymbolEnd = isPostgreSql ? "." : "]";
             var escapeSymbolStart = isPostgreSql ? " " : "["; // SqlServer : PostrgeSql;
             var tableAliasEnd = sqlQuery.Substring(SelectStatementLength, sqlQuery.IndexOf(escapeSymbolEnd, StringComparison.Ordinal) - SelectStatementLength); // " TOP(10) [table_alias" / " [table_alias" : " table_alias"

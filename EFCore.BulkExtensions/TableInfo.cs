@@ -118,7 +118,7 @@ namespace EFCore.BulkExtensions
             }
 
             //var relationalData = entityType.Relational(); relationalData.Schema relationalData.TableName // DEPRECATED in Core3.0
-            bool isSqlServer = context.Database.ProviderName.EndsWith(DbServer.SqlServer.ToString());
+            bool isSqlServer = context.Database.ProviderName.EndsWith(DbServer.SQLServer.ToString());
             string defaultSchema = isSqlServer ? "dbo" : null;
 
             string customSchema = null;

@@ -11,8 +11,8 @@ namespace EFCore.BulkExtensions.Tests
     public class EFCoreBulkTestSaveChanges
     {
         [Theory]
-        [InlineData(DbServer.SqlServer)]
-        [InlineData(DbServer.Sqlite)]
+        [InlineData(DbServer.SQLServer)]
+        [InlineData(DbServer.SQLite)]
         public void SaveChangesTest(DbServer dbServer)
         {
             ContextUtil.DbServer = dbServer;
@@ -28,8 +28,8 @@ namespace EFCore.BulkExtensions.Tests
         }
 
         [Theory]
-        [InlineData(DbServer.SqlServer)]
-        [InlineData(DbServer.Sqlite)]
+        [InlineData(DbServer.SQLServer)]
+        [InlineData(DbServer.SQLite)]
         public async Task SaveChangesTestAsync(DbServer dbServer)
         {
             ContextUtil.DbServer = dbServer;

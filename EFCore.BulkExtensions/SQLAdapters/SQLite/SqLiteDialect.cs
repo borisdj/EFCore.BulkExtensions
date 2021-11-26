@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
 
 namespace EFCore.BulkExtensions.SQLAdapters.SQLite
 {
-    public class SqLiteDialect : IQueryBuilderSpecialization
+    public class SqliteDialect : IQueryBuilderSpecialization
     {
         public List<object> ReloadSqlParameters(DbContext context, List<object> sqlParameters)
         {

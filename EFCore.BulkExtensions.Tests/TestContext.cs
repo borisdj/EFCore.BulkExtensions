@@ -168,7 +168,7 @@ namespace EFCore.BulkExtensions.Tests
         {
             var optionsBuilder = new DbContextOptionsBuilder<TDbContext>();
 
-            if (dbServerType == DbServer.SqlServer)
+            if (dbServerType == DbServer.SQLServer)
             {
                 var connectionString = GetSqlServerConnectionString(databaseName);
 
@@ -178,7 +178,7 @@ namespace EFCore.BulkExtensions.Tests
                 //optionsBuilder.UseSqlServer(connectionString); // Can NOT Test with UseInMemoryDb (Exception: Relational-specific methods can only be used when the context is using a relational)
                 optionsBuilder.UseSqlServer(connectionString, opt => opt.UseNetTopologySuite()); // NetTopologySuite for Geometry / Geometry types
             }
-            else if (dbServerType == DbServer.Sqlite)
+            else if (dbServerType == DbServer.SQLite)
             {
                 string connectionString = GetSqliteConnectionString(databaseName);
                 optionsBuilder.UseSqlite(connectionString);
@@ -188,7 +188,7 @@ namespace EFCore.BulkExtensions.Tests
                 //string connectionString = (new SqliteConnectionStringBuilder { DataSource = $"{databaseName}Lite.db" }).ToString();
                 //optionsBuilder.UseSqlite(new SqliteConnection(connectionString));
             }
-            else if (DbServer == DbServer.PostgreSql)
+            else if (DbServer == DbServer.PostgreSQL)
             {
                 string connectionString = GetPostgreSqlConnectionString(databaseName);
                 optionsBuilder.UseNpgsql(connectionString);

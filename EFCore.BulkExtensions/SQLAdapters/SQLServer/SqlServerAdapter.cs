@@ -439,7 +439,8 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
             var columnsDict = new Dictionary<string, object>();
             var ownedEntitiesMappedProperties = new HashSet<string>();
 
-            var isSqlServer = context.Database.ProviderName.EndsWith(DbServer.SqlServer.ToString());
+            var databaseType = SqlAdaptersMapping.GetDatabaseType(context);
+            var isSqlServer = databaseType == DbServer.SQLServer;
             var sqlServerBytesWriter = new SqlServerBytesWriter();
 
             var objectIdentifier = tableInfo.ObjectIdentifier;

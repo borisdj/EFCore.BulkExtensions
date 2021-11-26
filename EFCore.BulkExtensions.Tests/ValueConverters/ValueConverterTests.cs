@@ -10,8 +10,8 @@ namespace EFCore.BulkExtensions.Tests.ValueConverters
     public class ValueConverterTests: IDisposable
     {
         [Theory]
-        [InlineData(DbServer.SqlServer)]
-        [InlineData(DbServer.Sqlite)]
+        [InlineData(DbServer.SQLServer)]
+        [InlineData(DbServer.SQLite)]
         public void BulkInsertOrUpdate_EntityUsingBuiltInEnumToStringConverter_SavesToDatabase(DbServer dbServer)
         {
             ContextUtil.DbServer = dbServer;
@@ -36,8 +36,8 @@ namespace EFCore.BulkExtensions.Tests.ValueConverters
         }
 
         [Theory]
-        [InlineData(DbServer.SqlServer)]
-        [InlineData(DbServer.Sqlite)]
+        [InlineData(DbServer.SQLServer)]
+        [InlineData(DbServer.SQLite)]
         public void BatchUpdate_EntityUsingBuiltInEnumToStringConverter_UpdatesDatabaseWithEnumStringValue(DbServer dbServer)
         {
             ContextUtil.DbServer = dbServer;
@@ -68,8 +68,8 @@ namespace EFCore.BulkExtensions.Tests.ValueConverters
         }
 
         [Theory]
-        [InlineData(DbServer.SqlServer)]
-        [InlineData(DbServer.Sqlite)]
+        [InlineData(DbServer.SQLServer)]
+        [InlineData(DbServer.SQLite)]
         public void BatchDelete_UsingWhereExpressionWithValueConverter_Deletes(DbServer dbServer)
         {
             ContextUtil.DbServer = dbServer;

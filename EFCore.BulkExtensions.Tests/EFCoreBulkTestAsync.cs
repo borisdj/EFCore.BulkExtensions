@@ -21,8 +21,8 @@ namespace EFCore.BulkExtensions.Tests
         private static Func<TestContext, IEnumerable<Item>> AllItemsQuery = EF.CompileQuery<TestContext, IEnumerable<Item>>(ctx => ctx.Items.AsNoTracking());
 
         [Theory]
-        [InlineData(DbServer.SqlServer, true)]
-        [InlineData(DbServer.Sqlite, true)]
+        [InlineData(DbServer.SQLServer, true)]
+        [InlineData(DbServer.SQLite, true)]
         //[InlineData(DatabaseType.SqlServer, false)] // for speed comparison with Regular EF CUD operations
         public async Task OperationsTestAsync(DbServer dbServer, bool isBulk)
         {
@@ -38,7 +38,7 @@ namespace EFCore.BulkExtensions.Tests
 
             await RunReadAsync(isBulk);
 
-            if (dbServer == DbServer.SqlServer)
+            if (dbServer == DbServer.SQLServer)
             {
                 await RunInsertOrUpdateOrDeleteAsync(isBulk); // Not supported for Sqlite (has only UPSERT), instead use BulkRead, then split list into sublists and call separately Bulk methods for Insert, Update, Delete.
             }
@@ -46,7 +46,7 @@ namespace EFCore.BulkExtensions.Tests
         }
 
         [Theory]
-        [InlineData(DbServer.SqlServer)]
+        [InlineData(DbServer.SQLServer)]
         //[InlineData(DbServer.Sqlite)] // has to be run separately as single test, otherwise throws (SQLite Error 1: 'table "#MyTempTable1" already exists'.)
         public async Task SideEffectsTestAsync(DbServer dbServer)
         {
@@ -82,8 +82,8 @@ namespace EFCore.BulkExtensions.Tests
 
                 createTableSql = dbServer switch
                 {
-                    DbServer.Sqlite => $"CREATE TEMPORARY {createTableSql}",
-                    DbServer.SqlServer => $"CREATE {createTableSql}",
+                    DbServer.SQLite => $"CREATE TEMPORARY {createTableSql}",
+                    DbServer.SQLServer => $"CREATE {createTableSql}",
                     _ => throw new ArgumentException($"Unknown database type: '{dbServer}'.", nameof(dbServer)),
                 };
                 await context.Database.ExecuteSqlRawAsync(createTableSql);
@@ -135,7 +135,7 @@ namespace EFCore.BulkExtensions.Tests
 
             if (isBulk)
             {
-                if (ContextUtil.DbServer == DbServer.SqlServer)
+                if (ContextUtil.DbServer == DbServer.SQLServer)
                 {
                     using var transaction = await context.Database.BeginTransactionAsync();
                     var bulkConfig = new BulkConfig
@@ -163,7 +163,7 @@ namespace EFCore.BulkExtensions.Tests
 
                     await transaction.CommitAsync();
                 }
-                else if (ContextUtil.DbServer == DbServer.Sqlite)
+                else if (ContextUtil.DbServer == DbServer.SQLite)
                 {
                     using var transaction = await context.Database.BeginTransactionAsync();
 
@@ -223,7 +223,7 @@ namespace EFCore.BulkExtensions.Tests
                 {
                     var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
                     await context.BulkInsertOrUpdateAsync(entities, bulkConfig);
-                    if (dbServer == DbServer.SqlServer)
+                    if (dbServer == DbServer.SQLServer)
                     {
                         Assert.Equal(1, bulkConfig.StatsInfo.StatsNumberInserted);
                         Assert.Equal(EntitiesNumber / 2 - 1, bulkConfig.StatsInfo.StatsNumberUpdated);
@@ -329,7 +329,7 @@ namespace EFCore.BulkExtensions.Tests
             {
                 var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
                 await context.BulkUpdateAsync(entities, bulkConfig);
-                if (dbServer == DbServer.SqlServer)
+                if (dbServer == DbServer.SQLServer)
                 {
                     Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberInserted);
                     Assert.Equal(EntitiesNumber, bulkConfig.StatsInfo.StatsNumberUpdated);
@@ -380,7 +380,7 @@ namespace EFCore.BulkExtensions.Tests
             {
                 var bulkConfig = new BulkConfig() { CalculateStats = true };
                 await context.BulkDeleteAsync(entities, bulkConfig);
-                if (dbServer == DbServer.SqlServer)
+                if (dbServer == DbServer.SQLServer)
                 {
                     Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberInserted);
                     Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberUpdated);
@@ -403,8 +403,8 @@ namespace EFCore.BulkExtensions.Tests
             // RESET AutoIncrement
             string deleteTableSql = dbServer switch
             {
-                DbServer.SqlServer => $"DBCC CHECKIDENT('[dbo].[{nameof(Item)}]', RESEED, 0);",
-                DbServer.Sqlite => $"DELETE FROM sqlite_sequence WHERE name = '{nameof(Item)}';",
+                DbServer.SQLServer => $"DBCC CHECKIDENT('[dbo].[{nameof(Item)}]', RESEED, 0);",
+                DbServer.SQLite => $"DELETE FROM sqlite_sequence WHERE name = '{nameof(Item)}';",
                 _ => throw new ArgumentException($"Unknown database type: '{dbServer}'.", nameof(dbServer)),
             };
             await context.Database.ExecuteSqlRawAsync(deleteTableSql).ConfigureAwait(false);

@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace EFCore.BulkExtensions.SQLAdapters.SQLite
 {
-    public class SqLiteOperationsAdapter: ISqlOperationsAdapter
+    public class SqliteOperationsAdapter: ISqlOperationsAdapter
     {
         #region Methods
         // Insert
