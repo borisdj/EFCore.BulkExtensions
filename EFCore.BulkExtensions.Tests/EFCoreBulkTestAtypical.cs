@@ -62,7 +62,7 @@ namespace EFCore.BulkExtensions.Tests
                 new Storage { StorageId = Guid.NewGuid(), Data = "Info " + 2 },
                 new Storage { StorageId = Guid.NewGuid(), Data = "Info " + 3 },
             };
-            context.BulkInsert(entities); // example of setting BulkConfig with Action argument
+            context.BulkInsert(entities);
 
             var countDb = context.Storages.Count();
             var countEntities = entities.Count();

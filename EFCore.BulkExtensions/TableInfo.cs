@@ -302,11 +302,6 @@ namespace EFCore.BulkExtensions
 
             UpdateByPropertiesAreNullable = properties.Any(a => PrimaryKeysPropertyColumnNameDict.ContainsKey(a.Name) && a.IsNullable);
 
-            if (HasTemporalColumns && BulkConfig.SetOutputIdentity)
-            {
-                throw new InvalidConstraintException("When table has Temporal columns SetOutputIdentity can not be used.");
-            }
-
             if (AreSpecifiedPropertiesToInclude || AreSpecifiedPropertiesToExclude)
             {
                 if (AreSpecifiedPropertiesToInclude && AreSpecifiedPropertiesToExclude)
@@ -475,8 +470,9 @@ namespace EFCore.BulkExtensions
 
                 if (!FastPropertyDict.Any(a => a.Key == configSpecifiedPropertyName) &&
                     !configSpecifiedPropertyName.Contains(".") && // Those with dot "." skiped from validating for now since FastPropertyDict here does not contain them
-                    !(specifiedPropertiesListName == nameof(BulkConfig.PropertiesToIncludeOnUpdate) && configSpecifiedPropertyName == "") // In PropsToIncludeOnUpdate empty is allowed as config for skipping Update
-                   )
+                    !(specifiedPropertiesListName == nameof(BulkConfig.PropertiesToIncludeOnUpdate) && configSpecifiedPropertyName == "") && // In PropsToIncludeOnUpdate empty is allowed as config for skipping Update
+                    !BulkConfig.TemporalColumns.Contains(configSpecifiedPropertyName)
+                    )
                 {
                     throw new InvalidOperationException($"PropertyName '{configSpecifiedPropertyName}' specified in '{specifiedPropertiesListName}' not found in Properties.");
                 }
