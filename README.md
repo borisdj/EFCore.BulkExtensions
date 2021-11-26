@@ -9,7 +9,7 @@ At the moment supports Microsoft SQL Server(2008+) PostgreSQL(9.5+) and SQLite.<
 Under the hood uses [SqlBulkCopy](https://msdn.microsoft.com/en-us/library/system.data.sqlclient.sqlbulkcopy.aspx) for Insert, for Update/Delete combines BulkInsert with raw Sql [MERGE](https://docs.microsoft.com/en-us/sql/t-sql/statements/merge-transact-sql).<br>
 For SQLite there is no BulkCopy, instead library uses plain SQL combined with [UPSERT](https://www.sqlite.org/lang_UPSERT.html).<br>
 Bulk Tests can not have UseInMemoryDb because InMemoryProvider does not support Relational-specific methods.<br>
-Instead Test options are  SqlServer(Developer or Express), LocalDb([if alongside Developer v.](https://stackoverflow.com/questions/42885377/sql-server-2016-developer-version-can-not-connect-to-localdb-mssqllocaldb?noredirect=1&lq=1)), or for other adapters PostgreSQL/Sqlite.
+Instead Test options are  SqlServer(Developer or Express), LocalDb([if alongside Developer v.](https://stackoverflow.com/questions/42885377/sql-server-2016-developer-version-can-not-connect-to-localdb-mssqllocaldb?noredirect=1&lq=1)), or for other adapters PostgreSQL/SQLite.
 
 <!--[![Button](https://img.shields.io/nuget/v/EFCore.BulkExtensions.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/)-->
 Available on <a href="https://www.nuget.org/packages/EFCore.BulkExtensions/"><img src="https://buildstats.info/nuget/EFCore.BulkExtensions" /></a><br>
@@ -89,7 +89,7 @@ It makes Update when PK(PrimaryKey) is matched, otherwise does Insert.<br>
 Those in Db that are not found in the list will be deleted.<br>
 Partial Sync can be done on table subset using expression set on config with method:<br>
 `bulkConfig.SetSynchronizeFilter<Item>(a => a.Quantity > 0);`<br>
-Not supported nor Sqlite(lite only has UPSERT statement) nor currently for PostgreSql. Way to achieve there sync functionality is to Select or BulkRead existing data from DB, split list into sublists and call separately Bulk methods for BulkInsertOrUpdate and Delete.
+Not supported for SQLite(Lite has only UPSERT statement) nor currently for PostgreSQL. Way to achieve there sync functionality is to Select or BulkRead existing data from DB, split list into sublists and call separately Bulk methods for BulkInsertOrUpdate and Delete.
 
 **BulkRead** does SELECT and JOIN based on one or more Unique columns that are specified in Config `UpdateByProperties`.<br>
 More info in the [Example](https://github.com/borisdj/EFCore.BulkExtensions#read-example) at the bottom.
@@ -140,7 +140,7 @@ If we want Insert only new and skip existing ones in Db (Insert_if_not_Exist) th
 Additionaly there is **UpdateByProperties** for specifying custom properties, by which we want update to be done.<br>
 When setting multiple props in UpdateByProps then match done by columns combined, like unique constrain based on those cols.<br>
 Using UpdateByProperties while also having Identity column requires that Id property be [Excluded](https://github.com/borisdj/EFCore.BulkExtensions/issues/131).<br>
-Also with PostgreSQL when matching is done it requires UniqueIndex so for custom UpdateByProperties that do not have it is temporarily created but in that case method can not be in transation (throws: *current transaction is aborted; CREATE INDEX CONCURRENTLY cannot run inside a transaction block*)
+Also with PostgreSQL when matching is done it requires UniqueIndex so for custom UpdateByProperties that do not have it is temporarily created but in that case method can not be in transation (throws: *current transaction is aborted; CREATE INDEX CONCURRENTLY cannot run inside a transaction block*).<br>
 If **NotifyAfter** is not set it will have same value as _BatchSize_ while **BulkCopyTimeout** when not set has SqlBulkCopy default which is 30 seconds and if set to 0 it indicates no limit.<br><br>
 _SetOutputIdentity_ have purpose only when PK has Identity (usually *int* type with AutoIncrement), while if PK is Guid(sequential) created in Application there is no need for them.<br>
 Also Tables with Composite Keys have no Identity column so no functionality for them in that case either.
