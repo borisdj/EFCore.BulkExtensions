@@ -1,6 +1,6 @@
 # EFCore.BulkExtensions
 EntityFrameworkCore extensions: <br>
--Bulk operations (**Insert, Update, Delete, Read, Upsert, Sync, Truncate**) and <br>
+-Bulk operations (**Insert, Update, Delete, Read, Upsert, Sync, Truncate, SaveChanges**) and <br>
 -Batch ops (**Delete, Update**).<br>
 Library is Lightweight and very Efficient, having all mostly used CRUD operation.<br>
 Was selected in top 20 [EF Core Extensions](https://docs.microsoft.com/en-us/ef/core/extensions/) recommended by Microsoft.<br>
@@ -43,6 +43,7 @@ context.BulkUpdate(entitiesList);                 context.BulkUpdateAsync(entiti
 context.BulkDelete(entitiesList);                 context.BulkDeleteAsync(entitiesList);
 context.BulkRead(entitiesList);                   context.BulkReadAsync(entitiesList);
 context.Truncate<Entity>();                       context.TruncateAsync<Entity>();
+context.SaveChanges();                            context.SaveChangesAsync();
 ```
 
 **-SQLite** requires package: [*SQLitePCLRaw.bundle_e_sqlite3*](https://docs.microsoft.com/en-us/dotnet/standard/data/sqlite/custom-versions?tabs=netcore-cli) with call to `SQLitePCL.Batteries.Init()`<br>
@@ -113,7 +114,8 @@ CustomDestinationTableName: null,	          OmitClauseExistsExcept: false,
 TrackingEntities: false,	                  DoNotUpdateIfTimeStampChanged: false,
 WithHoldlock: true,	                          SRID: 4326,
 CalculateStats: false,	                          DateTime2PrecisionForceRound: false,
-SqlBulkCopyOptions: Default                       TemporalColumns: { "PeriodStart", "PeriodEnd" }
+SqlBulkCopyOptions: Default                       TemporalColumns: { "PeriodStart", "PeriodEnd" },
+                                            OnSaveChangesSetFK: true,  
 --------------------------------------------------------------------------------------
 METHOD: SetSynchronizeFilter<T>
 ```
@@ -129,6 +131,7 @@ If we want Insert only new and skip existing ones in Db (Insert_if_not_Exist) th
 Additionaly there is **UpdateByProperties** for specifying custom properties, by which we want update to be done.<br>
 When setting multiple props in UpdateByProps then match done by columns combined, like unique constrain based on those cols.<br>
 Using UpdateByProperties while also having Identity column requires that Id property be [Excluded](https://github.com/borisdj/EFCore.BulkExtensions/issues/131).<br>
+Also with PostgreSQL when matching is done it requires UniqueIndex so for custom UpdateByProperties that do not have it is temporarily created but in that case method can not be in transation (throws: *current transaction is aborted; CREATE INDEX CONCURRENTLY cannot run inside a transaction block*)
 If **NotifyAfter** is not set it will have same value as _BatchSize_ while **BulkCopyTimeout** when not set has SqlBulkCopy default which is 30 seconds and if set to 0 it indicates no limit.<br><br>
 _SetOutputIdentity_ have purpose only when PK has Identity (usually *int* type with AutoIncrement), while if PK is Guid(sequential) created in Application there is no need for them.<br>
 Also Tables with Composite Keys have no Identity column so no functionality for them in that case either.
@@ -200,7 +203,8 @@ _ Also in some [sql collation](https://github.com/borisdj/EFCore.BulkExtensions/
 **SRID** Spatial Reference Identifier - for SQL Server with NetTopologySuite.<br>
 **DateTime2PrecisionForceRound** If dbtype datetime2 has precision less then default 7, example 'datetime2(3)' SqlBulkCopy does Floor instead of Round so when this Property is set then Rounding will be done in memory to make sure inserted values are same as with regular SaveChanges.<br>
 **TemporalColumns** are shadow columns used for Temporal table. Default elements 'PeriodStart' and 'PeriodEnd' can be changed if those columns have custom names.
-
+**OnSaveChangesSetFK** is used only for BulkSaveChanges. When multiply entries have FK relationship which is Db generated, this set proper value after reading parent PK from Db. IF PK are generated in memory like are some Guid then this can be set to false for better efficiency.
+  
 **SqlBulkCopyOptions** is Enum with [[Flags]](https://stackoverflow.com/questions/8447/what-does-the-flags-enum-attribute-mean-in-c) attribute which enables specifying one or more options:<br>
 *Default, KeepIdentity, CheckConstraints, TableLock, KeepNulls, FireTriggers, UseInternalTransaction*<br>
 If need to set Identity PK in memory, Not let DB do the autoincrement, then need to use **KeepIdentity**:<br>
