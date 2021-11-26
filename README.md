@@ -94,12 +94,12 @@ Not supported nor Sqlite(lite only has UPSERT statement) nor currently for Postg
 **BulkRead** does SELECT and JOIN based on one or more Unique columns that are specified in Config `UpdateByProperties`.<br>
 More info in the [Example](https://github.com/borisdj/EFCore.BulkExtensions#read-example) at the bottom.
 
-**SaveChanges** uses Change Tracker to find all modified(CUD) entities and call proper BulkOperation for each table.<br>
+**SaveChanges** uses Change Tracker to find all modified(CUD) entities and call proper BulkOperations for each table.<br>
 Because it needs tracking it is slower then pure BulkOps but stil much faster then regular SaveChanges.<br>
 With config *OnSaveChangesSetFK* setting FKs can be controled depending on whether PKs are generated in Db or in mememory.<br>
-Before calling this method newly created should be added into Range
+Before calling this method newly created should be added into Range:
 ```C#
-context.Items.AddRange(newEntities); // if newEntities is parent list it  can have child sublists
+context.Items.AddRange(newEntities); // if newEntities is parent list it can have child sublists
 context.BulkSaveChanges();
 ```
 
