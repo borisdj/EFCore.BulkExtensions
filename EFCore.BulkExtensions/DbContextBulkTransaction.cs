@@ -13,12 +13,17 @@ namespace EFCore.BulkExtensions
             type ??= typeof(T);
             using (ActivitySources.StartExecuteActivity(operationType, entities.Count))
             {
-                if ((operationType != OperationType.Truncate && operationType != OperationType.InsertOrUpdateOrDelete) && entities.Count == 0)
+                if (entities.Count == 0 && operationType != OperationType.InsertOrUpdateOrDelete && operationType != OperationType.Truncate && operationType != OperationType.SaveChanges)
                 {
                     return;
                 }
 
-                if (bulkConfig?.IncludeGraph == true)
+                if (operationType == OperationType.SaveChanges)
+                {
+                    DbContextBulkTransactionSaveChanges.SaveChanges(context, bulkConfig, progress);
+                    return;
+                }
+                else if (bulkConfig?.IncludeGraph == true)
                 {
                     DbContextBulkTransactionGraphUtil.ExecuteWithGraph(context, entities, operationType, bulkConfig, progress);
                 }
@@ -51,12 +56,16 @@ namespace EFCore.BulkExtensions
             type ??= typeof(T);
             using (ActivitySources.StartExecuteActivity(operationType, entities.Count))
             {
-                if ((operationType != OperationType.Truncate && operationType != OperationType.InsertOrUpdateOrDelete) && entities.Count == 0)
+                if (entities.Count == 0 && operationType != OperationType.InsertOrUpdateOrDelete && operationType != OperationType.Truncate && operationType != OperationType.SaveChanges)
                 {
                     return;
                 }
 
-                if (bulkConfig?.IncludeGraph == true)
+                if (operationType == OperationType.SaveChanges)
+                {
+                    await DbContextBulkTransactionSaveChanges.SaveChangesAsync(context, bulkConfig, progress, cancellationToken);
+                }
+                else if(bulkConfig?.IncludeGraph == true)
                 {
                     await DbContextBulkTransactionGraphUtil.ExecuteWithGraphAsync(context, entities, operationType, bulkConfig, progress, cancellationToken);
                 }

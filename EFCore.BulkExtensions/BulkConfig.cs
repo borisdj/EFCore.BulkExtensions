@@ -213,6 +213,15 @@ namespace EFCore.BulkExtensions
         public bool DateTime2PrecisionForceRound { get; set; }
 
         /// <summary>
+        ///     When using BulkSaveChanges with multiply entries that have FK relationship which is Db generated, this set proper value after reading parent PK from Db.
+        ///     IF PK are generated in memory like are some Guid then this can be set to false for better efficiency.
+        /// </summary>
+        /// <remarks>
+        ///     Only used with BulkSaveChanges
+        /// </remarks>
+        public bool OnSaveChangesSetFK { get; set; } = true;
+
+        /// <summary>
         ///     Enum with [Flags] attribute which enables specifying one or more options.
         /// </summary>
         /// <value>

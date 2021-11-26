@@ -109,6 +109,7 @@ namespace EFCore.BulkExtensions.Tests
             {
                 DbServer.SqlServer => $"DBCC CHECKIDENT('[dbo].[{nameof(Item)}]', RESEED, 0);",
                 DbServer.Sqlite => $"DELETE FROM sqlite_sequence WHERE name = '{nameof(Item)}';",
+                DbServer.PostgreSql => $@"ALTER SEQUENCE ""{nameof(Item)}_{nameof(Item.ItemId)}_seq"" RESTART WITH 1;",
                 _ => throw new ArgumentException($"Unknown database type: '{dbServer}'.", nameof(dbServer)),
             };
             context.Database.ExecuteSqlRaw(deleteTableSql);

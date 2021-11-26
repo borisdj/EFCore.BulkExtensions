@@ -167,5 +167,17 @@ namespace EFCore.BulkExtensions
             return DbContextBulkTransaction.ExecuteAsync(context, type, new List<T>(), OperationType.Truncate, null, null, cancellationToken);
         }
         #endregion
+
+        // SaveChanges methods
+        #region SaveChanges
+        public static void BulkSaveChanges(this DbContext context, BulkConfig bulkConfig = null, Action<decimal> progress = null)
+        {
+            DbContextBulkTransaction.Execute(context, typeof(object), new List<object>(), OperationType.SaveChanges, bulkConfig, progress);
+        }
+        public static Task BulkSaveChangesAsync(this DbContext context, BulkConfig bulkConfig = null, Action<decimal> progress = null, CancellationToken cancellationToken = default)
+        {
+            return DbContextBulkTransaction.ExecuteAsync(context, typeof(object), new List<object>(), OperationType.SaveChanges, bulkConfig, progress, cancellationToken);
+        }
+        #endregion
     }
 }
