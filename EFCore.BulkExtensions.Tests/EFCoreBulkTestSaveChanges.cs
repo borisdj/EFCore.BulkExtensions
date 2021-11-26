@@ -85,7 +85,6 @@ namespace EFCore.BulkExtensions.Tests
             var newEntities = GetNewEntities(5000, "");
 
             context.Items.AddRange(newEntities);
-            context.Items.Add(newEntities[1]);
             context.BulkSaveChanges();
 
             // Validate Test
