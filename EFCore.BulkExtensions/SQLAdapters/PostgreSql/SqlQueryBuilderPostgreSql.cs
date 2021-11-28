@@ -45,13 +45,13 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
             string q;
             if (operationType == OperationType.Read)
             {
-                var readByColumns = SqlQueryBuilder.GetCommaSeparatedColumns(tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList(), tableInfo.FullTableName, tableInfo.FullTempTableName);
+                var readByColumns = SqlQueryBuilder.GetCommaSeparatedColumns(tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList()); //, tableInfo.FullTableName, tableInfo.FullTempTableName
 
                 q = $"SELECT {tableInfo.FullTableName}.* FROM {tableInfo.FullTableName} " +
                     $"JOIN {tableInfo.FullTempTableName} " +
                     $"USING ({readByColumns})"; //$"ON ({tableInfo.FullTableName}.readByColumns = {tableInfo.FullTempTableName}.readByColumns);";
             }
-            if (operationType == OperationType.Delete)
+            else if(operationType == OperationType.Delete)
             {
                 var deleteByColumns = SqlQueryBuilder.GetCommaSeparatedColumns(tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList(), tableInfo.FullTableName, tableInfo.FullTempTableName);
                 deleteByColumns = deleteByColumns.Replace("[", @"""").Replace("]", @"""");
