@@ -103,6 +103,7 @@ Before calling this method newly created should be added into Range:
 context.Items.AddRange(newEntities); // if newEntities is parent list it can have child sublists
 context.BulkSaveChanges();
 ```
+Practical general usage could be made in a way to override regular SaveChanges and if any list of Modified entities entries is greater then say 1000 to redirect to Bulk version.
 
 Note: Bulk ops have optional argument *Type type* that can be set to type of Entity if list has dynamic runtime objects or is inhereted from Entity class.
 
