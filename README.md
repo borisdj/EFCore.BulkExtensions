@@ -198,6 +198,10 @@ using (var transaction = context.Database.BeginTransaction())
 
 // Option 2 using Graph (only for SQL Server) - all entities in relationship with main ones in list are BulkInsertUpdated
 context.BulkInsert(entities, b => b.IncludeGraph = true);
+  
+// Option 3 with BulkSaveChanges() - using ChangeTracker
+context.Items.AddRange(entities);
+context.BulkSaveChanges();
 ```
 When **CalculateStats** set to True the result returned in `BulkConfig.StatsInfo` (*StatsNumber-Inserted/Updated/Deleted*).<br>
 If used for pure Insert (with Batching) then SetOutputIdentity should also be configured because Merge is required.<br>
