@@ -199,7 +199,7 @@ using (var transaction = context.Database.BeginTransaction())
 // Option 2 using Graph (only for SQL Server) - all entities in relationship with main ones in list are BulkInsertUpdated
 context.BulkInsert(entities, b => b.IncludeGraph = true);
   
-// Option 3 with BulkSaveChanges() - using ChangeTracker
+// Option 3 with BulkSaveChanges() - uses ChangeTracker so little slower then direct Bulk
 context.Items.AddRange(entities);
 context.BulkSaveChanges();
 ```
