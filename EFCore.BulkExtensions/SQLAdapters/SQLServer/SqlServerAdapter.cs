@@ -529,7 +529,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                     var ownedEntityType = context.Model.FindEntityType(property.PropertyType);
                     if (ownedEntityType == null)
                     {
-                        ownedEntityType = context.Model.GetEntityTypes().SingleOrDefault(a => a.DefiningNavigationName == property.Name && a.DefiningEntityType.Name == entityType.Name);
+                        ownedEntityType = context.Model.GetEntityTypes().SingleOrDefault(x => x.ClrType == property.PropertyType && x.Name.StartsWith(entityType.Name));
                     }
                     var ownedEntityProperties = ownedEntityType.GetProperties().ToList();
                     var ownedEntityPropertyNameColumnNameDict = new Dictionary<string, string>();
