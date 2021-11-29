@@ -54,6 +54,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
             else if(operationType == OperationType.Delete)
             {
                 var deleteByColumns = SqlQueryBuilder.GetCommaSeparatedColumns(tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList(), tableInfo.FullTableName, tableInfo.FullTempTableName);
+                deleteByColumns = deleteByColumns.Replace(",", " AND");
                 deleteByColumns = deleteByColumns.Replace("[", @"""").Replace("]", @"""");
 
                 q = $"DELETE FROM {tableInfo.FullTableName} " +
@@ -128,29 +129,38 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
 
         public static string CountUniqueConstrain(TableInfo tableInfo)
         {
+            var primaryKeysColumns = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList();
+
             var q = $"SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc " +
                     $"INNER JOIN INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE cu " +
                     $"ON cu.CONSTRAINT_NAME = tc.CONSTRAINT_NAME " +
                     $"WHERE tc.CONSTRAINT_TYPE = 'UNIQUE' " +
-                    $"AND tc.TABLE_NAME = '{tableInfo.TableName}' " +
-                    $"AND cu.COLUMN_NAME = '{tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList().FirstOrDefault()}'";
+                    $"AND tc.TABLE_NAME = '{tableInfo.TableName}' ";
+
+            foreach(var pkColumn in primaryKeysColumns)
+            {
+                q += $"AND cu.COLUMN_NAME = '{pkColumn}' ";
+            }
             return q;
         }
 
         public static string CreateUniqueIndex(TableInfo tableInfo)
         {
             var tableName = tableInfo.TableName;
-            var uniquColumnName = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList().FirstOrDefault();
-            var q = $@"CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS ""tempUniqueIndex_{tableName}_{uniquColumnName}"" " +
-                    $@"ON ""{tableName}"" (""{uniquColumnName}"")";
+            var uniquColumnNames = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList();
+            var uniquColumnNamesDash = string.Join("_", uniquColumnNames);
+            var uniquColumnNamesFormated = @"""" + string.Join(@""", """, uniquColumnNames) + @"""";
+            var q = $@"CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS ""tempUniqueIndex_{tableName}_{uniquColumnNamesDash}"" " +
+                    $@"ON ""{tableName}"" ({uniquColumnNamesFormated})";
             return q;
         }
 
         public static string CreateUniqueConstrain(TableInfo tableInfo)
         {
             var tableName = tableInfo.TableName;
-            var uniquColumnName = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList().FirstOrDefault();
-            var uniquConstrainName = $"tempUniqueIndex_{tableName}_{uniquColumnName}";
+            var uniquColumnNames = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList();
+            var uniquColumnNamesDash = string.Join("_", uniquColumnNames);
+            var uniquConstrainName = $"tempUniqueIndex_{tableName}_{uniquColumnNamesDash}";
             var q = $@"ALTER TABLE ""{tableName}""" +
                     $@"ADD CONSTRAINT ""{uniquConstrainName}"" " +
                     $@"UNIQUE USING INDEX ""{uniquConstrainName}""";
@@ -160,8 +170,9 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
         public static string DropUniqueConstrain(TableInfo tableInfo)
         {
             var tableName = tableInfo.TableName;
-            var uniquColumnName = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList().FirstOrDefault();
-            var uniquConstrainName = $"tempUniqueIndex_{tableName}_{uniquColumnName}";
+            var uniquColumnNames = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList();
+            var uniquColumnNamesDash = string.Join("_", uniquColumnNames);
+            var uniquConstrainName = $"tempUniqueIndex_{tableName}_{uniquColumnNamesDash}";
             var q = $@"ALTER TABLE ""{tableName}""" +
                     $@"DROP CONSTRAINT ""{uniquConstrainName}"";";
             return q;
