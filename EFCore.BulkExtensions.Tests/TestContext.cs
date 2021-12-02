@@ -457,9 +457,9 @@ namespace EFCore.BulkExtensions.Tests
 
         public Audit Audit { get; set; }
 
-        //public AuditExtended AuditExtended { get; set; }
+        public AuditExtended AuditExtended { get; set; }
 
-        //public AuditExtended AuditExtendedSecond { get; set; }
+        public AuditExtended AuditExtendedSecond { get; set; }
     }
 
     [Owned]
