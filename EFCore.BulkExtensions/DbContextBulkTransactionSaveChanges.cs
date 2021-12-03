@@ -105,15 +105,19 @@ namespace EFCore.BulkExtensions
                             {
                                 foreach (var navigation in navigations)
                                 {
-                                    var parentPropertyDict = fastPropertyDicts[navigation.ClrType.Name];
-                                    var fkName = navigation.ForeignKey.Properties.FirstOrDefault().Name;
-                                    var pkName = navigation.ForeignKey.PrincipalKey.Properties.FirstOrDefault().Name;
-
-                                    foreach (var entity in entryGroup.Entities)
+                                    // when FK entity was not modified it will not be in Dict, but also FK is auto set so no need here
+                                    if (fastPropertyDicts.ContainsKey(navigation.ClrType.Name)) // otherwise set it:
                                     {
-                                        var parentEntity = entityPropertyDict[navigation.Name].Get(entity);
-                                        var pkValue = parentPropertyDict[pkName].Get(parentEntity);
-                                        entityPropertyDict[fkName].Set(entity, pkValue);
+                                        var parentPropertyDict = fastPropertyDicts[navigation.ClrType.Name];
+                                        var fkName = navigation.ForeignKey.Properties.FirstOrDefault().Name;
+                                        var pkName = navigation.ForeignKey.PrincipalKey.Properties.FirstOrDefault().Name;
+
+                                        foreach (var entity in entryGroup.Entities)
+                                        {
+                                            var parentEntity = entityPropertyDict[navigation.Name].Get(entity);
+                                            var pkValue = parentPropertyDict[pkName].Get(parentEntity);
+                                            entityPropertyDict[fkName].Set(entity, pkValue);
+                                        }
                                     }
                                 }
                             }
