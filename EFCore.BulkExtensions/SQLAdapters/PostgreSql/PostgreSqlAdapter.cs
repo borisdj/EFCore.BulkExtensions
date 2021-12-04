@@ -8,6 +8,8 @@ using System.Data;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore.Storage;
+using NpgsqlTypes;
 
 namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
 {
@@ -39,29 +41,31 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
             {
                 string sqlCopy = SqlQueryBuilderPostgreSql.InsertIntoTable(tableInfo, tableInfo.InsertToTempTable ? OperationType.InsertOrUpdate : OperationType.Insert);
 
-                using (var writer = connection.BeginBinaryImport(sqlCopy))
-                {
-                    var uniquColumnName = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList().FirstOrDefault();
-                    var propertiesColumnDict = (tableInfo.InsertToTempTable && tableInfo.IdentityColumnName == uniquColumnName)
-                                               ? tableInfo.PropertyColumnNamesDict
-                                               : tableInfo.PropertyColumnNamesDict.Where(a => a.Value != tableInfo.IdentityColumnName);
-                    var propertiesNames = propertiesColumnDict.Select(a => a.Key).ToList();
+                await using var writer = await connection.BeginBinaryImportAsync(sqlCopy, cancellationToken);
+                var uniqueColumnName = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList().FirstOrDefault();
+                var propertiesColumnDict = (tableInfo.InsertToTempTable && tableInfo.IdentityColumnName == uniqueColumnName)
+                    ? tableInfo.PropertyColumnNamesDict
+                    : tableInfo.PropertyColumnNamesDict.Where(a => a.Value != tableInfo.IdentityColumnName);
+                var propertiesNames = propertiesColumnDict.Select(a => a.Key).ToList();
 
-                    foreach (var entity in entities)
+                foreach (var entity in entities)
+                {
+                    await writer.StartRowAsync(cancellationToken);
+                    foreach (var propertyName in propertiesNames)
                     {
-                        writer.StartRow();
-                        foreach (var propertyName in propertiesNames)
+                        var propertyValue = tableInfo.FastPropertyDict.ContainsKey(propertyName) ? tableInfo.FastPropertyDict[propertyName].Get(entity) : null;
+                        var propertyColumnName = tableInfo.PropertyColumnNamesDict.ContainsKey(propertyName) ? tableInfo.PropertyColumnNamesDict[propertyName] : string.Empty;
+                        if (tableInfo.ColumnNamesTypesDict.ContainsKey(propertyColumnName))
                         {
-                            var propertyValue = tableInfo.FastPropertyDict.ContainsKey(propertyName) ? tableInfo.FastPropertyDict[propertyName].Get(entity) : null;
-                            //var isDecimalType = tableInfo.FastPropertyDict[propertyName].Property.PropertyType == typeof(decimal);
-                            //if (isDecimalType)
-                            //    writer.Write(propertyValue, NpgsqlDbType.Numeric);
-                            //else
-                                writer.Write(propertyValue);
+                            await writer.WriteAsync(propertyValue, tableInfo.ColumnNamesTypesDict[propertyColumnName], cancellationToken);
+                        }
+                        else
+                        {
+                            await writer.WriteAsync(propertyValue, cancellationToken);
                         }
                     }
-                    writer.Complete();
                 }
+                await writer.CompleteAsync(cancellationToken);
             }
             finally
             {
