@@ -287,5 +287,5 @@ Following are performances (in seconds)
 TestTable has 6 columns (Guid, string, string, int, decimal?, DateTime).<br>
 All were inserted and 2 of them (string, DateTime) were updated.<br>
 Test was done locally on following configuration: INTEL i7-10510U CPU 2.30GHz, DDR3 16 GB, SSD SAMSUNG MZ 512 GB.<br>
-For small data sets there is an overhead since most Bulk ops need to create Temp table and also Drop it after finish.
-Probably good advice would be to use Bulk ops for sets greater than 1000.
+For small data sets there is an overhead since most Bulk ops need to create Temp table and also Drop it after finish.<br>
+_Probably good advice would be to use Bulk ops for sets greater than 1000.
