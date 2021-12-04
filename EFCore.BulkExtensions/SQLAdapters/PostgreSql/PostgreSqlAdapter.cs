@@ -41,7 +41,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
             {
                 string sqlCopy = SqlQueryBuilderPostgreSql.InsertIntoTable(tableInfo, tableInfo.InsertToTempTable ? OperationType.InsertOrUpdate : OperationType.Insert);
 
-                using var writer = connection.BeginBinaryImport(sqlCopy);
+                await using var writer = await connection.BeginBinaryImportAsync(sqlCopy, cancellationToken);
                 var uniqueColumnName = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList().FirstOrDefault();
                 var propertiesColumnDict = (tableInfo.InsertToTempTable && tableInfo.IdentityColumnName == uniqueColumnName)
                     ? tableInfo.PropertyColumnNamesDict
@@ -50,22 +50,22 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
 
                 foreach (var entity in entities)
                 {
-                    writer.StartRow();
+                    await writer.StartRowAsync(cancellationToken);
                     foreach (var propertyName in propertiesNames)
                     {
                         var propertyValue = tableInfo.FastPropertyDict.ContainsKey(propertyName) ? tableInfo.FastPropertyDict[propertyName].Get(entity) : null;
                         var propertyColumnName = tableInfo.PropertyColumnNamesDict.ContainsKey(propertyName) ? tableInfo.PropertyColumnNamesDict[propertyName] : string.Empty;
                         if (tableInfo.ColumnNamesTypesDict.ContainsKey(propertyColumnName))
                         {
-                            writer.Write(propertyValue, tableInfo.ColumnNamesTypesDict[propertyColumnName]);
+                            await writer.WriteAsync(propertyValue, tableInfo.ColumnNamesTypesDict[propertyColumnName], cancellationToken);
                         }
                         else
                         {
-                            writer.Write(propertyValue);
+                            await writer.WriteAsync(propertyValue, cancellationToken);
                         }
                     }
                 }
-                writer.Complete();
+                await writer.CompleteAsync(cancellationToken);
             }
             finally
             {
