@@ -275,18 +275,18 @@ context.BulkRead(items, bulkConfig); // Items list will be loaded from Db with d
 
 ## Performances
 
-Following are performances (in seconds for SQL Server):
-
-| Operations\Rows | 100,000 EF | 100,000 EFBulk | 1,000,000 EFBulk |
-| --------------- | ---------: | -------------: | ---------------: |
-| Insert          |  38.98 s   | 2.10 s         | 17.99 s          |
-| Update          | 109.25 s   | 3.96 s         | 31.45 s          |
-| Delete          |   7.26 s   | 2.04 s         | 12.18 s          |
-|-----------------|------------|----------------|------------------|
-| **Together**    |  70.70 s   | 5.88 s         | 56.84 s          |
+Following are performances (in seconds)
+* For SQL Server (2019 Dev.version ):
+  
+| Ops\Rows | EF 100K | Bulk 100K | EF 1 MIL.| Bulk 1 MIL.|
+| -------- | ------: | --------: | -------: | ---------: |
+| Insert   |  11 s   | 3 s       | 60       | 15         |
+| Update   |   8 s   | 4 s       | 84       | 27         |
+| Delete   |  50 s   | 3 s       | 5340     | 15         |
+|----------|---------|-----------|----------|------------|
 
 TestTable has 6 columns (Guid, string, string, int, decimal?, DateTime).<br>
 All were inserted and 2 of them (string, DateTime) were updated.<br>
-Test was done locally on following configuration: INTEL Core i5-3570K 3.40GHz, DDRIII 8GB x 2, SSD 840 EVO 128 GB.<br>
+Test was done locally on following configuration: INTEL i7-10510U CPU 2.30GHz, DDR3 16 GB, SSD SAMSUNG MZ 512 GB.<br>
 For small data sets there is an overhead since most Bulk ops need to create Temp table and also Drop it after finish.
 Probably good advice would be to use Bulk ops for sets greater than 1000.
