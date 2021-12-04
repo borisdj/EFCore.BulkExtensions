@@ -41,31 +41,65 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
             {
                 string sqlCopy = SqlQueryBuilderPostgreSql.InsertIntoTable(tableInfo, tableInfo.InsertToTempTable ? OperationType.InsertOrUpdate : OperationType.Insert);
 
-                await using var writer = await connection.BeginBinaryImportAsync(sqlCopy, cancellationToken);
+                using var writer = isAsync ? await connection.BeginBinaryImportAsync(sqlCopy, cancellationToken).ConfigureAwait(false)
+                                           : connection.BeginBinaryImport(sqlCopy);
+
                 var uniqueColumnName = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList().FirstOrDefault();
                 var propertiesColumnDict = (tableInfo.InsertToTempTable && tableInfo.IdentityColumnName == uniqueColumnName)
                     ? tableInfo.PropertyColumnNamesDict
                     : tableInfo.PropertyColumnNamesDict.Where(a => a.Value != tableInfo.IdentityColumnName);
                 var propertiesNames = propertiesColumnDict.Select(a => a.Key).ToList();
-
+                
                 foreach (var entity in entities)
                 {
-                    await writer.StartRowAsync(cancellationToken);
+                    if (isAsync)
+                    {
+                        await writer.StartRowAsync(cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        writer.StartRow();
+                    }
+                    
                     foreach (var propertyName in propertiesNames)
                     {
                         var propertyValue = tableInfo.FastPropertyDict.ContainsKey(propertyName) ? tableInfo.FastPropertyDict[propertyName].Get(entity) : null;
                         var propertyColumnName = tableInfo.PropertyColumnNamesDict.ContainsKey(propertyName) ? tableInfo.PropertyColumnNamesDict[propertyName] : string.Empty;
                         if (tableInfo.ColumnNamesTypesDict.ContainsKey(propertyColumnName))
                         {
-                            await writer.WriteAsync(propertyValue, tableInfo.ColumnNamesTypesDict[propertyColumnName], cancellationToken);
+                            var columnType = tableInfo.ColumnNamesTypesDict[propertyColumnName];
+                            columnType = columnType.Replace(" with time zone", ""); // "timestamp with time zone" -> "timestamp" (otherwise throws: Cannot write DateTime with Kind=Local to PostgreSQL type 'timestamp with time zone', only UTC is supported.')
+                            if (isAsync)
+                            {
+                                await writer.WriteAsync(propertyValue, columnType, cancellationToken).ConfigureAwait(false);
+                            }
+                            else
+                            {
+                                writer.Write(propertyValue, columnType);
+                            }
                         }
                         else
                         {
-                            await writer.WriteAsync(propertyValue, cancellationToken);
+                            if (isAsync)
+                            {
+                                await writer.WriteAsync(propertyValue, cancellationToken).ConfigureAwait(false);
+                            }
+                            else
+                            {
+                                writer.Write(propertyValue);
+                            }
                         }
                     }
                 }
-                await writer.CompleteAsync(cancellationToken);
+                if (isAsync)
+                {
+                    await writer.CompleteAsync(cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    writer.Complete();
+                }
+
             }
             finally
             {
