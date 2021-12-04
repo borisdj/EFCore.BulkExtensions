@@ -277,6 +277,7 @@ context.BulkRead(items, bulkConfig); // Items list will be loaded from Db with d
 
 Following are performances (in seconds)
 * For SQL Server (2019 Dev.version ):
+
 | Ops\Rows | EF 100K | Bulk 100K | EF 1 MIL.| Bulk 1 MIL.|
 | -------- | ------: | --------: | -------: | ---------: |
 | Insert   |  11 s   | 3 s       | 60       | 15         |
