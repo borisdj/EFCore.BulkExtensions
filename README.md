@@ -276,13 +276,13 @@ context.BulkRead(items, bulkConfig); // Items list will be loaded from Db with d
 ## Performances
 
 Following are performances (in seconds)
-* For SQL Server (2019 Dev.version ):
+* For SQL Server (v. 2019):
 
 | Ops\Rows | EF 100K | Bulk 100K | EF 1 MIL.| Bulk 1 MIL.|
 | -------- | ------: | --------: | -------: | ---------: |
-| Insert   |  11 s   | 3 s       | 60       | 15         |
-| Update   |   8 s   | 4 s       | 84       | 27         |
-| Delete   |  50 s   | 3 s       | 5340     | 15         |
+| Insert   |  11 s   | 3 s       |   60 s   | 15  s      |
+| Update   |   8 s   | 4 s       |   84 s   | 27  s      |
+| Delete   |  50 s   | 3 s       | 5340 s   | 15  s      |
 
 TestTable has 6 columns (Guid, string, string, int, decimal?, DateTime).<br>
 All were inserted and 2 of them (string, DateTime) were updated.<br>
