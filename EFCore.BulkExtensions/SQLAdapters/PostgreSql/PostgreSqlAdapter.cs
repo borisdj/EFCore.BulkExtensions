@@ -8,8 +8,6 @@ using System.Data;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore.Storage;
-using NpgsqlTypes;
 
 namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
 {
@@ -68,7 +66,6 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
                         if (tableInfo.ColumnNamesTypesDict.ContainsKey(propertyColumnName))
                         {
                             var columnType = tableInfo.ColumnNamesTypesDict[propertyColumnName];
-                            columnType = columnType.Replace(" with time zone", ""); // "timestamp with time zone" -> "timestamp" (otherwise throws: Cannot write DateTime with Kind=Local to PostgreSQL type 'timestamp with time zone', only UTC is supported.')
                             if (isAsync)
                             {
                                 await writer.WriteAsync(propertyValue, columnType, cancellationToken).ConfigureAwait(false);
@@ -99,7 +96,6 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
                 {
                     writer.Complete();
                 }
-
             }
             finally
             {
