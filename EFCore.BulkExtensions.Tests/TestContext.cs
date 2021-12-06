@@ -122,6 +122,7 @@ namespace EFCore.BulkExtensions.Tests
             if (Database.IsNpgsql())
             {
                 modelBuilder.Entity<Event>().Property(p => p.TimeCreated).HasColumnType("timestamp");
+                modelBuilder.Entity<Item>().Property(p => p.TimeUpdated).HasColumnType("timestamp without time zone");
             }
 
             //modelBuilder.Entity<Modul>(buildAction => { buildAction.HasNoKey(); });
@@ -259,6 +260,8 @@ namespace EFCore.BulkExtensions.Tests
 
         //[Column(TypeName = (nameof(DateTime)))] // Column to be of DbType 'datetime' instead of default 'datetime2'
         public DateTime TimeUpdated { get; set; }
+        
+        public DateTimeOffset TimeUpdatedTz { get; set; }
 
         public ICollection<ItemHistory> ItemHistories { get; set; }
     }

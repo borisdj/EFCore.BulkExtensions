@@ -33,6 +33,7 @@ namespace EFCore.BulkExtensions.Tests
             context.Database.ExecuteSqlRaw($@"ALTER SEQUENCE ""{nameof(Item)}_{nameof(Item.ItemId)}_seq"" RESTART WITH 1");
 
             var currentTime = DateTime.Now;
+            var currentTimeOffset = DateTimeOffset.UtcNow;
 
             var entities = new List<Item>();
             for (int i = 1; i <= 2; i++)
@@ -44,7 +45,8 @@ namespace EFCore.BulkExtensions.Tests
                     Description = "info " + i,
                     Quantity = i,
                     Price = 0.1m * i,
-                    TimeUpdated = currentTime
+                    TimeUpdated = currentTime,
+                    TimeUpdatedTz = currentTimeOffset
                 };
                 entities.Add(entity);
             }
@@ -59,7 +61,8 @@ namespace EFCore.BulkExtensions.Tests
                     Description = "UPDATE " + i,
                     Quantity = i,
                     Price = 0.1m * i,
-                    TimeUpdated = currentTime
+                    TimeUpdated = currentTime,
+                    TimeUpdatedTz = currentTimeOffset
                 };
                 entities2.Add(entity);
             }
@@ -74,7 +77,8 @@ namespace EFCore.BulkExtensions.Tests
                     Description = "CHANGE " + i,
                     Quantity = i,
                     Price = 0.1m * i,
-                    TimeUpdated = currentTime
+                    TimeUpdated = currentTime,
+                    TimeUpdatedTz = currentTimeOffset
                 };
                 entities3.Add(entity);
             }
