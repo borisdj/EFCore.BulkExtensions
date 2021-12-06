@@ -216,7 +216,8 @@ namespace EFCore.BulkExtensions
             if (BulkConfig.IgnoreRowVersion)
                 timeStampProperties = new List<IProperty>();
             else
-                timeStampProperties = allProperties.Where(a => (a.IsConcurrencyToken && a.ValueGenerated == ValueGenerated.OnAddOrUpdate) || a.GetColumnType() == timestampDbTypeName); // this is incorrect assumption and voids normal columns with timestamp type in Postgres
+                timeStampProperties = allProperties.Where(a => a.IsConcurrencyToken && a.ValueGenerated == ValueGenerated.OnAddOrUpdate); // || a.GetColumnType() == timestampDbTypeName // removed as unnecessary and might not be correct
+
             TimeStampColumnName = timeStampProperties.FirstOrDefault()?.GetColumnName(ObjectIdentifier); // can be only One
             TimeStampPropertyName = timeStampProperties.FirstOrDefault()?.Name; // can be only One
             var allPropertiesExceptTimeStamp = allProperties.Except(timeStampProperties);

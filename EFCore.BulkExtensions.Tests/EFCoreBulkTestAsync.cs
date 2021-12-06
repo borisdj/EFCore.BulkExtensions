@@ -114,7 +114,6 @@ namespace EFCore.BulkExtensions.Tests
                     Quantity = i % 10,
                     Price = i / (i % 5 + 1),
                     TimeUpdated = DateTime.Now,
-                    TimeUpdatedTz = DateTimeOffset.UtcNow,
                     ItemHistories = new List<ItemHistory>()
                 };
 
@@ -218,8 +217,7 @@ namespace EFCore.BulkExtensions.Tests
                         Description = "info",
                         Quantity = i,
                         Price = i / (i % 5 + 1),
-                        TimeUpdated = dateTimeNow,
-                        TimeUpdatedTz = dateTimeOffsetNow,
+                        TimeUpdated = dateTimeNow
                     });
                 }
                 if (isBulk)
@@ -265,8 +263,7 @@ namespace EFCore.BulkExtensions.Tests
                     Description = "info",
                     Quantity = i,
                     Price = i / (i % 5 + 1),
-                    TimeUpdated = dateTimeNow,
-                    TimeUpdatedTz = dateTimeOffsetNow,
+                    TimeUpdated = dateTimeNow
                 });
             }
 
