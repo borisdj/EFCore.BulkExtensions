@@ -195,6 +195,9 @@ namespace EFCore.BulkExtensions
                      $" VALUES ({GetCommaSeparatedColumns(insertColumnsNames, "S")})";
             }
 
+            q = q.Replace("INSERT () VALUES ()", "INSERT DEFAULT VALUES"); // case when table has only one column that is Identity
+            
+
             if (operationType == OperationType.Update || operationType == OperationType.InsertOrUpdate || operationType == OperationType.InsertOrUpdateOrDelete)
             {
                 if (updateColumnNames.Count == 0 && operationType == OperationType.Update)
