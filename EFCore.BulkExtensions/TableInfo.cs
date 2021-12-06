@@ -173,7 +173,7 @@ namespace EFCore.BulkExtensions
                 }
             }
 
-            bool areSpecifiedUpdateByProperties = BulkConfig.UpdateByProperties?.Count() > 0;
+            bool areSpecifiedUpdateByProperties = BulkConfig.UpdateByProperties?.Count > 0;
             var primaryKeys = entityType.FindPrimaryKey()?.Properties?.ToDictionary(a => a.Name, b => b.GetColumnName(ObjectIdentifier));
 
             HasSinglePrimaryKey = primaryKeys?.Count == 1;
