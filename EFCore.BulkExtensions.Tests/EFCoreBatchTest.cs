@@ -60,6 +60,7 @@ namespace EFCore.BulkExtensions.Tests
             RunAnyBatchDelete();
 
             RunBatchUpdateEnum(dbServer);
+            RunBatchUint(dbServer);
 
             UpdateSetting(SettingsEnum.Sett1, "Val1UPDATE");
             UpdateByteArrayToDefault();
@@ -152,7 +153,7 @@ namespace EFCore.BulkExtensions.Tests
                 query.Take(1).BatchUpdate(a => new Item { Name = a.Name + " TOP(1)", Quantity = a.Quantity + incrementStep }); // example of BatchUpdate with TOP(1)
             }
         }
-
+        
         private void RunBatchUpdateEnum(DbServer dbServer)
         {
             using var context = new TestContext(ContextUtil.GetOptions());
@@ -170,6 +171,15 @@ namespace EFCore.BulkExtensions.Tests
             context.Sources.Where(e => e.StatusId == Status.Init).BatchUpdate(updateValues, updateColumns);
 
             Assert.Equal(Type.Type2, context.Sources.FirstOrDefault().TypeId); // Should remain 'Type.Type2' and not be changed to default 'Type.Undefined'
+        }
+
+        private void RunBatchUint(DbServer dbServer)
+        {
+            using var context = new TestContext(ContextUtil.GetOptions());
+
+            uint id = 0;
+            context.Counters.Where(e => e.CounterId == id).BatchDelete();
+
         }
 
         private void RunBatchUpdate_UsingNavigationPropertiesThatTranslateToAnInnerQuery()

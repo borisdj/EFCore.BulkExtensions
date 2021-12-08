@@ -51,6 +51,8 @@ namespace EFCore.BulkExtensions.Tests
 
         public DbSet<Archive> Archives { get; set; }
 
+        public DbSet<Counter> Counters { get; set; }
+
         public DbSet<Source> Sources { get; set; }
 
         public DbSet<Department> Departments { get; set; }
@@ -568,6 +570,12 @@ namespace EFCore.BulkExtensions.Tests
     {
         public byte[] ArchiveId { get; set; }
         public string Description { get; set; }
+    }
+
+    public class Counter
+    {
+        public uint CounterId { get; set; }
+        public string Name { get; set; }
     }
 
     public class Source
