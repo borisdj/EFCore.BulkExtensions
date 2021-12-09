@@ -71,7 +71,12 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
                                 await writer.WriteAsync(propertyValue, columnType, cancellationToken).ConfigureAwait(false);
                             }
                             else
-                            {
+                            {   // string is 'text' which works fine
+                                if (columnType.StartsWith("character varying"))
+                                    columnType = "character"; // 'character' is like 'string'
+                                else if (columnType.StartsWith("varchar"))
+                                    columnType = "varchar";
+
                                 writer.Write(propertyValue, columnType);
                             }
                         }

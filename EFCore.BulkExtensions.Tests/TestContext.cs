@@ -253,6 +253,7 @@ namespace EFCore.BulkExtensions.Tests
 
         public string Name { get; set; }
 
+        [MaxLength(50)]
         public string Description { get; set; }
 
         public int Quantity { get; set; }
