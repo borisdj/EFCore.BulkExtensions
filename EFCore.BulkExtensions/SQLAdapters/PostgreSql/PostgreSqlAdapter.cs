@@ -72,10 +72,13 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
                             }
                             else
                             {   // string is 'text' which works fine
-                                if (columnType.StartsWith("character varying"))
+                                if (columnType.StartsWith("character varying")) // when MaxLength is defined
                                     columnType = "character"; // 'character' is like 'string'
                                 else if (columnType.StartsWith("varchar"))
                                     columnType = "varchar";
+
+                                if (columnType == "smallint") // for Enums
+                                    propertyValue = (byte)propertyValue;
 
                                 writer.Write(propertyValue, columnType);
                             }
