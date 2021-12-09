@@ -108,10 +108,10 @@ namespace EFCore.BulkExtensions.Tests
 
 
             // READ
-            var secondEntity = new List<Item>() { entities[1] };
-            Assert.Equal(0, secondEntity.FirstOrDefault().ItemId);
+            var secondEntity = new List<Item>() { new Item { Name = entities[1].Name } };
             context.BulkRead(secondEntity, configUpdateBy);
             Assert.Equal(2, secondEntity.FirstOrDefault().ItemId);
+            Assert.Equal("UPDATE 2", secondEntity.FirstOrDefault().Description);
 
 
             // BATCH

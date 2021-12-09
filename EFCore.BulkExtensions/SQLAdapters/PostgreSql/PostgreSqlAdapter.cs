@@ -205,8 +205,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
                     {
                         outputEntities = returningQuery.ToList();
                     }
-                    List<object> outputObjects = outputEntities.Cast<object>().ToList();
-                    tableInfo.UpdateEntitiesIdentity(context, tableInfo, entities, outputObjects);
+                    tableInfo.UpdateReadEntities(type, entities, outputEntities);
                 }
             }
             finally
