@@ -63,36 +63,25 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
                     {
                         var propertyValue = tableInfo.FastPropertyDict.ContainsKey(propertyName) ? tableInfo.FastPropertyDict[propertyName].Get(entity) : null;
                         var propertyColumnName = tableInfo.PropertyColumnNamesDict.ContainsKey(propertyName) ? tableInfo.PropertyColumnNamesDict[propertyName] : string.Empty;
-                        if (tableInfo.ColumnNamesTypesDict.ContainsKey(propertyColumnName))
+
+                        var columnType = tableInfo.ColumnNamesTypesDict[propertyColumnName];
+
+                        // string is 'text' which works fine
+                        if (columnType.StartsWith("character varying")) // when MaxLength is defined
+                            columnType = "character"; // 'character' is like 'string'
+                        else if (columnType.StartsWith("varchar"))
+                            columnType = "varchar";
+
+                        if (columnType == "smallint") // for Enums
+                            propertyValue = (byte)propertyValue;
+
+                        if (isAsync)
                         {
-                            var columnType = tableInfo.ColumnNamesTypesDict[propertyColumnName];
-                            if (isAsync)
-                            {
-                                await writer.WriteAsync(propertyValue, columnType, cancellationToken).ConfigureAwait(false);
-                            }
-                            else
-                            {   // string is 'text' which works fine
-                                if (columnType.StartsWith("character varying")) // when MaxLength is defined
-                                    columnType = "character"; // 'character' is like 'string'
-                                else if (columnType.StartsWith("varchar"))
-                                    columnType = "varchar";
-
-                                if (columnType == "smallint") // for Enums
-                                    propertyValue = (byte)propertyValue;
-
-                                writer.Write(propertyValue, columnType);
-                            }
+                            await writer.WriteAsync(propertyValue, columnType, cancellationToken).ConfigureAwait(false);
                         }
                         else
                         {
-                            if (isAsync)
-                            {
-                                await writer.WriteAsync(propertyValue, cancellationToken).ConfigureAwait(false);
-                            }
-                            else
-                            {
-                                writer.Write(propertyValue);
-                            }
+                            writer.Write(propertyValue, columnType);
                         }
                     }
                 }
