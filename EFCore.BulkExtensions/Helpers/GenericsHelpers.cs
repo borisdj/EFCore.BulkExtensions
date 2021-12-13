@@ -17,6 +17,10 @@ namespace EFCore.BulkExtensions.Helpers
             var result = new List<string>();
             foreach (var field in arrayPropertyInfos)
             {
+                if (field.GetIndexParameters().Any()) // Skip Indexer: public string this[string pPropertyName] => string.Empty;
+                {
+                    continue;
+                }
                 var name = field.Name;
                 var temp = field.GetValue(value);
                 object defaultValue = null;
