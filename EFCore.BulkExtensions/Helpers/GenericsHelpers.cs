@@ -37,8 +37,8 @@ namespace EFCore.BulkExtensions.Helpers
 
         internal static IEnumerable<string> GetPropertiesWithDefaultValue<T>(this IEnumerable<T> values, Type type) where T : class
         {
-            var result = values.SelectMany(x => x.GetPropertiesDefaultValue(type)).ToList().Distinct();
-
+            //var result = values.SelectMany(x => x.GetPropertiesDefaultValue(type)).ToList().Distinct(); // TODO: Check all options(ComputedAndDefaultValuesTest) and consider optimisation
+            var result = values.FirstOrDefault()?.GetPropertiesDefaultValue(type)?.Distinct();
             return result;
         }
     }
