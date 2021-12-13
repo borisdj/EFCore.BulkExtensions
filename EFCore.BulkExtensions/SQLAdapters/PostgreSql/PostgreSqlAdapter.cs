@@ -65,15 +65,26 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
                         var propertyColumnName = tableInfo.PropertyColumnNamesDict.ContainsKey(propertyName) ? tableInfo.PropertyColumnNamesDict[propertyName] : string.Empty;
 
                         var columnType = tableInfo.ColumnNamesTypesDict[propertyColumnName];
-
+                        
                         // string is 'text' which works fine
                         if (columnType.StartsWith("character varying")) // when MaxLength is defined
                             columnType = "character"; // 'character' is like 'string'
                         else if (columnType.StartsWith("varchar"))
                             columnType = "varchar";
 
-                        if (columnType == "smallint") // for Enums
-                            propertyValue = (byte)propertyValue;
+                        var convertibleDict = tableInfo.ConvertibleColumnConverterDict;
+                        if (convertibleDict.ContainsKey(propertyColumnName) && convertibleDict[propertyColumnName].ModelClrType.IsEnum)
+                        {
+                            var clrType = tableInfo.ConvertibleColumnConverterDict[propertyColumnName].ProviderClrType;
+                            if (clrType == typeof(byte)) // columnType == "smallint"
+                                propertyValue = (byte)propertyValue;
+                            if (clrType == typeof(short))
+                                propertyValue = (short)propertyValue;
+                            if (clrType == typeof(Int32))
+                                propertyValue = (int)propertyValue;
+                            if (clrType == typeof(Int64))
+                                propertyValue = (int)propertyValue;
+                        }
 
                         if (isAsync)
                         {
