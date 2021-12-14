@@ -99,7 +99,7 @@ More info in the [Example](https://github.com/borisdj/EFCore.BulkExtensions#read
 
 **SaveChanges** uses Change Tracker to find all modified(CUD) entities and call proper BulkOperations for each table.<br>
 Because it needs tracking it is slower then pure BulkOps but stil much faster then regular SaveChanges.<br>
-With config *OnSaveChangesSetFK* setting FKs can be controled depending on whether PKs are generated in Db or in mememory.<br>
+With config *OnSaveChangesSetFK* setting FKs can be controled depending on whether PKs are generated in Db or in memory.<br>
 Before calling this method newly created should be added into Range:
 ```C#
 context.Items.AddRange(newEntities); // if newEntities is parent list it can have child sublists
