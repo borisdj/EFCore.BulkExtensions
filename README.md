@@ -68,7 +68,6 @@ var updateColumns = new List<string> { nameof(Item.Quantity) }; // Update 'Quant
 var q = context.Items.Where(a => a.ItemId <= 500);
 int affected = q.BatchUpdate(new Item { Description = "Updated" }, updateColumns);//result assigned to variable
 
-
 // Truncate
 context.Truncate<Entity>();                       context.TruncateAsync<Entity>();
 ```
