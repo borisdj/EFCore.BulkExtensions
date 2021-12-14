@@ -1,7 +1,7 @@
 # EFCore.BulkExtensions
 EntityFrameworkCore extensions: <br>
--Bulk operations **(Insert, Update, Delete, Read, Upsert, Sync, SaveChanges), Truncate** and <br>
--Batch ops (**Delete, Update**).<br>
+-Bulk operations **(Insert, Update, Delete, Read, Upsert, Sync, SaveChanges)** and <br>
+-Batch ops (**Delete, Update**) and **Truncate**.<br>
 Library is Lightweight and very Efficient, having all mostly used CRUD operation.<br>
 Was selected in top 20 [EF Core Extensions](https://docs.microsoft.com/en-us/ef/core/extensions/) recommended by Microsoft.<br>
 Latest version is using EF Core 6 and targeting .Net 6.<br>
@@ -44,7 +44,6 @@ context.BulkUpdate(entitiesList);                 context.BulkUpdateAsync(entiti
 context.BulkDelete(entitiesList);                 context.BulkDeleteAsync(entitiesList);
 context.BulkRead(entitiesList);                   context.BulkReadAsync(entitiesList);
 context.BulkSaveChanges();                        context.BulkSaveChangesAsync();
-context.Truncate<Entity>();                       context.TruncateAsync<Entity>();
 ```
 
 **-SQLite** requires package: [*SQLitePCLRaw.bundle_e_sqlite3*](https://docs.microsoft.com/en-us/dotnet/standard/data/sqlite/custom-versions?tabs=netcore-cli) with call to `SQLitePCL.Batteries.Init()`<br>
@@ -68,6 +67,10 @@ context.Items.Where(a => a.ItemId <= 500).BatchUpdateAsync(new Item { Descriptio
 var updateColumns = new List<string> { nameof(Item.Quantity) }; // Update 'Quantity' to default value('0'-zero)
 var q = context.Items.Where(a => a.ItemId <= 500);
 int affected = q.BatchUpdate(new Item { Description = "Updated" }, updateColumns);//result assigned to variable
+
+
+// Truncate
+context.Truncate<Entity>();                       context.TruncateAsync<Entity>();
 ```
 ## Bulk info
 If Windows Authentication is used then in ConnectionString there should be *Trusted_Connection=True;* because Sql credentials are required to stay in connection.<br>
