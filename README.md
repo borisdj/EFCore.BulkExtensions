@@ -1,6 +1,6 @@
 # EFCore.BulkExtensions
 EntityFrameworkCore extensions: <br>
--Bulk operations **(Insert, Update, Delete, Read, Upsert, Sync, SaveChanges), **Truncate** and <br>
+-Bulk operations **(Insert, Update, Delete, Read, Upsert, Sync, SaveChanges), Truncate** and <br>
 -Batch ops (**Delete, Update**).<br>
 Library is Lightweight and very Efficient, having all mostly used CRUD operation.<br>
 Was selected in top 20 [EF Core Extensions](https://docs.microsoft.com/en-us/ef/core/extensions/) recommended by Microsoft.<br>
