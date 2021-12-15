@@ -40,7 +40,13 @@ namespace EFCore.BulkExtensions
 
         public Action<object, object> SetDelegate;
 
-        public object Get(object instance) { return GetDelegate(instance); }
-        public void Set(object instance, object value) { SetDelegate(instance, value); }
+        public object Get(object instance) { return instance == default ? default : GetDelegate(instance); }
+        public void Set(object instance, object value)
+        {
+            if(value != default)
+            {
+                SetDelegate(instance, value);
+            }
+        }
     }
 }
