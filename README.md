@@ -58,6 +58,7 @@ context.Items.Where(a => a.ItemId >  500).BatchDeleteAsync();
 
 // Update (using Expression arg.) supports Increment/Decrement 
 context.Items.Where(a => a.ItemId <= 500).BatchUpdate(a => new Item { Quantity = a.Quantity + 100 });
+context.Items.Where(a => a.ItemId <= 500).BatchUpdateAsync(a => new Item { Quantity = a.Quantity + 100 });
   // can be as value '+100' or as variable '+incrementStep' (int incrementStep = 100;)
   
 // Update (via simple object)
@@ -69,7 +70,8 @@ var q = context.Items.Where(a => a.ItemId <= 500);
 int affected = q.BatchUpdate(new Item { Description = "Updated" }, updateColumns);//result assigned to variable
 
 // Truncate
-context.Truncate<Entity>();                       context.TruncateAsync<Entity>();
+context.Truncate<Entity>();
+context.TruncateAsync<Entity>();
 ```
 ## Bulk info
 If Windows Authentication is used then in ConnectionString there should be *Trusted_Connection=True;* because Sql credentials are required to stay in connection.<br>
