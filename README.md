@@ -222,7 +222,7 @@ _ Also in some [sql collation](https://github.com/borisdj/EFCore.BulkExtensions/
 **TemporalColumns** are shadow columns used for Temporal table. Default elements 'PeriodStart' and 'PeriodEnd' can be changed if those columns have custom names.<br>
 **OnSaveChangesSetFK** is used only for BulkSaveChanges. When multiply entries have FK relationship which is Db generated, this set proper value after reading parent PK from Db. IF PK are generated in memory like are some Guid then this can be set to false for better efficiency.
   
-**SqlBulkCopyOptions** is Enum with [[Flags]](https://stackoverflow.com/questions/8447/what-does-the-flags-enum-attribute-mean-in-c) attribute which enables specifying one or more options:<br>
+**SqlBulkCopyOptions** is Enum (only for SqlServer) with [[Flags]](https://stackoverflow.com/questions/8447/what-does-the-flags-enum-attribute-mean-in-c) attribute which enables specifying one or more options:<br>
 *Default, KeepIdentity, CheckConstraints, TableLock, KeepNulls, FireTriggers, UseInternalTransaction*<br>
 If need to set Identity PK in memory, Not let DB do the autoincrement, then need to use **KeepIdentity**:<br>
 `var bulkConfig = new BulkConfig { SqlBulkCopyOptions = SqlBulkCopyOptions.KeepIdentity };`<br>
