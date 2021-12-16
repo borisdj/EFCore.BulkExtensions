@@ -47,7 +47,7 @@ namespace EFCore.BulkExtensions
 
             // Inserting an entity graph must be done within a transaction otherwise the database could end up in a bad state
             var hasExistingTransaction = context.Database.CurrentTransaction != null;
-            var transaction = context.Database.CurrentTransaction ?? (isAsync ? await context.Database.BeginTransactionAsync() : context.Database.BeginTransaction());
+            var transaction = context.Database.CurrentTransaction ?? (isAsync ? await context.Database.BeginTransactionAsync(cancellationToken) : context.Database.BeginTransaction());
 
             try
             {
@@ -101,7 +101,7 @@ namespace EFCore.BulkExtensions
                 {
                     if (isAsync)
                     {
-                        await transaction.CommitAsync();
+                        await transaction.CommitAsync(cancellationToken);
                     }
                     else
                     {
