@@ -92,6 +92,34 @@ namespace EFCore.BulkExtensions.Tests
             };
         }
 
+        [Theory]
+        [InlineData(DbServer.SQLServer)]
+        public void UpsertOrderTest(DbServer dbServer)
+        {
+            ContextUtil.DbServer = dbServer;
+            new EFCoreBatchTest().RunDeleteAll(dbServer);
+
+            using var context = new TestContext(ContextUtil.GetOptions());
+            context.Items.Add(new Item { Name = "name 1", Description = "info 1" });
+            context.Items.Add(new Item { Name = "name 2", Description = "info 2" });
+            context.SaveChanges();
+
+            var entities = new List<Item>();
+            for (int i = 1; i <= 4; i++)
+            {
+                int j = i;
+                if (i == 1) j = 2;
+                if (i == 2) j = 1;
+                entities.Add(new Item
+                {
+                    Name = "name " + j,
+                    Description = "info x " + j,
+                });
+            }
+
+            context.BulkInsertOrUpdate(entities, new BulkConfig { SetOutputIdentity = true, UpdateByProperties = new List<string> { nameof(Item.Name) } });
+            Assert.Equal(2, entities[0].ItemId);
+        }
 
         [Theory]
         [InlineData(DbServer.SQLServer)]
