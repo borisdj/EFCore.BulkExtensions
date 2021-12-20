@@ -75,15 +75,18 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
                         var convertibleDict = tableInfo.ConvertibleColumnConverterDict;
                         if (convertibleDict.ContainsKey(propertyColumnName) && convertibleDict[propertyColumnName].ModelClrType.IsEnum)
                         {
-                            var clrType = tableInfo.ConvertibleColumnConverterDict[propertyColumnName].ProviderClrType;
-                            if (clrType == typeof(byte)) // columnType == "smallint"
-                                propertyValue = (byte)propertyValue;
-                            if (clrType == typeof(short))
-                                propertyValue = (short)propertyValue;
-                            if (clrType == typeof(Int32))
-                                propertyValue = (int)propertyValue;
-                            if (clrType == typeof(Int64))
-                                propertyValue = (int)propertyValue;
+                            if (propertyValue != null)
+                            {
+                                var clrType = tableInfo.ConvertibleColumnConverterDict[propertyColumnName].ProviderClrType;
+                                if (clrType == typeof(byte)) // columnType == "smallint"
+                                    propertyValue = (byte)propertyValue;
+                                if (clrType == typeof(short))
+                                    propertyValue = (short)propertyValue;
+                                if (clrType == typeof(Int32))
+                                    propertyValue = (int)propertyValue;
+                                if (clrType == typeof(Int64))
+                                    propertyValue = (int)propertyValue;
+                            }
                         }
 
                         if (isAsync)
