@@ -216,7 +216,7 @@ If used for pure Insert (with Batching) then SetOutputIdentity should also be co
 **CustomDestinationTableName** can be set with 'TableName' only or with 'Schema.TableName'.<br>
 **EnableShadowProperties** to add (normal) Shadow Property and persist value. Disables automatic discrimator, use manual method.<br>
 **IncludeGraph** when set all entites that have relations with main ones from the list are also merged into theirs tables.<br>
-**OmitClauseExistsExcept** removes the clause from Merge statement, useful when need to active triggers even for same data.<br>
+**OmitClauseExistsExcept** removes the clause from Merge statement, required when having noncomparable types like XML, and useful when need to active triggers even for same data.<br>
 _ Also in some [sql collation](https://github.com/borisdj/EFCore.BulkExtensions/issues/641) small and capital letters are considered  same (case-insensitive) so for BulkUpdate set it false.<br>
 **DoNotUpdateIfTimeStampChanged** if set checks TimeStamp for Concurrency, ones with conflict will [not be updated](https://github.com/borisdj/EFCore.BulkExtensions/issues/469#issuecomment-803662721).<br>
 **SRID** Spatial Reference Identifier - for SQL Server with NetTopologySuite.<br>
