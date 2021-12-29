@@ -71,6 +71,8 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
                             columnType = "character"; // 'character' is like 'string'
                         else if (columnType.StartsWith("varchar"))
                             columnType = "varchar";
+                        else if (columnType.StartsWith("numeric"))
+                            columnType = "numeric";
 
                         var convertibleDict = tableInfo.ConvertibleColumnConverterDict;
                         if (convertibleDict.ContainsKey(propertyColumnName) && convertibleDict[propertyColumnName].ModelClrType.IsEnum)
@@ -85,7 +87,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
                                 if (clrType == typeof(Int32))
                                     propertyValue = (int)propertyValue;
                                 if (clrType == typeof(Int64))
-                                    propertyValue = (int)propertyValue;
+                                    propertyValue = (long)propertyValue;
                             }
                         }
 
