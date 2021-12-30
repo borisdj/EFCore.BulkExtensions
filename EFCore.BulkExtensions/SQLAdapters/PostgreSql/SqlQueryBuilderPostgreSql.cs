@@ -147,34 +147,49 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
         public static string CreateUniqueIndex(TableInfo tableInfo)
         {
             var tableName = tableInfo.TableName;
-            var uniquColumnNames = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList();
-            var uniquColumnNamesDash = string.Join("_", uniquColumnNames);
-            var uniquColumnNamesFormated = @"""" + string.Join(@""", """, uniquColumnNames) + @"""";
-            var q = $@"CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS ""tempUniqueIndex_{tableName}_{uniquColumnNamesDash}"" " +
-                    $@"ON ""{tableName}"" ({uniquColumnNamesFormated})";
+            var schemaFormated = tableInfo.Schema == null ? "" : $@"""{tableInfo.Schema}"".";
+            var fullTableNameFormated = $@"{schemaFormated}""{tableName}""";
+
+            var uniqueColumnNames = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList();
+            var uniqueColumnNamesDash = string.Join("_", uniqueColumnNames);
+            var uniqueColumnNamesFormated = @"""" + string.Join(@""", """, uniqueColumnNames) + @"""";
+            var schemaDash = tableInfo.Schema == null ? "" : $"{tableInfo.Schema}_";
+
+            var q = $@"CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS ""tempUniqueIndex_{schemaDash}{tableName}_{uniqueColumnNamesDash}"" " +
+                    $@"ON {fullTableNameFormated} ({uniqueColumnNamesFormated})";
             return q;
         }
 
         public static string CreateUniqueConstrain(TableInfo tableInfo)
         {
             var tableName = tableInfo.TableName;
-            var uniquColumnNames = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList();
-            var uniquColumnNamesDash = string.Join("_", uniquColumnNames);
-            var uniquConstrainName = $"tempUniqueIndex_{tableName}_{uniquColumnNamesDash}";
-            var q = $@"ALTER TABLE ""{tableName}""" +
-                    $@"ADD CONSTRAINT ""{uniquConstrainName}"" " +
-                    $@"UNIQUE USING INDEX ""{uniquConstrainName}""";
+            var schemaFormated = tableInfo.Schema == null ? "" : $@"""{tableInfo.Schema}"".";
+            var fullTableNameFormated = $@"{schemaFormated}""{tableName}""";
+
+            var uniqueColumnNames = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList();
+            var uniqueColumnNamesDash = string.Join("_", uniqueColumnNames);
+            var schemaDash = tableInfo.Schema == null ? "" : $"{tableInfo.Schema}_";
+            var uniqueConstrainName = $"tempUniqueIndex_{schemaDash}{tableName}_{uniqueColumnNamesDash}";
+
+            var q = $@"ALTER TABLE {fullTableNameFormated} " +
+                    $@"ADD CONSTRAINT ""{uniqueConstrainName}"" " +
+                    $@"UNIQUE USING INDEX ""{uniqueConstrainName}""";
             return q;
         }
 
         public static string DropUniqueConstrain(TableInfo tableInfo)
         {
             var tableName = tableInfo.TableName;
-            var uniquColumnNames = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList();
-            var uniquColumnNamesDash = string.Join("_", uniquColumnNames);
-            var uniquConstrainName = $"tempUniqueIndex_{tableName}_{uniquColumnNamesDash}";
-            var q = $@"ALTER TABLE ""{tableName}""" +
-                    $@"DROP CONSTRAINT ""{uniquConstrainName}"";";
+            var schemaFormated = tableInfo.Schema == null ? "" : $@"""{tableInfo.Schema}"".";
+            var fullTableNameFormated = $@"{schemaFormated}""{tableName}""";
+
+            var uniqueColumnNames = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList();
+            var uniqueColumnNamesDash = string.Join("_", uniqueColumnNames);
+            var schemaDash = tableInfo.Schema == null ? "" : $"{tableInfo.Schema}_";
+            var uniqueConstrainName = $"tempUniqueIndex_{schemaDash}{tableName}_{uniqueColumnNamesDash}";
+
+            var q = $@"ALTER TABLE {fullTableNameFormated} " +
+                    $@"DROP CONSTRAINT ""{uniqueConstrainName}"";";
             return q;
         }
 
