@@ -121,6 +121,10 @@ namespace EFCore.BulkExtensions.Tests
             var query2 = context.Items.AsQueryable().Where(a => a.ItemId > 1 && a.ItemId < 3);
             query.BatchDelete();
 
+            var descriptionsToDelete = new List<string> { "info" };
+            var query3 = context.Items.Where(a => descriptionsToDelete.Contains(a.Description));
+            query3.BatchDelete();
+
             //var incrementStep = 100;
             //var suffix = " Concatenated";
             //query.BatchUpdate(a => new Item { Name = a.Name + suffix, Quantity = a.Quantity + incrementStep }); // example of BatchUpdate Increment/Decrement value in variable

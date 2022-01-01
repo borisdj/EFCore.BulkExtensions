@@ -61,7 +61,9 @@ namespace EFCore.BulkExtensions
             }
             catch (Exception ex) // Fix for BatchDelete with 'uint' param on Sqlite. TEST: RunBatchUint
             {
-                if (ex.Message.StartsWith("No mapping exists from DbType") && ex.Message.EndsWith("to a known SqlDbType.")) // example: "No mapping exists from DbType UInt32 to a known SqlDbType."
+                var npgsqlSpecParamMessage = "Npgsql-specific type mapping Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.Mapping.NpgsqlArrayListTypeMapping"; // End: " being used with non-Npgsql parameter type SqlParameter"
+                if (ex.Message.StartsWith("No mapping exists from DbType") && ex.Message.EndsWith("to a known SqlDbType.") || // example: "No mapping exists from DbType UInt32 to a known SqlDbType."
+                    ex.Message.StartsWith(npgsqlSpecParamMessage)) // Fix for BatchDelete with Contains on PostgreSQL
                 {
                     var parameterNames = new HashSet<string>(command.Parameters.Select(p => p.InvariantName));
                     parameters = parameterValues.Where(pv => parameterNames.Contains(pv.Key)).Select(pv => new SqlParameter("@" + pv.Key, pv.Value)).ToList();

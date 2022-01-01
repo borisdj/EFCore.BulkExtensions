@@ -17,9 +17,21 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
             foreach (var parameter in sqlParameters)
             {
                 var sqlParameter = (IDbDataParameter)parameter;
-                if (sqlParameter.DbType == DbType.DateTime)
+
+                try
                 {
-                    sqlParameter.DbType = DbType.DateTime2; // sets most specific parameter DbType possible for so that precision is not lost
+                    var dt = sqlParameter.DbType;
+                    if (sqlParameter.DbType == DbType.DateTime)
+                    {
+                        sqlParameter.DbType = DbType.DateTime2; // sets most specific parameter DbType possible for so that precision is not lost
+                    }
+                }
+                catch (Exception ex)
+                {
+                    if (!ex.Message.StartsWith("No mapping exists from object type System.Collections.Generic.List")) // Fix for BatchDelete with Contains on PostgreSQL
+                    {
+                        throw;
+                    }
                 }
                 sqlParametersReloaded.Add(sqlParameter);
             }
