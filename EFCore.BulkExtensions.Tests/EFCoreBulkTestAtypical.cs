@@ -1,10 +1,13 @@
 using EFCore.BulkExtensions.SqlAdapters;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.SqlServer.Types;
 using NetTopologySuite.Geometries;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -521,6 +524,93 @@ namespace EFCore.BulkExtensions.Tests
                 Assert.Equal(point.Y, address.LocationGeography.Coordinate.Y);
                 Assert.Equal(point.X, address.LocationGeometry.Coordinate.X);
                 Assert.Equal(point.Y, address.LocationGeometry.Coordinate.Y);
+            }
+
+        }
+
+
+        [Fact]
+        private void HierarchyIdColumnTest()
+        {
+            ContextUtil.DbServer = DbServer.SqlServer;
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.BulkDelete(context.Categories.ToList());
+            }
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                var nodeIdAsString = "/1/";
+                var entities = new List<Category> {
+                    new Category
+                    {
+                        Name = "Root Element",
+                        HierarchyDescription = HierarchyId.Parse(nodeIdAsString)
+                    }
+                };
+
+                context.BulkInsertOrUpdate(entities);
+            }
+        }
+
+        [Fact]
+        private void HierarchyIdIsPersistedCorrectlySimpleTest()
+        {
+            ContextUtil.DbServer = DbServer.SqlServer;
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.BulkDelete(context.Categories.ToList());
+            }
+
+            var nodeIdAsString = "/1/";
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                var entities = new List<Category> {
+                    new Category
+                    {
+                        Name = "Root Element",
+                        HierarchyDescription = HierarchyId.Parse(nodeIdAsString)
+                    }
+            };
+                context.BulkInsertOrUpdate(entities);
+            }
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                var category = context.Categories.Single();
+                Assert.Equal(nodeIdAsString, category.HierarchyDescription.ToString());
+            }
+
+        }
+
+        [Fact]
+        private void HierarchyIdIsPersistedCorrectlyLargerHierarchyTest()
+        {
+            ContextUtil.DbServer = DbServer.SqlServer;
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.BulkDelete(context.Categories.ToList());
+            }
+
+            var nodeIdAsString = "/1.1/-2/3/4/5/";
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                var entities = new List<Category> {
+                    new Category
+                    {
+                        Name = "Deep Element",
+                        HierarchyDescription = HierarchyId.Parse(nodeIdAsString)
+                    }
+            };
+                context.BulkInsertOrUpdate(entities);
+            }
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                var category = context.Categories.Single();
+                Assert.Equal(nodeIdAsString, category.HierarchyDescription.ToString());
             }
 
         }
