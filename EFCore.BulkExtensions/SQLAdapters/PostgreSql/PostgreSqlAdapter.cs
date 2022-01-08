@@ -47,7 +47,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
                     ? tableInfo.PropertyColumnNamesDict
                     : tableInfo.PropertyColumnNamesDict.Where(a => a.Value != tableInfo.IdentityColumnName);
                 var propertiesNames = propertiesColumnDict.Select(a => a.Key).ToList();
-                
+                var entitiesCopiedCount = 0;
                 foreach (var entity in entities)
                 {
                     if (isAsync)
@@ -99,6 +99,11 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
                         {
                             writer.Write(propertyValue, columnType);
                         }
+                    }
+                    entitiesCopiedCount++;
+                    if(progress != null && entitiesCopiedCount % tableInfo.BulkConfig.NotifyAfter == 0)
+                    {
+                        progress?.Invoke(ProgressHelper.GetProgress(entities.Count, entitiesCopiedCount));
                     }
                 }
                 if (isAsync)
