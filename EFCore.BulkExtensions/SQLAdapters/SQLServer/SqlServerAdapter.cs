@@ -697,7 +697,17 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                     {
                         var shadowProperty = entityPropertiesDict[shadowPropertyName];
                         var columnName = shadowPropertyColumnNamesDict[shadowPropertyName];
-                        var propertyValue = context.Entry(entity).Property(shadowPropertyName).CurrentValue;
+
+                        var propertyValue = default(object);
+
+                        if (tableInfo.BulkConfig.ShadowPropertyValue == null)
+                        {
+                            propertyValue = context.Entry(entity).Property(shadowPropertyName).CurrentValue;
+                        }
+                        else 
+                        {
+                            propertyValue = tableInfo.BulkConfig.ShadowPropertyValue(entity, shadowPropertyName);
+                        }
 
                         if (tableInfo.ConvertibleColumnConverterDict.ContainsKey(columnName))
                         {

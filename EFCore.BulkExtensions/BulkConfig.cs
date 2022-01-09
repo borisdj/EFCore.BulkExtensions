@@ -170,6 +170,13 @@ namespace EFCore.BulkExtensions
         /// </summary>
         public bool EnableShadowProperties { get; set; }
 
+
+        /// <summary>
+        ///     Returns value for shadow properties, EnableShadowProperties = true
+        /// </summary>
+        public Func<object, string, object> ShadowPropertyValue { get; set; } 
+
+
         /// <summary>
         ///    Shadow columns used for Temporal table. Has defaults elements: 'PeriodStart' and 'PeriodEnd'. Can be changed if temporal columns have custom names.
         /// </summary>

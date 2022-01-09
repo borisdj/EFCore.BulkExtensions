@@ -402,7 +402,16 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
                 {
                     if (tableInfo.BulkConfig.EnableShadowProperties)
                     {
-                        value = dbContext.Entry(entity).Property(propertyColumn.Key).CurrentValue; // Get the shadow property value
+                        if (tableInfo.BulkConfig.ShadowPropertyValue == null)
+                        {
+                            value = dbContext.Entry(entity).Property(propertyColumn.Key).CurrentValue; // Get the shadow property value
+                        }
+                        else
+                        {
+                            value = tableInfo.BulkConfig.ShadowPropertyValue(entity, propertyColumn.Key);
+                        }
+
+                        
                     }
                     else
                     {
