@@ -80,7 +80,7 @@ namespace EFCore.BulkExtensions.Tests
             }
 
             // INSERT
-            context.BulkInsert(entities);
+            context.BulkInsert(entities, new BulkConfig() { NotifyAfter = 1 }, (a) => WriteProgress(a));
 
             Assert.Equal("info 1", context.Items.Where(a => a.Name == "Name 1").AsNoTracking().FirstOrDefault().Description);
             Assert.Equal("info 2", context.Items.Where(a => a.Name == "Name 2").AsNoTracking().FirstOrDefault().Description);
