@@ -724,8 +724,8 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
 
                     if (propertyValue is HierarchyId hierarchyValue && isSqlServer)
                     {
-                        MemoryStream memStream = new MemoryStream();
-                        BinaryWriter binWriter = new BinaryWriter(memStream);
+                        using MemoryStream memStream = new MemoryStream();
+                        using BinaryWriter binWriter = new BinaryWriter(memStream);
                         hierarchyValue.Write(binWriter);
                         propertyValue = memStream.ToArray();
                     }

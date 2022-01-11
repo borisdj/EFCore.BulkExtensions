@@ -34,6 +34,10 @@ namespace EFCore.BulkExtensions.Tests
             var connection = new SqlConnection(connectionString) as DbConnection;
             connection = new MyConnection(connection);
             builder.UseSqlServer(connection, opt => opt.UseNetTopologySuite());
+            builder.UseSqlServer(connection, conf =>
+            {
+                conf.UseHierarchyId();
+            });
             return builder.Options;
         }
 
