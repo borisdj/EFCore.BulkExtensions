@@ -196,6 +196,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
         public static string RestructureForBatch(string sql, bool isDelete = false)
         {
             sql = sql.Replace("[", @"""").Replace("]", @"""");
+            string firstLetterOfTable = sql.Substring(7, 1);
 
             if (isDelete)
             {
@@ -206,7 +207,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
                 //WOULD ALSO WORK
                 // DELETE FROM "Item" WHERE "ItemId" <= 1
 
-                sql = sql.Replace("DELETE i", "DELETE ");
+                sql = sql.Replace($"DELETE {firstLetterOfTable}", "DELETE ");
             }
             else
             {
@@ -217,9 +218,9 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
                 //WOULD ALSO WORK
                 // UPDATE "Item" SET "Description" = 'Update N', "Price" = 1.5 FROM "Item" WHERE "ItemId" <= 1
 
-                string tableAS = sql.Substring(sql.IndexOf("FROM") + 4, sql.IndexOf("AS i") - sql.IndexOf("FROM"));
-                sql = sql.Replace("AS i", "");
-                sql = sql.Replace("UPDATE i", "UPDATE " + tableAS);
+                string tableAS = sql.Substring(sql.IndexOf("FROM") + 4, sql.IndexOf($"AS {firstLetterOfTable}") - sql.IndexOf("FROM"));
+                sql = sql.Replace($"AS {firstLetterOfTable}", "");
+                sql = sql.Replace($"UPDATE {firstLetterOfTable}", "UPDATE " + tableAS);
             }
             return sql;
         }
