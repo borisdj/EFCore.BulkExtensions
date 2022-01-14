@@ -32,6 +32,7 @@ namespace EFCore.BulkExtensions.Tests
         public DbSet<ChangeLog> ChangeLogs { get; set; }
         public DbSet<ItemLink> ItemLinks { get; set; }
         public DbSet<Address> Addresses { get; set; }
+        public DbSet<Category> Categories { get; set; }
 
         public DbSet<Parent> Parents { get; set; }
         public DbSet<ParentDetail> ParentDetails { get; set; }
@@ -103,6 +104,7 @@ namespace EFCore.BulkExtensions.Tests
                 modelBuilder.Entity<UdttIntInt>(entity => { entity.HasNoKey(); });
 
                 modelBuilder.Entity<Address>().Property(p => p.LocationGeometry).HasColumnType("geometry");
+                modelBuilder.Entity<Category>().Property(p => p.HierarchyDescription).HasColumnType("hierarchyid");
 
                 modelBuilder.Entity<Division>().Property(p => p.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
                 modelBuilder.Entity<Department>().Property(p => p.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
@@ -112,6 +114,7 @@ namespace EFCore.BulkExtensions.Tests
             {
                 modelBuilder.Entity<Address>().Ignore(p => p.LocationGeography);
                 modelBuilder.Entity<Address>().Ignore(p => p.LocationGeometry);
+                modelBuilder.Entity<Category>().Ignore(p => p.HierarchyDescription);
             }
 
             if (Database.IsSqlite())
@@ -179,6 +182,10 @@ namespace EFCore.BulkExtensions.Tests
 
                 //optionsBuilder.UseSqlServer(connectionString); // Can NOT Test with UseInMemoryDb (Exception: Relational-specific methods can only be used when the context is using a relational)
                 optionsBuilder.UseSqlServer(connectionString, opt => opt.UseNetTopologySuite()); // NetTopologySuite for Geometry / Geometry types
+                optionsBuilder.UseSqlServer(connectionString, conf =>
+                {
+                    conf.UseHierarchyId();
+                });
             }
             else if (dbServerType == DbServer.SQLite)
             {
@@ -317,6 +324,13 @@ namespace EFCore.BulkExtensions.Tests
 
         public Geometry LocationGeography { get; set; }
         public Geometry LocationGeometry { get; set; }
+    }
+
+    public class Category
+    {
+        public int CategoryId { get; set; }
+        public string Name { get; set; }
+        public HierarchyId HierarchyDescription { get; set; }
     }
 
     public class Teacher : Person

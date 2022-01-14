@@ -9,6 +9,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
+using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -488,6 +489,10 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                             throw new InvalidOperationException("OnCompare properties Config can not be set for Entity with Spatial types like 'Geometry'");
                         }
                     }
+                    if (isSqlServer && (propertyType == typeof(HierarchyId) || propertyType.IsSubclassOf(typeof(HierarchyId))))
+                    {
+                        propertyType = typeof(byte[]);
+                    }
 
                     if (!columnsDict.ContainsKey(property.Name) && !hasDefaultVauleOnInsert)
                     {
@@ -512,6 +517,11 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                     }
 
                     if (propertyType == typeof(Geometry) && isSqlServer)
+                    {
+                        propertyType = typeof(byte[]);
+                    }
+
+                    if (propertyType == typeof(HierarchyId) && isSqlServer)
                     {
                         propertyType = typeof(byte[]);
                     }
@@ -600,6 +610,11 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                         propertyType = typeof(byte[]);
                     }
 
+                    if (isSqlServer && (propertyType == typeof(HierarchyId) || propertyType.IsSubclassOf(typeof(HierarchyId))))
+                    {
+                        propertyType = typeof(byte[]);
+                    }
+
                     dataTable.Columns.Add(columnName, propertyType);
                     columnsDict.Add(shadowProperty.Name, null);
                 }
@@ -654,6 +669,14 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                         }
 
                         propertyValue = sqlServerBytesWriter.Write(geometryValue);
+                    }
+
+                    if (propertyValue is HierarchyId hierarchyValue && isSqlServer)
+                    {
+                        using MemoryStream memStream = new MemoryStream();
+                        using BinaryWriter binWriter = new BinaryWriter(memStream);
+                        hierarchyValue.Write(binWriter);
+                        propertyValue = memStream.ToArray();
                     }
 
                     if (entityPropertiesDict.ContainsKey(property.Name) && !hasDefaultVauleOnInsert)
