@@ -683,6 +683,94 @@ namespace EFCore.BulkExtensions.Tests
 
         }
 
+
+
+        [Fact]
+        private void HierarchyIdColumnTest()
+        {
+            ContextUtil.DbServer = DbServer.SQLServer;
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.BulkDelete(context.Categories.ToList());
+            }
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                var nodeIdAsString = "/1/";
+                var entities = new List<Category> {
+                    new Category
+                    {
+                        Name = "Root Element",
+                        HierarchyDescription = HierarchyId.Parse(nodeIdAsString)
+                    }
+                };
+
+                context.BulkInsertOrUpdate(entities);
+            }
+        }
+
+        [Fact]
+        private void HierarchyIdIsPersistedCorrectlySimpleTest()
+        {
+            ContextUtil.DbServer = DbServer.SQLServer;
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.BulkDelete(context.Categories.ToList());
+            }
+
+            var nodeIdAsString = "/1/";
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                var entities = new List<Category> {
+                    new Category
+                    {
+                        Name = "Root Element",
+                        HierarchyDescription = HierarchyId.Parse(nodeIdAsString)
+                    }
+            };
+                context.BulkInsertOrUpdate(entities);
+            }
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                var category = context.Categories.Single();
+                Assert.Equal(nodeIdAsString, category.HierarchyDescription.ToString());
+            }
+
+        }
+
+        [Fact]
+        private void HierarchyIdIsPersistedCorrectlyLargerHierarchyTest()
+        {
+            ContextUtil.DbServer = DbServer.SQLServer;
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.BulkDelete(context.Categories.ToList());
+            }
+
+            var nodeIdAsString = "/1.1/-2/3/4/5/";
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                var entities = new List<Category> {
+                    new Category
+                    {
+                        Name = "Deep Element",
+                        HierarchyDescription = HierarchyId.Parse(nodeIdAsString)
+                    }
+            };
+                context.BulkInsertOrUpdate(entities);
+            }
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                var category = context.Categories.Single();
+                Assert.Equal(nodeIdAsString, category.HierarchyDescription.ToString());
+            }
+
+        }
+
         [Fact]
         private void TablePerTypeInsertTest()
         {
