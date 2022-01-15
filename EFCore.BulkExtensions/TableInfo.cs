@@ -27,6 +27,7 @@ namespace EFCore.BulkExtensions
         public string TableName { get; set; }
         public string FullTableName => $"{SchemaFormated}[{TableName}]";
         public Dictionary<string, string> PrimaryKeysPropertyColumnNameDict { get; set; }
+        public Dictionary<string, string> EntityPKPropertyColumnNameDict { get; set; }
         public bool HasSinglePrimaryKey { get; set; }
         public bool UpdateByPropertiesAreNullable { get; set; }
 
@@ -175,6 +176,7 @@ namespace EFCore.BulkExtensions
 
             bool areSpecifiedUpdateByProperties = BulkConfig.UpdateByProperties?.Count > 0;
             var primaryKeys = entityType.FindPrimaryKey()?.Properties?.ToDictionary(a => a.Name, b => b.GetColumnName(ObjectIdentifier));
+            EntityPKPropertyColumnNameDict = primaryKeys ?? new Dictionary<string, string>();
 
             HasSinglePrimaryKey = primaryKeys?.Count == 1;
             PrimaryKeysPropertyColumnNameDict = areSpecifiedUpdateByProperties ? BulkConfig.UpdateByProperties.ToDictionary(a => a, b => allProperties.First(p => p.Name == b).GetColumnName(ObjectIdentifier))

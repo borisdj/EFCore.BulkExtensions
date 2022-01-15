@@ -160,7 +160,14 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
                 context.Database.ExecuteSqlRaw(sqlCreateTableCopy);
             }
 
-            bool hasUniqueConstrain = await CheckHasUniqueConstrainAsync(context, tableInfo, cancellationToken, isAsync);
+            bool hasUniqueConstrain = await CheckHasExplicitUniqueConstrainAsync(context, tableInfo, cancellationToken, isAsync);
+            if (hasUniqueConstrain == false)
+            {
+                if (tableInfo.EntityPKPropertyColumnNameDict == tableInfo.PrimaryKeysPropertyColumnNameDict)
+                {
+                    hasUniqueConstrain = true; // ExplicitUniqueConstrain not required for PK
+                }
+            }
             bool doDropUniqueConstrain = false;
 
             try
@@ -311,7 +318,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
         }
         #endregion
 
-        internal async Task<bool> CheckHasUniqueConstrainAsync(DbContext context, TableInfo tableInfo, CancellationToken cancellationToken, bool isAsync)
+        internal async Task<bool> CheckHasExplicitUniqueConstrainAsync(DbContext context, TableInfo tableInfo, CancellationToken cancellationToken, bool isAsync)
         {
             string countUniqueConstrain = SqlQueryBuilderPostgreSql.CountUniqueConstrain(tableInfo);
 
