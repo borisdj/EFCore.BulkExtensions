@@ -34,9 +34,9 @@ namespace EFCore.BulkExtensions
 
         // Update methods
         #region BatchUpdate
-        public static int BatchUpdate(this IQueryable query, object updateValues, List<string> updateColumns = null)
+        public static int BatchUpdate<T>(this IQueryable<T> query, object updateValues, List<string> updateColumns = null) where T : class
         {
-            var (context, sql, sqlParameters) = GetBatchUpdateArguments((IQueryable<object>)query, updateValues, updateColumns);
+            var (context, sql, sqlParameters) = GetBatchUpdateArguments(query, updateValues, updateColumns);
             return context.Database.ExecuteSqlRaw(sql, sqlParameters);
         }
         public static async Task<int> BatchUpdateAsync(this IQueryable query, object updateValues, List<string> updateColumns = null, CancellationToken cancellationToken = default)
@@ -60,7 +60,7 @@ namespace EFCore.BulkExtensions
         {
             type ??= typeof(T);
             var context = BatchUtil.GetDbContext(query);
-            var (sql, sqlParameters) = updateExpression == null ? BatchUtil.GetSqlUpdate(query, context, updateValues, updateColumns)
+            var (sql, sqlParameters) = updateExpression == null ? BatchUtil.GetSqlUpdate(query, context, type, updateValues, updateColumns)
                                                                 : BatchUtil.GetSqlUpdate(query, context, type, updateExpression);
             return (context, sql, sqlParameters);
         }

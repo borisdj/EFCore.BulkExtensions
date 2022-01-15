@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text.Json;
 using Xunit;
 
 namespace EFCore.BulkExtensions.Tests
@@ -32,6 +33,9 @@ namespace EFCore.BulkExtensions.Tests
             context.Database.ExecuteSqlRaw($@"DELETE FROM ""{nameof(Item)}""");
             context.Database.ExecuteSqlRaw($@"ALTER SEQUENCE ""{nameof(Item)}_{nameof(Item.ItemId)}_seq"" RESTART WITH 1");
 
+            context.Database.ExecuteSqlRaw($@"DELETE FROM ""{nameof(Box)}""");
+            context.Database.ExecuteSqlRaw($@"ALTER SEQUENCE ""{nameof(Box)}_{nameof(Box.BoxId)}_seq"" RESTART WITH 1");
+
             var currentTime = DateTime.UtcNow; // default DateTime type: "timestamp with time zone"; DateTime.Now goes with: "timestamp without time zone"
 
             var entities = new List<Item>();
@@ -44,7 +48,7 @@ namespace EFCore.BulkExtensions.Tests
                     Description = "info " + i,
                     Quantity = i,
                     Price = 0.1m * i,
-                    TimeUpdated = currentTime
+                    TimeUpdated = currentTime,
                 };
                 entities.Add(entity);
             }
@@ -59,7 +63,7 @@ namespace EFCore.BulkExtensions.Tests
                     Description = "UPDATE " + i,
                     Quantity = i,
                     Price = 0.1m * i,
-                    TimeUpdated = currentTime
+                    TimeUpdated = currentTime,
                 };
                 entities2.Add(entity);
             }
@@ -74,7 +78,7 @@ namespace EFCore.BulkExtensions.Tests
                     Description = "CHANGE " + i,
                     Quantity = i,
                     Price = 0.1m * i,
-                    TimeUpdated = currentTime
+                    TimeUpdated = currentTime,
                 };
                 entities3.Add(entity);
             }
@@ -125,10 +129,15 @@ namespace EFCore.BulkExtensions.Tests
             var query3 = context.Items.Where(a => descriptionsToDelete.Contains(a.Description));
             query3.BatchDelete();
 
+
+            // for type 'jsonb'
+            context.BulkInsert(new List<Box> { new Box { SettingValue = JsonDocument.Parse(@"{ ""Model"" : ""Square""}").RootElement } });
+            var boxQuery = context.Boxes.AsQueryable().Where(a => a.BoxId <= 1);
+            boxQuery.BatchUpdate(new Box { SettingValue = JsonDocument.Parse(@"{ ""Model"" : ""Circle""}").RootElement });
+
             //var incrementStep = 100;
             //var suffix = " Concatenated";
             //query.BatchUpdate(a => new Item { Name = a.Name + suffix, Quantity = a.Quantity + incrementStep }); // example of BatchUpdate Increment/Decrement value in variable
-
         }
 
         [Theory]

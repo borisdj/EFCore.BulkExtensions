@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
+using System.Text.Json;
 
 namespace EFCore.BulkExtensions.Tests
 {
@@ -24,6 +25,8 @@ namespace EFCore.BulkExtensions.Tests
         public DbSet<Storage> Storages { get; set; }
 
         public DbSet<File> Files { get; set; }
+
+        public DbSet<Box> Boxes { get; set; }
         public DbSet<Person> Persons { get; set; }
         public DbSet<Student> Students { get; set; }
         public DbSet<Teacher> Teachers { get; set; }
@@ -127,6 +130,8 @@ namespace EFCore.BulkExtensions.Tests
             if (Database.IsNpgsql())
             {
                 modelBuilder.Entity<Event>().Property(p => p.TimeCreated).HasColumnType("timestamp"); // with annotation defined as "datetime2(3)" so here corrected for PG ("timestamp" in short for "timestamp without time zone")
+
+                modelBuilder.Entity<Box>().Property(p => p.SettingValue).HasColumnType("jsonb"); // with annotation not mapped since not used for others DBs
             }
 
             //modelBuilder.Entity<Modul>(buildAction => { buildAction.HasNoKey(); });
@@ -268,8 +273,8 @@ namespace EFCore.BulkExtensions.Tests
         public decimal? Price { get; set; }
 
         //[Column(TypeName = (nameof(DateTime)))] // Column to be of DbType 'datetime' instead of default 'datetime2'
-        public DateTime TimeUpdated { get; set; }
-        
+        public DateTime? TimeUpdated { get; set; }
+
         public ICollection<ItemHistory> ItemHistories { get; set; }
     }
 
@@ -363,6 +368,15 @@ namespace EFCore.BulkExtensions.Tests
 
         public string Data { get; set; }
     }
+
+    // For testing type 'jsonb' on Postgres
+    public class Box
+    {
+        public int BoxId { get; set; }
+
+        [NotMapped] // used only for Postgres so mapped wiht FluentAPI 
+        public JsonElement SettingValue { get; set; }
+}
 
     // For testing TimeStamp Property and Column with Concurrency Lock
     public class File

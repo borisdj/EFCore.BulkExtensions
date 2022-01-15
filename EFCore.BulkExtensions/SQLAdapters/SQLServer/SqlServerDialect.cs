@@ -28,7 +28,8 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                 }
                 catch (Exception ex)
                 {
-                    if (!ex.Message.StartsWith("No mapping exists from object type System.Collections.Generic.List")) // Fix for BatchDelete with Contains on PostgreSQL
+                    if (!ex.Message.StartsWith("No mapping exists from object type System.Collections.Generic.List") && // Fix for Batch ops with Contains on PostgreSQL
+                        !ex.Message.StartsWith("No mapping exists from object type System.Text.Json.JsonElement to a known managed provider native type.")) // Fix for BatchUpdate ops with JsonElement param on PostgreSQL
                     {
                         throw;
                     }

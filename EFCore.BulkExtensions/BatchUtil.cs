@@ -107,7 +107,7 @@ namespace EFCore.BulkExtensions
         // UPDATE [a] SET [UpdateColumns] = N'updateValues'
         // FROM [Table] AS [a]
         // WHERE [a].[Columns] = FilterValues
-        public static (string, List<object>) GetSqlUpdate(IQueryable query, DbContext context, object updateValues, List<string> updateColumns)
+        public static (string, List<object>) GetSqlUpdate(IQueryable query, DbContext context, Type type, object updateValues, List<string> updateColumns)
         {
             var (sql, tableAlias, tableAliasSufixAs, topStatement, leadingComments, innerParameters) = GetBatchSql(query, context, isUpdate: true);
             var sqlParameters = new List<object>(innerParameters);
@@ -135,7 +135,16 @@ namespace EFCore.BulkExtensions
                 var npgsqlParameters = new List<object>();
                 foreach (var param in sqlParameters)
                 {
-                    npgsqlParameters.Add(new Npgsql.NpgsqlParameter(((SqlParameter)param).ParameterName, ((SqlParameter)param).Value));
+                    var npgsqlParam = new Npgsql.NpgsqlParameter(((SqlParameter)param).ParameterName, ((SqlParameter)param).Value);
+
+                    string paramName = npgsqlParam.ParameterName.Replace("@", "");
+                    var propertyType = type.GetProperties().SingleOrDefault(a => a.Name == paramName)?.PropertyType;
+                    if (propertyType == typeof(System.Text.Json.JsonElement) || propertyType == typeof(System.Text.Json.JsonElement?))
+                    {
+                        npgsqlParam.NpgsqlDbType = NpgsqlTypes.NpgsqlDbType.Jsonb;
+                    }
+
+                    npgsqlParameters.Add(npgsqlParam);
                 }
                 sqlParameters = npgsqlParameters;
             }
@@ -183,12 +192,19 @@ namespace EFCore.BulkExtensions
                 var npgsqlParameters = new List<object>();
                 foreach (var param in sqlParameters)
                 {
-                    npgsqlParameters.Add(new Npgsql.NpgsqlParameter(((SqlParameter)param).ParameterName, ((SqlParameter)param).Value));
+                    var npgsqlParam = new Npgsql.NpgsqlParameter(((SqlParameter)param).ParameterName, ((SqlParameter)param).Value);
+
+                    string paramName = npgsqlParam.ParameterName.Replace("@", "");
+                    var propertyType = type.GetProperties().SingleOrDefault(a => a.Name == paramName)?.PropertyType;
+                    if (propertyType == typeof(System.Text.Json.JsonElement) || propertyType == typeof(System.Text.Json.JsonElement?))
+                    {
+                        npgsqlParam.NpgsqlDbType = NpgsqlTypes.NpgsqlDbType.Jsonb;
+                    }
+
+                    npgsqlParameters.Add(npgsqlParam);
                 }
                 sqlParameters = npgsqlParameters;
             }
-
-            return (resultQuery, sqlParameters);
 
             return (resultQuery, sqlParameters);
         }
