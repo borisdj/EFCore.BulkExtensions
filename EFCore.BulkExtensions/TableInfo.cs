@@ -135,8 +135,8 @@ namespace EFCore.BulkExtensions
                 }
             }
             Schema = customSchema ?? entityType.GetSchema() ?? defaultSchema;
-            TableName = customTableName ?? entityType.GetTableName();
-            ObjectIdentifier = StoreObjectIdentifier.Table(TableName, entityType.GetSchema());
+            var entityTableName = entityType.GetTableName();
+            TableName = customTableName ?? entityTableName;
 
             TempTableSufix = "Temp";
 
@@ -145,6 +145,7 @@ namespace EFCore.BulkExtensions
                 TempTableSufix += Guid.NewGuid().ToString().Substring(0, 8); // 8 chars of Guid as tableNameSufix to avoid same name collision with other tables
                                                                              // TODO Consider Hash
             }
+            ObjectIdentifier = StoreObjectIdentifier.Table(entityTableName, entityType.GetSchema());
 
             var allProperties = new List<IProperty>();
             foreach (var entityProperty in entityType.GetProperties())
