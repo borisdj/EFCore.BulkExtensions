@@ -2,7 +2,7 @@
 EntityFrameworkCore extensions: <br>
 -Bulk operations **(Insert, Update, Delete, Read, Upsert, Sync, SaveChanges)**<br>
 -Batch ops (**Delete, Update**) and **Truncate**.<br>
-Library is Lightweight and very Efficient, having all mostly used CRUD operation.<br>
+Library is Lightweight and very Efficient, having all mostly used [CRUD](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete) operation.<br>
 Was selected in top 20 [EF Core Extensions](https://docs.microsoft.com/en-us/ef/core/extensions/) recommended by Microsoft.<br>
 Latest version is using EF Core 6 and targeting .Net 6.<br>
 At the moment supports Microsoft SQLServer(2012+) or SqlAzure, PostgreSQL(9.5+) and SQLite.<br>
