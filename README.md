@@ -37,13 +37,14 @@ Please read [CONTRIBUTING](CONTRIBUTING.md) for details on code of conduct, and 
 It's pretty simple and straightforward.<br>
 **Bulk** Extensions are made on *DbContext* class and can be used like this (supported both regular and Async methods):
 ```C#
-context.BulkInsert(entitiesList);                 context.BulkInsertAsync(entitiesList);
-context.BulkInsertOrUpdate(entitiesList);         context.BulkInsertOrUpdateAsync(entitiesList);      //Upsert
-context.BulkInsertOrUpdateOrDelete(entitiesList); context.BulkInsertOrUpdateOrDeleteAsync(entitiesList);//Sync
-context.BulkUpdate(entitiesList);                 context.BulkUpdateAsync(entitiesList);
-context.BulkDelete(entitiesList);                 context.BulkDeleteAsync(entitiesList);
-context.BulkRead(entitiesList);                   context.BulkReadAsync(entitiesList);
+context.BulkInsert(entities);                 context.BulkInsertAsync(entities);
+context.BulkInsertOrUpdate(entities);         context.BulkInsertOrUpdateAsync(entities);      //Upsert
+context.BulkInsertOrUpdateOrDelete(entities); context.BulkInsertOrUpdateOrDeleteAsync(entities);//Sync
+context.BulkUpdate(entities);                 context.BulkUpdateAsync(entities);
+context.BulkDelete(entities);                 context.BulkDeleteAsync(entities);
+context.BulkRead(entities);                   context.BulkReadAsync(entities);
 context.BulkSaveChanges();                        context.BulkSaveChangesAsync();
+// entities is List<Entity>
 ```
 
 **-SQLite** requires package: [*SQLitePCLRaw.bundle_e_sqlite3*](https://docs.microsoft.com/en-us/dotnet/standard/data/sqlite/custom-versions?tabs=netcore-cli) with call to `SQLitePCL.Batteries.Init()`<br>
@@ -65,9 +66,9 @@ context.Items.Where(a => a.ItemId <= 500).BatchUpdateAsync(a => new Item { Quant
 context.Items.Where(a => a.ItemId <= 500).BatchUpdate(new Item { Description = "Updated" });
 context.Items.Where(a => a.ItemId <= 500).BatchUpdateAsync(new Item { Description = "Updated" });
 // Update (via simple object) - requires additional Argument for setting to Property default value
-var updateColumns = new List<string> { nameof(Item.Quantity) }; // Update 'Quantity' to default value('0'-zero)
+var updateCols = new List<string> { nameof(Item.Quantity) }; // Update 'Quantity' to default value('0'-zero)
 var q = context.Items.Where(a => a.ItemId <= 500);
-int affected = q.BatchUpdate(new Item { Description = "Updated" }, updateColumns); // result assigned to variable
+int affected = q.BatchUpdate(new Item { Description = "Updated" }, updateCols); // result assigned to variable
 
 // Truncate
 context.Truncate<Entity>();
@@ -152,9 +153,9 @@ _SetOutputIdentity_ have purpose only when PK has Identity (usually *int* type w
 Also Tables with Composite Keys have no Identity column so no functionality for them in that case either.
 ```C#
 var bulkConfig = new BulkConfig { SetOutputIdentity = true, BatchSize = 4000 };
-context.BulkInsert(entList, bulkConfig);
-context.BulkInsertOrUpdate(entList, new BulkConfig { SetOutputIdentity = true });
-context.BulkInsertOrUpdate(entList, b => b.SetOutputIdentity = true); // example of BulkConfig set with Action arg.
+context.BulkInsert(entities, bulkConfig);
+context.BulkInsertOrUpdate(entities, new BulkConfig { SetOutputIdentity = true });
+context.BulkInsertOrUpdate(entities, b => b.SetOutputIdentity = true); // e.g. BulkConfig with Action arg.
 ```
 
 **PreserveInsertOrder** is **true** by default and makes sure that entites are inserted to Db as ordered in entitiesList.<br>
@@ -201,7 +202,8 @@ using (var transaction = context.Database.BeginTransaction())
     transaction.Commit();
 }
 
-// Option 2 using Graph (only for SQL Server) - all entities in relationship with main ones in list are BulkInsertUpdated
+// Option 2 using Graph (only for SQL Server)
+// - all entities in relationship with main ones in list are BulkInsertUpdated
 context.BulkInsert(entities, b => b.IncludeGraph = true);
   
 // Option 3 with BulkSaveChanges() - uses ChangeTracker so little slower then direct Bulk
@@ -267,15 +269,16 @@ context.BulkInsert(entities);
 When we need to Select from big List of some Unique Prop./Column use BulkRead (JOIN done in Sql) for Efficiency:<br>
 ```C#
 // instead of WhereIN which will TimeOut for List with over around 40 K records
-var entities = context.Items.Where(a => itemsNames.Contains(a.Name)).AsNoTracking().ToList(); //SQL IN operator
+var entities = context.Items.Where(a => itemsNames.Contains(a.Name)).AsNoTracking().ToList(); // SQL IN
 // or JOIN in Memory that loads entire table
 var entities = context.Items.Join(itemsNames, a => a.Name, p => p, (a, p) => a).AsNoTracking().ToList();
 
 // USE
-var items = itemsNames.Select(a => new Item { Name = a }).ToList(); // creating list of Items where only Name is set
+var items = itemsNames.Select(a => new Item { Name = a }).ToList(); // Items list with only Name set
 var bulkConfig = new BulkConfig { UpdateByProperties = new List<string> { nameof(Item.Name) } };
 context.BulkRead(items, bulkConfig); // Items list will be loaded from Db with data(other properties)
 ```
+[Example](https://github.com/borisdj/EFCore.BulkExtensions/issues/733#issuecomment-1017417579) of special use case when need to BulkRead child entites after Reading parent list: 
 
 ## Performances
 
