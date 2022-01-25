@@ -35,7 +35,7 @@ Please read [CONTRIBUTING](CONTRIBUTING.md) for details on code of conduct, and 
 
 ## Usage
 It's pretty simple and straightforward.<br>
-**Bulk** Extensions are made on *DbContext* class and can be used with entities List (supported both regular and Async methods):
+**Bulk** Extensions are made on *DbContext* and are used with entities List (supported both regular and Async methods):
 ```C#
 context.BulkInsert(entities);                 context.BulkInsertAsync(entities);
 context.BulkInsertOrUpdate(entities);         context.BulkInsertOrUpdateAsync(entities);         // Upsert
