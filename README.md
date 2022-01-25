@@ -68,7 +68,7 @@ context.Items.Where(a => a.ItemId <= 500).BatchUpdateAsync(new Item { Descriptio
 // Update (via simple object) - requires additional Argument for setting to Property default value
 var updateCols = new List<string> { nameof(Item.Quantity) }; // Update 'Quantity' to default value('0'-zero)
 var q = context.Items.Where(a => a.ItemId <= 500);
-int affected = q.BatchUpdate(new Item { Description = "Updated" }, updateCols); // result assigned to variable
+int affected = q.BatchUpdate(new Item { Description = "Updated" }, updateCols); //result assigned to variable
 
 // Truncate
 context.Truncate<Entity>();
@@ -194,7 +194,7 @@ using (var transaction = context.Database.BeginTransaction())
     context.BulkInsert(entities, new BulkConfig { SetOutputIdentity = true });
     foreach (var entity in entities) {
         foreach (var subEntity in entity.ItemHistories) {
-            subEntity.ItemId = entity.ItemId; // setting FK to match its linked PK that was generated in DB
+            subEntity.ItemId = entity.ItemId; // sets FK to match its linked PK that was generated in DB
         }
         subEntities.AddRange(entity.ItemHistories);
     }
@@ -278,7 +278,7 @@ var items = itemsNames.Select(a => new Item { Name = a }).ToList(); // Items lis
 var bulkConfig = new BulkConfig { UpdateByProperties = new List<string> { nameof(Item.Name) } };
 context.BulkRead(items, bulkConfig); // Items list will be loaded from Db with data(other properties)
 ```
-[Example](https://github.com/borisdj/EFCore.BulkExtensions/issues/733#issuecomment-1017417579) of special use case when need to BulkRead child entites after Reading parent list: 
+[Example](https://github.com/borisdj/EFCore.BulkExtensions/issues/733#issuecomment-1017417579) of special use case when need to BulkRead child entites after BulkReading parent list. 
 
 ## Performances
 
