@@ -35,16 +35,15 @@ Please read [CONTRIBUTING](CONTRIBUTING.md) for details on code of conduct, and 
 
 ## Usage
 It's pretty simple and straightforward.<br>
-**Bulk** Extensions are made on *DbContext* class and can be used like this (supported both regular and Async methods):
+**Bulk** Extensions are made on *DbContext* class and can be used with entities List (supported both regular and Async methods):
 ```C#
 context.BulkInsert(entities);                 context.BulkInsertAsync(entities);
-context.BulkInsertOrUpdate(entities);         context.BulkInsertOrUpdateAsync(entities);      //Upsert
-context.BulkInsertOrUpdateOrDelete(entities); context.BulkInsertOrUpdateOrDeleteAsync(entities);//Sync
+context.BulkInsertOrUpdate(entities);         context.BulkInsertOrUpdateAsync(entities);         // Upsert
+context.BulkInsertOrUpdateOrDelete(entities); context.BulkInsertOrUpdateOrDeleteAsync(entities); // Sync
 context.BulkUpdate(entities);                 context.BulkUpdateAsync(entities);
 context.BulkDelete(entities);                 context.BulkDeleteAsync(entities);
 context.BulkRead(entities);                   context.BulkReadAsync(entities);
-context.BulkSaveChanges();                        context.BulkSaveChangesAsync();
-// entities is List<Entity>
+context.BulkSaveChanges();                    context.BulkSaveChangesAsync();
 ```
 
 **-SQLite** requires package: [*SQLitePCLRaw.bundle_e_sqlite3*](https://docs.microsoft.com/en-us/dotnet/standard/data/sqlite/custom-versions?tabs=netcore-cli) with call to `SQLitePCL.Batteries.Init()`<br>
