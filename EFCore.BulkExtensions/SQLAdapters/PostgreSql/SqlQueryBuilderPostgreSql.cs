@@ -136,11 +136,10 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
             {
                 q = q +
                     $"INNER JOIN INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE cu{index} " +
-                    $"ON cu{index}.CONSTRAINT_NAME = tc.CONSTRAINT_NAME AND cu{index}.COLUMN_NAME = '{tableInfo.TableName}' ";
+                    $"ON cu{index}.CONSTRAINT_NAME = tc.CONSTRAINT_NAME AND cu{index}.COLUMN_NAME = '{pkColumn}' ";
             }
 
             q = q +
-                $"INNER JOIN INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE cu " +
                 $"WHERE tc.CONSTRAINT_TYPE = 'UNIQUE' " +
                 $"AND tc.TABLE_NAME = '{tableInfo.TableName}' ";
 
