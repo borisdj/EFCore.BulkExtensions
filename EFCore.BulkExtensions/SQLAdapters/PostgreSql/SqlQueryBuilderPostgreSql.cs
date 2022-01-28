@@ -140,7 +140,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
             }
 
             q = q +
-                $"WHERE tc.CONSTRAINT_TYPE = 'UNIQUE' " +
+                $"WHERE (tc.CONSTRAINT_TYPE = 'UNIQUE' OR tc.CONSTRAINT_TYPE = 'PRIMARY KEY') " +
                 $"AND tc.TABLE_NAME = '{tableInfo.TableName}' ";
 
             return q;

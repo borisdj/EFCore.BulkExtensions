@@ -36,6 +36,8 @@ namespace EFCore.BulkExtensions.Tests
             context.Database.ExecuteSqlRaw($@"DELETE FROM ""{nameof(Box)}""");
             context.Database.ExecuteSqlRaw($@"ALTER SEQUENCE ""{nameof(Box)}_{nameof(Box.BoxId)}_seq"" RESTART WITH 1");
 
+            context.Database.ExecuteSqlRaw($@"DELETE FROM ""{nameof(UserRole)}""");
+
             var currentTime = DateTime.UtcNow; // default DateTime type: "timestamp with time zone"; DateTime.Now goes with: "timestamp without time zone"
 
             var entities = new List<Item>();
@@ -106,6 +108,9 @@ namespace EFCore.BulkExtensions.Tests
             Assert.Equal("CHANGE 3", context.Items.Where(a => a.Name == "Name 3").AsNoTracking().FirstOrDefault().Description);
             Assert.Equal("CHANGE 4", context.Items.Where(a => a.Name == "Name 4").AsNoTracking().FirstOrDefault().Description);
 
+            // Test Multiple KEYS
+            var userRoles = new List<UserRole> { new UserRole { Description = "Info" } };
+            context.BulkInsertOrUpdate(userRoles);
 
             // DELETE
             context.BulkDelete(new List<Item>() { entities2[1] }, configUpdateBy);
