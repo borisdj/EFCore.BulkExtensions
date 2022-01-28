@@ -131,16 +131,18 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
         {
             var primaryKeysColumns = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList();
 
-            var q = $"SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc " +
-                    $"INNER JOIN INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE cu " +
-                    $"ON cu.CONSTRAINT_NAME = tc.CONSTRAINT_NAME " +
-                    $"WHERE tc.CONSTRAINT_TYPE = 'UNIQUE' " +
-                    $"AND tc.TABLE_NAME = '{tableInfo.TableName}' ";
-
-            foreach(var pkColumn in primaryKeysColumns)
+            var q = $"SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc ";
+            foreach (var (pkColumn, index) in primaryKeysColumns.Select((value, i) => (value, i)))
             {
-                q += $"AND cu.COLUMN_NAME = '{pkColumn}' ";
+                q = q +
+                    $"INNER JOIN INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE cu{index} " +
+                    $"ON cu{index}.CONSTRAINT_NAME = tc.CONSTRAINT_NAME AND cu{index}.COLUMN_NAME = '{pkColumn}' ";
             }
+
+            q = q +
+                $"WHERE tc.CONSTRAINT_TYPE = 'UNIQUE' " +
+                $"AND tc.TABLE_NAME = '{tableInfo.TableName}' ";
+
             return q;
         }
 
@@ -222,6 +224,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
                 sql = sql.Replace($"AS {firstLetterOfTable}", "");
                 sql = sql.Replace($"UPDATE {firstLetterOfTable}", "UPDATE " + tableAS);
             }
+
             return sql;
         }
     }
