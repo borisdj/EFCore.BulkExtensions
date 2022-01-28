@@ -1,5 +1,6 @@
 ﻿using EFCore.BulkExtensions.Helpers;
 using EFCore.BulkExtensions.SqlAdapters;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using System;
@@ -43,9 +44,12 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
                                            : connection.BeginBinaryImport(sqlCopy);
 
                 var uniqueColumnName = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList().FirstOrDefault();
-                var propertiesColumnDict = (tableInfo.InsertToTempTable && tableInfo.IdentityColumnName == uniqueColumnName)
+
+                var doKeepIdentity = tableInfo.BulkConfig.SqlBulkCopyOptions == SqlBulkCopyOptions.KeepIdentity;
+                var propertiesColumnDict = ((tableInfo.InsertToTempTable || doKeepIdentity) && tableInfo.IdentityColumnName == uniqueColumnName)
                     ? tableInfo.PropertyColumnNamesDict
                     : tableInfo.PropertyColumnNamesDict.Where(a => a.Value != tableInfo.IdentityColumnName);
+
                 var propertiesNames = propertiesColumnDict.Select(a => a.Key).ToList();
                 var entitiesCopiedCount = 0;
                 foreach (var entity in entities)
