@@ -139,7 +139,7 @@ namespace EFCore.BulkExtensions
 
                     string paramName = npgsqlParam.ParameterName.Replace("@", "");
                     var propertyType = type.GetProperties().SingleOrDefault(a => a.Name == paramName)?.PropertyType;
-                    if (propertyType == typeof(System.Text.Json.JsonElement) || propertyType == typeof(System.Text.Json.JsonElement?))
+                    if (propertyType == typeof(System.Text.Json.JsonElement) || propertyType == typeof(System.Text.Json.JsonElement?)) // for JsonDocument works without fix
                     {
                         npgsqlParam.NpgsqlDbType = NpgsqlTypes.NpgsqlDbType.Jsonb;
                     }

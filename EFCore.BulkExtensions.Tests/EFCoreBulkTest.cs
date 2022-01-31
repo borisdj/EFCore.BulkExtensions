@@ -134,11 +134,14 @@ namespace EFCore.BulkExtensions.Tests
             var query3 = context.Items.Where(a => descriptionsToDelete.Contains(a.Description));
             query3.BatchDelete();
 
-
             // for type 'jsonb'
-            context.BulkInsert(new List<Box> { new Box { SettingValue = JsonDocument.Parse(@"{ ""Model"" : ""Square""}").RootElement } });
+            JsonDocument jsonbDoc = JsonDocument.Parse(@"{ ""ModelEL"" : ""Square""}");
+            var box = new Box { DocumentContent = jsonbDoc, ElementContent = jsonbDoc.RootElement };
+            context.BulkInsert(new List<Box> { box });
+
+            JsonDocument jsonbDoc2 = JsonDocument.Parse(@"{ ""ModelEL"" : ""Circle""}");
             var boxQuery = context.Boxes.AsQueryable().Where(a => a.BoxId <= 1);
-            boxQuery.BatchUpdate(new Box { SettingValue = JsonDocument.Parse(@"{ ""Model"" : ""Circle""}").RootElement });
+            boxQuery.BatchUpdate(new Box { DocumentContent = jsonbDoc2, ElementContent = jsonbDoc2.RootElement });
 
             //var incrementStep = 100;
             //var suffix = " Concatenated";

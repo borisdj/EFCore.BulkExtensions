@@ -131,7 +131,8 @@ namespace EFCore.BulkExtensions.Tests
             {
                 modelBuilder.Entity<Event>().Property(p => p.TimeCreated).HasColumnType("timestamp"); // with annotation defined as "datetime2(3)" so here corrected for PG ("timestamp" in short for "timestamp without time zone")
 
-                modelBuilder.Entity<Box>().Property(p => p.SettingValue).HasColumnType("jsonb"); // with annotation not mapped since not used for others DBs
+                modelBuilder.Entity<Box>().Property(p => p.ElementContent).HasColumnType("jsonb"); // with annotation not mapped since not used for others DBs
+                modelBuilder.Entity<Box>().Property(p => p.DocumentContent).HasColumnType("jsonb"); // with annotation not mapped since not used for others DBs
             }
 
             //modelBuilder.Entity<Modul>(buildAction => { buildAction.HasNoKey(); });
@@ -375,8 +376,11 @@ namespace EFCore.BulkExtensions.Tests
         public int BoxId { get; set; }
 
         [NotMapped] // used only for Postgres so mapped wiht FluentAPI 
-        public JsonElement SettingValue { get; set; }
-}
+        public System.Text.Json.JsonElement ElementContent { get; set; }
+
+        [NotMapped] // used only for Postgres so mapped wiht FluentAPI 
+        public JsonDocument DocumentContent { get; set; }
+    }
 
     // For testing TimeStamp Property and Column with Concurrency Lock
     public class File
