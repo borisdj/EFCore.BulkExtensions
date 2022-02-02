@@ -946,5 +946,34 @@ namespace EFCore.BulkExtensions.Tests
             Assert.Equal("Desc1", entities[0].Description);
             Assert.Equal("Desc2", entities[1].Description);
         }
+        
+        [Theory]
+        [InlineData(DbServer.SQLServer)]
+        [InlineData(DbServer.SQLite)]
+        private void PrivateKeyTest(DbServer dbServer)
+        {
+            ContextUtil.DbServer = dbServer;
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.BulkDelete(context.PrivateKeys.ToList());
+            }
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                var entities = new List<PrivateKey> {
+                    new()
+                    {
+                        Name = "foo"
+                    }
+                };
+                context.BulkInsertOrUpdate(entities);
+            }
+
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                var defaultValueTest = context.PrivateKeys.Single();
+                Assert.Equal("foo", defaultValueTest.Name);
+            }
+        }
     }
 }
