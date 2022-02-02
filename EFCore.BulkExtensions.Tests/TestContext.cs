@@ -61,6 +61,7 @@ namespace EFCore.BulkExtensions.Tests
 
         public DbSet<Department> Departments { get; set; }
         public DbSet<Division> Divisions { get; set; }
+        public DbSet<PrivateKey> PrivateKeys { get; set; }
 
         public TestContext(DbContextOptions options) : base(options)
         {
@@ -151,6 +152,11 @@ namespace EFCore.BulkExtensions.Tests
 
             modelBuilder.Entity<Parent>().Property(parent => parent.PhoneNumber)
                 .HasColumnType("varchar(12)").HasMaxLength(12).HasField("_phoneNumber").IsRequired();
+            
+            modelBuilder.Entity<PrivateKey>(c =>
+            {
+                c.HasKey("Id");
+            });
 
             //modelBuilder.Entity<Person>().HasDiscriminator<string>("Discriminator").HasValue<Student>("Student").HasValue<Teacher>("Teacher"); // name of classes are default values
 
@@ -635,5 +641,11 @@ namespace EFCore.BulkExtensions.Tests
 
         public Guid DepartmentId { get; set; }
         public Department Department { get; set; }
+    }
+    
+    public class PrivateKey
+    {
+        private long Id { get; set; }
+        public string Name { get; set; }
     }
 }
