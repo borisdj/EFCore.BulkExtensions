@@ -79,6 +79,11 @@ namespace EFCore.BulkExtensions
         public string CustomSourceTableName { get; set; }
 
         /// <summary>
+        ///     Only if CustomDestinationTableName is set and used for specifying Source - Destination column names when they are not the same
+        /// </summary>
+        public Dictionary<string, string> CustomSourceDestinationMappingColumns { get; set; }
+
+        /// <summary>
         ///     Can be set to True if want to have tracking of entities from BulkRead or when SetOutputIdentity is set.
         /// </summary>
         public bool TrackingEntities { get; set; }

@@ -779,12 +779,12 @@ namespace EFCore.BulkExtensions.Tests
             ContextUtil.DbServer = dbServer;
             using var context = new TestContext(ContextUtil.GetOptions());
 
-            //context.Truncate<Entry>();
-            //context.Truncate<EntryArchive>();
+            context.Truncate<Entry>();
+            context.Truncate<EntryPrep>();
+            context.Truncate<EntryArchive>();
 
-            /*int numberOfNewToInsert = 100;
             var entities = new List<Entry>();
-            for (int i = 1; i <= numberOfNewToInsert; i++)
+            for (int i = 1; i <= 10; i++)
             {
                 var entity = new Entry
                 {
@@ -792,10 +792,30 @@ namespace EFCore.BulkExtensions.Tests
                 };
                 entities.Add(entity);
             }
+            // [DEST]
+            context.BulkInsert(entities, b => b.CustomDestinationTableName = nameof(EntryArchive)); // Insert into table 'EntryArchive'
 
-            context.BulkInsert(entities, b => b.CustomDestinationTableName = nameof(EntryArchive));*/
+            // [SOURCE] (With CustomSourceTableName list not used so can be empty)
+            context.BulkInsert(new List<Entry>(), b => b.CustomSourceTableName = nameof(EntryArchive)); // InsertOrMERGE from table 'EntryArchive' into table 'Entry'
 
-            context.BulkInsertOrUpdate(new List<Entry>(), b => b.CustomSourceTableName = nameof(EntryArchive)); // list not used so can be empty, source is table EntryArchive
+            var entities2 = new List<EntryPrep>();
+            for (int i = 1; i <= 20; i++)
+            {
+                var entity = new EntryPrep
+                {
+                    NameInfo = "Name Info " + i,
+                };
+                entities2.Add(entity);
+            }
+            context.EntryPreps.AddRange(entities2);
+            context.SaveChanges();
+
+            var mappings = new Dictionary<string, string>();
+            mappings.Add(nameof(EntryPrep.EntryPrepId), nameof(Entry.EntryId)); // here used 'nameof(Prop)' since Columns have the same name as Props
+            mappings.Add(nameof(EntryPrep.NameInfo), nameof(Entry.Name));       // if columns they were different name then they would be set with string names, eg. "EntryPrepareId"
+            var bulkConfig = new BulkConfig { CustomSourceTableName = nameof(EntryPrep), CustomSourceDestinationMappingColumns = mappings };
+            // [SOURCE] 
+            context.BulkInsertOrUpdate(new List<Entry>(), bulkConfig); // InsertOrMERGE from table 'EntryPrep' into table 'Entry' 
         }
             
         [Fact]

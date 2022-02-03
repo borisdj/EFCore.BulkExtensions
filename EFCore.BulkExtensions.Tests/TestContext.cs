@@ -32,6 +32,7 @@ namespace EFCore.BulkExtensions.Tests
         public DbSet<Teacher> Teachers { get; set; }
         public DbSet<Entry> Entries { get; set; }
         public DbSet<EntryArchive> EntryArchives { get; set; }
+        public DbSet<EntryPrep> EntryPreps { get; set; }
         public DbSet<Modul> Moduls { get; set; }
         public DbSet<Info> Infos { get; set; }
         public DbSet<ChangeLog> ChangeLogs { get; set; }
@@ -344,6 +345,13 @@ namespace EFCore.BulkExtensions.Tests
         public int EntryId { get; set; }
 
         public string Name { get; set; }
+    }
+    public class EntryPrep
+    {
+        [Key]
+        public int EntryPrepId { get; set; }
+
+        public string NameInfo { get; set; }
     }
 
     public class Address

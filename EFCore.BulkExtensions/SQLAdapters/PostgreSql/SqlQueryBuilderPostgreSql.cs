@@ -85,6 +85,31 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
 
             q = q.Replace("[", @"""").Replace("]", @"""");
             q += ";";
+
+            Dictionary<string, string> sourceDestinationMappings = tableInfo.BulkConfig.CustomSourceDestinationMappingColumns;
+            if (tableInfo.BulkConfig.CustomSourceTableName != null && sourceDestinationMappings != null && sourceDestinationMappings.Count > 0)
+            {
+                var textSelect = "SELECT ";
+                var textFrom = " FROM";
+                int startIndex = q.IndexOf(textSelect);
+                var qSegment = q.Substring(startIndex, q.IndexOf(textFrom) - startIndex);
+                var qSegmentUpdated = qSegment;
+                foreach (var mapping in sourceDestinationMappings)
+                {
+                    var propertyFormated = $@"""{mapping.Value}""";
+                    var sourceProperty = mapping.Key;
+
+                    if (qSegment.Contains(propertyFormated))
+                    {
+                        qSegmentUpdated = qSegmentUpdated.Replace(propertyFormated, $@"""{sourceProperty}""");
+                    }
+                }
+                if (qSegment != qSegmentUpdated)
+                {
+                    q = q.Replace(qSegment, qSegmentUpdated);
+                }
+            }
+
             return q;
         }
 
