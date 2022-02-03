@@ -794,9 +794,11 @@ namespace EFCore.BulkExtensions.Tests
             }
             // [DEST]
             context.BulkInsert(entities, b => b.CustomDestinationTableName = nameof(EntryArchive)); // Insert into table 'EntryArchive'
+            Assert.Equal(10, context.EntryArchives.Count());
 
             // [SOURCE] (With CustomSourceTableName list not used so can be empty)
             context.BulkInsert(new List<Entry>(), b => b.CustomSourceTableName = nameof(EntryArchive)); // InsertOrMERGE from table 'EntryArchive' into table 'Entry'
+            Assert.Equal(10, context.Entries.Count());
 
             var entities2 = new List<EntryPrep>();
             for (int i = 1; i <= 20; i++)
@@ -815,7 +817,8 @@ namespace EFCore.BulkExtensions.Tests
             mappings.Add(nameof(EntryPrep.NameInfo), nameof(Entry.Name));       // if columns they were different name then they would be set with string names, eg. "EntryPrepareId"
             var bulkConfig = new BulkConfig { CustomSourceTableName = nameof(EntryPrep), CustomSourceDestinationMappingColumns = mappings };
             // [SOURCE] 
-            context.BulkInsertOrUpdate(new List<Entry>(), bulkConfig); // InsertOrMERGE from table 'EntryPrep' into table 'Entry' 
+            context.BulkInsertOrUpdate(new List<Entry>(), bulkConfig); // InsertOrMERGE from table 'EntryPrep' into table 'Entry'
+            Assert.Equal(20, context.Entries.Count());
         }
             
         [Fact]
