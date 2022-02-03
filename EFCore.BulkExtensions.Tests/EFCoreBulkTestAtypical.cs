@@ -813,7 +813,7 @@ namespace EFCore.BulkExtensions.Tests
             context.SaveChanges();
 
             var mappings = new Dictionary<string, string>();
-            //mappings.Add(nameof(EntryPrep.EntryPrepId), nameof(Entry.EntryId)); // here used 'nameof(Prop)' since Columns have the same name as Props
+            mappings.Add(nameof(EntryPrep.EntryPrepId), nameof(Entry.EntryId)); // here used 'nameof(Prop)' since Columns have the same name as Props
             mappings.Add(nameof(EntryPrep.NameInfo), nameof(Entry.Name));       // if columns they were different name then they would be set with string names, eg. "EntryPrepareId"
             var bulkConfig = new BulkConfig {
                 CustomSourceTableName = nameof(EntryPrep),
