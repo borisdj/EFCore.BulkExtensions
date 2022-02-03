@@ -271,7 +271,7 @@ namespace EFCore.BulkExtensions
             {
                 var textOrderBy = "ORDER BY ";
                 var textAsS = " AS S";
-                int startIndex = q.IndexOf(textOrderBy) + textOrderBy.Length;
+                int startIndex = q.IndexOf(textOrderBy);
                 var qSegment = q.Substring(startIndex, q.IndexOf(textAsS) - startIndex);
                 var qSegmentUpdated = qSegment;
                 foreach (var mapping in sourceDestinationMappings)
