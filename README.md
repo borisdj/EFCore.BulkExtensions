@@ -126,11 +126,12 @@ EnableStreaming: false,	                          UpdateByProperties: null,
 UseTempDB: false,	                          EnableShadowProperties: false,
 UniqueTableNameTempDb: true,	                  IncludeGraph: false,
 CustomDestinationTableName: null,	          OmitClauseExistsExcept: false,
-TrackingEntities: false,	                  DoNotUpdateIfTimeStampChanged: false,
-WithHoldlock: true,	                          SRID: 4326,
-CalculateStats: false,	                          DateTime2PrecisionForceRound: false,
-SqlBulkCopyOptions: Default                       TemporalColumns: { "PeriodStart", "PeriodEnd" },
-                                                  OnSaveChangesSetFK: true,  
+CustomSourceTableName: null,	                  DoNotUpdateIfTimeStampChanged: false,
+CustomSourceDestinationMappingColumns: null,    SRID: 4326,
+TrackingEntities: false,	                  DateTime2PrecisionForceRound: false,
+WithHoldlock: true,	                          TemporalColumns: { "PeriodStart", "PeriodEnd" },
+CalculateStats: false,	                          EnableShadowProperties: false,
+SqlBulkCopyOptions: Default,                      OnSaveChangesSetFK: true,                                                  
 --------------------------------------------------------------------------------------
 METHOD: SetSynchronizeFilter<T>
 ```
@@ -215,6 +216,8 @@ If used for pure Insert (with Batching) then SetOutputIdentity should also be co
 **UseTempDB** when set then BulkOperation has to be [inside Transaction](https://github.com/borisdj/EFCore.BulkExtensions/issues/49).<br>
 **UniqueTableNameTempDb** when changed to false temp table name will be only 'Temp' without random numbers.<br>
 **CustomDestinationTableName** can be set with 'TableName' only or with 'Schema.TableName'.<br>
+**CustomSourceTableName** when set enables source data from specified table already in Db, so input list not used and can be empty.<br>
+**CustomSourceDestinationMappingColumns** can be set only if CustomSourceTableName is configured and used for specifying Source - Destination column names when they are not the same. Example in test <br>
 **EnableShadowProperties** to add (normal) Shadow Property and persist value. Disables automatic discrimator, use manual method.<br>
 **IncludeGraph** when set all entites that have relations with main ones from the list are also merged into theirs tables.<br>
 **OmitClauseExistsExcept** removes the clause from Merge statement, required when having noncomparable types like XML, and useful when need to active triggers even for same data.<br>
