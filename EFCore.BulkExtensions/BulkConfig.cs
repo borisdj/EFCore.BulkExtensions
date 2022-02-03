@@ -79,7 +79,7 @@ namespace EFCore.BulkExtensions
         public string CustomSourceTableName { get; set; }
 
         /// <summary>
-        ///     Only if CustomDestinationTableName is set and used for specifying Source - Destination column names when they are not the same
+        ///     Only if CustomSourceTableName is set and used for specifying Source - Destination column names when they are not the same
         /// </summary>
         public Dictionary<string, string> CustomSourceDestinationMappingColumns { get; set; }
 
