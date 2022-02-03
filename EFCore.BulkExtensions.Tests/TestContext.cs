@@ -30,6 +30,8 @@ namespace EFCore.BulkExtensions.Tests
         public DbSet<Person> Persons { get; set; }
         public DbSet<Student> Students { get; set; }
         public DbSet<Teacher> Teachers { get; set; }
+        public DbSet<Entry> Entries { get; set; }
+        public DbSet<EntryArchive> EntryArchives { get; set; }
         public DbSet<Modul> Moduls { get; set; }
         public DbSet<Info> Infos { get; set; }
         public DbSet<ChangeLog> ChangeLogs { get; set; }
@@ -327,6 +329,21 @@ namespace EFCore.BulkExtensions.Tests
     public class Student : Person
     {
         public string Subject { get; set; }
+    }
+
+    // To Test custom Destination and Source tables
+    public class Entry
+    {
+        public int EntryId { get; set; }
+
+        public string Name { get; set; }
+    }
+    public class EntryArchive
+    {
+        [Key]
+        public int EntryId { get; set; }
+
+        public string Name { get; set; }
     }
 
     public class Address

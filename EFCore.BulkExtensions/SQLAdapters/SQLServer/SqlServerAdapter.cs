@@ -122,46 +122,51 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
 
         protected async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, CancellationToken cancellationToken, bool isAsync) where T : class
         {
-            tableInfo.InsertToTempTable = true;
             var entityPropertyWithDefaultValue = entities.GetPropertiesWithDefaultValue(type);
 
-            var dropTempTableIfExists = tableInfo.BulkConfig.UseTempDB;
-
-            if (dropTempTableIfExists)
+            if (tableInfo.BulkConfig.CustomSourceTableName == null)
             {
-                var sqlDropTable = SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
+                tableInfo.InsertToTempTable = true;
+
+                var dropTempTableIfExists = tableInfo.BulkConfig.UseTempDB;
+
+                if (dropTempTableIfExists)
+                {
+                    var sqlDropTable = SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
+                    if (isAsync)
+                    {
+                        await context.Database.ExecuteSqlRawAsync(sqlDropTable, cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        context.Database.ExecuteSqlRaw(sqlDropTable);
+                    }
+                }
+
+                var sqlCreateTableCopy = SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo);
                 if (isAsync)
                 {
-                    await context.Database.ExecuteSqlRawAsync(sqlDropTable, cancellationToken).ConfigureAwait(false);
+                    await context.Database.ExecuteSqlRawAsync(sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
-                    context.Database.ExecuteSqlRaw(sqlDropTable);
+                    context.Database.ExecuteSqlRaw(sqlCreateTableCopy);
                 }
-            }
 
-            var sqlCreateTableCopy = SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo);
-            if (isAsync)
-            {
-                await context.Database.ExecuteSqlRawAsync(sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
-            }
-            else
-            {
-                context.Database.ExecuteSqlRaw(sqlCreateTableCopy);
-            }
-
-            if (tableInfo.TimeStampColumnName != null)
-            {
-                var sqlAddColumn = SqlQueryBuilder.AddColumn(tableInfo.FullTempTableName, tableInfo.TimeStampColumnName, tableInfo.TimeStampOutColumnType);
-                if (isAsync)
+                if (tableInfo.TimeStampColumnName != null)
                 {
-                    await context.Database.ExecuteSqlRawAsync(sqlAddColumn, cancellationToken).ConfigureAwait(false);
-                }
-                else
-                {
-                    context.Database.ExecuteSqlRaw(sqlAddColumn);
+                    var sqlAddColumn = SqlQueryBuilder.AddColumn(tableInfo.FullTempTableName, tableInfo.TimeStampColumnName, tableInfo.TimeStampOutColumnType);
+                    if (isAsync)
+                    {
+                        await context.Database.ExecuteSqlRawAsync(sqlAddColumn, cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        context.Database.ExecuteSqlRaw(sqlAddColumn);
+                    }
                 }
             }
+            
             if (tableInfo.CreatedOutputTable)
             {
                 var sqlCreateOutputTableCopy = SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempOutputTableName, tableInfo, true);
@@ -205,13 +210,16 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
             bool keepIdentity = tableInfo.BulkConfig.SqlBulkCopyOptions.HasFlag(SqlBulkCopyOptions.KeepIdentity);
             try
             {
-                if (isAsync)
+                if (tableInfo.BulkConfig.CustomSourceTableName == null)
                 {
-                    await InsertAsync(context, type, entities, tableInfo, progress, cancellationToken).ConfigureAwait(false);
-                }
-                else
-                {
-                    Insert(context, type, entities, tableInfo, progress);
+                    if (isAsync)
+                    {
+                        await InsertAsync(context, type, entities, tableInfo, progress, cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        Insert(context, type, entities, tableInfo, progress);
+                    }
                 }
 
                 if (keepIdentity && tableInfo.HasIdentity)
@@ -268,14 +276,17 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                         }
 
                     }
-                    var sqlDropTable = SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
-                    if (isAsync)
+                    if (tableInfo.BulkConfig.CustomSourceTableName == null)
                     {
-                        await context.Database.ExecuteSqlRawAsync(sqlDropTable, cancellationToken).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        context.Database.ExecuteSqlRaw(sqlDropTable);
+                        var sqlDropTable = SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
+                        if (isAsync)
+                        {
+                            await context.Database.ExecuteSqlRawAsync(sqlDropTable, cancellationToken).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            context.Database.ExecuteSqlRaw(sqlDropTable);
+                        }
                     }
                 }
 

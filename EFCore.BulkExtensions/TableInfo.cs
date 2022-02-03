@@ -24,6 +24,8 @@ namespace EFCore.BulkExtensions
     {
         public string Schema { get; set; }
         public string SchemaFormated => Schema != null ? $"[{Schema}]." : "";
+        public string TempSchema { get; set; }
+        public string TempSchemaFormated => TempSchema != null ? $"[{TempSchema}]." : "";
         public string TableName { get; set; }
         public string FullTableName => $"{SchemaFormated}[{TableName}]";
         public Dictionary<string, string> PrimaryKeysPropertyColumnNameDict { get; set; }
@@ -33,8 +35,8 @@ namespace EFCore.BulkExtensions
 
         protected string TempDBPrefix => BulkConfig.UseTempDB ? "#" : "";
         public string TempTableSufix { get; set; }
-        public string TempTableName => $"{TableName}{TempTableSufix}";
-        public string FullTempTableName => $"{SchemaFormated}[{TempDBPrefix}{TempTableName}]";
+        public string TempTableName { get; set; }
+        public string FullTempTableName => $"{TempSchemaFormated}[{TempDBPrefix}{TempTableName}]";
         public string FullTempOutputTableName => $"{SchemaFormated}[{TempDBPrefix}{TempTableName}Output]";
 
         public bool CreatedOutputTable => BulkConfig.SetOutputIdentity || BulkConfig.CalculateStats;
@@ -129,7 +131,7 @@ namespace EFCore.BulkExtensions
                 customTableName = BulkConfig.CustomDestinationTableName;
                 if (customTableName.Contains('.'))
                 {
-                    var tableNameSplitList = BulkConfig.CustomDestinationTableName.Split('.');
+                    var tableNameSplitList = customTableName.Split('.');
                     customSchema = tableNameSplitList[0];
                     customTableName = tableNameSplitList[1];
                 }
@@ -138,7 +140,22 @@ namespace EFCore.BulkExtensions
             var entityTableName = entityType.GetTableName();
             TableName = customTableName ?? entityTableName;
 
-            TempTableSufix = "Temp";
+            string sourceSchema = null;
+            string sourceTableName = null;
+            if (BulkConfig.CustomSourceTableName != null)
+            {
+                sourceTableName = BulkConfig.CustomSourceTableName;
+                if (sourceTableName.Contains('.'))
+                {
+                    var tableNameSplitList = sourceTableName.Split('.');
+                    sourceSchema = tableNameSplitList[0];
+                    sourceTableName = tableNameSplitList[1];
+                }
+                BulkConfig.UseTempDB = false;
+            }
+            TempSchema = sourceSchema ?? Schema;
+            TempTableSufix = sourceTableName != null ? "" : "Temp";
+            TempTableName = sourceTableName ?? $"{TableName}{TempTableSufix}";
 
             if (BulkConfig.UniqueTableNameTempDb)
             {

@@ -71,6 +71,14 @@ namespace EFCore.BulkExtensions
         public string CustomDestinationTableName { get; set; }
 
         /// <summary>
+        ///     Source data from specified table already in Db, so input list not used and can be empty.
+        /// </summary>
+        /// <value>
+        ///     Can be set with 'TableName' only or with 'Schema.TableName' (Not supported for Sqlite)
+        /// </value>
+        public string CustomSourceTableName { get; set; }
+
+        /// <summary>
         ///     Can be set to True if want to have tracking of entities from BulkRead or when SetOutputIdentity is set.
         /// </summary>
         public bool TrackingEntities { get; set; }

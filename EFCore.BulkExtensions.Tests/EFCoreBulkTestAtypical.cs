@@ -771,6 +771,33 @@ namespace EFCore.BulkExtensions.Tests
 
         }
 
+        [Theory]
+        [InlineData(DbServer.SQLServer)]
+        [InlineData(DbServer.PostgreSQL)]
+        private void DestinationAndSourceTableNameTest(DbServer dbServer)
+        {
+            ContextUtil.DbServer = dbServer;
+            using var context = new TestContext(ContextUtil.GetOptions());
+
+            //context.Truncate<Entry>();
+            //context.Truncate<EntryArchive>();
+
+            /*int numberOfNewToInsert = 100;
+            var entities = new List<Entry>();
+            for (int i = 1; i <= numberOfNewToInsert; i++)
+            {
+                var entity = new Entry
+                {
+                    Name = "Name " + i,
+                };
+                entities.Add(entity);
+            }
+
+            context.BulkInsert(entities, b => b.CustomDestinationTableName = nameof(EntryArchive));*/
+
+            context.BulkInsertOrUpdate(new List<Entry>(), b => b.CustomSourceTableName = nameof(EntryArchive)); // list not used so can be empty, source is table EntryArchive
+        }
+            
         [Fact]
         private void TablePerTypeInsertTest()
         {
@@ -806,7 +833,6 @@ namespace EFCore.BulkExtensions.Tests
             var bulkConfigBase = new BulkConfig
             {
                 SqlBulkCopyOptions = Microsoft.Data.SqlClient.SqlBulkCopyOptions.KeepIdentity, // OPTION 1. - to ensure insert order is kept the same since SqlBulkCopy does not guarantee it.
-                CustomDestinationTableName = nameof(Log),
                 PropertiesToInclude = new List<string>
                     {
                         nameof(LogPersonReport.LogId),

@@ -118,9 +118,11 @@ namespace EFCore.BulkExtensions.Tests
             var tableInfo = new TableInfo()
             {
                 Schema = "dbo",
+                TempSchema = "dbo",
                 TableName = nameof(Item),
-                PrimaryKeysPropertyColumnNameDict = new Dictionary<string, string> { { nameof(Item.ItemId), nameof(Item.ItemId) } },
+                TempTableName = nameof(Item) + "Temp1234",
                 TempTableSufix = "Temp1234",
+                PrimaryKeysPropertyColumnNameDict = new Dictionary<string, string> { { nameof(Item.ItemId), nameof(Item.ItemId) } },
                 BulkConfig = new BulkConfig()
             };
             const string nameText = nameof(Item.Name);
@@ -139,9 +141,11 @@ namespace EFCore.BulkExtensions.Tests
             var tableInfo = new TableInfo()
             {
                 Schema = "dbo",
+                TempSchema = "dbo",
                 TableName = nameof(Item),
-                PrimaryKeysPropertyColumnNameDict = new Dictionary<string, string> { { nameof(Item.ItemId), nameof(Item.ItemId) } },
+                TempTableName = nameof(Item) + "Temp1234",
                 TempTableSufix = "Temp1234",
+                PrimaryKeysPropertyColumnNameDict = new Dictionary<string, string> { { nameof(Item.ItemId), nameof(Item.ItemId) } },
                 BulkConfig = new BulkConfig()
             };
             const string nameText = nameof(Item.Name);
@@ -164,9 +168,11 @@ namespace EFCore.BulkExtensions.Tests
             var tableInfo = new TableInfo()
             {
                 Schema = "dbo",
+                TempSchema = "dbo",
                 TableName = nameof(Item),
-                PrimaryKeysPropertyColumnNameDict = new Dictionary<string, string> { { nameof(Item.ItemId), nameof(Item.ItemId) } },
+                TempTableName = nameof(Item) + "Temp1234",
                 TempTableSufix = "Temp1234",
+                PrimaryKeysPropertyColumnNameDict = new Dictionary<string, string> { { nameof(Item.ItemId), nameof(Item.ItemId) } },
                 BulkConfig = new BulkConfig()
             };
             const string nameText = nameof(Item.Name);

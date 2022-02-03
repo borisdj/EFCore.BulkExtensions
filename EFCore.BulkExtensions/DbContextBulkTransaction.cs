@@ -13,7 +13,11 @@ namespace EFCore.BulkExtensions
             type ??= typeof(T);
             using (ActivitySources.StartExecuteActivity(operationType, entities.Count))
             {
-                if (entities.Count == 0 && operationType != OperationType.InsertOrUpdateOrDelete && operationType != OperationType.Truncate && operationType != OperationType.SaveChanges)
+                if (entities.Count == 0 && 
+                    operationType != OperationType.InsertOrUpdateOrDelete && 
+                    operationType != OperationType.Truncate && 
+                    operationType != OperationType.SaveChanges &&
+                    (bulkConfig == null || bulkConfig.CustomSourceTableName == null))
                 {
                     return;
                 }
@@ -31,7 +35,7 @@ namespace EFCore.BulkExtensions
                 {
                     TableInfo tableInfo = TableInfo.CreateInstance(context, type, entities, operationType, bulkConfig);
 
-                    if (operationType == OperationType.Insert && !tableInfo.BulkConfig.SetOutputIdentity)
+                    if (operationType == OperationType.Insert && !tableInfo.BulkConfig.SetOutputIdentity && tableInfo.BulkConfig.CustomSourceTableName == null)
                     {
                         SqlBulkOperation.Insert(context, type, entities, tableInfo, progress);
                     }

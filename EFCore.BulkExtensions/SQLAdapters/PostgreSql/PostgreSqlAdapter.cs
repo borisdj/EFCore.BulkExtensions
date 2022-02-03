@@ -151,17 +151,21 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
 
         protected async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, CancellationToken cancellationToken, bool isAsync) where T : class
         {
-            tableInfo.InsertToTempTable = true;
             var entityPropertyWithDefaultValue = entities.GetPropertiesWithDefaultValue(type);
 
-            var sqlCreateTableCopy = SqlQueryBuilderPostgreSql.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo);
-            if (isAsync)
+            if (tableInfo.BulkConfig.CustomSourceTableName == null)
             {
-                await context.Database.ExecuteSqlRawAsync(sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
-            }
-            else
-            {
-                context.Database.ExecuteSqlRaw(sqlCreateTableCopy);
+                tableInfo.InsertToTempTable = true;
+
+                var sqlCreateTableCopy = SqlQueryBuilderPostgreSql.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo);
+                if (isAsync)
+                {
+                    await context.Database.ExecuteSqlRawAsync(sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    context.Database.ExecuteSqlRaw(sqlCreateTableCopy);
+                }
             }
 
             bool hasUniqueConstrain = await CheckHasExplicitUniqueConstrainAsync(context, tableInfo, cancellationToken, isAsync);
@@ -176,13 +180,16 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
 
             try
             {
-                if (isAsync)
+                if (tableInfo.BulkConfig.CustomSourceTableName == null)
                 {
-                    await InsertAsync(context, type, entities, tableInfo, progress, cancellationToken).ConfigureAwait(false);
-                }
-                else
-                {
-                    Insert(context, type, entities, tableInfo, progress);
+                    if (isAsync)
+                    {
+                        await InsertAsync(context, type, entities, tableInfo, progress, cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        Insert(context, type, entities, tableInfo, progress);
+                    }
                 }
 
                 if (!hasUniqueConstrain)
@@ -246,14 +253,17 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
 
                 if (!tableInfo.BulkConfig.UseTempDB)
                 {
-                    var sqlDropTable = SqlQueryBuilderPostgreSql.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
-                    if (isAsync)
+                    if (tableInfo.BulkConfig.CustomSourceTableName == null)
                     {
-                        await context.Database.ExecuteSqlRawAsync(sqlDropTable, cancellationToken).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        context.Database.ExecuteSqlRaw(sqlDropTable);
+                        var sqlDropTable = SqlQueryBuilderPostgreSql.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
+                        if (isAsync)
+                        {
+                            await context.Database.ExecuteSqlRawAsync(sqlDropTable, cancellationToken).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            context.Database.ExecuteSqlRaw(sqlDropTable);
+                        }
                     }
                 }
             }
