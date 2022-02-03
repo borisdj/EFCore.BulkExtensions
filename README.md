@@ -217,7 +217,7 @@ If used for pure Insert (with Batching) then SetOutputIdentity should also be co
 **UniqueTableNameTempDb** when changed to false temp table name will be only 'Temp' without random numbers.<br>
 **CustomDestinationTableName** can be set with 'TableName' only or with 'Schema.TableName'.<br>
 **CustomSourceTableName** when set enables source data from specified table already in Db, so input list not used and can be empty.<br>
-**CustomSourceDestinationMappingColumns** can be set only if CustomSourceTableName is configured and used for specifying Source - Destination column names when they are not the same. Example in test <br>
+**CustomSourceDestinationMappingColumns** can be set only if CustomSourceTableName is configured and used for specifying Source-Destination column names when they are not the same. Example in test `DestinationAndSourceTableNameTest`.<br>
 **EnableShadowProperties** to add (normal) Shadow Property and persist value. Disables automatic discrimator, use manual method.<br>
 **IncludeGraph** when set all entites that have relations with main ones from the list are also merged into theirs tables.<br>
 **OmitClauseExistsExcept** removes the clause from Merge statement, required when having noncomparable types like XML, and useful when need to active triggers even for same data.<br>
