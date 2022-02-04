@@ -24,7 +24,7 @@ namespace EFCore.BulkExtensions.Tests
 
         [Theory]
         [InlineData(DbServer.PostgreSQL, true)]
-        public void InsertTestPostrgeSql(DbServer dbServer, bool isBulk)
+        public void InsertTestPostgreSql(DbServer dbServer, bool isBulk)
         {
             ContextUtil.DbServer = dbServer;
 
