@@ -246,8 +246,27 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
                 // UPDATE "Item" SET "Description" = 'Update N', "Price" = 1.5 FROM "Item" WHERE "ItemId" <= 1
 
                 string tableAS = sql.Substring(sql.IndexOf("FROM") + 4, sql.IndexOf($"AS {firstLetterOfTable}") - sql.IndexOf("FROM"));
-                sql = sql.Replace($"AS {firstLetterOfTable}", "");
-                sql = sql.Replace($"UPDATE {firstLetterOfTable}", "UPDATE " + tableAS);
+                
+                if (!sql.Contains("JOIN"))
+                {
+                    sql = sql.Replace($"AS {firstLetterOfTable}", "");
+                }
+                else
+                {
+                    int positionFROM = sql.IndexOf("FROM");
+                    int positionEndINNERJOIN = sql.IndexOf("INNER JOIN ") + "INNER JOIN ".Length;
+                    int positionON = sql.IndexOf(" ON");
+                    int positionEndON = positionON + " ON".Length;
+                    int positionWHERE = sql.IndexOf("WHERE");
+                    string oldSqlSegment = sql.Substring(positionFROM, positionWHERE - positionFROM);
+                    string newSqlSegment = "FROM " + sql.Substring(positionEndINNERJOIN, positionON - positionEndINNERJOIN);
+                    string equalsPkFk = sql.Substring(positionEndON, positionWHERE - positionEndON);
+                    sql = sql.Replace(oldSqlSegment, newSqlSegment);
+                    sql = sql.Replace("WHERE", " WHERE");
+                    sql = sql + " AND" + equalsPkFk;
+                }
+
+                sql = sql.Replace($"UPDATE {firstLetterOfTable}", "UPDATE" + tableAS);
             }
 
             return sql;
