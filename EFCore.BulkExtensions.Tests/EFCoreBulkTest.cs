@@ -86,13 +86,13 @@ namespace EFCore.BulkExtensions.Tests
             }
 
             // INSERT
-            context.BulkInsert(entities, new BulkConfig() { NotifyAfter = 1 }, (a) => WriteProgress(a));
+            context.BulkInsert(entities);
 
             Assert.Equal("info 1", context.Items.Where(a => a.Name == "Name 1").AsNoTracking().FirstOrDefault().Description);
             Assert.Equal("info 2", context.Items.Where(a => a.Name == "Name 2").AsNoTracking().FirstOrDefault().Description);
 
             // UPDATE
-            context.BulkInsertOrUpdate(entities2);
+            context.BulkInsertOrUpdate(entities2, new BulkConfig() { NotifyAfter = 1 }, (a) => WriteProgress(a));
 
             Assert.Equal("UPDATE 2", context.Items.Where(a => a.Name == "Name 2").AsNoTracking().FirstOrDefault().Description);
             Assert.Equal("UPDATE 3", context.Items.Where(a => a.Name == "Name 3").AsNoTracking().FirstOrDefault().Description);

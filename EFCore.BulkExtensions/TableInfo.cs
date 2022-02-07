@@ -153,15 +153,16 @@ namespace EFCore.BulkExtensions
                 }
                 BulkConfig.UseTempDB = false;
             }
+
             TempSchema = sourceSchema ?? Schema;
             TempTableSufix = sourceTableName != null ? "" : "Temp";
-            TempTableName = sourceTableName ?? $"{TableName}{TempTableSufix}";
-
             if (BulkConfig.UniqueTableNameTempDb)
             {
                 TempTableSufix += Guid.NewGuid().ToString().Substring(0, 8); // 8 chars of Guid as tableNameSufix to avoid same name collision with other tables
                                                                              // TODO Consider Hash
             }
+            TempTableName = sourceTableName ?? $"{TableName}{TempTableSufix}";
+
             ObjectIdentifier = StoreObjectIdentifier.Table(entityTableName, entityType.GetSchema());
 
             var allProperties = new List<IProperty>();
@@ -247,8 +248,8 @@ namespace EFCore.BulkExtensions
                 !a.IsShadowProperty() &&
                 (a.GetDefaultValueSql() != null ||
                  (a.GetDefaultValue() != null &&
-                  a.ValueGenerated != ValueGenerated.Never
-                  && a.ClrType != typeof(Guid)) // Since .Net_6.0 in EF 'Guid' type has DefaultValue even when not explicitly defined with Annotation or FluentApi
+                  a.ValueGenerated != ValueGenerated.Never &&
+                  a.ClrType != typeof(Guid)) // Since .Net_6.0 in EF 'Guid' type has DefaultValue even when not explicitly defined with Annotation or FluentApi
                 ));
             foreach (var propertyWithDefaultValue in propertiesWithDefaultValues)
             {
@@ -669,7 +670,7 @@ namespace EFCore.BulkExtensions
             return previousPropertyColumnNamesDict;
         }
 
-        internal void UpdateReadEntities<T>(Type type, IList<T> entities, IList<T> existingEntities)
+        internal void UpdateReadEntities<T>(Type type, IList<T> entities, IList<T> existingEntities, DbContext context)
         {
             List<string> propertyNames = PropertyColumnNamesDict.Keys.ToList();
             if (HasOwnedTypes)
@@ -698,7 +699,14 @@ namespace EFCore.BulkExtensions
             {
                 T entity = entities[i];
                 string uniqueProperyValues = GetUniquePropertyValues(entity, selectByPropertyNames, FastPropertyDict);
-                if (existingEntitiesDict.TryGetValue(uniqueProperyValues, out T existingEntity))
+
+                existingEntitiesDict.TryGetValue(uniqueProperyValues, out T existingEntity);
+                bool isPostgreSQL = context.Database.ProviderName.EndsWith(DbServer.PostgreSQL.ToString());
+                if (existingEntity == null && isPostgreSQL)
+                {
+                    existingEntity = existingEntities[i]; // TODO check if BinaryImport with COPY on Postgres preserves order
+                }
+                if (existingEntity != null)
                 {
                     foreach (var propertyName in propertyNames)
                     {

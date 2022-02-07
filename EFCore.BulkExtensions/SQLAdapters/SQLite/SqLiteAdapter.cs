@@ -235,7 +235,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLite
                 var compiled = EF.CompileQuery(expression); // instead using Compiled queries
                 existingEntities = compiled(context).ToList();
 
-                tableInfo.UpdateReadEntities(type, entities, existingEntities);
+                tableInfo.UpdateReadEntities(type, entities, existingEntities, context);
 
                 // DROP
                 command.CommandText = SqlQueryBuilderSqlite.DropTable(tableInfo.FullTempTableName);

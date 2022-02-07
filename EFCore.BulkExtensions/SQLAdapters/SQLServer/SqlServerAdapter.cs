@@ -367,7 +367,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                     existingEntities = compiled(context).Cast<T>().ToList();
                 }
 
-                tableInfo.UpdateReadEntities(type, entities, existingEntities);
+                tableInfo.UpdateReadEntities(type, entities, existingEntities, context);
 
                 if (tableInfo.TimeStampPropertyName != null && !tableInfo.PropertyColumnNamesDict.ContainsKey(tableInfo.TimeStampPropertyName))
                 {

@@ -71,7 +71,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
                         var columnType = tableInfo.ColumnNamesTypesDict[propertyColumnName];
                         
                         // string is 'text' which works fine
-                        if (columnType.StartsWith("character varying")) // when MaxLength is defined
+                        if (columnType.StartsWith("character")) // when MaxLength is defined: 'character(1)' or 'character varying'
                             columnType = "character"; // 'character' is like 'string'
                         else if (columnType.StartsWith("varchar"))
                             columnType = "varchar";
@@ -233,7 +233,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
                     {
                         outputEntities = returningQuery.ToList();
                     }
-                    tableInfo.UpdateReadEntities(type, entities, outputEntities);
+                    tableInfo.UpdateReadEntities(type, entities, outputEntities, context);
                 }
             }
             finally

@@ -254,12 +254,12 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
                 else
                 {
                     int positionFROM = sql.IndexOf("FROM");
-                    int positionEndINNERJOIN = sql.IndexOf("INNER JOIN ") + "INNER JOIN ".Length;
+                    int positionEndJOIN = sql.IndexOf("JOIN ") + "JOIN ".Length;
                     int positionON = sql.IndexOf(" ON");
                     int positionEndON = positionON + " ON".Length;
                     int positionWHERE = sql.IndexOf("WHERE");
                     string oldSqlSegment = sql.Substring(positionFROM, positionWHERE - positionFROM);
-                    string newSqlSegment = "FROM " + sql.Substring(positionEndINNERJOIN, positionON - positionEndINNERJOIN);
+                    string newSqlSegment = "FROM " + sql.Substring(positionEndJOIN, positionON - positionEndJOIN);
                     string equalsPkFk = sql.Substring(positionEndON, positionWHERE - positionEndON);
                     sql = sql.Replace(oldSqlSegment, newSqlSegment);
                     sql = sql.Replace("WHERE", " WHERE");
