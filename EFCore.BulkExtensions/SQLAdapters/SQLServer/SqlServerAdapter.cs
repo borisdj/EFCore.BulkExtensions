@@ -353,20 +353,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
                     tableInfo.PropertyColumnNamesDict.Add(tableInfo.TimeStampPropertyName, tableInfo.TimeStampColumnName);
                 }
 
-                List<T> existingEntities;
-                if (typeof(T) == type)
-                {
-                    Expression<Func<DbContext, IQueryable<T>>> expression = tableInfo.GetQueryExpression<T>(sqlSelectJoinTable, false);
-                    var compiled = EF.CompileQuery(expression); // instead using Compiled queries
-                    existingEntities = compiled(context).ToList();
-                }
-                else // TODO: Consider removing
-                {
-                    Expression<Func<DbContext, IEnumerable>> expression = tableInfo.GetQueryExpression(type, sqlSelectJoinTable, false);
-                    var compiled = EF.CompileQuery(expression); // instead using Compiled queries
-                    existingEntities = compiled(context).Cast<T>().ToList();
-                }
-
+                List<T> existingEntities = tableInfo.LoadOutputEntities<T>(context, type, sqlSelectJoinTable);
                 tableInfo.UpdateReadEntities(type, entities, existingEntities, context);
 
                 if (tableInfo.TimeStampPropertyName != null && !tableInfo.PropertyColumnNamesDict.ContainsKey(tableInfo.TimeStampPropertyName))

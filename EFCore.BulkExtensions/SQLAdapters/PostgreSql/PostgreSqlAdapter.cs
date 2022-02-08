@@ -223,16 +223,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
                 }
                 else
                 {
-                    var returningQuery = context.Set<T>().FromSqlRaw(sqlMergeTable);
-                    List<T> outputEntities;
-                    if (isAsync)
-                    {
-                        outputEntities = await returningQuery.ToListAsync(cancellationToken).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        outputEntities = returningQuery.ToList();
-                    }
+                    List<T> outputEntities = tableInfo.LoadOutputEntities<T>(context, type, sqlMergeTable);
                     tableInfo.UpdateReadEntities(type, entities, outputEntities, context);
                 }
             }

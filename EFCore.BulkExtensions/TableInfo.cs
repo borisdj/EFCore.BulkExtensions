@@ -792,6 +792,24 @@ namespace EFCore.BulkExtensions
             }
         }
 
+        public List<T> LoadOutputEntities<T>(DbContext context, Type type, string sqlSelect) where T : class
+        {
+            List<T> existingEntities;
+            if (typeof(T) == type)
+            {
+                Expression<Func<DbContext, IQueryable<T>>> expression = GetQueryExpression<T>(sqlSelect, false);
+                var compiled = EF.CompileQuery(expression); // instead using Compiled queries
+                existingEntities = compiled(context).ToList();
+            }
+            else // TODO: Consider removing
+            {
+                Expression<Func<DbContext, IEnumerable>> expression = GetQueryExpression(type, sqlSelect, false);
+                var compiled = EF.CompileQuery(expression); // instead using Compiled queries
+                existingEntities = compiled(context).Cast<T>().ToList();
+            }
+            return existingEntities;
+        }
+
         public void UpdateEntitiesIdentity<T>(DbContext context, TableInfo tableInfo, IList<T> entities, IList<object> entitiesWithOutputIdentity)
         {
             var identifierPropertyName = IdentityColumnName != null ? OutputPropertyColumnNamesDict.SingleOrDefault(a => a.Value == IdentityColumnName).Key // it Identity autoincrement 

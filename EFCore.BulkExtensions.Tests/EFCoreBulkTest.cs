@@ -85,6 +85,21 @@ namespace EFCore.BulkExtensions.Tests
                 entities3.Add(entity);
             }
 
+            var entities56 = new List<Item>();
+            for (int i = 5; i <= 6; i++)
+            {
+                var entity = new Item
+                {
+                    //ItemId = i,
+                    Name = "Name " + i,
+                    Description = "CHANGE " + i,
+                    Quantity = i,
+                    Price = 0.1m * i,
+                    TimeUpdated = currentTime,
+                };
+                entities56.Add(entity);
+            }
+
             // INSERT
             context.BulkInsert(entities);
 
@@ -115,13 +130,16 @@ namespace EFCore.BulkExtensions.Tests
             // DELETE
             context.BulkDelete(new List<Item>() { entities2[1] }, configUpdateBy);
 
-
             // READ
             var secondEntity = new List<Item>() { new Item { Name = entities[1].Name } };
             context.BulkRead(secondEntity, configUpdateBy);
             Assert.Equal(2, secondEntity.FirstOrDefault().ItemId);
             Assert.Equal("UPDATE 2", secondEntity.FirstOrDefault().Description);
 
+            // SAVE CHANGES
+            context.AddRange(entities56);
+            context.BulkSaveChanges();
+            Assert.Equal(5, entities56[0].ItemId);
 
             // BATCH
             var query = context.Items.AsQueryable().Where(a => a.ItemId <= 1);
