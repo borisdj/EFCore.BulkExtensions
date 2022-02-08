@@ -15,7 +15,7 @@ Instead Test options are  SqlServer(Developer or Express), LocalDb([if alongside
 <!--[![Button](https://img.shields.io/nuget/v/EFCore.BulkExtensions.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/)-->
 Available on <a href="https://www.nuget.org/packages/EFCore.BulkExtensions/"><img src="https://buildstats.info/nuget/EFCore.BulkExtensions" /></a><br>
 Package manager console command for installation: *Install-Package EFCore.BulkExtensions*<br>
-Package is [Strong-Named](https://docs.microsoft.com/en-us/dotnet/standard/library-guidance/strong-naming) assembly [Signed](https://github.com/borisdj/EFCore.BulkExtensions/issues/161) with a key.
+Its assembly is [Strong-Named](https://docs.microsoft.com/en-us/dotnet/standard/library-guidance/strong-naming) and [Signed](https://github.com/borisdj/EFCore.BulkExtensions/issues/161) with a key.
 | Nuget | Target          | Used EF v.  | For projects targeting          |
 | ----- | --------------- | ----------- | ------------------------------- |
 | 6.x   | Net 6.0         | EF Core 6.0 | Net 6.0+                        |
