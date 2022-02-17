@@ -92,6 +92,8 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
                                     propertyValue = (int)propertyValue;
                                 if (clrType == typeof(Int64))
                                     propertyValue = (long)propertyValue;
+                                if (clrType == typeof(string))
+                                    propertyValue = propertyValue.ToString();
                             }
                         }
 
