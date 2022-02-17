@@ -2,6 +2,6 @@
   "ConnectionStrings": {
     "SqlServer": "Server=localhost;Database={databaseName};Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true;",
     "Sqlite": "Data Source={databaseName}.db",
-    "PostgreSql": "Server=localhost;Port=5432;Database={databaseName};User Id=postgres;Password=postgres;"
+    "PostgreSql": "Server=localhost;Port=5432;Database={databaseName};User Id=postgres;Password=Postgres22;"
   }
 }
