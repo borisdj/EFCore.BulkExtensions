@@ -65,6 +65,7 @@ namespace EFCore.BulkExtensions.Tests
         public DbSet<Department> Departments { get; set; }
         public DbSet<Division> Divisions { get; set; }
         public DbSet<PrivateKey> PrivateKeys { get; set; }
+        public DbSet<Wall> Walls { get; set; }
 
         public TestContext(DbContextOptions options) : base(options)
         {
@@ -83,17 +84,23 @@ namespace EFCore.BulkExtensions.Tests
 
             modelBuilder.Entity<UserRole>().HasKey(a => new { a.UserId, a.RoleId });
 
-            modelBuilder.Entity<Info>(a => { a.Property(p => p.ConvertedTime).HasConversion((value) => value.AddDays(1), (value) => value.AddDays(-1)); });
             modelBuilder.Entity<Info>().Property(p => p.InfoType).HasConversion(new EnumToStringConverter<InfoType>());
             modelBuilder.Entity<Info>().Property(p => p.DateTimeOff).HasConversion(new DateTimeOffsetToBinaryConverter());
 
+            modelBuilder.Entity<Wall>().HasKey(x => x.Id);
+            modelBuilder.Entity<Wall>().Property(x => x.Id).ValueGeneratedNever();
+            modelBuilder.Entity<Wall>().Property(x => x.WallTypeValue).HasConversion(new EnumToStringConverter<WallType>());
+            
             modelBuilder.Entity<Info>(e => { e.Property("LogData"); });
             modelBuilder.Entity<Info>(e => { e.Property("TimeCreated"); });
             modelBuilder.Entity<Info>(e => { e.Property("Remark"); });
 
-            modelBuilder.Entity<ChangeLog>().OwnsOne(a => a.Audit, b => b.Property(p => p.InfoType).HasConversion(new EnumToStringConverter<InfoType>()));
+            modelBuilder.Entity<ChangeLog>().OwnsOne(a => a.Audit,
+                b => b.Property(p => p.InfoType).HasConversion(new EnumToStringConverter<InfoType>()));
 
-            modelBuilder.Entity<Person>().HasIndex(a => a.Name).IsUnique(); // In SQLite UpdateByColumn(nonPK) requires it has UniqueIndex
+            modelBuilder.Entity<Person>().HasIndex(a => a.Name)
+                .IsUnique(); // In SQLite UpdateByColumn(nonPK) requires it has UniqueIndex
+
 
             modelBuilder.Entity<Document>().Property(p => p.IsActive).HasDefaultValue(true);
             modelBuilder.Entity<Document>().Property(p => p.Tag).HasDefaultValue("DefaultData");
@@ -325,6 +332,18 @@ namespace EFCore.BulkExtensions.Tests
         public int PersonId { get; set; }
 
         public string Name { get; set; }
+    }
+
+    public class Wall
+    {
+        public long Id { get; set; }
+        public WallType WallTypeValue { get; set; } = WallType.Clay;
+    }
+
+    public enum WallType
+    {
+        Brick,
+        Clay
     }
 
     public class Student : Person
