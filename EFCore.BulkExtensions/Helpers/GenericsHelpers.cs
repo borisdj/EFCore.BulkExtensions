@@ -25,8 +25,9 @@ namespace EFCore.BulkExtensions.Helpers
                 var temp = field.GetValue(value);
                 object defaultValue = null;
 
-                //bypass instance creation if incoming type is an interface
-                if (!type.IsInterface)
+                //bypass instance creation if incoming type is an interface or class does not have parameterless constructor
+                var hasParameterlessConstructor = type.GetConstructor(Type.EmptyTypes) != null;
+                if (!type.IsInterface && hasParameterlessConstructor)
                     defaultValue = field.GetValue(Activator.CreateInstance(type, true));
                 
                 if (temp == defaultValue)
