@@ -181,6 +181,32 @@ namespace EFCore.BulkExtensions.Tests
 
         [Theory]
         [InlineData(DbServer.SQLServer)]
+        [InlineData(DbServer.SQLite)] // Does NOT have Computed Columns
+        private void ParameterlessConstructorTest(DbServer dbServer)
+        {
+            ContextUtil.DbServer = dbServer;
+            using var context = new TestContext(ContextUtil.GetOptions());
+            context.Truncate<Letter>();
+
+            var entities = new List<Letter>();
+            int counter = 10;
+            for (int i = 1; i <= counter; i++)
+            {
+                var entity = new Letter("Note " + i);
+                entities.Add(entity);
+            }
+            context.BulkInsert(entities);
+
+            var count = context.Letters.Count();
+            var firstDocumentNote = context.Letters.AsNoTracking().FirstOrDefault();
+
+            // TEST
+            Assert.Equal(counter, count);
+            Assert.Equal("Note 1", firstDocumentNote.Note);
+        }
+
+        [Theory]
+        [InlineData(DbServer.SQLServer)]
         //[InlineData(DbServer.Sqlite)] // No TimeStamp column type but can be set with DefaultValueSql: "CURRENT_TIMESTAMP" as it is in OnModelCreating() method.
         private void TimeStampTest(DbServer dbServer)
         {

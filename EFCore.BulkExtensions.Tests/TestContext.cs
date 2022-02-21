@@ -22,6 +22,8 @@ namespace EFCore.BulkExtensions.Tests
         public DbSet<UserRole> UserRoles { get; set; }
 
         public DbSet<Document> Documents { get; set; }
+        public DbSet<Letter> Letters { get; set; }
+
         public DbSet<Storage> Storages { get; set; }
 
         public DbSet<File> Files { get; set; }
@@ -403,13 +405,28 @@ namespace EFCore.BulkExtensions.Tests
         //[DefaultValue(true)] // EF doesn't use DefaultValue attribute, not annotation, so this is configured via FluentAPI as well
         public bool? IsActive { get; set; }
 
+
+        //HasDefaultValueSql
         [Required]
         public string Content { get; set; }
 
+        //HasComputedColumnSql
         public string Tag { get; set; }
 
         [DatabaseGenerated(DatabaseGeneratedOption.Computed)] // Computed columns also have to be configured with FluentAPI
         public int ContentLength { get; set; }
+    }
+
+    // For testing parameterless constructor
+    public class Letter
+    {
+        public Letter(string note)
+        {
+            Note = note;
+        }
+        public int LetterId { get; set; }
+
+        public string Note { get; set; }
     }
 
     // For testing Temporal tables (configured via FluentAPI )
