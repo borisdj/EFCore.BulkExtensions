@@ -24,6 +24,8 @@ Its assembly is [Strong-Named](https://docs.microsoft.com/en-us/dotnet/standard/
 | 2.x   | NetStandard 2.0 | EF Core 2.n | NetCore(2.0+) or NetFrm(4.6.1+) |
 | 1.x   | NetStandard 1.4 | EF Core 1.0 | NetCore(1.0+)                   |
 
+Prior versions (5 and lower) are no longer actively maintained.
+
 ## Contributing
 
 If you find this project useful you can mark it by leaving a Github **Star** ⭐.</br>
@@ -44,7 +46,7 @@ context.BulkInsertOrUpdateOrDelete(entities); context.BulkInsertOrUpdateOrDelete
 context.BulkUpdate(entities);                 context.BulkUpdateAsync(entities);
 context.BulkDelete(entities);                 context.BulkDeleteAsync(entities);
 context.BulkRead(entities);                   context.BulkReadAsync(entities);
-context.BulkSaveChanges();                    context.BulkSaveChangesAsync();
+context.BulkSaveChanges();                    context.BulkSaveChangesAsync();                     // >= v6
 ```
 
 **-SQLite** requires package: [*SQLitePCLRaw.bundle_e_sqlite3*](https://docs.microsoft.com/en-us/dotnet/standard/data/sqlite/custom-versions?tabs=netcore-cli) with call to `SQLitePCL.Batteries.Init()`<br>
@@ -103,6 +105,7 @@ More info in the [Example](https://github.com/borisdj/EFCore.BulkExtensions#read
 **SaveChanges** uses Change Tracker to find all modified(CUD) entities and call proper BulkOperations for each table.<br>
 Because it needs tracking it is slower then pure BulkOps but stil much faster then regular SaveChanges.<br>
 With config *OnSaveChangesSetFK* setting FKs can be controled depending on whether PKs are generated in Db or in memory.<br>
+Support for this method was added in version 6 of the library.<br>
 Before calling this method newly created should be added into Range:
 ```C#
 context.Items.AddRange(newEntities); // if newEntities is parent list it can have child sublists
