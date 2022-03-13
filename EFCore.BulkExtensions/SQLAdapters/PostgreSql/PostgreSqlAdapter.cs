@@ -65,6 +65,9 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
                     
                     foreach (var propertyName in propertiesNames)
                     {
+                        if (tableInfo.DefaultValueProperties.Contains(propertyName) && !tableInfo.PrimaryKeysPropertyColumnNameDict.ContainsKey(propertyName))
+                            continue;
+
                         var propertyValue = tableInfo.FastPropertyDict.ContainsKey(propertyName) ? tableInfo.FastPropertyDict[propertyName].Get(entity) : null;
                         var propertyColumnName = tableInfo.PropertyColumnNamesDict.ContainsKey(propertyName) ? tableInfo.PropertyColumnNamesDict[propertyName] : string.Empty;
 
