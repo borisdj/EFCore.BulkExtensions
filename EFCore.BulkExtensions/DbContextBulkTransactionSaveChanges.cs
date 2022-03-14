@@ -30,7 +30,7 @@ namespace EFCore.BulkExtensions
             // OPTION 1) iteration with Dic and Fast member
             // OPTION 2) using Node model (here setting FK still not implemented)
             int option = 1;
-            
+
             if (bulkConfig == null)
             {
                 bulkConfig = new BulkConfig { };
@@ -58,8 +58,15 @@ namespace EFCore.BulkExtensions
             }
             var connection = context.GetUnderlyingConnection(bulkConfig);
 
+            bool doExplicitCommit = false;
+            if (context.Database.CurrentTransaction == null)
+            {
+                doExplicitCommit = true;
+            }
+
             try
             {
+
                 var transaction = context.Database.CurrentTransaction ?? context.Database.BeginTransaction();
 
                 if (option == 1)
@@ -149,18 +156,25 @@ namespace EFCore.BulkExtensions
                         }
                     }
                 }
-                transaction.Commit();
-                context.ChangeTracker.AcceptAllChanges();
+                if (doExplicitCommit)
+                {
+                    transaction.Commit();
+                    context.ChangeTracker.AcceptAllChanges();
+                }
             }
             finally
             {
-                if (isAsync)
+                if (doExplicitCommit)
                 {
-                    await context.Database.CloseConnectionAsync().ConfigureAwait(false);
-                }
-                else
-                {
-                    context.Database.CloseConnection();
+
+                    if (isAsync)
+                    {
+                        await context.Database.CloseConnectionAsync().ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        context.Database.CloseConnection();
+                    }
                 }
             }
         }
