@@ -46,7 +46,7 @@ context.BulkInsertOrUpdateOrDelete(entities); context.BulkInsertOrUpdateOrDelete
 context.BulkUpdate(entities);                 context.BulkUpdateAsync(entities);
 context.BulkDelete(entities);                 context.BulkDeleteAsync(entities);
 context.BulkRead(entities);                   context.BulkReadAsync(entities);
-context.BulkSaveChanges();                    context.BulkSaveChangesAsync();                     // >= v6
+context.BulkSaveChanges();                    context.BulkSaveChangesAsync();                    // >= v6
 ```
 
 **-SQLite** requires package: [*SQLitePCLRaw.bundle_e_sqlite3*](https://docs.microsoft.com/en-us/dotnet/standard/data/sqlite/custom-versions?tabs=netcore-cli) with call to `SQLitePCL.Batteries.Init()`<br>
