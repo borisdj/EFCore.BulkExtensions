@@ -131,8 +131,8 @@ namespace EFCore.BulkExtensions.Tests.IncludeGraph
             using var db = new Issue730DbContext(ContextUtil.GetOptions<Issue730DbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_Issue730"));
             await db.Database.EnsureCreatedAsync();
 
-            // Given: A set of parents with varying number of children, where some children
-            // are equal to other children 
+            // Given: A set of parents with varying number of children, where all children
+            // are completely unique 
             var count = 25;
             var parents = GivenParentsWithUniqueChildren(count).ToList();
             var numchildren = parents.Sum(x=>x.Children.Count);
