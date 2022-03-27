@@ -702,6 +702,16 @@ namespace EFCore.BulkExtensions.Tests
 
         public Guid DepartmentId { get; set; }
         public Department Department { get; set; }
+
+        public override bool Equals(object obj)
+        {
+            return (obj is Division division && division.Name == Name);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Name);
+        }
     }
     
     public class PrivateKey

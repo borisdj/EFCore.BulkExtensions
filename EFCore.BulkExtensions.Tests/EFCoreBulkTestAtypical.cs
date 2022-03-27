@@ -94,6 +94,33 @@ namespace EFCore.BulkExtensions.Tests
 
         [Theory]
         [InlineData(DbServer.SQLServer)]
+        private void RunDefaultPKInsertDuplicatesWithGraph(DbServer dbServer)
+        {
+            using (var context = new TestContext(ContextUtil.GetOptions()))
+            {
+                context.BulkDelete(context.Set<Division>().ToList());
+                var department = new Department
+                {
+                    Name = "Software",
+                    Divisions = new List<Division>
+                    {
+                        new Division{Name = "Student A"},
+                        new Division{Name = "Student B"},
+                        new Division{Name = "Student B"},
+                        new Division{Name = "Student C"},
+                    }
+                };
+
+                context.BulkInsert(new List<Department> { department }, new BulkConfig { IncludeGraph = true });
+
+                var expectednumdivisions = department.Divisions.Count;
+                var actualnumdivisions = context.Set<Division>().Count();
+                Assert.Equal(expectednumdivisions,actualnumdivisions);
+            };
+        }
+
+        [Theory]
+        [InlineData(DbServer.SQLServer)]
         public void UpsertOrderTest(DbServer dbServer)
         {
             ContextUtil.DbServer = dbServer;
