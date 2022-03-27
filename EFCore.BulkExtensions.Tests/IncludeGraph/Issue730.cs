@@ -54,6 +54,8 @@ namespace EFCore.BulkExtensions.Tests.IncludeGraph
 
     public class Issue730 : IDisposable
     {
+        private string DatabaseName => $"{nameof(EFCoreBulkTest)}_{nameof(Issue730)}";
+
         // Given: A set of parents with varying number of children, where some children
         // are equal to other children 
         private IEnumerable<Parent> GivenParentsWithChildren(int count)
@@ -95,14 +97,21 @@ namespace EFCore.BulkExtensions.Tests.IncludeGraph
                 });
         }
 
+        private async Task<Issue730DbContext> SetUp(DbServer dbServer)
+        {
+            ContextUtil.DbServer = dbServer;
+
+            var db = new Issue730DbContext(ContextUtil.GetOptions<Issue730DbContext>(databaseName:DatabaseName));
+            await db.Database.EnsureCreatedAsync();
+
+            return db;
+        }
+
         [Theory]
         [InlineData(DbServer.SQLServer)]
         public async Task BulkAddParentsWithChildren(DbServer dbServer)
         {
-            ContextUtil.DbServer = dbServer;
-
-            using var db = new Issue730DbContext(ContextUtil.GetOptions<Issue730DbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_Issue730"));
-            await db.Database.EnsureCreatedAsync();
+            using var db = await SetUp(dbServer);
 
             // Given: A set of parents with varying number of children, where some children
             // are equal to other children 
@@ -126,10 +135,7 @@ namespace EFCore.BulkExtensions.Tests.IncludeGraph
         [InlineData(DbServer.SQLServer)]
         public async Task BulkAddParentsWithUniqueChildren(DbServer dbServer)
         {
-            ContextUtil.DbServer = dbServer;
-
-            using var db = new Issue730DbContext(ContextUtil.GetOptions<Issue730DbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_Issue730"));
-            await db.Database.EnsureCreatedAsync();
+            using var db = await SetUp(dbServer);
 
             // Given: A set of parents with varying number of children, where all children
             // are completely unique 
@@ -151,7 +157,7 @@ namespace EFCore.BulkExtensions.Tests.IncludeGraph
 
         public void Dispose()
         {
-            using var db = new Issue730DbContext(ContextUtil.GetOptions<Issue730DbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_Issue730"));
+            using var db = new Issue730DbContext(ContextUtil.GetOptions<Issue730DbContext>(databaseName:DatabaseName));
             db.Database.EnsureDeleted();
         }
     }
