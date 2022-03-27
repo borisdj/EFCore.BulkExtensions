@@ -151,9 +151,8 @@ namespace EFCore.BulkExtensions.Tests.IncludeGraph
 
         public void Dispose()
         {
-            using var db = new Issue547DbContext(ContextUtil.GetOptions<Issue547DbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_Issue730"));
+            using var db = new Issue730DbContext(ContextUtil.GetOptions<Issue730DbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_Issue730"));
             db.Database.EnsureDeleted();
         }
-    }   
-
+    }
 }
