@@ -42,19 +42,19 @@ namespace EFCore.BulkExtensions.Tests.IncludeGraph
         }
     }
 
-    public class Issue730DbContext : DbContext
+    public class Issue780DbContext : DbContext
     {
         public DbSet<Parent> Parents { get; set; }
         public DbSet<Child> Children { get; set; }
 
-        public Issue730DbContext(DbContextOptions options) : base(options)
+        public Issue780DbContext(DbContextOptions options) : base(options)
         {
         }
     }
 
-    public class Issue730 : IDisposable
+    public class Issue780 : IDisposable
     {
-        private string DatabaseName => $"{nameof(EFCoreBulkTest)}_{nameof(Issue730)}";
+        private string DatabaseName => $"{nameof(EFCoreBulkTest)}_{nameof(Issue780)}";
 
         // Given: A set of parents with varying number of children, where some children
         // are equal to other children 
@@ -97,11 +97,11 @@ namespace EFCore.BulkExtensions.Tests.IncludeGraph
                 });
         }
 
-        private async Task<Issue730DbContext> SetUp(DbServer dbServer)
+        private async Task<Issue780DbContext> SetUp(DbServer dbServer)
         {
             ContextUtil.DbServer = dbServer;
 
-            var db = new Issue730DbContext(ContextUtil.GetOptions<Issue730DbContext>(databaseName:DatabaseName));
+            var db = new Issue780DbContext(ContextUtil.GetOptions<Issue780DbContext>(databaseName:DatabaseName));
             await db.Database.EnsureCreatedAsync();
 
             return db;
@@ -157,7 +157,7 @@ namespace EFCore.BulkExtensions.Tests.IncludeGraph
 
         public void Dispose()
         {
-            using var db = new Issue730DbContext(ContextUtil.GetOptions<Issue730DbContext>(databaseName:DatabaseName));
+            using var db = new Issue780DbContext(ContextUtil.GetOptions<Issue780DbContext>(databaseName:DatabaseName));
             db.Database.EnsureDeleted();
         }
     }
