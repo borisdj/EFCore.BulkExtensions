@@ -35,7 +35,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
                     isAsync ? await OpenAndGetNpgsqlConnectionAsync(context, tableInfo.BulkConfig, cancellationToken).ConfigureAwait(false)
                             : OpenAndGetNpgsqlConnection(context, tableInfo.BulkConfig);
             }
-            
+
             try
             {
                 string sqlCopy = SqlQueryBuilderPostgreSql.InsertIntoTable(tableInfo, tableInfo.InsertToTempTable ? OperationType.InsertOrUpdate : OperationType.Insert);
@@ -62,7 +62,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
                     {
                         writer.StartRow();
                     }
-                    
+
                     foreach (var propertyName in propertiesNames)
                     {
                         if (tableInfo.DefaultValueProperties.Contains(propertyName) && !tableInfo.PrimaryKeysPropertyColumnNameDict.ContainsKey(propertyName))
@@ -72,7 +72,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
                         var propertyColumnName = tableInfo.PropertyColumnNamesDict.ContainsKey(propertyName) ? tableInfo.PropertyColumnNamesDict[propertyName] : string.Empty;
 
                         var columnType = tableInfo.ColumnNamesTypesDict[propertyColumnName];
-                        
+
                         // string is 'text' which works fine
                         if (columnType.StartsWith("character")) // when MaxLength is defined: 'character(1)' or 'character varying'
                             columnType = "character"; // 'character' is like 'string'
@@ -82,21 +82,28 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
                             columnType = "numeric";
 
                         var convertibleDict = tableInfo.ConvertibleColumnConverterDict;
-                        if (convertibleDict.ContainsKey(propertyColumnName) && convertibleDict[propertyColumnName].ModelClrType.IsEnum)
+                        if (convertibleDict.TryGetValue(propertyColumnName, out var converter))
                         {
                             if (propertyValue != null)
                             {
-                                var clrType = tableInfo.ConvertibleColumnConverterDict[propertyColumnName].ProviderClrType;
-                                if (clrType == typeof(byte)) // columnType == "smallint"
-                                    propertyValue = (byte)propertyValue;
-                                if (clrType == typeof(short))
-                                    propertyValue = (short)propertyValue;
-                                if (clrType == typeof(Int32))
-                                    propertyValue = (int)propertyValue;
-                                if (clrType == typeof(Int64))
-                                    propertyValue = (long)propertyValue;
-                                if (clrType == typeof(string))
-                                    propertyValue = propertyValue.ToString();
+                                if (converter.ModelClrType.IsEnum)
+                                {
+                                    var clrType = converter.ProviderClrType;
+                                    if (clrType == typeof(byte)) // columnType == "smallint"
+                                        propertyValue = (byte)propertyValue;
+                                    if (clrType == typeof(short))
+                                        propertyValue = (short)propertyValue;
+                                    if (clrType == typeof(Int32))
+                                        propertyValue = (int)propertyValue;
+                                    if (clrType == typeof(Int64))
+                                        propertyValue = (long)propertyValue;
+                                    if (clrType == typeof(string))
+                                        propertyValue = propertyValue.ToString();
+                                }
+                                else
+                                {
+                                    propertyValue = converter.ConvertToProvider.Invoke(propertyValue);
+                                }
                             }
                         }
 
@@ -110,7 +117,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
                         }
                     }
                     entitiesCopiedCount++;
-                    if(progress != null && entitiesCopiedCount % tableInfo.BulkConfig.NotifyAfter == 0)
+                    if (progress != null && entitiesCopiedCount % tableInfo.BulkConfig.NotifyAfter == 0)
                     {
                         progress?.Invoke(ProgressHelper.GetProgress(entities.Count, entitiesCopiedCount));
                     }
