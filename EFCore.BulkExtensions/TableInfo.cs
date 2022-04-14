@@ -121,7 +121,11 @@ namespace EFCore.BulkExtensions
             }
 
             //var relationalData = entityType.Relational(); relationalData.Schema relationalData.TableName // DEPRECATED in Core3.0
-            bool isSqlServer = context.Database.ProviderName.EndsWith(DbServer.SQLServer.ToString());
+            string providerName = context.Database.ProviderName.ToLower();
+            bool isSqlServer = providerName.EndsWith(DbServer.SQLServer.ToString().ToLower());
+            bool isNpgsql = providerName.EndsWith(DbServer.PostgreSQL.ToString().ToLower());
+            bool isSqlite = providerName.EndsWith(DbServer.SQLite.ToString().ToLower());
+
             string defaultSchema = isSqlServer ? "dbo" : null;
 
             string customSchema = null;
@@ -221,14 +225,37 @@ namespace EFCore.BulkExtensions
             HasOwnedTypes = ownedTypes.Any();
             OwnedTypesDict = ownedTypes.ToDictionary(a => a.Name, a => a);
 
-            IdentityColumnName = allProperties.SingleOrDefault(a => a.IsPrimaryKey() &&
-                                                                    a.ValueGenerated == ValueGenerated.OnAdd && // ValueGenerated equals OnAdd for nonIdentity column like Guid so take only number types
-                                                                    (a.ClrType.Name.StartsWith("Byte") ||
-                                                                     a.ClrType.Name.StartsWith("SByte")||
-                                                                     a.ClrType.Name.StartsWith("Int")  ||
-                                                                     a.ClrType.Name.StartsWith("UInt") ||
-                                                                     (isSqlServer && a.ClrType.Name.StartsWith("Decimal")))
-                                                              )?.GetColumnName(ObjectIdentifier);
+            if (isSqlServer || isNpgsql)
+            {
+                string strategyName = (isSqlServer ? nameof(SqlServerValueGenerationStrategy) :
+                                                     nameof(Npgsql.EntityFrameworkCore.PostgreSQL.Metadata.NpgsqlValueGenerationStrategy))
+                                      .Replace("Value", ":Value"); //example 'SqlServer:ValueGenerationStrategy'
+                foreach (var property in allProperties)
+                {
+                    var annotation = property.FindAnnotation(strategyName);
+                    bool hasIdentity = false;
+                    if (annotation != null)
+                        hasIdentity = isSqlServer ? (SqlServerValueGenerationStrategy)annotation.Value == SqlServerValueGenerationStrategy.IdentityColumn
+                                                  : (Npgsql.EntityFrameworkCore.PostgreSQL.Metadata.NpgsqlValueGenerationStrategy)annotation.Value == Npgsql.EntityFrameworkCore.PostgreSQL.Metadata.NpgsqlValueGenerationStrategy.IdentityByDefaultColumn;
+                    if (hasIdentity == true)
+                    {
+                        IdentityColumnName = property.GetColumnName(ObjectIdentifier);
+                        break;
+                    }
+                }
+            }
+            if (isSqlite) // SQLite no ValueGenerationStrategy
+            {
+                // for HiLo on SqlServer was returning True when should be False
+                IdentityColumnName = allProperties.SingleOrDefault(a => a.IsPrimaryKey() &&
+                                                        a.ValueGenerated == ValueGenerated.OnAdd && // ValueGenerated equals OnAdd for nonIdentity column like Guid so take only number types
+                                                        (a.ClrType.Name.StartsWith("Byte") ||
+                                                         a.ClrType.Name.StartsWith("SByte") ||
+                                                         a.ClrType.Name.StartsWith("Int") ||
+                                                         a.ClrType.Name.StartsWith("UInt") ||
+                                                         (isSqlServer && a.ClrType.Name.StartsWith("Decimal")))
+                                                  )?.GetColumnName(ObjectIdentifier);
+            }
 
             // timestamp/row version properties are only set by the Db, the property has a [Timestamp] Attribute or is configured in FluentAPI with .IsRowVersion()
             // They can be identified by the columne type "timestamp" or .IsConcurrencyToken in combination with .ValueGenerated == ValueGenerated.OnAddOrUpdate

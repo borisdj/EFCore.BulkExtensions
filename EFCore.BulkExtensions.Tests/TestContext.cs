@@ -86,6 +86,7 @@ namespace EFCore.BulkExtensions.Tests
 
             modelBuilder.Entity<UserRole>().HasKey(a => new { a.UserId, a.RoleId });
 
+            modelBuilder.Entity<Info>(e => { e.Property(p => p.ConvertedTime).HasConversion((value) => value.AddDays(1), (value) => value.AddDays(-1)); });
             modelBuilder.Entity<Info>().Property(p => p.InfoType).HasConversion(new EnumToStringConverter<InfoType>());
             modelBuilder.Entity<Info>().Property(p => p.DateTimeOff).HasConversion(new DateTimeOffsetToBinaryConverter());
 
@@ -124,6 +125,10 @@ namespace EFCore.BulkExtensions.Tests
 
                 modelBuilder.Entity<Division>().Property(p => p.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
                 modelBuilder.Entity<Department>().Property(p => p.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
+
+                //modelBuilder.Entity<SequentialInfo>().HasKey(a => a.Id);
+                //SqlServerPropertyBuilderExtensions.UseHiLo(modelBuilder.Entity<SequentialInfo>().Property(a => a.Id), name: "SequenceData", schema: "dbo");
+                //modelBuilder.HasSequence<int>("SequenceData", "dbo").StartsAt(10).IncrementsBy(5);
             }
 
             if (Database.IsSqlite() || Database.IsNpgsql())
