@@ -397,6 +397,11 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
         {
             var sqlTransaction = transaction == null ? null : (SqlTransaction)transaction.GetUnderlyingTransaction(config);
             var sqlBulkCopy = new SqlBulkCopy(sqlConnection, config.SqlBulkCopyOptions, sqlTransaction);
+            if (config.SqlBulkCopyColumnOrderHints == null)
+            {
+                foreach(var hint in config.SqlBulkCopyColumnOrderHints)
+                    sqlBulkCopy.ColumnOrderHints.Add(hint);
+            }
             return sqlBulkCopy;
         }
         #endregion
