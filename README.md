@@ -135,7 +135,8 @@ CustomSourceDestinationMappingColumns: null,      SRID: 4326,
 TrackingEntities: false,	                  DateTime2PrecisionForceRound: false,
 WithHoldlock: true,	                          TemporalColumns: { "PeriodStart", "PeriodEnd" },
 CalculateStats: false,	                          EnableShadowProperties: false,
-SqlBulkCopyOptions: Default,                      OnSaveChangesSetFK: true,                                                  
+SqlBulkCopyOptions: Default,                      OnSaveChangesSetFK: true,
+SqlBulkCopyColumnOrderHints: null,
 --------------------------------------------------------------------------------------
 METHOD: SetSynchronizeFilter<T>
 ```
