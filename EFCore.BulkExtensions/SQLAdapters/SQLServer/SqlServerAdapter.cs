@@ -412,7 +412,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.SQLServer
         /// <param name="sqlBulkCopy"></param>
         /// <param name="tableInfo"></param>
         /// <returns></returns>
-        internal static DataTable GetDataTable<T>(DbContext context, Type type, IList<T> entities, SqlBulkCopy sqlBulkCopy, TableInfo tableInfo)
+        public static DataTable GetDataTable<T>(DbContext context, Type type, IList<T> entities, SqlBulkCopy sqlBulkCopy, TableInfo tableInfo)
         {
             DataTable dataTable = InnerGetDataTable(context, ref type, entities, tableInfo);
 
