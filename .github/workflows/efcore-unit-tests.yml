@@ -1,0 +1,24 @@
+name: .EFCore.BulkExtensions.NET
+
+on: push
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  run-dotnet-unit-tests:
+    name: .NET Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Installing .NET 6
+        uses: actions/setup-dotnet@v2
+        with:
+          dotnet-version: 6.0.x
+      - name: Restore dotnet dependencies
+        run: dotnet restore
+      - name: Build dotnet solution
+        run: dotnet build --no-restore
+      - name: Run dotnet unit tests
+        run: dotnet test --no-build
