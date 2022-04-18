@@ -451,8 +451,9 @@ namespace EFCore.BulkExtensions
                     case ExpressionType.Coalesce:
                         sqlColumns.Append("COALESCE(");
                         CreateUpdateBody(createBodyData, binaryExpression.Left, columnName);
-                        sqlColumns.Append(", ");
+                        sqlColumns.Append(",");
                         CreateUpdateBody(createBodyData, binaryExpression.Right, columnName);
+                        sqlColumns.Append(")");
                         break;
 
                     default: 
