@@ -7,7 +7,7 @@ Was selected in top 20 [EF Core Extensions](https://docs.microsoft.com/en-us/ef/
 Latest version is using EF Core 6 and targeting .Net 6.<br>
 At the moment supports Microsoft SQLServer(2012+) or SqlAzure, PostgreSQL(9.5+) and SQLite.<br>
 -SQLServer under the hood uses [SqlBulkCopy](https://msdn.microsoft.com/en-us/library/system.data.sqlclient.sqlbulkcopy.aspx) for Insert, for Update/Delete combines BulkInsert with raw Sql [MERGE](https://docs.microsoft.com/en-us/sql/t-sql/statements/merge-transact-sql).<br>
--PostgreSQL is using [COPY BINARY](https://www.postgresql.org/docs/9.2/sql-copy.html) combined with [ON CONFLICT](https://www.postgresql.org/docs/10/sql-insert.html#SQL-ON-CONFLICT) for Update.<br>
+-PostgreSQL is using [COPY BINARY](https://www.postgresql.org/docs/9.2/sql-copy.html) combined with [ON CONFLICT](https://www.postgresql.org/docs/10/sql-insert.html#SQL-ON-CONFLICT) for Update (supported from v6+).<br>
 -For SQLite there is no Copy tool, instead library uses plain SQL combined with [UPSERT](https://www.sqlite.org/lang_UPSERT.html).<br>
 Bulk Tests can not have UseInMemoryDb because InMemoryProvider does not support Relational-specific methods.<br>
 Instead Test options are  SqlServer(Developer or Express), LocalDb([if alongside Developer v.](https://stackoverflow.com/questions/42885377/sql-server-2016-developer-version-can-not-connect-to-localdb-mssqllocaldb?noredirect=1&lq=1)), or for other adapters PostgreSQL/SQLite.
@@ -29,7 +29,7 @@ Prior versions (5 and lower) are no longer actively maintained.
 ## Contributing
 
 If you find this project useful you can mark it by leaving a Github **Star** ⭐.</br>
-If you would like to support the Project by making a Donation ($10) *#BuyMeBeer*, you are welcome to do so:<br>
+If you would like to support the Project by making a Donation *#BuyMeBeer*, you are welcome to do so:<br>
 [![Button](https://img.shields.io/badge/donate-PayPal-yellow.svg)](https://www.paypal.me/BorisDjurdjevic/10) or
 [![Button](https://img.shields.io/badge/donate-Nano-9cf.svg)](https://borisdj.github.io/pages/donation/donate-nano.html)([0 fee & Eco](https://nano.org/))<br>
 Please read [CONTRIBUTING](CONTRIBUTING.md) for details on code of conduct, and the process for submitting pull requests.<br>
