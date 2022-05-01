@@ -8,134 +8,133 @@ using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace EFCore.BulkExtensions.Tests.IncludeGraph
-{
-    public class IncludeGraphTests : IDisposable
-    {
-        private static WorkOrder WorkOrder1 = new WorkOrder
-        {
-            Description = "Fix belt",
-            Asset = new Asset
-            {
-                Description = "MANU-1",
-                Location = "WAREHOUSE-1"
-            },
-            WorkOrderSpares =
-                {
-                    new WorkOrderSpare
-                    {
-                        Description = "Bolt 5mm x5",
-                        Quantity = 5,
-                        Spare = new Spare
-                        {
-                            PartNumber = "MZD 5mm",
-                            Barcode = "12345"
-                        }
-                    },
-                    new WorkOrderSpare
-                    {
-                        Description = "Bolt 10mm x5",
-                        Quantity = 5,
-                        Spare = new Spare
-                        {
-                            PartNumber = "MZD 10mm",
-                            Barcode = "222655"
-                        }
-                    }
-                }
-        };
+namespace EFCore.BulkExtensions.Tests.IncludeGraph;
 
-        private static WorkOrder WorkOrder2 = new WorkOrder
+public class IncludeGraphTests : IDisposable
+{
+    private readonly static WorkOrder WorkOrder1 = new ()
+    {
+        Description = "Fix belt",
+        Asset = new Asset
         {
-            Description = "Fix toilets",
-            Asset = new Asset
-            {
-                Description = "FLUSHMASTER-1",
-                Location = "GYM-BLOCK-3"
-            },
-            WorkOrderSpares =
+            Description = "MANU-1",
+            Location = "WAREHOUSE-1"
+        },
+        WorkOrderSpares =
             {
                 new WorkOrderSpare
                 {
-                    Description = "Plunger",
-                    Quantity = 2,
+                    Description = "Bolt 5mm x5",
+                    Quantity = 5,
                     Spare = new Spare
                     {
-                        PartNumber = "Poo'o'magic 531",
-                        Barcode = "544532bbc"
+                        PartNumber = "MZD 5mm",
+                        Barcode = "12345"
                     }
                 },
                 new WorkOrderSpare
                 {
-                    Description = "Crepepele",
-                    Quantity = 1,
+                    Description = "Bolt 10mm x5",
+                    Quantity = 5,
                     Spare = new Spare
                     {
-                        PartNumber = "MZD f",
+                        PartNumber = "MZD 10mm",
                         Barcode = "222655"
                     }
                 }
             }
-        };
+    };
 
-        [Theory]
-        [InlineData(DbServer.SQLServer)]
-        //[InlineData(DbServer.Sqlite)]
-        public async Task BulkInsertOrUpdate_EntityWithNestedObjectGraph_SavesGraphToDatabase(DbServer dbServer)
+    private static readonly WorkOrder WorkOrder2 = new ()
+    {
+        Description = "Fix toilets",
+        Asset = new Asset
         {
-            ContextUtil.DbServer = dbServer;
-
-            using var db = new GraphDbContext(ContextUtil.GetOptions<GraphDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_Graph"));
-            await db.Database.EnsureCreatedAsync();
-
-            // To ensure there are no stack overflows with circular reference trees, we must test for that.
-            // Set all navigation properties so the base navigation and its inverse both have values
-            foreach (var wos in WorkOrder1.WorkOrderSpares)
+            Description = "FLUSHMASTER-1",
+            Location = "GYM-BLOCK-3"
+        },
+        WorkOrderSpares =
+        {
+            new WorkOrderSpare
             {
-                wos.WorkOrder = WorkOrder1;
-            }
-
-            foreach (var wos in WorkOrder2.WorkOrderSpares)
+                Description = "Plunger",
+                Quantity = 2,
+                Spare = new Spare
+                {
+                    PartNumber = "Poo'o'magic 531",
+                    Barcode = "544532bbc"
+                }
+            },
+            new WorkOrderSpare
             {
-                wos.WorkOrder = WorkOrder2;
-            }
-
-            WorkOrder1.Asset.WorkOrders.Add(WorkOrder1);
-            WorkOrder2.Asset.WorkOrders.Add(WorkOrder2);
-
-            WorkOrder1.Asset.ParentAsset = WorkOrder2.Asset;
-            WorkOrder2.Asset.ChildAssets.Add(WorkOrder1.Asset);
-
-            var testData = this.GetTestData(db).ToList();
-            await db.BulkInsertOrUpdateAsync(testData, new BulkConfig
-            {
-                IncludeGraph = true
-            });
-
-            var workOrderQuery = db.WorkOrderSpares
-                .Include(y => y.WorkOrder)
-                .Include(y => y.WorkOrder.Asset)
-                .Include(y => y.Spare);
-
-            foreach (var wos in workOrderQuery)
-            {
-                Assert.NotNull(wos.WorkOrder);
-                Assert.NotNull(wos.WorkOrder.Asset);
-                Assert.NotNull(wos.Spare);
+                Description = "Crepepele",
+                Quantity = 1,
+                Spare = new Spare
+                {
+                    PartNumber = "MZD f",
+                    Barcode = "222655"
+                }
             }
         }
+    };
 
-        private IEnumerable<WorkOrder> GetTestData(DbContext db)
+    [Theory]
+    [InlineData(DbServer.SQLServer)]
+    //[InlineData(DbServer.Sqlite)]
+    public async Task BulkInsertOrUpdate_EntityWithNestedObjectGraph_SavesGraphToDatabase(DbServer dbServer)
+    {
+        ContextUtil.DbServer = dbServer;
+
+        using var db = new GraphDbContext(ContextUtil.GetOptions<GraphDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_Graph"));
+        await db.Database.EnsureCreatedAsync();
+
+        // To ensure there are no stack overflows with circular reference trees, we must test for that.
+        // Set all navigation properties so the base navigation and its inverse both have values
+        foreach (var wos in WorkOrder1.WorkOrderSpares)
         {
-            yield return WorkOrder1;
-            yield return WorkOrder2;
-
+            wos.WorkOrder = WorkOrder1;
         }
 
-        public void Dispose()
+        foreach (var wos in WorkOrder2.WorkOrderSpares)
         {
-            using var db = new GraphDbContext(ContextUtil.GetOptions<GraphDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_Graph"));
-            db.Database.EnsureDeleted();
+            wos.WorkOrder = WorkOrder2;
         }
+
+        WorkOrder1.Asset.WorkOrders.Add(WorkOrder1);
+        WorkOrder2.Asset.WorkOrders.Add(WorkOrder2);
+
+        WorkOrder1.Asset.ParentAsset = WorkOrder2.Asset;
+        WorkOrder2.Asset.ChildAssets.Add(WorkOrder1.Asset);
+
+        var testData = GetTestData().ToList();
+        await db.BulkInsertOrUpdateAsync(testData, new BulkConfig
+        {
+            IncludeGraph = true
+        });
+
+        var workOrderQuery = db.WorkOrderSpares
+            .Include(y => y.WorkOrder)
+            .Include(y => y.WorkOrder.Asset)
+            .Include(y => y.Spare);
+
+        foreach (var wos in workOrderQuery)
+        {
+            Assert.NotNull(wos.WorkOrder);
+            Assert.NotNull(wos.WorkOrder.Asset);
+            Assert.NotNull(wos.Spare);
+        }
+    }
+
+    private static IEnumerable<WorkOrder> GetTestData()
+    {
+        yield return WorkOrder1;
+        yield return WorkOrder2;
+
+    }
+
+    public void Dispose()
+    {
+        using var db = new GraphDbContext(ContextUtil.GetOptions<GraphDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_Graph"));
+        db.Database.EnsureDeleted();
     }
 }

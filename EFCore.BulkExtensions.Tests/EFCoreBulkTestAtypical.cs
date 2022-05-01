@@ -11,7 +11,7 @@ namespace EFCore.BulkExtensions.Tests
 {
     public class EFCoreBulkTestAtypical
     {
-        protected int EntitiesNumber => 1000;
+        protected static int EntitiesNumber => 1000;
 
         [Theory]
         [InlineData(DbServer.SQLServer)]
@@ -38,13 +38,13 @@ namespace EFCore.BulkExtensions.Tests
             var firstDocument = context.Documents.AsNoTracking().OrderBy(x => x.Content).FirstOrDefault();
 
             var countDb = context.Documents.Count();
-            var countEntities = entities.Count();
+            var countEntities = entities.Count;
 
             // TEST
 
             Assert.Equal(countDb, countEntities);
 
-            Assert.Equal(firstDocument.DocumentId, firstDocumentUp.DocumentId);
+            Assert.Equal(firstDocument?.DocumentId, firstDocumentUp?.DocumentId);
         }
 
         [Theory]
@@ -65,15 +65,14 @@ namespace EFCore.BulkExtensions.Tests
             context.BulkInsert(entities);
 
             var countDb = context.Storages.Count();
-            var countEntities = entities.Count();
+            var countEntities = entities.Count;
 
             // TEST
             Assert.Equal(countDb, countEntities);
         }
 
-        [Theory]
-        [InlineData(DbServer.SQLServer)]
-        private void RunDefaultPKInsertWithGraph(DbServer dbServer)
+        [Fact]
+        private void RunDefaultPKInsertWithGraph()
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {
@@ -147,7 +146,7 @@ namespace EFCore.BulkExtensions.Tests
             }
             context.BulkInsert(entities, bulkAction => bulkAction.SetOutputIdentity = true); // example of setting BulkConfig with Action argument
 
-            var firstDocument = context.Documents.AsNoTracking().FirstOrDefault();
+            var firstDocument = context.Documents.AsNoTracking().First();
             var count = context.Documents.Count();
 
             // TEST
@@ -168,7 +167,7 @@ namespace EFCore.BulkExtensions.Tests
             count += 2;
 
             context.BulkInsertOrUpdate(upsertList);
-            firstDocument = context.Documents.AsNoTracking().FirstOrDefault();
+            firstDocument = context.Documents.AsNoTracking().First();
             var entitiesCount = context.Documents.Count();
 
             //Assert.Null(firstDocument.Tag); // OnUpdate columns with Defaults not omitted, should change even to default value, in this case to 'null'
@@ -198,7 +197,7 @@ namespace EFCore.BulkExtensions.Tests
             context.BulkInsert(entities);
 
             var count = context.Letters.Count();
-            var firstDocumentNote = context.Letters.AsNoTracking().FirstOrDefault();
+            var firstDocumentNote = context.Letters.AsNoTracking().First();
 
             // TEST
             Assert.Equal(counter, count);
@@ -253,8 +252,8 @@ namespace EFCore.BulkExtensions.Tests
             context.BulkUpdate(entitiesToUpdate, bulkConfig);
 
             var list = bulkConfig.TimeStampInfo?.EntitiesOutput.Cast<File>().ToList();
-            Assert.Equal(9, list.Count());
-            Assert.Equal(1, bulkConfig.TimeStampInfo.NumberOfSkippedForUpdate);
+            Assert.Equal(9, list?.Count);
+            Assert.Equal(1, bulkConfig.TimeStampInfo?.NumberOfSkippedForUpdate);
 
             if (bulkConfig.TimeStampInfo?.NumberOfSkippedForUpdate > 0)
             {
@@ -291,18 +290,13 @@ namespace EFCore.BulkExtensions.Tests
             var entitiesToInsert = new List<UserRole>();
             for (int i = 0; i < EntitiesNumber; i++)
             {
-                entitiesToInsert.Add(new UserRole
-                {
-                    UserId = i / 10,
-                    RoleId = i % 10,
-                    Description = "desc"
-                });
+                entitiesToInsert.Add(new UserRole(i / 10, i % 10, "desc"));
             }
             context.BulkInsert(entitiesToInsert);
 
             // UPDATE
             var entitiesToUpdate = context.UserRoles.ToList();
-            int entitiesCount = entitiesToUpdate.Count();
+            int entitiesCount = entitiesToUpdate.Count;
             for (int i = 0; i < entitiesCount; i++)
             {
                 entitiesToUpdate[i].Description = "desc updated " + i;
@@ -318,11 +312,11 @@ namespace EFCore.BulkExtensions.Tests
 
             // TEST
             var entities = context.UserRoles.ToList();
-            Assert.Equal(EntitiesNumber, entities.Count());
+            Assert.Equal(EntitiesNumber, entities.Count);
 
             context.BulkInsertOrUpdate(entitiesToUpsert, new BulkConfig { PropertiesToInclude = new List<string> { nameof(UserRole.UserId), nameof(UserRole.RoleId) } });
             var entitiesFinal = context.UserRoles.ToList();
-            Assert.Equal(EntitiesNumber + 1, entitiesFinal.Count());
+            Assert.Equal(EntitiesNumber + 1, entitiesFinal.Count);
         }
 
         [Theory]
@@ -367,7 +361,7 @@ namespace EFCore.BulkExtensions.Tests
 
             // TEST
             var entities = context.Students.ToList();
-            Assert.Equal(EntitiesNumber, entities.Count());
+            Assert.Equal(EntitiesNumber, entities.Count);
         }
 
         [Theory]
@@ -398,7 +392,7 @@ namespace EFCore.BulkExtensions.Tests
             if (dbServer == DbServer.SQLServer)
             {
                 var entities = context.Infos.ToList();
-                var entity = entities.FirstOrDefault();
+                var entity = entities.First();
 
                 Assert.Equal(entity.ConvertedTime, dateTime);
                 Assert.Equal("logged", entity.GetLogData());
@@ -512,7 +506,7 @@ namespace EFCore.BulkExtensions.Tests
             //context.BulkDelete(context.Items.ToList()); // On table with FK Truncate does not work
 
 
-            if (context.Items.Count() == 0)
+            if (!context.Items.Any())
             {
                 for (int i = 1; i <= 10; ++i)
                 {
@@ -520,7 +514,7 @@ namespace EFCore.BulkExtensions.Tests
                     {
                         ItemId = 0,
                         Name = "name " + i,
-                        Description = "info " + Guid.NewGuid().ToString().Substring(0, 3),
+                        Description = string.Concat("info ", Guid.NewGuid().ToString().AsSpan(0, 3)),
                         Quantity = i % 10,
                         Price = i / (i % 5 + 1),
                         TimeUpdated = DateTime.Now,
@@ -547,7 +541,7 @@ namespace EFCore.BulkExtensions.Tests
             if (dbServer == DbServer.SQLServer)
             {
                 List<ItemLink> links = context.ItemLinks.ToList();
-                Assert.True(links.Count() > 0, "ItemLink row count");
+                Assert.True(links.Count > 0, "ItemLink row count");
 
                 foreach (var link in links)
                 {
@@ -629,7 +623,7 @@ namespace EFCore.BulkExtensions.Tests
             context.BulkInsertOrUpdate(list2);
 
             // TEST
-            Assert.Equal(20, context.Moduls.ToList().Count());
+            Assert.Equal(20, context.Moduls.ToList().Count);
         }
 
         [Theory]
@@ -652,7 +646,7 @@ namespace EFCore.BulkExtensions.Tests
             context.BulkInsert(mammalList, bulkConfig, type: typeof(Animal));
 
             // TEST
-            Assert.Equal(2, context.Animals.ToList().Count());
+            Assert.Equal(2, context.Animals.ToList().Count);
         }
 
         [Fact]
@@ -838,9 +832,11 @@ namespace EFCore.BulkExtensions.Tests
             context.EntryPreps.AddRange(entities2);
             context.SaveChanges();
 
-            var mappings = new Dictionary<string, string>();
-            mappings.Add(nameof(EntryPrep.EntryPrepId), nameof(Entry.EntryId)); // here used 'nameof(Prop)' since Columns have the same name as Props
-            mappings.Add(nameof(EntryPrep.NameInfo), nameof(Entry.Name));       // if columns they were different name then they would be set with string names, eg. "EntryPrepareId"
+            var mappings = new Dictionary<string, string>
+            {
+                { nameof(EntryPrep.EntryPrepId), nameof(Entry.EntryId) }, // here used 'nameof(Prop)' since Columns have the same name as Props
+                { nameof(EntryPrep.NameInfo), nameof(Entry.Name) }       // if columns they were different name then they would be set with string names, eg. "EntryPrepareId"
+            };
             var bulkConfig = new BulkConfig {
                 CustomSourceTableName = nameof(EntryPrep),
                 CustomSourceDestinationMappingColumns = mappings,
@@ -910,7 +906,7 @@ namespace EFCore.BulkExtensions.Tests
 
             context.BulkInsert(entities, bulkConfig); // to 'LogPersonReport' table
 
-            Assert.Equal(nextLogId, context.LogPersonReports.OrderByDescending(a => a.LogId).FirstOrDefault().LogId);
+            Assert.Equal(nextLogId, context.LogPersonReports.OrderByDescending(a => a.LogId).FirstOrDefault()?.LogId);
         }
 
         [Fact]
@@ -927,16 +923,16 @@ namespace EFCore.BulkExtensions.Tests
 
             //Assert.Throws<InvalidOperationException>(() => context.BulkInsertOrUpdate(bulk)); // commented since when running in Debug mode it pauses on Exception
             context.BulkInsertOrUpdate(bulk, new BulkConfig { IgnoreRowVersion = true });
-            Assert.Equal(bulk.Count(), context.AtypicalRowVersionEntities.Count());
+            Assert.Equal(bulk.Count, context.AtypicalRowVersionEntities.Count());
 
             var bulk2 = new List<AtypicalRowVersionConverterEntity>();
             for (var i = 0; i < 100; i++)
                 bulk2.Add(new AtypicalRowVersionConverterEntity { Id = Guid.NewGuid(), Name = $"Row {i}" });
             context.BulkInsertOrUpdate(bulk2);
-            Assert.Equal(bulk2.Count(), context.AtypicalRowVersionConverterEntities.Count());
+            Assert.Equal(bulk2.Count, context.AtypicalRowVersionConverterEntities.Count());
         }
 
-        private int GetLastRowId(DbContext context, string tableName)
+        private static int GetLastRowId(DbContext context, string tableName)
         {
             var sqlConnection = context.Database.GetDbConnection();
             sqlConnection.Open();
@@ -990,8 +986,8 @@ namespace EFCore.BulkExtensions.Tests
             }
 
             // TEST
-            Assert.Equal(3240000, context.Events.SingleOrDefault(a => a.Name == "Event 1").TimeCreated.Ticks % 10000000);
-            Assert.Equal(3240000, context.Events.SingleOrDefault(a => a.Name == "Event 2").TimeCreated.Ticks % 10000000);
+            Assert.Equal(3240000, context.Events.SingleOrDefault(a => a.Name == "Event 1")?.TimeCreated.Ticks % 10000000);
+            Assert.Equal(3240000, context.Events.SingleOrDefault(a => a.Name == "Event 2")?.TimeCreated.Ticks % 10000000);
         }
 
         [Fact]
@@ -1017,9 +1013,11 @@ namespace EFCore.BulkExtensions.Tests
             );
             context.SaveChanges();
 
-            var entities = new List<Archive>();
-            entities.Add(new Archive { ArchiveId = byte1 });
-            entities.Add(new Archive { ArchiveId = byte2 });
+            var entities = new List<Archive>
+            {
+                new Archive { ArchiveId = byte1 },
+                new Archive { ArchiveId = byte2 }
+            };
             context.BulkRead(entities);
 
             Assert.Equal("Desc1", entities[0].Description);

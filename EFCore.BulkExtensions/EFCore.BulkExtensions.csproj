@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>      
+    <Nullable>enable</Nullable>
     <Title>EFCore.BulkExtensions</Title>
     <Version>6.4.4</Version>
     <Authors>borisdj</Authors>

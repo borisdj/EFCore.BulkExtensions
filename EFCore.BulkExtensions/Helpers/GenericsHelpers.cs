@@ -23,7 +23,7 @@ namespace EFCore.BulkExtensions.Helpers
                 }
                 var name = field.Name;
                 var temp = field.GetValue(value);
-                object defaultValue = null;
+                object? defaultValue = null;
 
                 //bypass instance creation if incoming type is an interface or class does not have parameterless constructor
                 var hasParameterlessConstructor = type.GetConstructor(Type.EmptyTypes) != null;
@@ -40,7 +40,7 @@ namespace EFCore.BulkExtensions.Helpers
             return result;
         }
 
-        internal static IEnumerable<string> GetPropertiesWithDefaultValue<T>(this IEnumerable<T> values, Type type) where T : class
+        internal static IEnumerable<string>? GetPropertiesWithDefaultValue<T>(this IEnumerable<T> values, Type type) where T : class
         {
             //var result = values.SelectMany(x => x.GetPropertiesDefaultValue(type)).ToList().Distinct(); // TODO: Check all options(ComputedAndDefaultValuesTest) and consider optimisation
             var result = values.FirstOrDefault()?.GetPropertiesDefaultValue(type)?.Distinct();
