@@ -12,9 +12,8 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql
+namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql;
+
+public class PostgreSqlDialect : SqlServerDialect
 {
-    public class PostgreSqlDialect : SqlServerDialect
-    {
-    }
 }

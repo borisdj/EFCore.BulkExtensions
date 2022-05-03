@@ -9,3 +9,4 @@ tab_width = 4
 end_of_line = lf
 trim_trailing_whitespace = false
 insert_final_newline = true
+csharp_style_namespace_declarations = file_scoped:warning

@@ -1,10 +1,9 @@
-﻿namespace EFCore.BulkExtensions.Tests.IncludeGraph.Model
-{
-    public class Spare
-    {
-        public int Id { get; set; }
+﻿namespace EFCore.BulkExtensions.Tests.IncludeGraph.Model;
 
-        public string PartNumber { get; set; }
-        public string Barcode { get; set; }
-    }
+public class Spare
+{
+    public int Id { get; set; }
+
+    public string PartNumber { get; set; }
+    public string Barcode { get; set; }
 }

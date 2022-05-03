@@ -7,59 +7,58 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text.RegularExpressions;
 
-namespace EFCore.BulkExtensions.SQLAdapters.SQLite
+namespace EFCore.BulkExtensions.SQLAdapters.SQLite;
+
+public class SqliteDialect : IQueryBuilderSpecialization
 {
-    public class SqliteDialect : IQueryBuilderSpecialization
+    public List<object> ReloadSqlParameters(DbContext context, List<object> sqlParameters)
     {
-        public List<object> ReloadSqlParameters(DbContext context, List<object> sqlParameters)
+        var sqlParametersReloaded = new List<object>();
+        foreach (var parameter in sqlParameters)
         {
-            var sqlParametersReloaded = new List<object>();
-            foreach (var parameter in sqlParameters)
-            {
-                var sqlParameter = (IDbDataParameter) parameter;
-                sqlParametersReloaded.Add(new SqliteParameter(sqlParameter.ParameterName, sqlParameter.Value));
-            }
-
-            return sqlParametersReloaded;
+            var sqlParameter = (IDbDataParameter) parameter;
+            sqlParametersReloaded.Add(new SqliteParameter(sqlParameter.ParameterName, sqlParameter.Value));
         }
 
-        public string GetBinaryExpressionAddOperation(BinaryExpression binaryExpression)
+        return sqlParametersReloaded;
+    }
+
+    public string GetBinaryExpressionAddOperation(BinaryExpression binaryExpression)
+    {
+        return IsStringConcat(binaryExpression) ? "||" : "+";
+    }
+
+    public (string, string) GetBatchSqlReformatTableAliasAndTopStatement(string sqlQuery, DbServer databaseType)
+    {
+        return (string.Empty, string.Empty);
+    }
+
+    public ExtractedTableAlias GetBatchSqlExtractTableAliasFromQuery(string fullQuery, string tableAlias,
+        string tableAliasSuffixAs)
+    {
+        var result = new ExtractedTableAlias();
+        var match = Regex.Match(fullQuery, @"FROM (""[^""]+"")( AS ""[^""]+"")");
+        result.TableAlias = match.Groups[1].Value;
+        result.TableAliasSuffixAs = match.Groups[2].Value;
+        result.Sql = fullQuery.Substring(match.Index + match.Length);
+
+        return result;
+    }
+
+    internal static bool IsStringConcat(BinaryExpression binaryExpression)
+    {
+        var methodProperty = binaryExpression.GetType().GetProperty("Method");
+        if (methodProperty == null)
         {
-            return IsStringConcat(binaryExpression) ? "||" : "+";
+            return false;
         }
 
-        public (string, string) GetBatchSqlReformatTableAliasAndTopStatement(string sqlQuery, DbServer databaseType)
+        var method = methodProperty.GetValue(binaryExpression) as MethodInfo;
+        if (method == null)
         {
-            return (string.Empty, string.Empty);
+            return false;
         }
 
-        public ExtractedTableAlias GetBatchSqlExtractTableAliasFromQuery(string fullQuery, string tableAlias,
-            string tableAliasSuffixAs)
-        {
-            var result = new ExtractedTableAlias();
-            var match = Regex.Match(fullQuery, @"FROM (""[^""]+"")( AS ""[^""]+"")");
-            result.TableAlias = match.Groups[1].Value;
-            result.TableAliasSuffixAs = match.Groups[2].Value;
-            result.Sql = fullQuery.Substring(match.Index + match.Length);
-
-            return result;
-        }
-
-        internal static bool IsStringConcat(BinaryExpression binaryExpression)
-        {
-            var methodProperty = binaryExpression.GetType().GetProperty("Method");
-            if (methodProperty == null)
-            {
-                return false;
-            }
-
-            var method = methodProperty.GetValue(binaryExpression) as MethodInfo;
-            if (method == null)
-            {
-                return false;
-            }
-
-            return method.DeclaringType == typeof(string) && method.Name == nameof(string.Concat);
-        }
+        return method.DeclaringType == typeof(string) && method.Name == nameof(string.Concat);
     }
 }
