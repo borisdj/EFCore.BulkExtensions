@@ -171,7 +171,6 @@ Insertion order is implemented with [TOP](https://docs.microsoft.com/en-us/sql/t
 This config should remain true when *SetOutputIdentity* is set to true on Entity containing NotMapped Property. [issues/76](https://github.com/borisdj/EFCore.BulkExtensions/issues/76)<br>
 When using **SetOutputIdentity** Id values will be updated to new ones from database.<br>
 With BulkInsertOrUpdate for those that will be updated it has to match with Id column, or other unique column(s) if using UpdateByProperties in which case  [orderBy is done with those props](https://github.com/borisdj/EFCore.BulkExtensions/issues/806) instead of ID.<br>
-  <br>
 For Sqlite combination of BulkInsertOrUpdate and IdentityId automatic set will not work properly since it does [not have full MERGE](https://github.com/borisdj/EFCore.BulkExtensions/issues/556) capabilities like SqlServer. Instead list can be split into 2 lists, and call separately BulkInsert and BulkUpdate.<br>
   
 **SetOutputIdentity** is useful when BulkInsert is done to multiple related tables, that have Identity column.<br>
