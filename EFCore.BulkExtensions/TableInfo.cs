@@ -25,8 +25,8 @@ namespace EFCore.BulkExtensions;
 /// </summary>
 public class TableInfo
 {
-    public string? Schema { get; set; }
 #pragma warning disable CS1591 // No XML comments required here.
+    public string? Schema { get; set; }
     public string SchemaFormated => Schema != null ? $"[{Schema}]." : "";
     public string? TempSchema { get; set; }
     public string TempSchemaFormated => TempSchema != null ? $"[{TempSchema}]." : "";
@@ -88,7 +88,6 @@ public class TableInfo
     internal NpgsqlConnection? NpgsqlConnection { get; set; }
     internal NpgsqlTransaction? NpgsqlTransaction { get; set; }
 
-    public static TableInfo CreateInstance<T>(DbContext context, Type? type, IList<T> entities, OperationType operationType, BulkConfig? bulkConfig)
 
 #pragma warning restore CS1591 // No XML comments required here.
 
@@ -103,8 +102,7 @@ public class TableInfo
     /// <param name="bulkConfig"></param>
     /// <returns></returns>
     /// <exception cref="InvalidOperationException"></exception>
-    public static TableInfo CreateInstance<T>(DbContext context, Type type, IList<T> entities, OperationType operationType, BulkConfig bulkConfig)
-
+    public static TableInfo CreateInstance<T>(DbContext context, Type? type, IList<T> entities, OperationType operationType, BulkConfig? bulkConfig)
     {
         var tableInfo = new TableInfo
         {
@@ -137,7 +135,7 @@ public class TableInfo
     /// <exception cref="InvalidOperationException"></exception>
     /// <exception cref="MultiplePropertyListSetException"></exception>
     /// <exception cref="InvalidBulkConfigException"></exception>
-    public void LoadData<T>(DbContext context, Type type?, IList<T> entities, bool loadOnlyPKColumn)
+    public void LoadData<T>(DbContext context, Type? type, IList<T> entities, bool loadOnlyPKColumn)
 
     {
         LoadOnlyPKColumn = loadOnlyPKColumn;

@@ -4,7 +4,6 @@ namespace EFCore.BulkExtensions.SqlAdapters;
 
 internal static class ProgressHelper
 {
-    public static void SetProgress(ref int rowsCopied, int entitiesCount, BulkConfig bulkConfig, Action<decimal>? progress)
     internal static void SetProgress(ref int rowsCopied, int entitiesCount, BulkConfig bulkConfig, Action<decimal>? progress)
     {
         if (progress != null && bulkConfig.NotifyAfter != null && bulkConfig.NotifyAfter != 0)
