@@ -7,7 +7,7 @@ public static class ActivitySources
 {
     private static readonly ActivitySource ActivitySource = new ActivitySource("EFCore.BulkExtensions");
 
-    public static Activity StartExecuteActivity(OperationType operationType, int entitiesCount)
+    public static Activity? StartExecuteActivity(OperationType operationType, int entitiesCount)
     {
         var activity = ActivitySource.StartActivity("EFCore.BulkExtensions.BulkExecute");
         if (activity != null)

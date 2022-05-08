@@ -7,9 +7,9 @@ namespace EFCore.BulkExtensions.SqlAdapters;
 
 public class ExtractedTableAlias
 {
-    public string TableAlias { get; set; }
-    public string TableAliasSuffixAs { get; set; }
-    public string Sql { get; set; }
+    public string TableAlias { get; set; } = null!;
+    public string TableAliasSuffixAs { get; set; } = null!;
+    public string Sql { get; set; } = null!;
 }
 
 public interface IQueryBuilderSpecialization

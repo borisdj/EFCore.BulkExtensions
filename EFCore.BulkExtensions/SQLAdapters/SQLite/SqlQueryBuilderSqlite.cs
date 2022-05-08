@@ -15,7 +15,7 @@ public static class SqlQueryBuilderSqlite
 
     // In Sqlite if table has AutoIncrement then InsertOrUpdate is not supported in one call,
     // we can not simultaneously Insert without PK(being 0,0,...) and Update with PK(1,2,...), separate calls Insert, Update are required.
-    public static string InsertIntoTable(TableInfo tableInfo, OperationType operationType, string tableName = null)
+    public static string InsertIntoTable(TableInfo tableInfo, OperationType operationType, string? tableName = null)
     {
         tableName ??= tableInfo.InsertToTempTable ? tableInfo.TempTableName : tableInfo.TableName;
 
@@ -60,7 +60,7 @@ public static class SqlQueryBuilderSqlite
         return q + ";";
     }
 
-    public static string UpdateSetTable(TableInfo tableInfo, string tableName = null)
+    public static string UpdateSetTable(TableInfo tableInfo, string? tableName = null)
     {
         tableName ??= tableInfo.TableName;
         List<string> columnsList = tableInfo.PropertyColumnNamesDict.Values.ToList();
@@ -74,7 +74,7 @@ public static class SqlQueryBuilderSqlite
         return q;
     }
 
-    public static string DeleteFromTable(TableInfo tableInfo, string tableName = null)
+    public static string DeleteFromTable(TableInfo tableInfo, string? tableName = null)
     {
         tableName ??= tableInfo.TableName;
         List<string> primaryKeys = tableInfo.PrimaryKeysPropertyColumnNameDict.Select(k => tableInfo.PropertyColumnNamesDict[k.Key]).ToList();

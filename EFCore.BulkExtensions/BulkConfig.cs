@@ -69,7 +69,7 @@ public class BulkConfig
     /// <value>
     ///     Can be set with 'TableName' only or with 'Schema.TableName'.
     /// </value>
-    public string CustomDestinationTableName { get; set; }
+    public string? CustomDestinationTableName { get; set; }
 
     /// <summary>
     ///     Source data from specified table already in Db, so input list not used and can be empty.
@@ -77,12 +77,12 @@ public class BulkConfig
     /// <value>
     ///     Can be set with 'TableName' only or with 'Schema.TableName' (Not supported for Sqlite)
     /// </value>
-    public string CustomSourceTableName { get; set; }
+    public string? CustomSourceTableName { get; set; }
 
     /// <summary>
     ///     Only if CustomSourceTableName is set and used for specifying Source - Destination column names when they are not the same
     /// </summary>
-    public Dictionary<string, string> CustomSourceDestinationMappingColumns { get; set; }
+    public Dictionary<string, string>? CustomSourceDestinationMappingColumns { get; set; }
 
     /// <summary>
     ///     Can be set to True if want to have tracking of entities from BulkRead or when SetOutputIdentity is set.
@@ -119,12 +119,12 @@ public class BulkConfig
     /// <value>
     ///     Contains info in Properties: <c>StatsNumberInserted, StatsNumberUpdated, StatsNumberDeleted</c>
     /// </value>
-    public StatsInfo StatsInfo { get; internal set; }
+    public StatsInfo? StatsInfo { get; internal set; }
 
     /// <summary>
     ///     Used as object for returning TimeStamp Info when <c>BulkConfig.DoNotUpdateIfTimeStampChanged = true</c>
     /// </summary>
-    public TimeStampInfo TimeStampInfo { get; internal set; }
+    public TimeStampInfo? TimeStampInfo { get; internal set; }
 
     /// <summary>
     ///     When doing Insert/Update one or more properties can be exclude by adding their names into PropertiesToExclude.
@@ -132,7 +132,7 @@ public class BulkConfig
     /// <remarks>
     ///     If need to change less then half column then PropertiesToInclude can be used. Setting both Lists are not allowed.
     /// </remarks>
-    public List<string> PropertiesToInclude { get; set; }
+    public List<string>? PropertiesToInclude { get; set; }
 
     /// <summary>
     ///     By adding a column name to this list, will allow it to be inserted and updated but will not update the row if any of the these columns in that row did not change.
@@ -140,15 +140,15 @@ public class BulkConfig
     /// <remarks>
     ///     For example, if importing data and want to keep an internal UpdateDate, add all columns except that one, or use PropertiesToExcludeOnCompare.
     /// </remarks>
-    public List<string> PropertiesToIncludeOnCompare { get; set; }
+    public List<string>? PropertiesToIncludeOnCompare { get; set; }
 
     /// <summary>
     ///     Ensures that only certain columns with selected properties are Updated, can differ from PropertiesToInclude that can that be used for Insert config only
     /// </summary>
     /// <remarks>
-    ///     When need to Insert only new and skip existing ones in Db (Insert_if_not_Exist) then use BulkInsertOrUpdate with this list set to empty: <c>new List<string> { "" }</string>c>
+    ///     When need to Insert only new and skip existing ones in Db (Insert_if_not_Exist) then use BulkInsertOrUpdate with this list set to empty: <c>new List<string> { "" }</string></c>
     /// </remarks>
-    public List<string> PropertiesToIncludeOnUpdate { get; set; }
+    public List<string>? PropertiesToIncludeOnUpdate { get; set; }
 
     /// <summary>
     ///     When doing Insert/Update properties to affect can be explicitly selected by adding their names into PropertiesToInclude.
@@ -156,7 +156,7 @@ public class BulkConfig
     /// <remarks>
     ///     If need to change more then half columns then PropertiesToExclude can be used. Setting both Lists are not allowed.
     /// </remarks>
-    public List<string> PropertiesToExclude { get; set; }
+    public List<string>? PropertiesToExclude { get; set; }
 
     /// <summary>
     ///     By adding a column name to this list, will allow it to be inserted and updated but will not update the row if any of the others columns in that row did not change.
@@ -164,12 +164,12 @@ public class BulkConfig
     /// <remarks>
     ///     For example, if importing data and want to keep an internal UpdateDate, add that columns to the UpdateDate.
     /// </remarks>
-    public List<string> PropertiesToExcludeOnCompare { get; set; }
+    public List<string>? PropertiesToExcludeOnCompare { get; set; }
 
     /// <summary>
     ///     Selected properties are excluded from being updated, can differ from PropertiesToExclude that can be used for Insert config only
     /// </summary>
-    public List<string> PropertiesToExcludeOnUpdate { get; set; }
+    public List<string>? PropertiesToExcludeOnUpdate { get; set; }
 
     /// <summary>
     ///     Used for specifying custom properties, by which we want update to be done.
@@ -177,7 +177,7 @@ public class BulkConfig
     /// <remarks>
     ///     If Identity column exisit and is not added in UpdateByProp it will be excluded automatically
     /// </remarks>
-    public List<string> UpdateByProperties { get; set; }
+    public List<string>? UpdateByProperties { get; set; }
 
     /// <summary>
     ///     When set to <c>true</c> it will adding (normal) Shadow Property and persist value. It Disables automatic discrimator, so it shoud be set manually.
@@ -188,7 +188,7 @@ public class BulkConfig
     /// <summary>
     ///     Returns value for shadow properties, EnableShadowProperties = true
     /// </summary>
-    public Func<object, string, object> ShadowPropertyValue { get; set; } 
+    public Func<object, string, object?>? ShadowPropertyValue { get; set; } 
 
 
     /// <summary>
@@ -253,7 +253,7 @@ public class BulkConfig
     /// <summary>
     ///     List of column order hints for improving performance.
     /// </summary>
-    public List<SqlBulkCopyColumnOrderHint> SqlBulkCopyColumnOrderHints { get; set; }
+    public List<SqlBulkCopyColumnOrderHint>? SqlBulkCopyColumnOrderHints { get; set; }
 
     /// <summary>
     ///     A filter on entities to delete when using BulkInsertOrUpdateOrDelete.
@@ -263,13 +263,13 @@ public class BulkConfig
         SynchronizeFilter = filter;
     }
 
-    public Func<DbConnection, DbConnection> UnderlyingConnection { get; set; }
+    public Func<DbConnection, DbConnection>? UnderlyingConnection { get; set; }
 
-    public Func<DbTransaction, DbTransaction> UnderlyingTransaction { get; set; }
+    public Func<DbTransaction, DbTransaction>? UnderlyingTransaction { get; set; }
 
     internal OperationType OperationType { get; set; }
 
-    internal object SynchronizeFilter { get; private set; }
+    internal object? SynchronizeFilter { get; private set; }
 }
 
 public class StatsInfo
@@ -285,5 +285,5 @@ public class TimeStampInfo
 {
     public int NumberOfSkippedForUpdate { get; set; }
 
-    public List<object> EntitiesOutput { get; set; }
+    public List<object> EntitiesOutput { get; set; } = null!;
 }
