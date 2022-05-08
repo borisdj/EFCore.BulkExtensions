@@ -71,9 +71,8 @@ public class EFCoreBulkTestAtypical
         Assert.Equal(countDb, countEntities);
     }
 
-    [Theory]
-    [InlineData(DbServer.SQLServer)]
-    private void RunDefaultPKInsertWithGraph(DbServer dbServer)
+    [Fact]
+    private void RunDefaultPKInsertWithGraph()
     {
         using (var context = new TestContext(ContextUtil.GetOptions()))
         {

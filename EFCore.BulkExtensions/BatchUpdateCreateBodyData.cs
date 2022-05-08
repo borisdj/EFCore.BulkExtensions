@@ -40,7 +40,7 @@ public class BatchUpdateCreateBodyData
         DatabaseType = SqlAdaptersMapping.GetDatabaseType(dbContext);
         DbContext = dbContext;
         Query = query;
-        RootInstanceParameterName = updateExpression.Parameters?.First()?.Name;
+        RootInstanceParameterName = updateExpression.Parameters?.FirstOrDefault()?.Name;
         RootType = rootType;
         TableAlias = tableAlias;
         TableAliasesInUse = new List<string>();
@@ -66,7 +66,7 @@ public class BatchUpdateCreateBodyData
     public DbServer DatabaseType { get; }
     public DbContext DbContext { get; }
     public IQueryable Query { get; }
-    public string RootInstanceParameterName { get; }
+    public string? RootInstanceParameterName { get; }
     public Type RootType { get; }
     public List<object> SqlParameters { get; }
     public string TableAlias { get; }
@@ -74,7 +74,7 @@ public class BatchUpdateCreateBodyData
     public StringBuilder UpdateColumnsSql { get; }
     public LambdaExpression UpdateExpression { get; }
 
-    public TableInfo GetTableInfoForType(Type typeToLookup)
+    public TableInfo? GetTableInfoForType(Type typeToLookup)
     {
         if (_tableInfoLookup.TryGetValue(typeToLookup, out var tableInfo))
         {

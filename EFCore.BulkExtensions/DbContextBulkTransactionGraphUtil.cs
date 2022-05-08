@@ -12,17 +12,17 @@ namespace EFCore.BulkExtensions;
 
 internal static class DbContextBulkTransactionGraphUtil
 {
-    public static void ExecuteWithGraph(DbContext context, IEnumerable<object> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress)
+    public static void ExecuteWithGraph(DbContext context, IEnumerable<object> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal>? progress)
     {
         ExecuteWithGraphAsync(context, entities, operationType, bulkConfig, progress, CancellationToken.None, isAsync: false).GetAwaiter().GetResult();
     }
 
-    public static async Task ExecuteWithGraphAsync(DbContext context, IEnumerable<object> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress, CancellationToken cancellationToken)
+    public static async Task ExecuteWithGraphAsync(DbContext context, IEnumerable<object> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal>? progress, CancellationToken cancellationToken)
     {
         await ExecuteWithGraphAsync(context, entities, operationType, bulkConfig, progress, cancellationToken, isAsync: true);
     }
 
-    private static async Task ExecuteWithGraphAsync(DbContext context, IEnumerable<object> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal> progress, CancellationToken cancellationToken, bool isAsync)
+    private static async Task ExecuteWithGraphAsync(DbContext context, IEnumerable<object> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal>? progress, CancellationToken cancellationToken, bool isAsync)
     {
         if (operationType != OperationType.Insert
                    && operationType != OperationType.InsertOrUpdate
@@ -57,7 +57,7 @@ internal static class DbContextBulkTransactionGraphUtil
             foreach (var graphNodeGroup in graphNodesGroupedByType)
             {
                 var entityClrType = graphNodeGroup.Key;
-                var entityType = context.Model.FindEntityType(entityClrType);
+                var entityType = context.Model.FindEntityType(entityClrType) ?? throw new ArgumentException($"Unable to determine EntityType from given type {entityClrType.Name}");
 
                 if (OwnedTypeUtil.IsOwnedInSameTableAsOwner(entityType))
                 {
@@ -146,7 +146,7 @@ internal static class DbContextBulkTransactionGraphUtil
 
     private static IEnumerable<object> GetUniqueEntities(DbContext context, IEnumerable<object> entities)
     {
-        var entityType = context.Model.FindEntityType(entities.First().GetType());
+        var entityType = context.Model.FindEntityType(entities.First().GetType()) ?? throw new ArgumentException($"Unable to determine EntityType from given type {entities.First().GetType().Name}");
         var pk = entityType.FindPrimaryKey();
         var processedPks = new HashSet<PrimaryKeyList>();
 
@@ -158,15 +158,18 @@ internal static class DbContextBulkTransactionGraphUtil
             if (entry.IsKeySet)
             {
                 var primaryKeyComparer = new PrimaryKeyList();
-
-                foreach (var pkProp in pk.Properties)
+                if (pk is not null)
                 {
-                    primaryKeyComparer.Add(entry.Property(pkProp.Name).CurrentValue);
+                    foreach (var pkProp in pk.Properties)
+                    {
+                        primaryKeyComparer.Add(entry.Property(pkProp.Name).CurrentValue);
+                    }
+
+                    // If the processed pk already exists in the HashSet, its not unique.
+                    if (processedPks.Add(primaryKeyComparer))
+                        yield return entity;
                 }
 
-                // If the processed pk already exists in the HashSet, its not unique.
-                if (processedPks.Add(primaryKeyComparer))
-                    yield return entity;
             }
             else
             {
@@ -178,7 +181,7 @@ internal static class DbContextBulkTransactionGraphUtil
     private static void SetForeignKeyForRelationship(DbContext context, INavigation navigation, object dependent, object principal)
     {
         var principalKeyProperties = navigation.ForeignKey.PrincipalKey.Properties;
-        var pkValues = new List<object>();
+        var pkValues = new List<object?>();
 
         foreach (var pk in principalKeyProperties)
         {
@@ -197,9 +200,9 @@ internal static class DbContextBulkTransactionGraphUtil
         }
     }
 
-    private class PrimaryKeyList : List<object>
+    private class PrimaryKeyList : List<object?>
     {
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             var objCast = obj as PrimaryKeyList;
 
@@ -214,7 +217,7 @@ internal static class DbContextBulkTransactionGraphUtil
                 var a = this[i];
                 var b = objCast[i];
 
-                if (a.Equals(b) == false)
+                if (a?.Equals(b) == false)
                     return false;
             }
 
@@ -227,7 +230,7 @@ internal static class DbContextBulkTransactionGraphUtil
 
             foreach (var x in this)
             {
-                hash = hash * 31 + x.GetHashCode();
+                hash = hash * 31 + (x?.GetHashCode() ?? 0);
             }
 
             return hash;

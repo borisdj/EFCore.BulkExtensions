@@ -47,8 +47,8 @@ public class EFCoreBulkTest
     }
 
     [Theory]
-    [InlineData(DbServer.PostgreSQL, true)]
-    public void InsertTestPostgreSql(DbServer dbServer, bool isBulk)
+    [InlineData(DbServer.PostgreSQL)]
+    public void InsertTestPostgreSql(DbServer dbServer)
     {
         ContextUtil.DbServer = dbServer;
 
@@ -256,7 +256,7 @@ public class EFCoreBulkTest
 
             context.Database.ExecuteSqlRaw($"SELECT {columnName} FROM {tableName}");
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             // Table already exist
         }

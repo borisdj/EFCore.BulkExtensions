@@ -51,7 +51,7 @@ public static class SqlQueryBuilder
             string columnName = column.Key;
             string columnType = column.Value;
             if (columnName == tableInfo.TimeStampColumnName)
-                columnType = tableInfo.TimeStampOutColumnType;
+                columnType = TableInfo.TimeStampOutColumnType;
             q += $"ALTER TABLE {tableName} ALTER COLUMN [{columnName}] {columnType}; ";
         }
         return q;
@@ -76,7 +76,7 @@ public static class SqlQueryBuilder
         var columnsNamesAndTypes = new List<Tuple<string, string>>();
         foreach (var columnName in columnsNames)
         {
-            if (!tableInfo.ColumnNamesTypesDict.TryGetValue(columnName, out string columnType))
+            if (!tableInfo.ColumnNamesTypesDict.TryGetValue(columnName, out string? columnType))
             {
                 throw new InvalidOperationException($"Column Type not found in ColumnNamesTypesDict for column: '{columnName}'");
             }
@@ -243,9 +243,9 @@ public static class SqlQueryBuilder
     /// <param name="entityPropertyWithDefaultValue"></param>
     /// <returns></returns>
     /// <exception cref="InvalidBulkConfigException"></exception>
-    public static (string sql, IEnumerable<object> parameters) MergeTable<T>(DbContext context, TableInfo tableInfo, OperationType operationType, IEnumerable<string> entityPropertyWithDefaultValue = default) where T : class
+    public static (string sql, IEnumerable<object> parameters) MergeTable<T>(DbContext context, TableInfo tableInfo, OperationType operationType, IEnumerable<string>? entityPropertyWithDefaultValue = default) where T : class
     {
-        List<object> parameters = new List<object>();
+        List<object> parameters = new();
         string targetTable = tableInfo.FullTableName;
         string sourceTable = tableInfo.FullTempTableName;
         bool keepIdentity = tableInfo.BulkConfig.SqlBulkCopyOptions.HasFlag(SqlBulkCopyOptions.KeepIdentity);
@@ -262,26 +262,30 @@ public static class SqlQueryBuilder
         {
             var defaults = insertColumnsNames.Where(a => tableInfo.DefaultValueProperties.Contains(a)).ToList();
             //If the entities assign value to properties with default value, don't skip this property 
-            if(entityPropertyWithDefaultValue != default)
+            if (entityPropertyWithDefaultValue != default)
                 defaults = defaults.Where(x => entityPropertyWithDefaultValue.Contains(x)).ToList();
             insertColumnsNames = insertColumnsNames.Where(a => !defaults.Contains(a)).ToList();
         }
 
-        string isUpdateStatsValue = (tableInfo.BulkConfig.CalculateStats) ? ",(CASE $action WHEN 'UPDATE' THEN 1 Else 0 END),(CASE $action WHEN 'DELETE' THEN 1 Else 0 END)" : "";
+        string isUpdateStatsValue = (tableInfo.BulkConfig.CalculateStats)
+            ? ",(CASE $action WHEN 'UPDATE' THEN 1 Else 0 END),(CASE $action WHEN 'DELETE' THEN 1 Else 0 END)"
+            : string.Empty;
 
         if (tableInfo.BulkConfig.PreserveInsertOrder)
         {
-            int numberOfEntities = tableInfo.BulkConfig.CustomSourceTableName == null ? tableInfo.NumberOfEntities : int.MaxValue;
-            var orderBy = (primaryKeys.Count() == 0) ? "" : $"ORDER BY {GetCommaSeparatedColumns(primaryKeys)}";
+            int numberOfEntities = tableInfo.BulkConfig.CustomSourceTableName == null
+                ? tableInfo.NumberOfEntities
+                : int.MaxValue;
+            var orderBy = (primaryKeys.Count == 0) ? string.Empty : $"ORDER BY {GetCommaSeparatedColumns(primaryKeys)}";
             sourceTable = $"(SELECT TOP {numberOfEntities} * FROM {sourceTable} {orderBy})";
         }
 
-        string textWITH_HOLDLOCK = tableInfo.BulkConfig.WithHoldlock ? " WITH (HOLDLOCK)" : "";
+        string textWITH_HOLDLOCK = tableInfo.BulkConfig.WithHoldlock ? " WITH (HOLDLOCK)" : string.Empty;
 
         var q = $"MERGE {targetTable}{textWITH_HOLDLOCK} AS T " +
                 $"USING {sourceTable} AS S " +
                 $"ON {GetANDSeparatedColumns(primaryKeys, "T", "S", tableInfo.UpdateByPropertiesAreNullable)}";
-        q += (primaryKeys.Count() == 0) ? "1=0" : "";
+        q += (primaryKeys.Count == 0) ? "1=0" : string.Empty;
 
         if (operationType == OperationType.Insert || operationType == OperationType.InsertOrUpdate || operationType == OperationType.InsertOrUpdateOrDelete)
         {
@@ -290,7 +294,7 @@ public static class SqlQueryBuilder
         }
 
         q = q.Replace("INSERT () VALUES ()", "INSERT DEFAULT VALUES"); // case when table has only one column that is Identity
-        
+
 
         if (operationType == OperationType.Update || operationType == OperationType.InsertOrUpdate || operationType == OperationType.InsertOrUpdateOrDelete)
         {
@@ -301,11 +305,11 @@ public static class SqlQueryBuilder
             else if (updateColumnNames.Count > 0)
             {
                 q += $" WHEN MATCHED" +
-                     (tableInfo.BulkConfig.OmitClauseExistsExcept || tableInfo.HasSpatialType ? "" : // The data type Geography (Spatial) cannot be used as an operand to the UNION, INTERSECT or EXCEPT operators because it is not comparable
+                     (tableInfo.BulkConfig.OmitClauseExistsExcept || tableInfo.HasSpatialType ? string.Empty : // The data type Geography (Spatial) cannot be used as an operand to the UNION, INTERSECT or EXCEPT operators because it is not comparable
                       $" AND EXISTS (SELECT {GetCommaSeparatedColumns(compareColumnNames, "S")}" + // EXISTS better handles nulls
                       $" EXCEPT SELECT {GetCommaSeparatedColumns(compareColumnNames, "T")})"       // EXCEPT does not update if all values are same
                      ) +
-                     (!tableInfo.BulkConfig.DoNotUpdateIfTimeStampChanged || tableInfo.TimeStampColumnName == null ? "" :
+                     (!tableInfo.BulkConfig.DoNotUpdateIfTimeStampChanged || tableInfo.TimeStampColumnName == null ? string.Empty :
                       $" AND S.[{tableInfo.TimeStampColumnName}] = T.[{tableInfo.TimeStampColumnName}]"
                      ) +
                      $" THEN UPDATE SET {GetCommaSeparatedColumns(updateColumnNames, "T", "S")}";
@@ -317,6 +321,10 @@ public static class SqlQueryBuilder
             string deleteSearchCondition = string.Empty;
             if (tableInfo.BulkConfig.SynchronizeFilter != null)
             {
+                if (context is null)
+                {
+                    throw new ArgumentNullException(nameof(context));
+                }
                 var querable = context.Set<T>()
                     .IgnoreQueryFilters()
                     .IgnoreAutoIncludes()
@@ -326,7 +334,7 @@ public static class SqlQueryBuilder
                 int wherePos = batchSql.Item1.IndexOf(whereClause, StringComparison.OrdinalIgnoreCase);
                 if (wherePos > 0)
                 {
-                    var sqlWhere = batchSql.Item1.Substring(wherePos + whereClause.Length);
+                    var sqlWhere = batchSql.Item1[(wherePos + whereClause.Length)..];
                     sqlWhere = sqlWhere.Replace($"[{batchSql.Item2}].", string.Empty);
                     deleteSearchCondition = " AND " + sqlWhere;
                     parameters.AddRange(batchSql.Item6);
@@ -359,13 +367,15 @@ public static class SqlQueryBuilder
         }
         q += ";";
 
-        Dictionary<string, string> sourceDestinationMappings = tableInfo.BulkConfig.CustomSourceDestinationMappingColumns;
-        if (tableInfo.BulkConfig.CustomSourceTableName != null && sourceDestinationMappings != null && sourceDestinationMappings.Count > 0)
+        Dictionary<string, string> sourceDestinationMappings = tableInfo.BulkConfig.CustomSourceDestinationMappingColumns ?? new();
+        if (tableInfo.BulkConfig.CustomSourceTableName != null
+            && sourceDestinationMappings != null
+            && sourceDestinationMappings.Count > 0)
         {
             var textOrderBy = "ORDER BY ";
             var textAsS = " AS S";
             int startIndex = q.IndexOf(textOrderBy);
-            var qSegment = q.Substring(startIndex, q.IndexOf(textAsS) - startIndex);
+            var qSegment = q[startIndex..q.IndexOf(textAsS)];
             var qSegmentUpdated = qSegment;
             foreach (var mapping in sourceDestinationMappings)
             {
@@ -388,7 +398,7 @@ public static class SqlQueryBuilder
             }
         }
 
-        return (sql: q, parameters: parameters);
+        return (sql: q, parameters);
     }
 
     /// <summary>
@@ -414,6 +424,7 @@ public static class SqlQueryBuilder
     }
 
     // propertColumnsNamesDict used with Sqlite for @parameter to be save from non valid charaters ('', '!', ...) that are allowed as column Names in Sqlite
+
     /// <summary>
     /// Generates SQL query to get comma seperated column
     /// </summary>
@@ -422,7 +433,7 @@ public static class SqlQueryBuilder
     /// <param name="equalsTable"></param>
     /// <param name="propertColumnsNamesDict"></param>
     /// <returns></returns>
-    public static string GetCommaSeparatedColumns(List<string> columnsNames, string prefixTable = null, string equalsTable = null, Dictionary<string, string> propertColumnsNamesDict = null)
+    public static string GetCommaSeparatedColumns(List<string> columnsNames, string? prefixTable = null, string? equalsTable = null, Dictionary<string, string>? propertColumnsNamesDict = null)
     {
         prefixTable += (prefixTable != null && prefixTable != "@") ? "." : "";
         equalsTable += (equalsTable != null && equalsTable != "@") ? "." : "";
@@ -471,7 +482,7 @@ public static class SqlQueryBuilder
     /// <param name="updateByPropertiesAreNullable"></param>
     /// <param name="propertColumnsNamesDict"></param>
     /// <returns></returns>
-    public static string GetANDSeparatedColumns(List<string> columnsNames, string prefixTable = null, string equalsTable = null, bool updateByPropertiesAreNullable = false, Dictionary<string, string> propertColumnsNamesDict = null)
+    public static string GetANDSeparatedColumns(List<string> columnsNames, string? prefixTable = null, string? equalsTable = null, bool updateByPropertiesAreNullable = false, Dictionary<string, string>? propertColumnsNamesDict = null)
     {
         string commaSeparatedColumns = GetCommaSeparatedColumns(columnsNames, prefixTable, equalsTable, propertColumnsNamesDict);
 
