@@ -1,19 +1,8 @@
-﻿using EFCore.BulkExtensions.SqlAdapters;
-using EFCore.BulkExtensions.SQLAdapters.SQLServer;
-using Microsoft.Data.Sqlite;
-using Microsoft.EntityFrameworkCore;
-using Npgsql;
-using NpgsqlTypes;
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using EFCore.BulkExtensions.SQLAdapters.SQLServer;
 
 namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql;
 
+/// <inheritdoc/>
 public class PostgreSqlDialect : SqlServerDialect
 {
 }

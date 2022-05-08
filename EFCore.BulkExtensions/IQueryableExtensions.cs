@@ -11,8 +11,17 @@ using System.Reflection;
 
 namespace EFCore.BulkExtensions;
 
+/// <summary>
+/// Contains a list of IQuerable extensions
+/// </summary>
 public static class IQueryableExtensions
 {
+    /// <summary>
+    /// Extension method to paramatize sql query
+    /// </summary>
+    /// <param name="query"></param>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException"></exception>
     public static (string, IEnumerable<SqlParameter>) ToParametrizedSql(this IQueryable query)
     {
         string relationalQueryContextText = "_relationalQueryContext";
