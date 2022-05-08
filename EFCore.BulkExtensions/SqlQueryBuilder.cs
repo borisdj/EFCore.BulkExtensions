@@ -7,8 +7,19 @@ using System.Linq.Expressions;
 
 namespace EFCore.BulkExtensions;
 
+/// <summary>
+/// Contains a compilation of SQL queries used in EFCore.
+/// </summary>
 public static class SqlQueryBuilder
 {
+    /// <summary>
+    /// Generates SQL query to create a table copy
+    /// </summary>
+    /// <param name="existingTableName"></param>
+    /// <param name="newTableName"></param>
+    /// <param name="tableInfo"></param>
+    /// <param name="isOutputTable"></param>
+    /// <returns></returns>
     public static string CreateTableCopy(string existingTableName, string newTableName, TableInfo tableInfo, bool isOutputTable = false)
     {
         // TODO: (optionaly) if CalculateStats = True but SetOutputIdentity = False then Columns could be ommited from Create and from MergeOutput
@@ -25,6 +36,13 @@ public static class SqlQueryBuilder
         return q;
     }
 
+    /// <summary>
+    /// Generates SQL query to alter table columns to nullables
+    /// </summary>
+    /// <param name="tableName"></param>
+    /// <param name="tableInfo"></param>
+    /// <param name="isOutputTable"></param>
+    /// <returns></returns>
     public static string AlterTableColumnsToNullable(string tableName, TableInfo tableInfo)
     {
         string q = "";
@@ -40,6 +58,14 @@ public static class SqlQueryBuilder
     }
 
     // Not used for TableCopy since order of columns is not the same as of original table, that is required for the MERGE (instead after creation, columns are Altered to Nullable)
+    /// <summary>
+    /// Generates SQL query to create table
+    /// </summary>
+    /// <param name="newTableName"></param>
+    /// <param name="tableInfo"></param>
+    /// <param name="isOutputTable"></param>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException"></exception>
     public static string CreateTable(string newTableName, TableInfo tableInfo, bool isOutputTable = false)
     {
         List<string> columnsNames = (isOutputTable ? tableInfo.OutputPropertyColumnNamesDict : tableInfo.PropertyColumnNamesDict).Values.ToList();
@@ -65,12 +91,24 @@ public static class SqlQueryBuilder
         return q;
     }
 
+    /// <summary>
+    /// Generates SQL query to add a column
+    /// </summary>
+    /// <param name="fullTableName"></param>
+    /// <param name="columnName"></param>
+    /// <param name="columnType"></param>
+    /// <returns></returns>
     public static string AddColumn(string fullTableName, string columnName, string columnType)
     {
         var q = $"ALTER TABLE {fullTableName} ADD [{columnName}] {columnType};";
         return q;
     }
 
+    /// <summary>
+    /// Generates SQL query to select output from a table
+    /// </summary>
+    /// <param name="tableInfo"></param>
+    /// <returns></returns>
     public static string SelectFromOutputTable(TableInfo tableInfo)
     {
         List<string> columnsNames = tableInfo.OutputPropertyColumnNamesDict.Values.ToList();
@@ -78,22 +116,44 @@ public static class SqlQueryBuilder
         return q;
     }
 
+    /// <summary>
+    /// Generates SQL query to select count updated from output table
+    /// </summary>
+    /// <param name="tableInfo"></param>
+    /// <returns></returns>
     public static string SelectCountIsUpdateFromOutputTable(TableInfo tableInfo)
     {
         return SelectCountColumnFromOutputTable(tableInfo, "IsUpdate");
     }
 
+    /// <summary>
+    /// Generates SQL query to select count deleted from output table
+    /// </summary>
+    /// <param name="tableInfo"></param>
+    /// <returns></returns>
     public static string SelectCountIsDeleteFromOutputTable(TableInfo tableInfo)
     {
         return SelectCountColumnFromOutputTable(tableInfo, "IsDelete");
     }
 
+    /// <summary>
+    /// Generates SQL query to select column count from output table
+    /// </summary>
+    /// <param name="tableInfo"></param>
+    /// <param name="columnName"></param>
+    /// <returns></returns>
     public static string SelectCountColumnFromOutputTable(TableInfo tableInfo, string columnName)
     {
         var q = $"SELECT COUNT(*) FROM {tableInfo.FullTempOutputTableName} WHERE [{columnName}] = 1";
         return q;
     }
 
+    /// <summary>
+    /// Generates SQL query to drop table
+    /// </summary>
+    /// <param name="tableName"></param>
+    /// <param name="isTempTable"></param>
+    /// <returns></returns>
     public static string DropTable(string tableName, bool isTempTable)
     {
         string q;
@@ -108,6 +168,12 @@ public static class SqlQueryBuilder
         return q;
     }
 
+    /// <summary>
+    /// Generates SQL query to to select identity column
+    /// </summary>
+    /// <param name="tableName"></param>
+    /// <param name="schemaName"></param>
+    /// <returns></returns>
     public static string SelectIdentityColumnName(string tableName, string schemaName) // No longer used
     {
         var q = $"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS " +
@@ -116,6 +182,12 @@ public static class SqlQueryBuilder
         return q;
     }
 
+    /// <summary>
+    /// Generates SQL query to check whether a table exists
+    /// </summary>
+    /// <param name="fullTableName"></param>
+    /// <param name="isTempTable"></param>
+    /// <returns></returns>
     public static string CheckTableExist(string fullTableName, bool isTempTable)
     {
         string q;
@@ -130,6 +202,11 @@ public static class SqlQueryBuilder
         return q;
     }
 
+    /// <summary>
+    /// Generates SQL query to join table
+    /// </summary>
+    /// <param name="tableInfo"></param>
+    /// <returns></returns>
     public static string SelectJoinTable(TableInfo tableInfo)
     {
         string sourceTable = tableInfo.FullTableName;
@@ -143,6 +220,12 @@ public static class SqlQueryBuilder
         return q;
     }
 
+    /// <summary>
+    /// Generates SQL query to set identity insert
+    /// </summary>
+    /// <param name="tableName"></param>
+    /// <param name="identityInsert"></param>
+    /// <returns></returns>
     public static string SetIdentityInsert(string tableName, bool identityInsert)
     {
         string ON_OFF = identityInsert ? "ON" : "OFF";
@@ -150,6 +233,16 @@ public static class SqlQueryBuilder
         return q;
     }
 
+    /// <summary>
+    /// Generates SQL query to merge table
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="context"></param>
+    /// <param name="tableInfo"></param>
+    /// <param name="operationType"></param>
+    /// <param name="entityPropertyWithDefaultValue"></param>
+    /// <returns></returns>
+    /// <exception cref="InvalidBulkConfigException"></exception>
     public static (string sql, IEnumerable<object> parameters) MergeTable<T>(DbContext context, TableInfo tableInfo, OperationType operationType, IEnumerable<string> entityPropertyWithDefaultValue = default) where T : class
     {
         List<object> parameters = new();
@@ -298,6 +391,11 @@ public static class SqlQueryBuilder
         return (sql: q, parameters);
     }
 
+    /// <summary>
+    /// Generates SQL query to truncate table
+    /// </summary>
+    /// <param name="tableName"></param>
+    /// <returns></returns>
     public static string TruncateTable(string tableName)
     {
         var q = $"TRUNCATE TABLE {tableName};";
@@ -316,6 +414,14 @@ public static class SqlQueryBuilder
     }
 
     // propertColumnsNamesDict used with Sqlite for @parameter to be save from non valid charaters ('', '!', ...) that are allowed as column Names in Sqlite
+    /// <summary>
+    /// Generates SQL query to get comma seperated column
+    /// </summary>
+    /// <param name="columnsNames"></param>
+    /// <param name="prefixTable"></param>
+    /// <param name="equalsTable"></param>
+    /// <param name="propertColumnsNamesDict"></param>
+    /// <returns></returns>
     public static string GetCommaSeparatedColumns(List<string> columnsNames, string prefixTable = null, string equalsTable = null, Dictionary<string, string> propertColumnsNamesDict = null)
     {
         prefixTable += (prefixTable != null && prefixTable != "@") ? "." : "";
@@ -336,6 +442,12 @@ public static class SqlQueryBuilder
         return commaSeparatedColumns;
     }
 
+
+    /// <summary>
+    /// Generates a comma seperated column list with its SQL data type
+    /// </summary>
+    /// <param name="columnsNamesAndTypes"></param>
+    /// <returns></returns>
     public static string GetCommaSeparatedColumnsAndTypes(List<Tuple<string, string>> columnsNamesAndTypes)
     {
         string commaSeparatedColumns = "";
@@ -350,6 +462,15 @@ public static class SqlQueryBuilder
         return commaSeparatedColumns;
     }
 
+    /// <summary>
+    /// Generates SQL query to seperate columns
+    /// </summary>
+    /// <param name="columnsNames"></param>
+    /// <param name="prefixTable"></param>
+    /// <param name="equalsTable"></param>
+    /// <param name="updateByPropertiesAreNullable"></param>
+    /// <param name="propertColumnsNamesDict"></param>
+    /// <returns></returns>
     public static string GetANDSeparatedColumns(List<string> columnsNames, string prefixTable = null, string equalsTable = null, bool updateByPropertiesAreNullable = false, Dictionary<string, string> propertColumnsNamesDict = null)
     {
         string commaSeparatedColumns = GetCommaSeparatedColumns(columnsNames, prefixTable, equalsTable, propertColumnsNamesDict);

@@ -3,10 +3,19 @@ using System.Globalization;
 
 namespace EFCore.BulkExtensions;
 
+/// <summary>
+/// Contains activity sources
+/// </summary>
 public static class ActivitySources
 {
     private static readonly ActivitySource ActivitySource = new ("EFCore.BulkExtensions");
 
+    /// <summary>
+    /// Starts the activity
+    /// </summary>
+    /// <param name="operationType"></param>
+    /// <param name="entitiesCount"></param>
+    /// <returns></returns>
     public static Activity StartExecuteActivity(OperationType operationType, int entitiesCount)
     {
         var activity = ActivitySource.StartActivity("EFCore.BulkExtensions.BulkExecute");

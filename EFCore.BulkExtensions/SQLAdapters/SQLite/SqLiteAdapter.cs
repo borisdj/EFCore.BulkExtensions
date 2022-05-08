@@ -11,9 +11,10 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace EFCore.BulkExtensions.SQLAdapters.SQLite;
-
-public class SqliteOperationsAdapter: ISqlOperationsAdapter
+/// <inheritdoc/>
+public class SqliteOperationsAdapter : ISqlOperationsAdapter
 {
+    /// <inheritdoc/>
     #region Methods
     // Insert
     public void Insert<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress)
@@ -21,11 +22,13 @@ public class SqliteOperationsAdapter: ISqlOperationsAdapter
         InsertAsync(context, type, entities, tableInfo, progress, isAsync: false, CancellationToken.None).GetAwaiter().GetResult();
     }
 
+    /// <inheritdoc/>
     public async Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, CancellationToken cancellationToken)
     {
         await InsertAsync(context, type, entities, tableInfo, progress, isAsync: true, cancellationToken).ConfigureAwait(false);
     }
-        
+    
+    /// <inheritdoc/>
     public static async Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, bool isAsync, CancellationToken cancellationToken)
     {
         SqliteConnection connection = tableInfo.SqliteConnection;
@@ -96,17 +99,19 @@ public class SqliteOperationsAdapter: ISqlOperationsAdapter
         }
     }
 
-    // Merge
+    /// <inheritdoc/>
     public void Merge<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress) where T : class
     {
         MergeAsync(context, type, entities, tableInfo, operationType, progress, isAsync: false, CancellationToken.None).GetAwaiter().GetResult();
     }
 
+    /// <inheritdoc/>
     public async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, CancellationToken cancellationToken) where T : class
     {
         await MergeAsync(context, type, entities, tableInfo, operationType, progress, isAsync: true, cancellationToken);
     }
-
+    
+    /// <inheritdoc/>
     protected static async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, bool isAsync, CancellationToken cancellationToken) where T : class
     {
         SqliteConnection connection = isAsync ? await OpenAndGetSqliteConnectionAsync(context, cancellationToken).ConfigureAwait(false)
@@ -171,17 +176,20 @@ public class SqliteOperationsAdapter: ISqlOperationsAdapter
         }
     }
 
-    // Read
+
+    /// <inheritdoc/>
     public void Read<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress) where T : class
     {
         ReadAsync(context, type, entities, tableInfo, progress, isAsync: false, CancellationToken.None).GetAwaiter().GetResult();
     }
 
+    /// <inheritdoc/>
     public async Task ReadAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, CancellationToken cancellationToken) where T : class
     {
         await ReadAsync(context, type, entities, tableInfo, progress, isAsync: true, cancellationToken).ConfigureAwait(false);
     }
-
+    
+    /// <inheritdoc/>
     protected async Task ReadAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, bool isAsync, CancellationToken cancellationToken) where T : class
     {
         SqliteConnection connection = isAsync ? await OpenAndGetSqliteConnectionAsync(context, cancellationToken).ConfigureAwait(false)
@@ -271,13 +279,14 @@ public class SqliteOperationsAdapter: ISqlOperationsAdapter
         }
     }
 
-    // Truncate
+    /// <inheritdoc/>
     public void Truncate(DbContext context, TableInfo tableInfo)
     {
         string sql = SqlQueryBuilder.DeleteTable(tableInfo.FullTableName);
         context.Database.ExecuteSqlRaw(sql);
     }
 
+    /// <inheritdoc/>
     public async Task TruncateAsync(DbContext context, TableInfo tableInfo, CancellationToken cancellationToken)
     {
         string sql = SqlQueryBuilder.DeleteTable(tableInfo.FullTableName);
@@ -427,7 +436,8 @@ public class SqliteOperationsAdapter: ISqlOperationsAdapter
             command.Parameters[$"@{parameterName}"].Value = value ?? DBNull.Value;
         }
     }
-
+    
+    /// <inheritdoc/>
     public static void SetIdentityForOutput<T>(IList<T> entities, TableInfo tableInfo, object lastRowIdScalar)
     {
         long counter = (long)lastRowIdScalar;

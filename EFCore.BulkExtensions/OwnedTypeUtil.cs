@@ -4,8 +4,16 @@ using System.Linq;
 
 namespace EFCore.BulkExtensions;
 
+/// <summary>
+/// Owned entity utilities
+/// </summary>
 public static class OwnedTypeUtil
 {
+    /// <summary>
+    /// Determines if entity is owned entity
+    /// </summary>
+    /// <param name="owned"></param>
+    /// <returns></returns>
     public static bool IsOwnedInSameTableAsOwner(IEntityType owned)
     {
         var ownership = owned.FindOwnership();
@@ -27,6 +35,11 @@ public static class OwnedTypeUtil
         return true;
     }
 
+    /// <summary>
+    /// Determines if entity is owned entity
+    /// </summary>
+    /// <param name="navigation"></param>
+    /// <returns></returns>
     public static bool IsOwnedInSameTableAsOwner(INavigation navigation)
     {
         return IsOwnedInSameTableAsOwner(navigation.TargetEntityType);

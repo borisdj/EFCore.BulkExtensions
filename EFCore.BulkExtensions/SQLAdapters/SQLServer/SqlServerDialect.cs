@@ -7,10 +7,12 @@ using System.Linq.Expressions;
 
 namespace EFCore.BulkExtensions.SQLAdapters.SQLServer;
 
+/// <inheritdoc/>
 public class SqlServerDialect : IQueryBuilderSpecialization
 {
     private static readonly int SelectStatementLength = "SELECT".Length;
 
+    /// <inheritdoc/>
     public virtual List<object> ReloadSqlParameters(DbContext context, List<object> sqlParameters)
     {
         var sqlParametersReloaded = new List<object>();
@@ -41,11 +43,13 @@ public class SqlServerDialect : IQueryBuilderSpecialization
         return sqlParametersReloaded;
     }
 
+    /// <inheritdoc/>
     public string GetBinaryExpressionAddOperation(BinaryExpression binaryExpression)
     {
         return "+";
     }
 
+    /// <inheritdoc/>
     public (string, string) GetBatchSqlReformatTableAliasAndTopStatement(string sqlQuery, DbServer databaseType)
     {
         var isPostgreSql = databaseType == DbServer.PostgreSQL;
@@ -58,6 +62,7 @@ public class SqlServerDialect : IQueryBuilderSpecialization
         return (tableAlias, topStatement);
     }
 
+    /// <inheritdoc/>
     public ExtractedTableAlias GetBatchSqlExtractTableAliasFromQuery(string fullQuery, string tableAlias, string tableAliasSuffixAs)
     {
         return new ExtractedTableAlias

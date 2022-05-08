@@ -6,8 +6,18 @@ using System.Linq;
 
 namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql;
 
+/// <summary>
+/// Contains a list of methods to generate SQL queries required by EFCore
+/// </summary>
 public static class SqlQueryBuilderPostgreSql
 {
+    /// <summary>
+    /// Generates SQL query to create table copy
+    /// </summary>
+    /// <param name="existingTableName"></param>
+    /// <param name="newTableName"></param>
+    /// <param name="tableInfo"></param>
+    /// <param name="isOutputTable"></param>
     public static string CreateTableCopy(string existingTableName, string newTableName)
     {
         var q = $"CREATE TABLE {newTableName} " +
@@ -17,6 +27,12 @@ public static class SqlQueryBuilderPostgreSql
         return q;
     }
 
+    /// <summary>
+    /// Generates SQL to copy table columns from STDIN 
+    /// </summary>
+    /// <param name="tableInfo"></param>
+    /// <param name="operationType"></param>
+    /// <param name="tableName"></param>
     public static string InsertIntoTable(TableInfo tableInfo, OperationType operationType, string tableName = null)
     {
         tableName ??= tableInfo.InsertToTempTable ? tableInfo.FullTempTableName : tableInfo.FullTableName;
@@ -33,6 +49,15 @@ public static class SqlQueryBuilderPostgreSql
         return q + ";";
     }
 
+    /// <summary>
+    /// Generates SQL merge statement
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="tableInfo"></param>
+    /// <param name="operationType"></param>
+    /// <param name="context"></param>
+    /// <param name="entityPropertyWithDefaultValue"></param> 
+    /// <exception cref="NotImplementedException"></exception>
     public static string MergeTable<T>(TableInfo tableInfo, OperationType operationType) where T : class
     {
         var columnsList = GetColumnList(tableInfo, operationType);
@@ -113,6 +138,11 @@ public static class SqlQueryBuilderPostgreSql
         return q;
     }
 
+    /// <summary>
+    /// Returns a list of columns for the given table
+    /// </summary>
+    /// <param name="tableInfo"></param>
+    /// <param name="operationType"></param>
     public static List<string> GetColumnList(TableInfo tableInfo, OperationType operationType)
     {
         var tempDict = tableInfo.PropertyColumnNamesDict;
@@ -138,6 +168,10 @@ public static class SqlQueryBuilderPostgreSql
         return columnsList;
     }
 
+    /// <summary>
+    /// Generates SQL query to truncate a table
+    /// </summary>
+    /// <param name="tableName"></param>
     public static string TruncateTable(string tableName)
     {
         var q = $"TRUNCATE {tableName} RESTART IDENTITY;";
@@ -145,6 +179,11 @@ public static class SqlQueryBuilderPostgreSql
         return q;
     }
 
+    /// <summary>
+    /// Generates SQL query to drop a table
+    /// </summary>
+    /// <param name="tableName"></param>
+    /// <param name="isTempTable"></param>
     public static string DropTable(string tableName)
     {
         string q = $"DROP TABLE IF EXISTS {tableName}";
@@ -152,6 +191,10 @@ public static class SqlQueryBuilderPostgreSql
         return q;
     }
 
+    /// <summary>
+    /// Generates SQL query to count the unique constranints
+    /// </summary>
+    /// <param name="tableInfo"></param>
     public static string CountUniqueConstrain(TableInfo tableInfo)
     {
         var primaryKeysColumns = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList();
@@ -171,6 +214,10 @@ public static class SqlQueryBuilderPostgreSql
         return q;
     }
 
+    /// <summary>
+    /// Generate SQL query to create a unique index
+    /// </summary>
+    /// <param name="tableInfo"></param>
     public static string CreateUniqueIndex(TableInfo tableInfo)
     {
         var tableName = tableInfo.TableName;
@@ -187,6 +234,10 @@ public static class SqlQueryBuilderPostgreSql
         return q;
     }
 
+    /// <summary>
+    /// Generates SQL query to create a unique constraint
+    /// </summary>
+    /// <param name="tableInfo"></param>
     public static string CreateUniqueConstrain(TableInfo tableInfo)
     {
         var tableName = tableInfo.TableName;
@@ -204,6 +255,10 @@ public static class SqlQueryBuilderPostgreSql
         return q;
     }
 
+    /// <summary>
+    /// Generates SQL query to drop a unique contstraint
+    /// </summary>
+    /// <param name="tableInfo"></param>
     public static string DropUniqueConstrain(TableInfo tableInfo)
     {
         var tableName = tableInfo.TableName;
@@ -220,6 +275,11 @@ public static class SqlQueryBuilderPostgreSql
         return q;
     }
 
+    /// <summary>
+    /// Restructures a sql query for batch commands
+    /// </summary>
+    /// <param name="sql"></param>
+    /// <param name="isDelete"></param>
     public static string RestructureForBatch(string sql, bool isDelete = false)
     {
         sql = sql.Replace("[", @"""").Replace("]", @"""");

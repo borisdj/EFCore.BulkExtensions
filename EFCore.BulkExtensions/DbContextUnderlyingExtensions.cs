@@ -4,6 +4,7 @@ using System.Data.Common;
 
 namespace EFCore.BulkExtensions;
 
+#pragma warning disable CS1591 // No XML comments required here
 public static class DbContextUnderlyingExtensions
 {
     public static DbConnection GetUnderlyingConnection(this DbContext context, BulkConfig config)
@@ -26,3 +27,5 @@ public static class DbContextUnderlyingExtensions
         return dbTransaction;
     }
 }
+#pragma warning restore CS1591 // No XML comments required here
+

@@ -9,8 +9,10 @@ using System.Text.RegularExpressions;
 
 namespace EFCore.BulkExtensions.SQLAdapters.SQLite;
 
+/// <inheritdoc/>
 public class SqliteDialect : IQueryBuilderSpecialization
 {
+    /// <inheritdoc/>
     public List<object> ReloadSqlParameters(DbContext context, List<object> sqlParameters)
     {
         var sqlParametersReloaded = new List<object>();
@@ -23,16 +25,19 @@ public class SqliteDialect : IQueryBuilderSpecialization
         return sqlParametersReloaded;
     }
 
+    /// <inheritdoc/>
     public string GetBinaryExpressionAddOperation(BinaryExpression binaryExpression)
     {
         return IsStringConcat(binaryExpression) ? "||" : "+";
     }
 
+    /// <inheritdoc/>
     public (string, string) GetBatchSqlReformatTableAliasAndTopStatement(string sqlQuery, DbServer databaseType)
     {
         return (string.Empty, string.Empty);
     }
 
+    /// <inheritdoc/>
     public ExtractedTableAlias GetBatchSqlExtractTableAliasFromQuery(string fullQuery, string tableAlias,
         string tableAliasSuffixAs)
     {

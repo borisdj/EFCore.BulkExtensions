@@ -17,6 +17,9 @@ using System.Text.RegularExpressions;
 
 namespace EFCore.BulkExtensions;
 
+/// <summary>
+/// Class responsible for all batch utilities related to EFCore.BulkExtensions
+/// </summary>
 public static class BatchUtil
 {
     // In comment are Examples of how SqlQuery is changed for Sql Batch
@@ -28,6 +31,12 @@ public static class BatchUtil
     // DELETE [a]
     // FROM [Table] AS [a]
     // WHERE [a].[Columns] = FilterValues
+    /// <summary>
+    /// Generates delete sql query
+    /// </summary>
+    /// <param name="query"></param>
+    /// <param name="context"></param>
+    /// <returns></returns>
     public static (string, List<object>) GetSqlDelete(IQueryable query, DbContext context)
     {
         var (sql, tableAlias, _, topStatement, leadingComments, innerParameters) = GetBatchSql(query, context, isUpdate: false);
@@ -107,6 +116,15 @@ public static class BatchUtil
     // UPDATE [a] SET [UpdateColumns] = N'updateValues'
     // FROM [Table] AS [a]
     // WHERE [a].[Columns] = FilterValues
+    /// <summary>
+    /// Generates sql query to update data
+    /// </summary>
+    /// <param name="query"></param>
+    /// <param name="context"></param>
+    /// <param name="type"></param>
+    /// <param name="updateValues"></param>
+    /// <param name="updateColumns"></param>
+    /// <returns></returns>
     public static (string, List<object>) GetSqlUpdate(IQueryable query, DbContext context, Type type, object updateValues, List<string> updateColumns)
     {
         var (sql, tableAlias, tableAliasSufixAs, topStatement, leadingComments, innerParameters) = GetBatchSql(query, context, isUpdate: true);
@@ -158,6 +176,8 @@ public static class BatchUtil
     /// <typeparam name="T"></typeparam>
     /// <param name="query"></param>
     /// <param name="expression"></param>
+    /// <param name="context"></param>
+    /// <param name="type"></param>
     /// <returns></returns>
     public static (string, List<object>) GetSqlUpdate<T>(IQueryable<T> query, DbContext context, Type type, Expression<Func<T, T>> expression) where T : class
     {
@@ -209,12 +229,26 @@ public static class BatchUtil
         return (resultQuery, sqlParameters);
     }
 
+    /// <summary>
+    /// Reloads SQL paramaters
+    /// </summary>
+    /// <param name="context"></param>
+    /// <param name="sqlParameters"></param>
+    /// <returns></returns>
     public static List<object> ReloadSqlParameters(DbContext context, List<object> sqlParameters)
     {
         return SqlAdaptersMapping.GetAdapterDialect(context).ReloadSqlParameters(context,sqlParameters);
     }
 
+    /// <summary>
+    /// Generates SQL queries for batch operations
+    /// </summary>
+    /// <param name="query"></param>
+    /// <param name="context"></param>
+    /// <param name="isUpdate"></param>
+    /// <returns></returns>
     public static (string Sql, string TableAlias, string TableAliasSufixAs, string TopStatement, string LeadingComments, IEnumerable<object> InnerParameters) GetBatchSql(IQueryable query, DbContext context, bool isUpdate)
+    public static (string, string, string, string, string, IEnumerable<object>) GetBatchSql(IQueryable query, DbContext context, bool isUpdate)
     {
         var sqlQueryBuilder = SqlAdaptersMapping.GetAdapterDialect(context);
         var (fullSqlQuery, innerParameters) = query.ToParametrizedSql();
@@ -246,6 +280,15 @@ public static class BatchUtil
         return (sql, tableAlias, tableAliasSufixAs, topStatement, leadingComments, innerParameters);
     }
 
+    /// <summary>
+    /// Returns a sql set seqment query
+    /// </summary>
+    /// <param name="context"></param>
+    /// <param name="updateValuesType"></param>
+    /// <param name="updateValues"></param>
+    /// <param name="updateColumns"></param>
+    /// <param name="parameters"></param>
+    /// <returns></returns>
     public static string GetSqlSetSegment(DbContext context, Type updateValuesType, object updateValues, List<string> updateColumns, List<object> parameters)
     {
         var tableInfo = TableInfo.CreateInstance(context, updateValuesType, new List<object>(), OperationType.Read, new BulkConfig());
@@ -321,10 +364,10 @@ public static class BatchUtil
     /// <summary>
     /// Recursive analytic expression 
     /// </summary>
-    /// <param name="tableAlias"></param>
+    /// <param name="createBodyData"></param>
     /// <param name="expression"></param>
-    /// <param name="sqlColumns"></param>
-    /// <param name="sqlParameters"></param>
+    /// <param name="columnName"></param>
+    /// <exception cref="NotSupportedException"></exception>
     public static void CreateUpdateBody(BatchUpdateCreateBodyData createBodyData, Expression expression, string columnName = null)
     {
         var rootTypeTableInfo = createBodyData.GetTableInfoForType(createBodyData.RootType);
@@ -470,6 +513,11 @@ public static class BatchUtil
         AddSqlParameter(sqlColumns, sqlParameters, rootTypeTableInfo, columnName, compiledExpressionValue);
     }
 
+    /// <summary>
+    /// Returns the DbContext
+    /// </summary>
+    /// <param name="query"></param>
+    /// <returns></returns>
     public static DbContext GetDbContext(IQueryable query)
     {
 #pragma warning disable EF1001 // Internal EF Core API usage.
@@ -487,6 +535,11 @@ public static class BatchUtil
 #pragma warning restore EF1001
     }
 
+    /// <summary>
+    /// Splits the leading comments from the main sql query
+    /// </summary>
+    /// <param name="sqlQuery"></param>
+    /// <returns></returns>
     public static (string, string) SplitLeadingCommentsAndMainSqlQuery(string sqlQuery)
     {
         var leadingCommentsBuilder = new StringBuilder();
@@ -567,6 +620,9 @@ public static class BatchUtil
     private static readonly MethodInfo DbContextSetMethodInfo = 
         typeof(DbContext).GetMethod(nameof(DbContext.Set), BindingFlags.Public | BindingFlags.Instance, null, Array.Empty<Type>(), null);
 
+    /// <summary>
+    /// Regex pattern to get table alias
+    /// </summary>
     public static readonly Regex TableAliasPattern = new(@"(?:FROM|JOIN)\s+(\[\S+\]) AS (\[\S+\])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     /// <summary>
@@ -593,6 +649,13 @@ public static class BatchUtil
         return null;
     }
 
+    /// <summary>
+    /// Tries to create nested body query
+    /// </summary>
+    /// <param name="createBodyData"></param>
+    /// <param name="expression"></param>
+    /// <param name="memberAssignment"></param>
+    /// <returns></returns>
     public static bool TryCreateUpdateBodyNestedQuery(BatchUpdateCreateBodyData createBodyData, Expression expression, MemberAssignment memberAssignment)
     {
         if (expression is MemberExpression rootMemberExpression && rootMemberExpression.Expression is ParameterExpression)
@@ -960,8 +1023,12 @@ public static class BatchUtil
         return true;
     }
 
+    /// <summary>
+    /// ExpressionNode
+    /// </summary>
     public class ExpressionNode
     {
+#pragma warning disable CS1591 // No XML comment required here. Used internally only
         public ExpressionNode (Expression expression, ExpressionNode parent)
         {
             Expression = expression;
@@ -970,5 +1037,6 @@ public static class BatchUtil
 
         public Expression Expression { get; }
         public ExpressionNode Parent { get; }
+#pragma warning restore CS1591 // No XML comment required here. Used internally only
     }
 }
