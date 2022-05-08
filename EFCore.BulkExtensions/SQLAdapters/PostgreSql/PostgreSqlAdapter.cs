@@ -12,19 +12,22 @@ using System.Threading.Tasks;
 
 namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql;
 
+/// <inheritdoc/>
 public class PostgreSqlAdapter : ISqlOperationsAdapter
 {
+    /// <inheritdoc/>
     #region Methods
     // Insert
     public void Insert<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress)
     {
         InsertAsync(context, type, entities, tableInfo, progress, CancellationToken.None, isAsync: false).GetAwaiter().GetResult();
     }
-
+    /// <inheritdoc/>
     public async Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, CancellationToken cancellationToken)
     {
         await InsertAsync(context, type, entities, tableInfo, progress, cancellationToken, isAsync: true).ConfigureAwait(false);
     }
+    /// <inheritdoc/>
     protected async Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, CancellationToken cancellationToken, bool isAsync)
     {
         NpgsqlConnection connection = tableInfo.NpgsqlConnection;
@@ -150,17 +153,19 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
         }
     }
 
-    // Merge
+    /// <inheritdoc/>
     public void Merge<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress) where T : class
     {
         MergeAsync(context, type, entities, tableInfo, operationType, progress, CancellationToken.None, isAsync: false).GetAwaiter().GetResult();
     }
 
+    /// <inheritdoc/>
     public async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, CancellationToken cancellationToken) where T : class
     {
         await MergeAsync(context, type, entities, tableInfo, operationType, progress, cancellationToken, isAsync: true).ConfigureAwait(false);
     }
 
+    /// <inheritdoc/>
     protected async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, CancellationToken cancellationToken, bool isAsync) where T : class
     {
         var entityPropertyWithDefaultValue = entities.GetPropertiesWithDefaultValue(type);
@@ -272,29 +277,32 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
         }
     }
 
-    // Read
+    /// <inheritdoc/>
     public void Read<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress) where T : class
     {
         ReadAsync(context, type, entities, tableInfo, progress, CancellationToken.None, isAsync: false).GetAwaiter().GetResult();
     }
 
+    /// <inheritdoc/>
     public async Task ReadAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, CancellationToken cancellationToken) where T : class
     {
         await ReadAsync(context, type, entities, tableInfo, progress, cancellationToken, isAsync: true).ConfigureAwait(false);
     }
 
+    /// <inheritdoc/>
     protected async Task ReadAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, CancellationToken cancellationToken, bool isAsync) where T : class
     {
         await MergeAsync(context, type, entities, tableInfo, OperationType.Read, progress, cancellationToken, isAsync);
     }
 
-    // Truncate
+    /// <inheritdoc/>
     public void Truncate(DbContext context, TableInfo tableInfo)
     {
         var sqlTruncateTable = SqlQueryBuilderPostgreSql.TruncateTable(tableInfo.FullTableName);
         context.Database.ExecuteSqlRaw(sqlTruncateTable);
     }
 
+    /// <inheritdoc/>
     public async Task TruncateAsync(DbContext context, TableInfo tableInfo, CancellationToken cancellationToken)
     {
         var sqlTruncateTable = SqlQueryBuilderPostgreSql.TruncateTable(tableInfo.FullTableName);
