@@ -5,7 +5,7 @@ namespace EFCore.BulkExtensions;
 
 public static class ActivitySources
 {
-    private static readonly ActivitySource ActivitySource = new ActivitySource("EFCore.BulkExtensions");
+    private static readonly ActivitySource ActivitySource = new ("EFCore.BulkExtensions");
 
     public static Activity StartExecuteActivity(OperationType operationType, int entitiesCount)
     {

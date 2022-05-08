@@ -18,21 +18,21 @@ public class SqliteOperationsAdapter: ISqlOperationsAdapter
     // Insert
     public void Insert<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress)
     {
-        InsertAsync(context, type, entities, tableInfo, progress, CancellationToken.None, isAsync: false).GetAwaiter().GetResult();
+        InsertAsync(context, type, entities, tableInfo, progress, isAsync: false, CancellationToken.None).GetAwaiter().GetResult();
     }
 
     public async Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, CancellationToken cancellationToken)
     {
-        await InsertAsync(context, type, entities, tableInfo, progress, cancellationToken, isAsync: true).ConfigureAwait(false);
+        await InsertAsync(context, type, entities, tableInfo, progress, isAsync: true, cancellationToken).ConfigureAwait(false);
     }
         
-    public async Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, CancellationToken cancellationToken, bool isAsync)
+    public static async Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, bool isAsync, CancellationToken cancellationToken)
     {
         SqliteConnection connection = tableInfo.SqliteConnection;
         if (connection == null)
         {
-            connection = isAsync ? await OpenAndGetSqliteConnectionAsync(context, tableInfo.BulkConfig, cancellationToken).ConfigureAwait(false)
-                                 : OpenAndGetSqliteConnection(context, tableInfo.BulkConfig);
+            connection = isAsync ? await OpenAndGetSqliteConnectionAsync(context, cancellationToken).ConfigureAwait(false)
+                                 : OpenAndGetSqliteConnection(context);
         }
         bool doExplicitCommit = false;
 
@@ -99,18 +99,18 @@ public class SqliteOperationsAdapter: ISqlOperationsAdapter
     // Merge
     public void Merge<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress) where T : class
     {
-        MergeAsync(context, type, entities, tableInfo, operationType, progress, CancellationToken.None, isAsync: false).GetAwaiter().GetResult();
+        MergeAsync(context, type, entities, tableInfo, operationType, progress, isAsync: false, CancellationToken.None).GetAwaiter().GetResult();
     }
 
     public async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, CancellationToken cancellationToken) where T : class
     {
-        await MergeAsync(context, type, entities, tableInfo, operationType, progress, cancellationToken, isAsync: true);
+        await MergeAsync(context, type, entities, tableInfo, operationType, progress, isAsync: true, cancellationToken);
     }
 
-    protected async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, CancellationToken cancellationToken, bool isAsync) where T : class
+    protected static async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal> progress, bool isAsync, CancellationToken cancellationToken) where T : class
     {
-        SqliteConnection connection = isAsync ? await OpenAndGetSqliteConnectionAsync(context, tableInfo.BulkConfig, cancellationToken).ConfigureAwait(false)
-                                                    : OpenAndGetSqliteConnection(context, tableInfo.BulkConfig);
+        SqliteConnection connection = isAsync ? await OpenAndGetSqliteConnectionAsync(context, cancellationToken).ConfigureAwait(false)
+                                                    : OpenAndGetSqliteConnection(context);
         bool doExplicitCommit = false;
 
         try
@@ -174,18 +174,18 @@ public class SqliteOperationsAdapter: ISqlOperationsAdapter
     // Read
     public void Read<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress) where T : class
     {
-        ReadAsync(context, type, entities, tableInfo, progress, CancellationToken.None, isAsync: false).GetAwaiter().GetResult();
+        ReadAsync(context, type, entities, tableInfo, progress, isAsync: false, CancellationToken.None).GetAwaiter().GetResult();
     }
 
     public async Task ReadAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, CancellationToken cancellationToken) where T : class
     {
-        await ReadAsync(context, type, entities, tableInfo, progress, cancellationToken, isAsync: true).ConfigureAwait(false);
+        await ReadAsync(context, type, entities, tableInfo, progress, isAsync: true, cancellationToken).ConfigureAwait(false);
     }
 
-    protected async Task ReadAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, CancellationToken cancellationToken, bool isAsync) where T : class
+    protected async Task ReadAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal> progress, bool isAsync, CancellationToken cancellationToken) where T : class
     {
-        SqliteConnection connection = isAsync ? await OpenAndGetSqliteConnectionAsync(context, tableInfo.BulkConfig, cancellationToken).ConfigureAwait(false)
-                                                    : OpenAndGetSqliteConnection(context, tableInfo.BulkConfig);
+        SqliteConnection connection = isAsync ? await OpenAndGetSqliteConnectionAsync(context, cancellationToken).ConfigureAwait(false)
+                                                    : OpenAndGetSqliteConnection(context);
         bool doExplicitCommit = false;
         SqliteTransaction transaction = null;
 
@@ -225,7 +225,7 @@ public class SqliteOperationsAdapter: ISqlOperationsAdapter
             }
             else
             {
-                InsertAsync(context, type, entities, tableInfo, progress, cancellationToken, isAsync: false).GetAwaiter().GetResult();
+                InsertAsync(context, type, entities, tableInfo, progress, isAsync: false, cancellationToken).GetAwaiter().GetResult();
             }
 
             // JOIN
@@ -235,7 +235,7 @@ public class SqliteOperationsAdapter: ISqlOperationsAdapter
             var compiled = EF.CompileQuery(expression); // instead using Compiled queries
             existingEntities = compiled(context).ToList();
 
-            tableInfo.UpdateReadEntities(type, entities, existingEntities, context);
+            tableInfo.UpdateReadEntities(entities, existingEntities, context);
 
             // DROP
             command.CommandText = SqlQueryBuilderSqlite.DropTable(tableInfo.FullTempTableName);
@@ -286,13 +286,13 @@ public class SqliteOperationsAdapter: ISqlOperationsAdapter
     #endregion
 
     #region Connection
-    internal static async Task<SqliteConnection> OpenAndGetSqliteConnectionAsync(DbContext context, BulkConfig bulkConfig, CancellationToken cancellationToken)
+    internal static async Task<SqliteConnection> OpenAndGetSqliteConnectionAsync(DbContext context, CancellationToken cancellationToken)
     {
         await context.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
         return (SqliteConnection)context.Database.GetDbConnection();
     }
 
-    internal static SqliteConnection OpenAndGetSqliteConnection(DbContext context, BulkConfig bulkConfig)
+    internal static SqliteConnection OpenAndGetSqliteConnection(DbContext context)
     {
         context.Database.OpenConnection();
 
@@ -367,7 +367,7 @@ public class SqliteOperationsAdapter: ISqlOperationsAdapter
             object value;
             if (!isShadowProperty)
             {
-                if (propertyColumn.Key.Contains(".")) // ToDo: change IF clause to check for NavigationProperties, optimise, integrate with same code segment from LoadData method
+                if (propertyColumn.Key.Contains('.')) // ToDo: change IF clause to check for NavigationProperties, optimise, integrate with same code segment from LoadData method
                 {
                     var ownedPropertyNameList = propertyColumn.Key.Split('.');
                     var ownedPropertyName = ownedPropertyNameList[0];
@@ -428,7 +428,7 @@ public class SqliteOperationsAdapter: ISqlOperationsAdapter
         }
     }
 
-    public void SetIdentityForOutput<T>(IList<T> entities, TableInfo tableInfo, object lastRowIdScalar)
+    public static void SetIdentityForOutput<T>(IList<T> entities, TableInfo tableInfo, object lastRowIdScalar)
     {
         long counter = (long)lastRowIdScalar;
 

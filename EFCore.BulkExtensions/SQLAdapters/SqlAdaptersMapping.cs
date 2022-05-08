@@ -25,7 +25,7 @@ public enum DbServer
 public static class SqlAdaptersMapping
 {
     public static readonly Dictionary<DbServer, ISqlOperationsAdapter> SqlOperationAdapterMapping =
-        new Dictionary<DbServer, ISqlOperationsAdapter>
+        new()
         {
             {DbServer.SQLServer, new SqlOperationsServerAdapter()},
             {DbServer.SQLite, new SqliteOperationsAdapter()},
@@ -33,7 +33,7 @@ public static class SqlAdaptersMapping
         };
 
     public static readonly Dictionary<DbServer, IQueryBuilderSpecialization> SqlQueryBuilderSpecializationMapping =
-        new Dictionary<DbServer, IQueryBuilderSpecialization>
+        new()
         {
             {DbServer.SQLServer, new SqlServerDialect()},
             {DbServer.SQLite, new SqliteDialect()},

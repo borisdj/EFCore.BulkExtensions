@@ -48,16 +48,14 @@ public static class IQueryableExtensions
         IList<SqlParameter> parameters;
         try
         {
-            using (var dbCommand = new SqlCommand()) // Use a DbCommand to convert parameter values using ValueConverters to the correct type.
+            using var dbCommand = new SqlCommand(); // Use a DbCommand to convert parameter values using ValueConverters to the correct type.
+            foreach (var param in command.Parameters)
             {
-                foreach (var param in command.Parameters)
-                {
-                    var values = parameterValues[param.InvariantName];
-                    param.AddDbParameter(dbCommand, values);
-                }
-                parameters = new List<SqlParameter>(dbCommand.Parameters.OfType<SqlParameter>());
-                dbCommand.Parameters.Clear();
+                var values = parameterValues[param.InvariantName];
+                param.AddDbParameter(dbCommand, values);
             }
+            parameters = new List<SqlParameter>(dbCommand.Parameters.OfType<SqlParameter>());
+            dbCommand.Parameters.Clear();
         }
         catch (Exception ex) // Fix for BatchDelete with 'uint' param on Sqlite. TEST: RunBatchUint
         {

@@ -25,7 +25,7 @@ public static class SqlQueryBuilder
         return q;
     }
 
-    public static string AlterTableColumnsToNullable(string tableName, TableInfo tableInfo, bool isOutputTable = false)
+    public static string AlterTableColumnsToNullable(string tableName, TableInfo tableInfo)
     {
         string q = "";
         foreach (var column in tableInfo.ColumnNamesTypesDict)
@@ -33,7 +33,7 @@ public static class SqlQueryBuilder
             string columnName = column.Key;
             string columnType = column.Value;
             if (columnName == tableInfo.TimeStampColumnName)
-                columnType = tableInfo.TimeStampOutColumnType;
+                columnType = TableInfo.TimeStampOutColumnType;
             q += $"ALTER TABLE {tableName} ALTER COLUMN [{columnName}] {columnType}; ";
         }
         return q;
@@ -96,7 +96,7 @@ public static class SqlQueryBuilder
 
     public static string DropTable(string tableName, bool isTempTable)
     {
-        string q = "";
+        string q;
         if (isTempTable)
         {
             q = $"IF OBJECT_ID ('tempdb..[#{tableName.Split('#')[1]}', 'U') IS NOT NULL DROP TABLE {tableName}";
@@ -152,7 +152,7 @@ public static class SqlQueryBuilder
 
     public static (string sql, IEnumerable<object> parameters) MergeTable<T>(DbContext context, TableInfo tableInfo, OperationType operationType, IEnumerable<string> entityPropertyWithDefaultValue = default) where T : class
     {
-        List<object> parameters = new List<object>();
+        List<object> parameters = new();
         string targetTable = tableInfo.FullTableName;
         string sourceTable = tableInfo.FullTempTableName;
         bool keepIdentity = tableInfo.BulkConfig.SqlBulkCopyOptions.HasFlag(SqlBulkCopyOptions.KeepIdentity);
@@ -179,7 +179,7 @@ public static class SqlQueryBuilder
         if (tableInfo.BulkConfig.PreserveInsertOrder)
         {
             int numberOfEntities = tableInfo.BulkConfig.CustomSourceTableName == null ? tableInfo.NumberOfEntities : int.MaxValue;
-            var orderBy = (primaryKeys.Count() == 0) ? "" : $"ORDER BY {GetCommaSeparatedColumns(primaryKeys)}";
+            var orderBy = (primaryKeys.Count == 0) ? "" : $"ORDER BY {GetCommaSeparatedColumns(primaryKeys)}";
             sourceTable = $"(SELECT TOP {numberOfEntities} * FROM {sourceTable} {orderBy})";
         }
 
@@ -188,7 +188,7 @@ public static class SqlQueryBuilder
         var q = $"MERGE {targetTable}{textWITH_HOLDLOCK} AS T " +
                 $"USING {sourceTable} AS S " +
                 $"ON {GetANDSeparatedColumns(primaryKeys, "T", "S", tableInfo.UpdateByPropertiesAreNullable)}";
-        q += (primaryKeys.Count() == 0) ? "1=0" : "";
+        q += (primaryKeys.Count == 0) ? "1=0" : "";
 
         if (operationType == OperationType.Insert || operationType == OperationType.InsertOrUpdate || operationType == OperationType.InsertOrUpdateOrDelete)
         {
@@ -228,15 +228,15 @@ public static class SqlQueryBuilder
                     .IgnoreQueryFilters()
                     .IgnoreAutoIncludes()
                     .Where((Expression<Func<T, bool>>)tableInfo.BulkConfig.SynchronizeFilter);
-                var batchSql = BatchUtil.GetBatchSql(querable, context, false);
+                var (Sql, TableAlias, TableAliasSufixAs, TopStatement, LeadingComments, InnerParameters) = BatchUtil.GetBatchSql(querable, context, false);
                 var whereClause = $"{Environment.NewLine}WHERE ";
-                int wherePos = batchSql.Item1.IndexOf(whereClause, StringComparison.OrdinalIgnoreCase);
+                int wherePos = Sql.IndexOf(whereClause, StringComparison.OrdinalIgnoreCase);
                 if (wherePos > 0)
                 {
-                    var sqlWhere = batchSql.Item1.Substring(wherePos + whereClause.Length);
-                    sqlWhere = sqlWhere.Replace($"[{batchSql.Item2}].", string.Empty);
+                    var sqlWhere = Sql[(wherePos + whereClause.Length)..];
+                    sqlWhere = sqlWhere.Replace($"[{TableAlias}].", string.Empty);
                     deleteSearchCondition = " AND " + sqlWhere;
-                    parameters.AddRange(batchSql.Item6);
+                    parameters.AddRange(InnerParameters);
                 }
                 else
                 {
@@ -272,7 +272,7 @@ public static class SqlQueryBuilder
             var textOrderBy = "ORDER BY ";
             var textAsS = " AS S";
             int startIndex = q.IndexOf(textOrderBy);
-            var qSegment = q.Substring(startIndex, q.IndexOf(textAsS) - startIndex);
+            var qSegment = q[startIndex..q.IndexOf(textAsS)];
             var qSegmentUpdated = qSegment;
             foreach (var mapping in sourceDestinationMappings)
             {
@@ -295,7 +295,7 @@ public static class SqlQueryBuilder
             }
         }
 
-        return (sql: q, parameters: parameters);
+        return (sql: q, parameters);
     }
 
     public static string TruncateTable(string tableName)

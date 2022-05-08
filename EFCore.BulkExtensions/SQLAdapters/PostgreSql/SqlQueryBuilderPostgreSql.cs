@@ -8,7 +8,7 @@ namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql;
 
 public static class SqlQueryBuilderPostgreSql
 {
-    public static string CreateTableCopy(string existingTableName, string newTableName, TableInfo tableInfo, bool isOutputTable = false)
+    public static string CreateTableCopy(string existingTableName, string newTableName)
     {
         var q = $"CREATE TABLE {newTableName} " +
                 $"AS TABLE {existingTableName} " +
@@ -33,7 +33,7 @@ public static class SqlQueryBuilderPostgreSql
         return q + ";";
     }
 
-    public static string MergeTable<T>(DbContext context, TableInfo tableInfo, OperationType operationType, IEnumerable<string> entityPropertyWithDefaultValue = default) where T : class
+    public static string MergeTable<T>(TableInfo tableInfo, OperationType operationType) where T : class
     {
         var columnsList = GetColumnList(tableInfo, operationType);
 
@@ -92,7 +92,7 @@ public static class SqlQueryBuilderPostgreSql
             var textSelect = "SELECT ";
             var textFrom = " FROM";
             int startIndex = q.IndexOf(textSelect);
-            var qSegment = q.Substring(startIndex, q.IndexOf(textFrom) - startIndex);
+            var qSegment = q[startIndex..q.IndexOf(textFrom)];
             var qSegmentUpdated = qSegment;
             foreach (var mapping in sourceDestinationMappings)
             {
@@ -145,7 +145,7 @@ public static class SqlQueryBuilderPostgreSql
         return q;
     }
 
-    public static string DropTable(string tableName, bool isTempTable)
+    public static string DropTable(string tableName)
     {
         string q = $"DROP TABLE IF EXISTS {tableName}";
         q = q.Replace("[", @"""").Replace("]", @"""");
@@ -258,9 +258,9 @@ public static class SqlQueryBuilderPostgreSql
                 int positionON = sql.IndexOf(" ON");
                 int positionEndON = positionON + " ON".Length;
                 int positionWHERE = sql.IndexOf("WHERE");
-                string oldSqlSegment = sql.Substring(positionFROM, positionWHERE - positionFROM);
-                string newSqlSegment = "FROM " + sql.Substring(positionEndJOIN, positionON - positionEndJOIN);
-                string equalsPkFk = sql.Substring(positionEndON, positionWHERE - positionEndON);
+                string oldSqlSegment = sql[positionFROM..positionWHERE];
+                string newSqlSegment = "FROM " + sql[positionEndJOIN..positionON];
+                string equalsPkFk = sql[positionEndON..positionWHERE];
                 sql = sql.Replace(oldSqlSegment, newSqlSegment);
                 sql = sql.Replace("WHERE", " WHERE");
                 sql = sql + " AND" + equalsPkFk;

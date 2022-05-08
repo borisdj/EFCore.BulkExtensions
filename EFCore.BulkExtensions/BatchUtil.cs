@@ -66,7 +66,7 @@ public static class BatchUtil
 
             if (useUpdateableCte)
             {
-                var cte = "cte" + Guid.NewGuid().ToString().Substring(0, 8); // 8 chars of Guid as tableNameSuffix to avoid same name collision with other tables
+                var cte = string.Concat("cte", Guid.NewGuid().ToString().AsSpan(0, 8)); // 8 chars of Guid as tableNameSuffix to avoid same name collision with other tables
                 resultQuery = $"{leadingComments}WITH [{cte}] AS (SELECT {topStatement}* {sql}) DELETE FROM [{cte}]";
             }
             else
@@ -74,7 +74,7 @@ public static class BatchUtil
                 if (outerQueryOrderByIndex > -1)
                 {
                     // ORDER BY is not allowed without TOP or OFFSET.
-                    sql = sql.Substring(0, outerQueryOrderByIndex);
+                    sql = sql[..outerQueryOrderByIndex];
                 }
 
                 resultQuery = $"{leadingComments}DELETE {topStatement}{tableAlias}{sql}";
@@ -214,7 +214,7 @@ public static class BatchUtil
         return SqlAdaptersMapping.GetAdapterDialect(context).ReloadSqlParameters(context,sqlParameters);
     }
 
-    public static (string, string, string, string, string, IEnumerable<object>) GetBatchSql(IQueryable query, DbContext context, bool isUpdate)
+    public static (string Sql, string TableAlias, string TableAliasSufixAs, string TopStatement, string LeadingComments, IEnumerable<object> InnerParameters) GetBatchSql(IQueryable query, DbContext context, bool isUpdate)
     {
         var sqlQueryBuilder = SqlAdaptersMapping.GetAdapterDialect(context);
         var (fullSqlQuery, innerParameters) = query.ToParametrizedSql();
@@ -229,9 +229,9 @@ public static class BatchUtil
         (tableAlias, topStatement) = sqlQueryBuilder.GetBatchSqlReformatTableAliasAndTopStatement(sqlQuery, databaseType);
 
         int indexFrom = sqlQuery.IndexOf(Environment.NewLine, StringComparison.Ordinal);
-        string sql = sqlQuery.Substring(indexFrom, sqlQuery.Length - indexFrom);
-        sql = sql.Contains("{") ? sql.Replace("{", "{{") : sql; // Curly brackets have to be escaped:
-        sql = sql.Contains("}") ? sql.Replace("}", "}}") : sql; // https://github.com/aspnet/EntityFrameworkCore/issues/8820
+        string sql = sqlQuery[indexFrom..];
+        sql = sql.Contains('{') ? sql.Replace("{", "{{") : sql; // Curly brackets have to be escaped:
+        sql = sql.Contains('}') ? sql.Replace("}", "}}") : sql; // https://github.com/aspnet/EntityFrameworkCore/issues/8820
 
         if (isUpdate)
         {
@@ -249,10 +249,10 @@ public static class BatchUtil
     public static string GetSqlSetSegment(DbContext context, Type updateValuesType, object updateValues, List<string> updateColumns, List<object> parameters)
     {
         var tableInfo = TableInfo.CreateInstance(context, updateValuesType, new List<object>(), OperationType.Read, new BulkConfig());
-        return GetSqlSetSegment(context, tableInfo, updateValuesType, updateValues, Activator.CreateInstance(updateValuesType), updateColumns, parameters);
+        return GetSqlSetSegment(tableInfo, updateValuesType, updateValues, Activator.CreateInstance(updateValuesType), updateColumns, parameters);
     }
 
-    private static string GetSqlSetSegment(DbContext context, TableInfo tableInfo, Type updateValuesType, object updateValues, object defaultValues, List<string> updateColumns, List<object> parameters)
+    private static string GetSqlSetSegment(TableInfo tableInfo, Type updateValuesType, object updateValues, object defaultValues, List<string> updateColumns, List<object> parameters)
     {
         string sql = string.Empty;
         foreach (var propertyNameColumnName in tableInfo.PropertyColumnNamesDict)
@@ -295,9 +295,11 @@ public static class BatchUtil
                     if (param == null)
                     {
                         propertyUpdateValue ??= DBNull.Value;
-                        param = new Microsoft.Data.SqlClient.SqlParameter();
-                        param.ParameterName = $"@{columnName}";
-                        param.Value = propertyUpdateValue;
+                        param = new SqlParameter
+                        {
+                            ParameterName = $"@{columnName}",
+                            Value = propertyUpdateValue,
+                        };
                         if (!isDifferentFromDefault && propertyUpdateValue == DBNull.Value && property.PropertyType == typeof(byte[])) // needed only when having complex type property to be updated to default 'null'
                         {
                             param.DbType = DbType.Binary; // fix for ByteArray since implicit conversion nvarchar to varbinary(max) is not allowed
@@ -451,9 +453,9 @@ public static class BatchUtil
                 case ExpressionType.Coalesce:
                     sqlColumns.Append("COALESCE(");
                     CreateUpdateBody(createBodyData, binaryExpression.Left, columnName);
-                    sqlColumns.Append(",");
+                    sqlColumns.Append(',');
                     CreateUpdateBody(createBodyData, binaryExpression.Right, columnName);
-                    sqlColumns.Append(")");
+                    sqlColumns.Append(')');
                     break;
 
                 default: 
@@ -498,8 +500,8 @@ public static class BatchUtil
                 var indexOfNextNewLine = mainSqlQuery.IndexOf(Environment.NewLine, StringComparison.Ordinal);
                 if (indexOfNextNewLine > -1)
                 {
-                    leadingCommentsBuilder.Append(mainSqlQuery.Substring(0, indexOfNextNewLine + Environment.NewLine.Length));
-                    mainSqlQuery = mainSqlQuery.Substring(indexOfNextNewLine + Environment.NewLine.Length);
+                    leadingCommentsBuilder.Append(mainSqlQuery[..(indexOfNextNewLine + Environment.NewLine.Length)]);
+                    mainSqlQuery = mainSqlQuery[(indexOfNextNewLine + Environment.NewLine.Length)..];
                     continue;
                 }
             }
@@ -509,8 +511,8 @@ public static class BatchUtil
                 var nextBlockCommentEndIndex = mainSqlQuery.IndexOf("*/", StringComparison.Ordinal);
                 if (nextBlockCommentEndIndex > -1)
                 {
-                    leadingCommentsBuilder.Append(mainSqlQuery.Substring(0, nextBlockCommentEndIndex + 2));
-                    mainSqlQuery = mainSqlQuery.Substring(nextBlockCommentEndIndex + 2);
+                    leadingCommentsBuilder.Append(mainSqlQuery.AsSpan(0, nextBlockCommentEndIndex + 2));
+                    mainSqlQuery = mainSqlQuery[(nextBlockCommentEndIndex + 2)..];
                     continue;
                 }
             }
@@ -519,8 +521,8 @@ public static class BatchUtil
 
             if (nextNonWhitespaceIndex > 0)
             {
-                leadingCommentsBuilder.Append(mainSqlQuery.Substring(0, nextNonWhitespaceIndex));
-                mainSqlQuery = mainSqlQuery.Substring(nextNonWhitespaceIndex);
+                leadingCommentsBuilder.Append(mainSqlQuery[..nextNonWhitespaceIndex]);
+                mainSqlQuery = mainSqlQuery[nextNonWhitespaceIndex..];
                 continue;
             }
 
@@ -528,8 +530,8 @@ public static class BatchUtil
             var selectIndex = mainSqlQuery.IndexOf("SELECT", StringComparison.OrdinalIgnoreCase);
             if (selectIndex > 0)
             {
-                leadingCommentsBuilder.Append(mainSqlQuery.Substring(0, selectIndex));
-                mainSqlQuery = mainSqlQuery.Substring(selectIndex);
+                leadingCommentsBuilder.Append(mainSqlQuery[..selectIndex]);
+                mainSqlQuery = mainSqlQuery[selectIndex..];
             }
 
             break;
@@ -565,7 +567,7 @@ public static class BatchUtil
     private static readonly MethodInfo DbContextSetMethodInfo = 
         typeof(DbContext).GetMethod(nameof(DbContext.Set), BindingFlags.Public | BindingFlags.Instance, null, Array.Empty<Type>(), null);
 
-    public static readonly Regex TableAliasPattern = new Regex(@"(?:FROM|JOIN)\s+(\[\S+\]) AS (\[\S+\])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    public static readonly Regex TableAliasPattern = new(@"(?:FROM|JOIN)\s+(\[\S+\]) AS (\[\S+\])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     /// <summary>
     /// Attempt to create a DbParameter using the <see cref="Microsoft.EntityFrameworkCore.Storage.RelationalTypeMapping.CreateParameter(DbCommand, string, object, bool?)"/>
@@ -680,7 +682,7 @@ public static class BatchUtil
             return false;
         }
 
-        if (!(memberAssignment.Member is PropertyInfo memberPropertyInfo))
+        if (memberAssignment.Member is not PropertyInfo memberPropertyInfo)
         {
             return false;
         }
@@ -845,7 +847,7 @@ public static class BatchUtil
                 && originalAlias.Equals(rootTableAliasWithBrackets, StringComparison.OrdinalIgnoreCase))
             {
                 // Don't rename this alias, and cut off the unnecessary FROM clause
-                innerSql = innerSql.Substring(0, match.Index);
+                innerSql = innerSql[..match.Index];
                 continue;
             }
 
@@ -861,7 +863,7 @@ public static class BatchUtil
             }
 
             var aliasIndex = -1;
-            var aliasPrefix = originalAlias.Substring(0, originalAlias.Length - 1);
+            var aliasPrefix = originalAlias[0..^1];
             string newAlias;
             do
             {
@@ -881,7 +883,7 @@ public static class BatchUtil
 
         if (isFirstNavigationACollectionType)
         {
-            innerSql = innerSql.Substring(6).Trim();
+            innerSql = innerSql[6..].Trim();
             
             if (innerSql.StartsWith("("))
             {
@@ -936,14 +938,14 @@ public static class BatchUtil
         var whereClauseIndex = innerSql.LastIndexOf("WHERE ", StringComparison.OrdinalIgnoreCase);
         if (whereClauseIndex > -1)
         {
-            innerSql = innerSql.Substring(0, whereClauseIndex) + whereClauseCondition.ToString() + "AND " + innerSql.Substring(whereClauseIndex + 5);
+            innerSql = innerSql[..whereClauseIndex] + whereClauseCondition.ToString() + "AND " + innerSql[(whereClauseIndex + 5)..];
         }
         else
         {
             var orderByIndex = innerSql.LastIndexOf("ORDER BY ", StringComparison.OrdinalIgnoreCase);
             if (orderByIndex > -1)
             {
-                innerSql = innerSql.Substring(0, orderByIndex) + '\n' + whereClauseCondition.ToString() + '\n' + innerSql.Substring(orderByIndex);
+                innerSql = innerSql[..orderByIndex] + '\n' + whereClauseCondition.ToString() + '\n' + innerSql[orderByIndex..];
             }
             else
             {

@@ -69,7 +69,7 @@ public class TableInfo
     public Dictionary<string, ValueConverter> ConvertibleColumnConverterDict { get; set; } = new Dictionary<string, ValueConverter>();
     public Dictionary<string, int> DateTime2PropertiesPrecisionLessThen7Dict { get; set; } = new Dictionary<string, int>();
 
-    public string TimeStampOutColumnType => "varbinary(8)";
+    public static string TimeStampOutColumnType => "varbinary(8)";
     public string TimeStampPropertyName { get; set; }
     public string TimeStampColumnName { get; set; }
 
@@ -162,7 +162,7 @@ public class TableInfo
         TempTableSufix = sourceTableName != null ? "" : "Temp";
         if (BulkConfig.UniqueTableNameTempDb)
         {
-            TempTableSufix += Guid.NewGuid().ToString().Substring(0, 8); // 8 chars of Guid as tableNameSufix to avoid same name collision with other tables
+            TempTableSufix += Guid.NewGuid().ToString()[..8]; // 8 chars of Guid as tableNameSufix to avoid same name collision with other tables
                                                                          // TODO Consider Hash
         }
         TempTableName = sourceTableName ?? $"{TableName}{TempTableSufix}";
@@ -300,14 +300,14 @@ public class TableInfo
         var outputProperties = allPropertiesExceptTimeStamp.Where(a => a.GetColumnName(ObjectIdentifier) != null).Concat(timeStampProperties);
         OutputPropertyColumnNamesDict = outputProperties.ToDictionary(a => a.Name, b => b.GetColumnName(ObjectIdentifier).Replace("]", "]]")); // square brackets have to be escaped
 
-        bool AreSpecifiedPropertiesToInclude = BulkConfig.PropertiesToInclude?.Count() > 0;
-        bool AreSpecifiedPropertiesToExclude = BulkConfig.PropertiesToExclude?.Count() > 0;
+        bool AreSpecifiedPropertiesToInclude = BulkConfig.PropertiesToInclude?.Count > 0;
+        bool AreSpecifiedPropertiesToExclude = BulkConfig.PropertiesToExclude?.Count > 0;
 
-        bool AreSpecifiedPropertiesToIncludeOnCompare = BulkConfig.PropertiesToIncludeOnCompare?.Count() > 0;
-        bool AreSpecifiedPropertiesToExcludeOnCompare = BulkConfig.PropertiesToExcludeOnCompare?.Count() > 0;
+        bool AreSpecifiedPropertiesToIncludeOnCompare = BulkConfig.PropertiesToIncludeOnCompare?.Count > 0;
+        bool AreSpecifiedPropertiesToExcludeOnCompare = BulkConfig.PropertiesToExcludeOnCompare?.Count > 0;
 
-        bool AreSpecifiedPropertiesToIncludeOnUpdate = BulkConfig.PropertiesToIncludeOnUpdate?.Count() > 0;
-        bool AreSpecifiedPropertiesToExcludeOnUpdate = BulkConfig.PropertiesToExcludeOnUpdate?.Count() > 0;
+        bool AreSpecifiedPropertiesToIncludeOnUpdate = BulkConfig.PropertiesToIncludeOnUpdate?.Count > 0;
+        bool AreSpecifiedPropertiesToExcludeOnUpdate = BulkConfig.PropertiesToExcludeOnUpdate?.Count > 0;
 
         if (AreSpecifiedPropertiesToInclude)
         {
@@ -426,7 +426,7 @@ public class TableInfo
 
         if (loadOnlyPKColumn)
         {
-            if (PrimaryKeysPropertyColumnNameDict.Count() == 0)
+            if (PrimaryKeysPropertyColumnNameDict.Count == 0)
                 throw new InvalidBulkConfigException("If no PrimaryKey is defined operation requres bulkConfig set with 'UpdatedByProperties'.");
             PropertyColumnNamesDict = properties.Where(a => PrimaryKeysPropertyColumnNameDict.ContainsKey(a.Name)).ToDictionary(a => a.Name, b => b.GetColumnName(ObjectIdentifier).Replace("]", "]]"));
         }
@@ -518,7 +518,7 @@ public class TableInfo
         {
 
             if (!FastPropertyDict.Any(a => a.Key == configSpecifiedPropertyName) &&
-                !configSpecifiedPropertyName.Contains(".") && // Those with dot "." skiped from validating for now since FastPropertyDict here does not contain them
+                !configSpecifiedPropertyName.Contains('.') && // Those with dot "." skiped from validating for now since FastPropertyDict here does not contain them
                 !(specifiedPropertiesListName == nameof(BulkConfig.PropertiesToIncludeOnUpdate) && configSpecifiedPropertyName == "") && // In PropsToIncludeOnUpdate empty is allowed as config for skipping Update
                 !BulkConfig.TemporalColumns.Contains(configSpecifiedPropertyName)
                 )
@@ -559,7 +559,7 @@ public class TableInfo
     #endregion
 
     #region SqlCommands
-    public async Task<bool> CheckTableExistAsync(DbContext context, TableInfo tableInfo, CancellationToken cancellationToken, bool isAsync)
+    public static async Task<bool> CheckTableExistAsync(DbContext context, TableInfo tableInfo, bool isAsync, CancellationToken cancellationToken)
     {
         if (isAsync)
         {
@@ -618,7 +618,7 @@ public class TableInfo
         return tableExist;
     }
 
-    protected async Task<int> GetNumberUpdatedAsync(DbContext context, CancellationToken cancellationToken, bool isAsync)
+    protected async Task<int> GetNumberUpdatedAsync(DbContext context, bool isAsync, CancellationToken cancellationToken)
     {
         var resultParameter = (IDbDataParameter)Activator.CreateInstance(typeof(Microsoft.Data.SqlClient.SqlParameter));
         resultParameter.ParameterName = "@result";
@@ -638,7 +638,7 @@ public class TableInfo
         return (int)resultParameter.Value;
     }
 
-    protected async Task<int> GetNumberDeletedAsync(DbContext context, CancellationToken cancellationToken, bool isAsync)
+    protected async Task<int> GetNumberDeletedAsync(DbContext context, bool isAsync, CancellationToken cancellationToken)
     {
         var resultParameter = (IDbDataParameter)Activator.CreateInstance(typeof(Microsoft.Data.SqlClient.SqlParameter));
         resultParameter.ParameterName = "@result";
@@ -662,7 +662,7 @@ public class TableInfo
 
     public static string GetUniquePropertyValues(object entity, List<string> propertiesNames, Dictionary<string, FastProperty> fastPropertyDict)
     {
-        StringBuilder uniqueBuilder = new StringBuilder(1024);
+        StringBuilder uniqueBuilder = new(1024);
         string delimiter = "_"; // TODO: Consider making it Config-urable
         foreach (var propertyName in propertiesNames)
         {
@@ -682,7 +682,7 @@ public class TableInfo
             uniqueBuilder.Append(delimiter);
         }
         string result = uniqueBuilder.ToString();
-        result = result.Substring(0, result.Length - 1); // removes last delimiter
+        result = result[0..^1]; // removes last delimiter
         return result;
     }
 
@@ -697,7 +697,7 @@ public class TableInfo
         return previousPropertyColumnNamesDict;
     }
 
-    internal void UpdateReadEntities<T>(Type type, IList<T> entities, IList<T> existingEntities, DbContext context)
+    internal void UpdateReadEntities<T>(IList<T> entities, IList<T> existingEntities, DbContext context)
     {
         List<string> propertyNames = PropertyColumnNamesDict.Keys.ToList();
         if (HasOwnedTypes)
@@ -715,7 +715,7 @@ public class TableInfo
 
         List<string> selectByPropertyNames = PropertyColumnNamesDict.Keys.Where(a => PrimaryKeysPropertyColumnNameDict.ContainsKey(a)).ToList();
 
-        Dictionary<string, T> existingEntitiesDict = new Dictionary<string, T>();
+        Dictionary<string, T> existingEntitiesDict = new();
         foreach (var existingEntity in existingEntities)
         {
             string uniqueProperyValues = GetUniquePropertyValues(existingEntity, selectByPropertyNames, FastPropertyDict);
@@ -750,8 +750,8 @@ public class TableInfo
         string identityPropertyName = PropertyColumnNamesDict.SingleOrDefault(a => a.Value == IdentityColumnName).Key;
 
         bool doSetIdentityColumnsForInsertOrder = BulkConfig.PreserveInsertOrder &&
-                                                  entities.Count() > 1 &&
-                                                  PrimaryKeysPropertyColumnNameDict?.Count() == 1 &&
+                                                  entities.Count > 1 &&
+                                                  PrimaryKeysPropertyColumnNameDict?.Count == 1 &&
                                                   PrimaryKeysPropertyColumnNameDict?.Select(a => a.Value).First() == IdentityColumnName;
 
         var operationType = tableInfo.BulkConfig.OperationType;
@@ -772,7 +772,7 @@ public class TableInfo
             var entitiesNew = new List<T>();
             var entitiesSorted = new List<T>();
 
-            long i = -entities.Count();
+            long i = -entities.Count;
             foreach (var entity in entities)
             {
                 var identityFastProperty = FastPropertyDict[identityPropertyName];
@@ -837,7 +837,7 @@ public class TableInfo
         return existingEntities;
     }
 
-    public void UpdateEntitiesIdentity<T>(DbContext context, TableInfo tableInfo, IList<T> entities, IList<object> entitiesWithOutputIdentity)
+    public void UpdateEntitiesIdentity<T>(TableInfo tableInfo, IList<T> entities, IList<object> entitiesWithOutputIdentity)
     {
         var identifierPropertyName = IdentityColumnName != null ? OutputPropertyColumnNamesDict.SingleOrDefault(a => a.Value == IdentityColumnName).Key // it Identity autoincrement 
                                                                 : PrimaryKeysPropertyColumnNameDict.FirstOrDefault().Key;                               // or PK with default sql value
@@ -928,7 +928,7 @@ public class TableInfo
     // Once the following Issue gets fixed(expected in EF 3.0) this can be replaced with code segment: DirectQuery
     // https://github.com/aspnet/EntityFrameworkCore/issues/12905
     #region CompiledQuery
-    public async Task LoadOutputDataAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, CancellationToken cancellationToken, bool isAsync) where T : class
+    public async Task LoadOutputDataAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, bool isAsync, CancellationToken cancellationToken) where T : class
     {
         bool hasIdentity = OutputPropertyColumnNamesDict.Any(a => a.Value == IdentityColumnName) ||
                            (tableInfo.HasSinglePrimaryKey && tableInfo.DefaultValueProperties.Contains(tableInfo.PrimaryKeysPropertyColumnNameDict.FirstOrDefault().Key));
@@ -941,7 +941,7 @@ public class TableInfo
             //var entitiesWithOutputIdentity = (typeof(T) == type) ? QueryOutputTable<object>(context, sqlQuery).ToList() : QueryOutputTable(context, type, sqlQuery).Cast<object>().ToList();
 
             //var entitiesObjects = entities.Cast<object>().ToList();
-            UpdateEntitiesIdentity(context, tableInfo, entities, entitiesWithOutputIdentity);
+            UpdateEntitiesIdentity(tableInfo, entities, entitiesWithOutputIdentity);
             totalNumber = entitiesWithOutputIdentity.Count;
         }
         if (BulkConfig.CalculateStats)
@@ -950,13 +950,13 @@ public class TableInfo
             int numberDeleted;
             if (isAsync)
             {
-                numberUpdated = await GetNumberUpdatedAsync(context, cancellationToken, isAsync: true).ConfigureAwait(false);
-                numberDeleted = await GetNumberDeletedAsync(context, cancellationToken, isAsync: true).ConfigureAwait(false);
+                numberUpdated = await GetNumberUpdatedAsync(context, isAsync: true, cancellationToken).ConfigureAwait(false);
+                numberDeleted = await GetNumberDeletedAsync(context, isAsync: true, cancellationToken).ConfigureAwait(false);
             }
             else
             {
-                numberUpdated = GetNumberUpdatedAsync(context, cancellationToken, isAsync: false).GetAwaiter().GetResult();
-                numberDeleted = GetNumberDeletedAsync(context, cancellationToken, isAsync: false).GetAwaiter().GetResult();
+                numberUpdated = GetNumberUpdatedAsync(context, isAsync: false, cancellationToken).GetAwaiter().GetResult();
+                numberDeleted = GetNumberDeletedAsync(context, isAsync: false, cancellationToken).GetAwaiter().GetResult();
             }
             BulkConfig.StatsInfo = new StatsInfo
             {
