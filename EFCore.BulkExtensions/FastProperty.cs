@@ -4,11 +4,18 @@ using System.Reflection;
 
 namespace EFCore.BulkExtensions;
 
+/// <summary>
+/// Class to initialize types using reflection
+/// </summary>
 public class FastProperty
 {
     private Func<object, object>? _getDelegate;
     private Action<object, object>? _setDelegate;
 
+    /// <summary>
+    /// Constructor for FastPropery
+    /// </summary>
+    /// <param name="property"></param>
     public FastProperty(PropertyInfo property)
     {
         Property = property;
@@ -59,11 +66,22 @@ public class FastProperty
             _getDelegate = Expression.Lambda<Func<object, object>>(Expression.TypeAs(Expression.Call(instanceCast, getter), typeof(object)), instance).Compile();
     }
 
+#pragma warning disable CS1591 // No XML comment required here
     public PropertyInfo Property { get; set; }
 
 
+    /// <summary>
+    /// Returns the object
+    /// </summary>
+    /// <param name="instance"></param>
+    /// <returns></returns>
     public object? Get(object instance) => instance == default || _getDelegate is null ? default : _getDelegate(instance);
 
+    /// <summary>
+    /// Sets the delegate
+    /// </summary>
+    /// <param name="instance"></param>
+    /// <param name="value"></param>
     public void Set(object instance, object? value)
     {
         if (value != default && _setDelegate is not null)

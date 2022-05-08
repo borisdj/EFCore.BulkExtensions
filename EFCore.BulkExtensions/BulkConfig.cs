@@ -6,6 +6,9 @@ using System.Linq.Expressions;
 
 namespace EFCore.BulkExtensions;
 
+/// <summary>
+/// Provides configration for EFCore BulkExtensions
+/// </summary>
 public class BulkConfig
 {
     /// <summary>
@@ -263,8 +266,14 @@ public class BulkConfig
         SynchronizeFilter = filter;
     }
 
+    /// <summary>
+    /// A func to set the underlying DB connection
+    /// </summary>
     public Func<DbConnection, DbConnection>? UnderlyingConnection { get; set; }
 
+    /// <summary>
+    /// A func to set the underlying DB transaction
+    /// </summary>
     public Func<DbTransaction, DbTransaction>? UnderlyingTransaction { get; set; }
 
     internal OperationType OperationType { get; set; }
@@ -272,18 +281,39 @@ public class BulkConfig
     internal object? SynchronizeFilter { get; private set; }
 }
 
+/// <summary>
+/// Class to provide information about how many records have been updated, deleted and inserted
+/// </summary>
 public class StatsInfo
 {
+    /// <summary>
+    /// Indicates the number of inserted records
+    /// </summary>
     public int StatsNumberInserted { get; set; }
 
+    /// <summary>
+    /// Indicates the number of updated records
+    /// </summary>
     public int StatsNumberUpdated { get; set; }
 
+    /// <summary>
+    /// Indicates the number of deleted records
+    /// </summary>
     public int StatsNumberDeleted { get; set; }
 }
 
+/// <summary>
+/// Provides information about entities
+/// </summary>
 public class TimeStampInfo
 {
+    /// <summary>
+    /// Indicates the number of entities skipped for an update
+    /// </summary>
     public int NumberOfSkippedForUpdate { get; set; }
 
+    /// <summary>
+    /// Output the entities
+    /// </summary>
     public List<object> EntitiesOutput { get; set; } = null!;
 }

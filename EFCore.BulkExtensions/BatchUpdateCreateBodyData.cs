@@ -9,11 +9,24 @@ using System.Text.RegularExpressions;
 
 namespace EFCore.BulkExtensions;
 
+/// <summary>
+/// Provides config for batch update/create
+/// </summary>
 public class BatchUpdateCreateBodyData
 {
     private readonly BulkConfig _tableInfoBulkConfig;
     private readonly Dictionary<Type, TableInfo> _tableInfoLookup;
 
+    /// <summary>
+    /// Creates an instance of BatchUpdateCreateBodyData used to provide a config for batch updates and creations
+    /// </summary>
+    /// <param name="baseSql"></param>
+    /// <param name="dbContext"></param>
+    /// <param name="innerParameters"></param>
+    /// <param name="query"></param>
+    /// <param name="rootType"></param>
+    /// <param name="tableAlias"></param>
+    /// <param name="updateExpression"></param>
     public BatchUpdateCreateBodyData(
         string baseSql,
         DbContext dbContext,
@@ -48,6 +61,7 @@ public class BatchUpdateCreateBodyData
         }
     }
 
+#pragma warning disable CS1591 // No need for XML comments here.
     public string BaseSql { get; }
     public DbServer DatabaseType { get; }
     public DbContext DbContext { get; }
@@ -75,4 +89,5 @@ public class BatchUpdateCreateBodyData
 
         return tableInfo;
     }
+#pragma warning restore CS1591 // No need for XML comments here.
 }

@@ -20,9 +20,13 @@ using System.Threading.Tasks;
 
 namespace EFCore.BulkExtensions;
 
+/// <summary>
+/// Provides a list of information for EFCore.BulkExtensions that is used internally to know what to do with the data source received
+/// </summary>
 public class TableInfo
 {
     public string? Schema { get; set; }
+#pragma warning disable CS1591 // No XML comments required here.
     public string SchemaFormated => Schema != null ? $"[{Schema}]." : "";
     public string? TempSchema { get; set; }
     public string TempSchemaFormated => TempSchema != null ? $"[{TempSchema}]." : "";
@@ -80,10 +84,27 @@ public class TableInfo
     internal SqliteConnection? SqliteConnection { get; set; }
     internal SqliteTransaction? SqliteTransaction { get; set; }
 
+
     internal NpgsqlConnection? NpgsqlConnection { get; set; }
     internal NpgsqlTransaction? NpgsqlTransaction { get; set; }
 
     public static TableInfo CreateInstance<T>(DbContext context, Type? type, IList<T> entities, OperationType operationType, BulkConfig? bulkConfig)
+
+#pragma warning restore CS1591 // No XML comments required here.
+
+    /// <summary>
+    /// Creates an instance of TableInfo
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="context"></param>
+    /// <param name="type"></param>
+    /// <param name="entities"></param>
+    /// <param name="operationType"></param>
+    /// <param name="bulkConfig"></param>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException"></exception>
+    public static TableInfo CreateInstance<T>(DbContext context, Type type, IList<T> entities, OperationType operationType, BulkConfig bulkConfig)
+
     {
         var tableInfo = new TableInfo
         {
@@ -105,7 +126,18 @@ public class TableInfo
     }
 
     #region Main
-    public void LoadData<T>(DbContext context, Type? type, IList<T> entities, bool loadOnlyPKColumn)
+    /// <summary>
+    /// Configures the table info based on entity data 
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="context"></param>
+    /// <param name="type"></param>
+    /// <param name="entities"></param>
+    /// <param name="loadOnlyPKColumn"></param>
+    /// <exception cref="InvalidOperationException"></exception>
+    /// <exception cref="MultiplePropertyListSetException"></exception>
+    /// <exception cref="InvalidBulkConfigException"></exception>
+    public void LoadData<T>(DbContext context, Type type?, IList<T> entities, bool loadOnlyPKColumn)
 
     {
         LoadOnlyPKColumn = loadOnlyPKColumn;
@@ -529,7 +561,15 @@ public class TableInfo
         }
     }
 
+
+    /// <summary>
+    /// Validates the specified property list
+    /// </summary>
+    /// <param name="specifiedPropertiesList"></param>
+    /// <param name="specifiedPropertiesListName"></param>
+    /// <exception cref="InvalidOperationException"></exception>
     protected void ValidateSpecifiedPropertiesList(List<string>? specifiedPropertiesList, string specifiedPropertiesListName)
+
     {
         if (specifiedPropertiesList is not null)
         {
@@ -579,6 +619,14 @@ public class TableInfo
     #endregion
 
     #region SqlCommands
+    /// <summary>
+    /// Checks if the table exists
+    /// </summary>
+    /// <param name="context"></param>
+    /// <param name="tableInfo"></param>
+    /// <param name="cancellationToken"></param>
+    /// <param name="isAsync"></param>
+    /// <returns></returns>
     public async Task<bool> CheckTableExistAsync(DbContext context, TableInfo tableInfo, CancellationToken cancellationToken, bool isAsync)
     {
         if (isAsync)
@@ -638,6 +686,13 @@ public class TableInfo
         return tableExist;
     }
 
+    /// <summary>
+    /// Checks the number of updated entities
+    /// </summary>
+    /// <param name="context"></param>
+    /// <param name="cancellationToken"></param>
+    /// <param name="isAsync"></param>
+    /// <returns></returns>
     protected async Task<int> GetNumberUpdatedAsync(DbContext context, CancellationToken cancellationToken, bool isAsync)
     {
         var resultParameter = (IDbDataParameter?)Activator.CreateInstance(typeof(Microsoft.Data.SqlClient.SqlParameter));
@@ -662,6 +717,13 @@ public class TableInfo
         return (int)resultParameter.Value!;
     }
 
+    /// <summary>
+    /// Checks the number of deleted entities
+    /// </summary>
+    /// <param name="context"></param>
+    /// <param name="cancellationToken"></param>
+    /// <param name="isAsync"></param>
+    /// <returns></returns>
     protected async Task<int> GetNumberDeletedAsync(DbContext context, CancellationToken cancellationToken, bool isAsync)
     {
         var resultParameter = (IDbDataParameter?)Activator.CreateInstance(typeof(Microsoft.Data.SqlClient.SqlParameter));
@@ -688,6 +750,13 @@ public class TableInfo
 
     #endregion
 
+    /// <summary>
+    /// Returns the unique property values
+    /// </summary>
+    /// <param name="entity"></param>
+    /// <param name="propertiesNames"></param>
+    /// <param name="fastPropertyDict"></param>
+    /// <returns></returns>
     public static string GetUniquePropertyValues(object entity, List<string> propertiesNames, Dictionary<string, FastProperty> fastPropertyDict)
     {
         StringBuilder uniqueBuilder = new StringBuilder(1024);
@@ -715,6 +784,10 @@ public class TableInfo
     }
 
     #region ReadProcedures
+    /// <summary>
+    /// Configures the bulk read column names for the table info
+    /// </summary>
+    /// <returns></returns>
     public Dictionary<string, string> ConfigureBulkReadTableInfo()
     {
         InsertToTempTable = true;
@@ -773,7 +846,13 @@ public class TableInfo
         }
     }
     #endregion
-
+    /// <summary>
+    /// Sets the identity preserve order
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="tableInfo"></param>
+    /// <param name="entities"></param>
+    /// <param name="reset"></param>
     public void CheckToSetIdentityForPreserveOrder<T>(TableInfo tableInfo, IList<T> entities, bool reset = false)
     {
         string identityPropertyName = PropertyColumnNamesDict.SingleOrDefault(a => a.Value == IdentityColumnName).Key;
@@ -848,6 +927,14 @@ public class TableInfo
         }
     }
 
+    /// <summary>
+    /// Loads the ouput entities
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="context"></param>
+    /// <param name="type"></param>
+    /// <param name="sqlSelect"></param>
+    /// <returns></returns>
     public List<T> LoadOutputEntities<T>(DbContext context, Type type, string sqlSelect) where T : class
     {
         List<T> existingEntities;
@@ -866,6 +953,14 @@ public class TableInfo
         return existingEntities;
     }
 
+    /// <summary>
+    /// Updates the entities' identity field
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="context"></param>
+    /// <param name="tableInfo"></param>
+    /// <param name="entities"></param>
+    /// <param name="entitiesWithOutputIdentity"></param>
     public void UpdateEntitiesIdentity<T>(DbContext context, TableInfo tableInfo, IList<T> entities, IList<object> entitiesWithOutputIdentity)
     {
         var identifierPropertyName = IdentityColumnName != null ? OutputPropertyColumnNamesDict.SingleOrDefault(a => a.Value == IdentityColumnName).Key // it Identity autoincrement 
@@ -962,6 +1057,17 @@ public class TableInfo
     // Once the following Issue gets fixed(expected in EF 3.0) this can be replaced with code segment: DirectQuery
     // https://github.com/aspnet/EntityFrameworkCore/issues/12905
     #region CompiledQuery
+    /// <summary>
+    /// Loads the output data
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="context"></param>
+    /// <param name="type"></param>
+    /// <param name="entities"></param>
+    /// <param name="tableInfo"></param>
+    /// <param name="cancellationToken"></param>
+    /// <param name="isAsync"></param>
+    /// <returns></returns>
     public async Task LoadOutputDataAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, CancellationToken cancellationToken, bool isAsync) where T : class
     {
         bool hasIdentity = OutputPropertyColumnNamesDict.Any(a => a.Value == IdentityColumnName) ||
@@ -1001,6 +1107,13 @@ public class TableInfo
         }
     }
 
+    /// <summary>
+    /// Queries the output table data
+    /// </summary>
+    /// <param name="context"></param>
+    /// <param name="type"></param>
+    /// <param name="sqlQuery"></param>
+    /// <returns></returns>
     protected IEnumerable QueryOutputTable(DbContext context, Type type, string sqlQuery)
     {
         var compiled = EF.CompileQuery(GetQueryExpression(type, sqlQuery));
@@ -1022,6 +1135,13 @@ public class TableInfo
         return result;
     }*/
 
+    /// <summary>
+    /// Returns an expression for the SQL query
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="sqlQuery"></param>
+    /// <param name="ordered"></param>
+    /// <returns></returns>
     public Expression<Func<DbContext, IQueryable<T>>> GetQueryExpression<T>(string sqlQuery, bool ordered = true) where T : class
     {
         Expression<Func<DbContext, IQueryable<T>>>? expression = null;
@@ -1041,6 +1161,13 @@ public class TableInfo
         //var queryOrdered = query.OrderBy(PrimaryKeys[0]);
     }
 
+    /// <summary>
+    /// Returns an expression for the SQL query
+    /// </summary>
+    /// <param name="entityType"></param>
+    /// <param name="sqlQuery"></param>
+    /// <param name="ordered"></param>
+    /// <returns></returns>
     public Expression<Func<DbContext, IEnumerable>> GetQueryExpression(Type entityType, string sqlQuery, bool ordered = true)
     {
         var parameter = Expression.Parameter(typeof(DbContext), "ctx");
