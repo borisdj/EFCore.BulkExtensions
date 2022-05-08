@@ -14,11 +14,11 @@ namespace EFCore.BulkExtensions.Tests;
 
 public class EFCoreBulkTestAsync
 {
-    protected int EntitiesNumber => 10000;
+    protected static int EntitiesNumber => 10000;
 
-    private static Func<TestContext, int> ItemsCountQuery = EF.CompileQuery<TestContext, int>(ctx => ctx.Items.Count());
-    private static Func<TestContext, Item> LastItemQuery = EF.CompileQuery<TestContext, Item>(ctx => ctx.Items.LastOrDefault());
-    private static Func<TestContext, IEnumerable<Item>> AllItemsQuery = EF.CompileQuery<TestContext, IEnumerable<Item>>(ctx => ctx.Items.AsNoTracking());
+    private static readonly Func<TestContext, int> ItemsCountQuery = EF.CompileQuery<TestContext, int>(ctx => ctx.Items.Count());
+    private static readonly Func<TestContext, Item?> LastItemQuery = EF.CompileQuery<TestContext, Item?>(ctx => ctx.Items.LastOrDefault());
+    private static readonly Func<TestContext, IEnumerable<Item>> AllItemsQuery = EF.CompileQuery<TestContext, IEnumerable<Item>>(ctx => ctx.Items.AsNoTracking());
 
     [Theory]
     [InlineData(DbServer.SQLServer, true)]
@@ -36,7 +36,7 @@ public class EFCoreBulkTestAsync
         await RunInsertOrUpdateAsync(isBulk, dbServer);
         await RunUpdateAsync(isBulk, dbServer);
 
-        await RunReadAsync(isBulk);
+        await RunReadAsync();
 
         if (dbServer == DbServer.SQLServer)
         {
@@ -54,13 +54,13 @@ public class EFCoreBulkTestAsync
         await BulkOperationShouldNotCloseOpenConnectionAsync(dbServer, context => context.BulkUpdateAsync(new[] { new Item() }), "2");
     }
 
-    private async Task DeletePreviousDatabaseAsync()
+    private static async Task DeletePreviousDatabaseAsync()
     {
         using var context = new TestContext(ContextUtil.GetOptions());
         await context.Database.EnsureDeletedAsync().ConfigureAwait(false);
     }
 
-    private void WriteProgress(decimal percentage)
+    private static void WriteProgress(decimal percentage)
     {
         Debug.WriteLine(percentage);
     }
@@ -98,7 +98,7 @@ public class EFCoreBulkTestAsync
         }
     }
 
-    private async Task RunInsertAsync(bool isBulk)
+    private static async Task RunInsertAsync(bool isBulk)
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -110,7 +110,7 @@ public class EFCoreBulkTestAsync
             {
                 ItemId = isBulk ? i : 0,
                 Name = "name " + i,
-                Description = "info " + Guid.NewGuid().ToString().Substring(0, 3),
+                Description = string.Concat("info ", Guid.NewGuid().ToString().AsSpan(0, 3)),
                 Quantity = i % 10,
                 Price = i / (i % 5 + 1),
                 TimeUpdated = DateTime.Now,
@@ -146,9 +146,9 @@ public class EFCoreBulkTestAsync
                     CalculateStats = true
                 };
                 await context.BulkInsertAsync(entities, bulkConfig, (a) => WriteProgress(a));
-                Assert.Equal(EntitiesNumber - 1, bulkConfig.StatsInfo.StatsNumberInserted);
-                Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberUpdated);
-                Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberDeleted);
+                Assert.Equal(EntitiesNumber - 1, bulkConfig.StatsInfo?.StatsNumberInserted);
+                Assert.Equal(0, bulkConfig.StatsInfo?.StatsNumberUpdated);
+                Assert.Equal(0, bulkConfig.StatsInfo?.StatsNumberDeleted);
 
                 foreach (var entity in entities)
                 {
@@ -194,60 +194,58 @@ public class EFCoreBulkTestAsync
 
         // TEST
         int entitiesCount = await context.Items.CountAsync(); // = ItemsCountQuery(context);
-        Item lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault(); // = LastItemQuery(context);
+        Item? lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault(); // = LastItemQuery(context);
 
         Assert.Equal(EntitiesNumber - 1, entitiesCount);
         Assert.NotNull(lastEntity);
-        Assert.Equal("name " + (EntitiesNumber - 1), lastEntity.Name);
+        Assert.Equal("name " + (EntitiesNumber - 1), lastEntity?.Name);
     }
 
-    private async Task RunInsertOrUpdateAsync(bool isBulk, DbServer dbServer)
+    private static async Task RunInsertOrUpdateAsync(bool isBulk, DbServer dbServer)
     {
-        using (var context = new TestContext(ContextUtil.GetOptions()))
+        using var context = new TestContext(ContextUtil.GetOptions());
+        var entities = new List<Item>();
+        var dateTimeNow = DateTime.Now;
+        var dateTimeOffsetNow = DateTimeOffset.UtcNow;
+        for (int i = 2; i <= EntitiesNumber; i += 2)
         {
-            var entities = new List<Item>();
-            var dateTimeNow = DateTime.Now;
-            var dateTimeOffsetNow = DateTimeOffset.UtcNow;
-            for (int i = 2; i <= EntitiesNumber; i += 2)
+            entities.Add(new Item
             {
-                entities.Add(new Item
-                {
-                    ItemId = i,
-                    Name = "name InsertOrUpdate " + i,
-                    Description = "info",
-                    Quantity = i,
-                    Price = i / (i % 5 + 1),
-                    TimeUpdated = dateTimeNow
-                });
-            }
-            if (isBulk)
-            {
-                var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
-                await context.BulkInsertOrUpdateAsync(entities, bulkConfig);
-                if (dbServer == DbServer.SQLServer)
-                {
-                    Assert.Equal(1, bulkConfig.StatsInfo.StatsNumberInserted);
-                    Assert.Equal(EntitiesNumber / 2 - 1, bulkConfig.StatsInfo.StatsNumberUpdated);
-                    Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberDeleted);
-                }
-            }
-            else
-            {
-                await context.Items.AddRangeAsync(entities);
-                await context.SaveChangesAsync();
-            }
-
-            // TEST
-            int entitiesCount = await context.Items.CountAsync();
-            Item lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
-
-            Assert.Equal(EntitiesNumber, entitiesCount);
-            Assert.NotNull(lastEntity);
-            Assert.Equal("name InsertOrUpdate " + EntitiesNumber, lastEntity.Name);
+                ItemId = i,
+                Name = "name InsertOrUpdate " + i,
+                Description = "info",
+                Quantity = i,
+                Price = i / (i % 5 + 1),
+                TimeUpdated = dateTimeNow,
+            });
         }
+        if (isBulk)
+        {
+            var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
+            await context.BulkInsertOrUpdateAsync(entities, bulkConfig);
+            if (dbServer == DbServer.SQLServer)
+            {
+                Assert.Equal(1, bulkConfig.StatsInfo?.StatsNumberInserted);
+                Assert.Equal(EntitiesNumber / 2 - 1, bulkConfig.StatsInfo?.StatsNumberUpdated);
+                Assert.Equal(0, bulkConfig.StatsInfo?.StatsNumberDeleted);
+            }
+        }
+        else
+        {
+            await context.Items.AddRangeAsync(entities);
+            await context.SaveChangesAsync();
+        }
+
+        // TEST
+        int entitiesCount = await context.Items.CountAsync();
+        Item? lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
+
+        Assert.Equal(EntitiesNumber, entitiesCount);
+        Assert.NotNull(lastEntity);
+        Assert.Equal("name InsertOrUpdate " + EntitiesNumber, lastEntity?.Name);
     }
 
-    private async Task RunInsertOrUpdateOrDeleteAsync(bool isBulk)
+    private static async Task RunInsertOrUpdateOrDeleteAsync(bool isBulk)
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -274,9 +272,9 @@ public class EFCoreBulkTestAsync
             keepEntityItemId = 3;
             bulkConfig.SetSynchronizeFilter<Item>(e => e.ItemId != keepEntityItemId.Value);
             await context.BulkInsertOrUpdateOrDeleteAsync(entities, bulkConfig);
-            Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberInserted);
-            Assert.Equal(EntitiesNumber / 2, bulkConfig.StatsInfo.StatsNumberUpdated);
-            Assert.Equal((EntitiesNumber / 2) -1, bulkConfig.StatsInfo.StatsNumberDeleted);
+            Assert.Equal(0, bulkConfig.StatsInfo?.StatsNumberInserted);
+            Assert.Equal(EntitiesNumber / 2, bulkConfig.StatsInfo?.StatsNumberUpdated);
+            Assert.Equal((EntitiesNumber / 2) -1, bulkConfig.StatsInfo?.StatsNumberDeleted);
         }
         else
         {
@@ -290,14 +288,14 @@ public class EFCoreBulkTestAsync
         // TEST
         using var contextRead = new TestContext(ContextUtil.GetOptions());
         int entitiesCount = await contextRead.Items.CountAsync(); // = ItemsCountQuery(context);
-        Item firstEntity = contextRead.Items.OrderBy(a => a.ItemId).FirstOrDefault(); // = LastItemQuery(context);
-        Item lastEntity = contextRead.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
+        Item? firstEntity = contextRead.Items.OrderBy(a => a.ItemId).FirstOrDefault(); // = LastItemQuery(context);
+        Item? lastEntity = contextRead.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
 
         Assert.Equal(EntitiesNumber / 2 + (keepEntityItemId != null ? 1 : 0), entitiesCount);
         Assert.NotNull(firstEntity);
-        Assert.Equal("name InsertOrUpdateOrDelete 2", firstEntity.Name);
+        Assert.Equal("name InsertOrUpdateOrDelete 2", firstEntity?.Name);
         Assert.NotNull(lastEntity);
-        Assert.Equal("name InsertOrUpdateOrDelete " + EntitiesNumber, lastEntity.Name);
+        Assert.Equal("name InsertOrUpdateOrDelete " + EntitiesNumber, lastEntity?.Name);
 
         if (keepEntityItemId != null)
         {
@@ -307,7 +305,7 @@ public class EFCoreBulkTestAsync
         if (isBulk)
         {
             var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
-            bulkConfig.SetSynchronizeFilter<Item>(e => e.ItemId != keepEntityItemId.Value);
+            bulkConfig.SetSynchronizeFilter<Item>(e => e.ItemId != keepEntityItemId);
             await context.BulkInsertOrUpdateOrDeleteAsync(new List<Item>(), bulkConfig);
 
             var storedEntities = contextRead.Items.ToList();
@@ -316,7 +314,7 @@ public class EFCoreBulkTestAsync
         }
     }
 
-    private async Task RunUpdateAsync(bool isBulk, DbServer dbServer)
+    private static async Task RunUpdateAsync(bool isBulk, DbServer dbServer)
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -333,9 +331,9 @@ public class EFCoreBulkTestAsync
             await context.BulkUpdateAsync(entities, bulkConfig);
             if (dbServer == DbServer.SQLServer)
             {
-                Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberInserted);
-                Assert.Equal(EntitiesNumber, bulkConfig.StatsInfo.StatsNumberUpdated);
-                Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberDeleted);
+                Assert.Equal(0, bulkConfig.StatsInfo?.StatsNumberInserted);
+                Assert.Equal(EntitiesNumber, bulkConfig.StatsInfo?.StatsNumberUpdated);
+                Assert.Equal(0, bulkConfig.StatsInfo?.StatsNumberDeleted);
             }
         }
         else
@@ -346,14 +344,14 @@ public class EFCoreBulkTestAsync
 
         // TEST
         int entitiesCount = await context.Items.CountAsync();
-        Item lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
+        Item? lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
 
         Assert.Equal(EntitiesNumber, entitiesCount);
         Assert.NotNull(lastEntity);
-        Assert.Equal("Desc Update " + EntitiesNumber, lastEntity.Description);
+        Assert.Equal("Desc Update " + EntitiesNumber, lastEntity?.Description);
     }
 
-    private async Task RunReadAsync(bool isBulk)
+    private static async Task RunReadAsync()
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -384,9 +382,9 @@ public class EFCoreBulkTestAsync
             await context.BulkDeleteAsync(entities, bulkConfig);
             if (dbServer == DbServer.SQLServer)
             {
-                Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberInserted);
-                Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberUpdated);
-                Assert.Equal(EntitiesNumber / 2, bulkConfig.StatsInfo.StatsNumberDeleted);
+                Assert.Equal(0, bulkConfig.StatsInfo?.StatsNumberInserted);
+                Assert.Equal(0, bulkConfig.StatsInfo?.StatsNumberUpdated);
+                Assert.Equal(EntitiesNumber / 2, bulkConfig.StatsInfo?.StatsNumberDeleted);
             }
         }
         else
@@ -397,7 +395,7 @@ public class EFCoreBulkTestAsync
 
         // TEST
         int entitiesCount = await context.Items.CountAsync();
-        Item lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
+        Item? lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
 
         Assert.Equal(0, entitiesCount);
         Assert.Null(lastEntity);

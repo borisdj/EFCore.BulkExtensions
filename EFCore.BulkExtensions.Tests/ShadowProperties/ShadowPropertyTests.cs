@@ -18,7 +18,7 @@ public class ShadowPropertyTests : IDisposable
 
         using var db = new SpDbContext(ContextUtil.GetOptions<SpDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_ShadowProperties"));
 
-        db.BulkInsertOrUpdate(this.GetTestData(db, true, 10000).ToList(), new BulkConfig
+        db.BulkInsertOrUpdate(GetTestData(db, true, 10000).ToList(), new BulkConfig
         {
             EnableShadowProperties = true
         });
@@ -72,7 +72,7 @@ public class ShadowPropertyTests : IDisposable
         Assert.Equal(new DateTime(2021, 02, 14), db.Entry(modelFromDb).Property(SpModel.SpDateTime).CurrentValue);
     }
 
-    private IEnumerable<SpModel> GetTestData(DbContext db, bool useEf, int count)
+    private static IEnumerable<SpModel> GetTestData(DbContext db, bool useEf, int count)
     {
         var data = new List<SpModel>();
 

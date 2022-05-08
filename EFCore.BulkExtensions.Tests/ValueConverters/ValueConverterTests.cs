@@ -18,7 +18,7 @@ public class ValueConverterTests: IDisposable
 
         using var db = new VcDbContext(ContextUtil.GetOptions<VcDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_ValueConverters"));
 
-        db.BulkInsertOrUpdate(this.GetTestData().ToList());
+        db.BulkInsertOrUpdate(GetTestData().ToList());
 
         var connection = db.Database.GetDbConnection();
         connection.Open();
@@ -44,7 +44,7 @@ public class ValueConverterTests: IDisposable
 
         using var db = new VcDbContext(ContextUtil.GetOptions<VcDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_ValueConverters"));
 
-        db.BulkInsertOrUpdate(this.GetTestData().ToList());
+        db.BulkInsertOrUpdate(GetTestData().ToList());
 
         var date = new LocalDate(2020, 3, 21);
         db.VcModels.Where(x => x.LocalDate > date).BatchUpdate(x => new VcModel
@@ -76,7 +76,7 @@ public class ValueConverterTests: IDisposable
 
         using var db = new VcDbContext(ContextUtil.GetOptions<VcDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_ValueConverters"));
 
-        db.BulkInsertOrUpdate(this.GetTestData().ToList());
+        db.BulkInsertOrUpdate(GetTestData().ToList());
 
         var date = new LocalDate(2020, 3, 21);
         db.VcModels.Where(x => x.LocalDate > date).BatchDelete();
@@ -85,7 +85,7 @@ public class ValueConverterTests: IDisposable
         Assert.Equal(0, models);
     }
 
-    private IEnumerable<VcModel> GetTestData()
+    private static IEnumerable<VcModel> GetTestData()
     {
         var one = new VcModel
         {

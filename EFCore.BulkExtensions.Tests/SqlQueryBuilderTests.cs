@@ -127,7 +127,7 @@ public class SqlQueryBuilderUnitTests
         };
         const string nameText = nameof(Item.Name);
 
-        tableInfo.PropertyColumnNamesDict.Add(tableInfo.PrimaryKeysPropertyColumnNameDict.Keys.FirstOrDefault(), tableInfo.PrimaryKeysPropertyColumnNameDict.Values.FirstOrDefault());
+        tableInfo.PropertyColumnNamesDict.Add(tableInfo.PrimaryKeysPropertyColumnNameDict.Keys.First(), tableInfo.PrimaryKeysPropertyColumnNameDict.Values.First());
         tableInfo.PropertyColumnNamesDict.Add(nameText, nameText);
         //compare on all columns (default)
         tableInfo.PropertyColumnNamesCompareDict = tableInfo.PropertyColumnNamesDict;
@@ -151,7 +151,7 @@ public class SqlQueryBuilderUnitTests
         const string nameText = nameof(Item.Name);
         const string timeUpdatedText = nameof(Item.TimeUpdated);
 
-        tableInfo.PropertyColumnNamesDict.Add(tableInfo.PrimaryKeysPropertyColumnNameDict.Keys.FirstOrDefault(), tableInfo.PrimaryKeysPropertyColumnNameDict.Values.FirstOrDefault());
+        tableInfo.PropertyColumnNamesDict.Add(tableInfo.PrimaryKeysPropertyColumnNameDict.Keys.First(), tableInfo.PrimaryKeysPropertyColumnNameDict.Values.First());
         tableInfo.PropertyColumnNamesDict.Add(nameText, nameText);
         tableInfo.PropertyColumnNamesDict.Add(timeUpdatedText, timeUpdatedText);
 
@@ -178,7 +178,7 @@ public class SqlQueryBuilderUnitTests
         const string nameText = nameof(Item.Name);
         const string timeUpdatedText = nameof(Item.TimeUpdated);
 
-        tableInfo.PropertyColumnNamesDict.Add(tableInfo.PrimaryKeysPropertyColumnNameDict.Keys.FirstOrDefault(), tableInfo.PrimaryKeysPropertyColumnNameDict.Values.FirstOrDefault());
+        tableInfo.PropertyColumnNamesDict.Add(tableInfo.PrimaryKeysPropertyColumnNameDict.Keys.First(), tableInfo.PrimaryKeysPropertyColumnNameDict.Values.First());
         tableInfo.PropertyColumnNamesDict.Add(nameText, nameText);
         tableInfo.PropertyColumnNamesDict.Add(timeUpdatedText, timeUpdatedText);
 

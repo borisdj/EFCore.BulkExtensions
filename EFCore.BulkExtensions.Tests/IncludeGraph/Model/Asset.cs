@@ -8,10 +8,10 @@ public class Asset
     public int Id { get; set; }
     public int? ParentAssetId { get; set; }
 
-    public string Description { get; set; }
-    public string Location { get; set; }
+    public string Description { get; set; } = null!;
+    public string Location { get; set; } = null!;
 
-    public Asset ParentAsset { get; set; }
+    public Asset ParentAsset { get; set; } = null!;
     public ICollection<Asset> ChildAssets { get; set; } = new HashSet<Asset>();
     public ICollection<WorkOrder> WorkOrders { get; set; } = new HashSet<WorkOrder>();
     

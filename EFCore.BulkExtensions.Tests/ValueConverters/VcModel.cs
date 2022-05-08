@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace EFCore.BulkExtensions.Tests.ValueConverters;
+﻿namespace EFCore.BulkExtensions.Tests.ValueConverters;
 
 public class VcModel
 {
@@ -35,11 +31,15 @@ public readonly struct LocalDate
 
     public static bool operator >(LocalDate lhs, LocalDate rhs)
     {
+        _ = lhs;
+        _ = rhs;
         return false;
     }
 
     public static bool operator <(LocalDate lhs, LocalDate rhs)
     {
+        _ = lhs;
+        _ = rhs;
         return false;
     }
 }

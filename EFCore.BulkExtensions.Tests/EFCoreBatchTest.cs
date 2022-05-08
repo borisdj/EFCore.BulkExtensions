@@ -11,7 +11,7 @@ namespace EFCore.BulkExtensions.Tests;
 
 public class EFCoreBatchTest
 {
-    protected int EntitiesNumber => 1000;
+    protected static int EntitiesNumber => 1000;
 
     [Theory]
     [InlineData(DbServer.SQLServer)]
@@ -59,16 +59,16 @@ public class EFCoreBatchTest
         RunContainsBatchDelete3();
         RunAnyBatchDelete();
 
-        RunBatchUpdateEnum(dbServer);
-        RunBatchUint(dbServer);
+        RunBatchUpdateEnum();
+        RunBatchUint();
 
         UpdateSetting(SettingsEnum.Sett1, "Val1UPDATE");
         UpdateByteArrayToDefault();
 
         using (var context = new TestContext(ContextUtil.GetOptions()))
         {
-            var firstItem = context.Items.ToList().FirstOrDefault();
-            var lastItem = context.Items.ToList().LastOrDefault();
+            var firstItem = context.Items.ToList().First();
+            var lastItem = context.Items.ToList().Last();
             Assert.Equal(1, deletedEntities);
             Assert.Equal(500, lastItem.ItemId);
             Assert.Equal("Updated", lastItem.Description);
@@ -116,7 +116,7 @@ public class EFCoreBatchTest
         context.Database.ExecuteSqlRaw(deleteTableSql);
     }
 
-    private void RunBatchUpdate(DbServer dbServer)
+    private static void RunBatchUpdate(DbServer dbServer)
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -154,7 +154,7 @@ public class EFCoreBatchTest
         }
     }
     
-    private void RunBatchUpdateEnum(DbServer dbServer)
+    private static void RunBatchUpdateEnum()
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -170,10 +170,10 @@ public class EFCoreBatchTest
         var updateColumns = new List<string>() { nameof(updateValues.StatusId) };
         context.Sources.Where(e => e.StatusId == Status.Init).BatchUpdate(updateValues, updateColumns);
 
-        Assert.Equal(Type.Type2, context.Sources.FirstOrDefault().TypeId); // Should remain 'Type.Type2' and not be changed to default 'Type.Undefined'
+        Assert.Equal(Type.Type2, context.Sources.FirstOrDefault()?.TypeId); // Should remain 'Type.Type2' and not be changed to default 'Type.Undefined'
     }
 
-    private void RunBatchUint(DbServer dbServer)
+    private static void RunBatchUint()
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -182,7 +182,7 @@ public class EFCoreBatchTest
 
     }
 
-    private void RunBatchUpdate_UsingNavigationPropertiesThatTranslateToAnInnerQuery()
+    private static void RunBatchUpdate_UsingNavigationPropertiesThatTranslateToAnInnerQuery()
     {
         var testDbCommandInterceptor = new TestDbCommandInterceptor();
         using var context = new TestContext(ContextUtil.GetOptions(testDbCommandInterceptor));
@@ -190,7 +190,7 @@ public class EFCoreBatchTest
         context.Parents.Where(parent => parent.ParentId < 5 && !string.IsNullOrEmpty(parent.Details.Notes))
             .BatchUpdate(parent => new Parent { Description = parent.Details.Notes ?? "Fallback" });
 
-        var actualSqlExecuted = testDbCommandInterceptor.ExecutedNonQueryCommands?.LastOrDefault().Sql;
+        var actualSqlExecuted = testDbCommandInterceptor.ExecutedNonQueryCommands?.LastOrDefault()?.Sql;
         var expectedSql =
 @"UPDATE p SET  [p].[Description] = (
     SELECT COALESCE([p1].[Notes], N'Fallback')
@@ -200,12 +200,12 @@ FROM [Parent] AS [p]
 LEFT JOIN [ParentDetail] AS [p0] ON [p].[ParentId] = [p0].[ParentId]
 WHERE ([p].[ParentId] < 5) AND ([p0].[Notes] IS NOT NULL AND NOT ([p0].[Notes] LIKE N''))";
 
-        Assert.Equal(expectedSql.Replace("\r\n", "\n"), actualSqlExecuted.Replace("\r\n", "\n"));
+        Assert.Equal(expectedSql.Replace("\r\n", "\n"), actualSqlExecuted?.Replace("\r\n", "\n"));
 
         context.Parents.Where(parent => parent.ParentId == 1)
             .BatchUpdate(parent => new Parent { Value = parent.Children.Where(child => child.IsEnabled).Sum(child => child.Value) });
 
-        actualSqlExecuted = testDbCommandInterceptor.ExecutedNonQueryCommands?.LastOrDefault().Sql;
+        actualSqlExecuted = testDbCommandInterceptor.ExecutedNonQueryCommands?.LastOrDefault()?.Sql;
         expectedSql =
 @"UPDATE p SET  [p].[Value] = (
     SELECT COALESCE(SUM([c].[Value]), 0.0)
@@ -214,7 +214,7 @@ WHERE ([p].[ParentId] < 5) AND ([p0].[Notes] IS NOT NULL AND NOT ([p0].[Notes] L
 FROM [Parent] AS [p]
 WHERE [p].[ParentId] = 1";
 
-        Assert.Equal(expectedSql.Replace("\r\n", "\n"), actualSqlExecuted.Replace("\r\n", "\n"));
+        Assert.Equal(expectedSql.Replace("\r\n", "\n"), actualSqlExecuted?.Replace("\r\n", "\n"));
 
         var newValue = 5;
 
@@ -225,7 +225,7 @@ WHERE [p].[ParentId] = 1";
                 Value = newValue
             });
 
-        actualSqlExecuted = testDbCommandInterceptor.ExecutedNonQueryCommands?.LastOrDefault().Sql;
+        actualSqlExecuted = testDbCommandInterceptor.ExecutedNonQueryCommands?.LastOrDefault()?.Sql;
         expectedSql =
 @"UPDATE p SET  [p].[Description] = (CONVERT(varchar(100), (
     SELECT COALESCE(SUM([c].[Value]), 0.0)
@@ -234,10 +234,10 @@ WHERE [p].[ParentId] = 1";
 FROM [Parent] AS [p]
 WHERE [p].[ParentId] = 1";
 
-        Assert.Equal(expectedSql.Replace("\r\n", "\n"), actualSqlExecuted.Replace("\r\n", "\n"));
+        Assert.Equal(expectedSql.Replace("\r\n", "\n"), actualSqlExecuted?.Replace("\r\n", "\n"));
     }
 
-    private void RunInsert()
+    private static void RunInsert()
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -246,7 +246,7 @@ WHERE [p].[ParentId] = 1";
         {
             var entity = new Item
             {
-                Name = "name " + Guid.NewGuid().ToString().Substring(0, 3),
+                Name = string.Concat("name ", Guid.NewGuid().ToString().AsSpan(0, 3)),
                 Description = "info",
                 Quantity = i % 10,
                 Price = i / (i % 5 + 1),
@@ -260,33 +260,33 @@ WHERE [p].[ParentId] = 1";
         context.SaveChanges();
     }
 
-    private int RunTopBatchDelete()
+    private static int RunTopBatchDelete()
     {
         using var context = new TestContext(ContextUtil.GetOptions());
         return context.Items.Where(a => a.ItemId > 500).Take(1).BatchDelete();
     }
 
-    private void RunBatchDelete()
+    private static void RunBatchDelete()
     {
         using var context = new TestContext(ContextUtil.GetOptions());
         context.Items.Where(a => a.ItemId > 500).BatchDelete();
     }
 
-    private void RunBatchDelete2()
+    private static void RunBatchDelete2()
     {
         using var context = new TestContext(ContextUtil.GetOptions());
         var nameToDelete = "N4";
         context.Items.Where(a => a.Name == nameToDelete).BatchDelete();
     }
 
-    private void RunContainsBatchDelete()
+    private static void RunContainsBatchDelete()
     {
         var descriptionsToDelete = new List<string> { "info" };
         using var context = new TestContext(ContextUtil.GetOptions());
         context.Items.Where(a => descriptionsToDelete.Contains(a.Description)).BatchDelete();
     }
 
-    private void RunContainsBatchDelete2()
+    private static void RunContainsBatchDelete2()
     {
         var descriptionsToDelete = new List<string> { "info" };
         var nameToDelete = "N4";
@@ -294,21 +294,21 @@ WHERE [p].[ParentId] = 1";
         context.Items.Where(a => descriptionsToDelete.Contains(a.Description) || a.Name == nameToDelete).BatchDelete();
     }
 
-    private void RunContainsBatchDelete3()
+    private static void RunContainsBatchDelete3()
     {
         var descriptionsToDelete = new List<string>();
         using var context = new TestContext(ContextUtil.GetOptions());
         context.Items.Where(a => descriptionsToDelete.Contains(a.Description)).BatchDelete();
     }
 
-    private void RunAnyBatchDelete()
+    private static void RunAnyBatchDelete()
     {
         var descriptionsToDelete = new List<string> { "info" };
         using var context = new TestContext(ContextUtil.GetOptions());
         context.Items.Where(a => descriptionsToDelete.Any(toDelete => toDelete == a.Description)).BatchDelete();
     }
 
-    private void RunOrderByDeletes()
+    private static void RunOrderByDeletes()
     {
         using var context = new TestContext(ContextUtil.GetOptions());
         context.Items.OrderBy(x => x.Name).Skip(2).Take(4).BatchDelete();
@@ -316,7 +316,7 @@ WHERE [p].[ParentId] = 1";
         context.Items.OrderBy(x => x.Name).BatchDelete();
     }
 
-    private void RunIncludeDelete()
+    private static void RunIncludeDelete()
     {
         using var context = new TestContext(ContextUtil.GetOptions());
         context.Items.Include(x => x.ItemHistories).Where(x => !x.ItemHistories.Any()).OrderBy(x => x.ItemId).Skip(2).Take(4).BatchDelete();
@@ -324,7 +324,7 @@ WHERE [p].[ParentId] = 1";
         context.Items.Include(x => x.ItemHistories).Where(x => !x.ItemHistories.Any()).BatchDelete();
     }
 
-    private void RunUdttBatch()
+    private static void RunUdttBatch()
     {
         var userRoles = (
             from userId in Enumerable.Range(1, 5)
@@ -387,7 +387,7 @@ WHERE [p].[ParentId] = 1";
         }
     }
 
-    private IQueryable<UdttIntInt> GetQueryableUdtt(TestContext context, IReadOnlyList<UdttIntInt> list)
+    private static IQueryable<UdttIntInt> GetQueryableUdtt(TestContext context, IReadOnlyList<UdttIntInt> list)
     {
         var parameterName = $"@p_{Guid.NewGuid():n}";
         var dt = new DataTable();
@@ -401,7 +401,7 @@ WHERE [p].[ParentId] = 1";
         return context.Set<UdttIntInt>().FromSqlRaw($@"select * from {parameterName}", parameter);
     }
 
-    private void UpdateSetting(SettingsEnum settings, object value)
+    private static void UpdateSetting(SettingsEnum settings, object value)
     {
         using var context = new TestContext(ContextUtil.GetOptions());
         context.Truncate<Setting>();
@@ -415,7 +415,7 @@ WHERE [p].[ParentId] = 1";
         context.Truncate<Setting>();
     }
 
-    private void UpdateByteArrayToDefault()
+    private static void UpdateByteArrayToDefault()
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
