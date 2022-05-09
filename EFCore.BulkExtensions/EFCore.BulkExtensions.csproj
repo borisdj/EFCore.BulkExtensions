@@ -3,7 +3,9 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <Title>EFCore.BulkExtensions</Title>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <Version>6.4.4</Version>
+	<Nullable>enable</Nullable>	  
     <Authors>borisdj</Authors>
     <Description>EntityFramework EF Core Bulk Batch Extensions for Insert Update Delete Read (CRUD) operations on SQL Server, PostgreSQL, SQLite</Description>
     <PackageProjectUrl>https://github.com/borisdj/EFCore.BulkExtensions</PackageProjectUrl>

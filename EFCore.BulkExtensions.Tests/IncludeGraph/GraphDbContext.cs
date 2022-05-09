@@ -2,53 +2,52 @@
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics.CodeAnalysis;
 
-namespace EFCore.BulkExtensions.Tests.ShadowProperties
+namespace EFCore.BulkExtensions.Tests.ShadowProperties;
+
+public class GraphDbContext : DbContext
 {
-    public class GraphDbContext : DbContext
+    public GraphDbContext([NotNull] DbContextOptions options) : base(options)
     {
-        public GraphDbContext([NotNull] DbContextOptions options) : base(options)
+        this.Database.EnsureCreated();
+    }
+
+    public DbSet<WorkOrder> WorkOrders { get; set; } = null!;
+    public DbSet<WorkOrderSpare> WorkOrderSpares { get; set; } = null!;
+    public DbSet<Asset> Assets { get; set; } = null!;
+    public DbSet<Spare> Spares { get; set; } = null!;
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<Asset>(cfg =>
         {
-            this.Database.EnsureCreated();
-        }
+            cfg.HasKey(y => y.Id);
 
-        public DbSet<WorkOrder> WorkOrders { get; set; }
-        public DbSet<WorkOrderSpare> WorkOrderSpares { get; set; }
-        public DbSet<Asset> Assets { get; set; }
-        public DbSet<Spare> Spares { get; set; }
+            cfg.HasOne(y => y.ParentAsset).WithMany(y => y.ChildAssets);
+            cfg.HasMany(y => y.WorkOrders).WithOne(y => y.Asset).IsRequired();
+        });
 
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        modelBuilder.Entity<WorkOrder>(cfg =>
         {
-            base.OnModelCreating(modelBuilder);
+            cfg.HasKey(y => y.Id);
 
-            modelBuilder.Entity<Asset>(cfg =>
-            {
-                cfg.HasKey(y => y.Id);
+            cfg.HasMany(y => y.WorkOrderSpares).WithOne(y => y.WorkOrder);
+            cfg.HasOne(y => y.Asset).WithMany(y => y.WorkOrders).IsRequired();
+        });
 
-                cfg.HasOne(y => y.ParentAsset).WithMany(y => y.ChildAssets);
-                cfg.HasMany(y => y.WorkOrders).WithOne(y => y.Asset).IsRequired();
-            });
+        modelBuilder.Entity<WorkOrderSpare>(cfg =>
+        {
+            cfg.HasKey(y => y.Id);
 
-            modelBuilder.Entity<WorkOrder>(cfg =>
-            {
-                cfg.HasKey(y => y.Id);
+            cfg.HasOne(y => y.WorkOrder).WithMany(y => y.WorkOrderSpares).IsRequired();
+            cfg.HasOne(y => y.Spare).WithMany().IsRequired();
+        });
 
-                cfg.HasMany(y => y.WorkOrderSpares).WithOne(y => y.WorkOrder);
-                cfg.HasOne(y => y.Asset).WithMany(y => y.WorkOrders).IsRequired();
-            });
+        modelBuilder.Entity<Spare>(cfg =>
+        {
+            cfg.HasKey(y => y.Id);
+        });
 
-            modelBuilder.Entity<WorkOrderSpare>(cfg =>
-            {
-                cfg.HasKey(y => y.Id);
-
-                cfg.HasOne(y => y.WorkOrder).WithMany(y => y.WorkOrderSpares).IsRequired();
-                cfg.HasOne(y => y.Spare).WithMany().IsRequired();
-            });
-
-            modelBuilder.Entity<Spare>(cfg =>
-            {
-                cfg.HasKey(y => y.Id);
-            });
-
-        }
     }
 }
