@@ -25,7 +25,7 @@ public static class SqlQueryBuilderSqlite
     /// <param name="tableInfo"></param>
     /// <param name="operationType"></param>
     /// <param name="tableName"></param>
-    public static string InsertIntoTable(TableInfo tableInfo, OperationType operationType, string tableName = null)
+    public static string InsertIntoTable(TableInfo tableInfo, OperationType operationType, string? tableName = null)
     {
         tableName ??= tableInfo.InsertToTempTable ? tableInfo.TempTableName : tableInfo.TableName;
 
@@ -70,12 +70,13 @@ public static class SqlQueryBuilderSqlite
         return q + ";";
     }
 
+
     /// <summary>
     /// Generates SQL query to update table record data
     /// </summary>
     /// <param name="tableInfo"></param>
     /// <param name="tableName"></param>
-    public static string UpdateSetTable(TableInfo tableInfo, string tableName = null)
+    public static string UpdateSetTable(TableInfo tableInfo, string? tableName = null)
     {
         tableName ??= tableInfo.TableName;
         List<string> columnsList = tableInfo.PropertyColumnNamesDict.Values.ToList();
@@ -94,7 +95,7 @@ public static class SqlQueryBuilderSqlite
     /// </summary>
     /// <param name="tableInfo"></param>
     /// <param name="tableName"></param>
-    public static string DeleteFromTable(TableInfo tableInfo, string tableName = null)
+    public static string DeleteFromTable(TableInfo tableInfo, string? tableName = null)
     {
         tableName ??= tableInfo.TableName;
         List<string> primaryKeys = tableInfo.PrimaryKeysPropertyColumnNameDict.Select(k => tableInfo.PropertyColumnNamesDict[k.Key]).ToList();

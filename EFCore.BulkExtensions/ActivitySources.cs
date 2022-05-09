@@ -16,7 +16,7 @@ public static class ActivitySources
     /// <param name="operationType"></param>
     /// <param name="entitiesCount"></param>
     /// <returns></returns>
-    public static Activity StartExecuteActivity(OperationType operationType, int entitiesCount)
+    public static Activity? StartExecuteActivity(OperationType operationType, int entitiesCount)
     {
         var activity = ActivitySource.StartActivity("EFCore.BulkExtensions.BulkExecute");
         if (activity != null)

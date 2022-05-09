@@ -12,9 +12,9 @@ namespace EFCore.BulkExtensions.SqlAdapters;
 public class ExtractedTableAlias
 {
 #pragma warning disable CS1591 // No XML comments required
-    public string TableAlias { get; set; }
-    public string TableAliasSuffixAs { get; set; }
-    public string Sql { get; set; }
+    public string TableAlias { get; set; } = null!;
+    public string TableAliasSuffixAs { get; set; } = null!;
+    public string Sql { get; set; } = null!;
 #pragma warning restore CS1591 // No XML comments required
 }
 

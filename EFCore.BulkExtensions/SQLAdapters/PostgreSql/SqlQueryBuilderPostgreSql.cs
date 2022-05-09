@@ -33,7 +33,7 @@ public static class SqlQueryBuilderPostgreSql
     /// <param name="tableInfo"></param>
     /// <param name="operationType"></param>
     /// <param name="tableName"></param>
-    public static string InsertIntoTable(TableInfo tableInfo, OperationType operationType, string tableName = null)
+    public static string InsertIntoTable(TableInfo tableInfo, OperationType operationType, string? tableName = null)
     {
         tableName ??= tableInfo.InsertToTempTable ? tableInfo.FullTempTableName : tableInfo.FullTableName;
         tableName = tableName.Replace("[", @"""").Replace("]", @"""");
@@ -111,7 +111,7 @@ public static class SqlQueryBuilderPostgreSql
         q = q.Replace("[", @"""").Replace("]", @"""");
         q += ";";
 
-        Dictionary<string, string> sourceDestinationMappings = tableInfo.BulkConfig.CustomSourceDestinationMappingColumns;
+        Dictionary<string, string>? sourceDestinationMappings = tableInfo.BulkConfig.CustomSourceDestinationMappingColumns;
         if (tableInfo.BulkConfig.CustomSourceTableName != null && sourceDestinationMappings != null && sourceDestinationMappings.Count > 0)
         {
             var textSelect = "SELECT ";

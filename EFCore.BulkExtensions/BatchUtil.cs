@@ -3,6 +3,7 @@ using EFCore.BulkExtensions.SQLAdapters.PostgreSql;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.Internal;
 using System;
@@ -125,12 +126,12 @@ public static class BatchUtil
     /// <param name="updateValues"></param>
     /// <param name="updateColumns"></param>
     /// <returns></returns>
-    public static (string, List<object>) GetSqlUpdate(IQueryable query, DbContext context, Type type, object updateValues, List<string> updateColumns)
+    public static (string, List<object>) GetSqlUpdate(IQueryable query, DbContext context, Type type, object? updateValues, List<string>? updateColumns)
     {
         var (sql, tableAlias, tableAliasSufixAs, topStatement, leadingComments, innerParameters) = GetBatchSql(query, context, isUpdate: true);
         var sqlParameters = new List<object>(innerParameters);
 
-        string sqlSET = GetSqlSetSegment(context, updateValues.GetType(), updateValues, updateColumns, sqlParameters);
+        string sqlSET = GetSqlSetSegment(context, updateValues?.GetType(), updateValues, updateColumns, sqlParameters);
 
         sqlParameters = ReloadSqlParameters(context, sqlParameters); // Sqlite requires SqliteParameters
 
@@ -289,13 +290,13 @@ public static class BatchUtil
     /// <param name="updateColumns"></param>
     /// <param name="parameters"></param>
     /// <returns></returns>
-    public static string GetSqlSetSegment(DbContext context, Type updateValuesType, object updateValues, List<string> updateColumns, List<object> parameters)
+    public static string GetSqlSetSegment(DbContext context, Type? updateValuesType, object? updateValues, List<string>? updateColumns, List<object> parameters)
     {
         var tableInfo = TableInfo.CreateInstance(context, updateValuesType, new List<object>(), OperationType.Read, new BulkConfig());
-        return GetSqlSetSegment(tableInfo, updateValuesType, updateValues, Activator.CreateInstance(updateValuesType), updateColumns, parameters);
+        return GetSqlSetSegment(context, tableInfo, updateValuesType, updateValues, updateValuesType is null ? null : Activator.CreateInstance(updateValuesType), updateColumns, parameters);
     }
 
-    private static string GetSqlSetSegment(TableInfo tableInfo, Type updateValuesType, object updateValues, object defaultValues, List<string> updateColumns, List<object> parameters)
+    private static string GetSqlSetSegment(DbContext context, TableInfo tableInfo, Type? updateValuesType, object? updateValues, object? defaultValues, List<string>? updateColumns, List<object> parameters)
     {
         string sql = string.Empty;
         foreach (var propertyNameColumnName in tableInfo.PropertyColumnNamesDict)
@@ -303,19 +304,23 @@ public static class BatchUtil
             string propertyName = propertyNameColumnName.Key;
             string columnName = propertyNameColumnName.Value;
             var pArray = propertyName.Split(new char[] { '.' });
-            Type lastType = updateValuesType;
-            PropertyInfo property = lastType.GetProperty(pArray[0]);
+            Type? lastType = updateValuesType;
+            PropertyInfo? property = lastType?.GetProperty(pArray[0]);
             if (property != null)
             {
-                object propertyUpdateValue = property.GetValue(updateValues);
-                object propertyDefaultValue = property.GetValue(defaultValues);
+                object? propertyUpdateValue = property.GetValue(updateValues);
+                object? propertyDefaultValue = property.GetValue(defaultValues);
+
                 for (int i = 1; i < pArray.Length; i++)
                 {
-                    lastType = property.PropertyType;
-                    property = lastType.GetProperty(pArray[i]);
-                    propertyUpdateValue = propertyUpdateValue != null ? property.GetValue(propertyUpdateValue) : propertyUpdateValue;
-                    var lastDefaultValues = lastType.Assembly.CreateInstance(lastType.FullName);
-                    propertyDefaultValue = property.GetValue(lastDefaultValues);
+                    lastType = property?.PropertyType;
+                    property = lastType?.GetProperty(pArray[i]);
+                    propertyUpdateValue = propertyUpdateValue != null
+                        ? property?.GetValue(propertyUpdateValue)
+                        : propertyUpdateValue;
+
+                    var lastDefaultValues = lastType!.Assembly.CreateInstance(lastType.FullName!);
+                    propertyDefaultValue = property?.GetValue(lastDefaultValues);
                 }
 
                 if (tableInfo.ConvertibleColumnConverterDict.ContainsKey(columnName))
@@ -334,16 +339,23 @@ public static class BatchUtil
                 {
                     sql += $"[{columnName}] = @{columnName}, ";
                     var parameterName = $"@{columnName}";
-                    IDbDataParameter param = TryCreateRelationalMappingParameter(columnName, parameterName, propertyUpdateValue, tableInfo);
+                    IDbDataParameter? param = TryCreateRelationalMappingParameter(
+                        columnName,
+                        parameterName,
+                        propertyUpdateValue,
+                        tableInfo);
+
                     if (param == null)
                     {
                         propertyUpdateValue ??= DBNull.Value;
+
                         param = new SqlParameter
                         {
                             ParameterName = $"@{columnName}",
-                            Value = propertyUpdateValue,
+                            Value = propertyUpdateValue
                         };
-                        if (!isDifferentFromDefault && propertyUpdateValue == DBNull.Value && property.PropertyType == typeof(byte[])) // needed only when having complex type property to be updated to default 'null'
+                        if (!isDifferentFromDefault && propertyUpdateValue == DBNull.Value
+                            && property?.PropertyType == typeof(byte[])) // needed only when having complex type property to be updated to default 'null'
                         {
                             param.DbType = DbType.Binary; // fix for ByteArray since implicit conversion nvarchar to varbinary(max) is not allowed
                         }
@@ -368,10 +380,10 @@ public static class BatchUtil
     /// <param name="expression"></param>
     /// <param name="columnName"></param>
     /// <exception cref="NotSupportedException"></exception>
-    public static void CreateUpdateBody(BatchUpdateCreateBodyData createBodyData, Expression expression, string columnName = null)
+    public static void CreateUpdateBody(BatchUpdateCreateBodyData createBodyData, Expression expression, string? columnName = null)
     {
         var rootTypeTableInfo = createBodyData.GetTableInfoForType(createBodyData.RootType);
-        var columnNameValueDict = rootTypeTableInfo.PropertyColumnNamesDict;
+        var columnNameValueDict = rootTypeTableInfo?.PropertyColumnNamesDict;
         var tableAlias = createBodyData.TableAlias;
         var sqlColumns = createBodyData.UpdateColumnsSql;
         var sqlParameters = createBodyData.SqlParameters;
@@ -382,8 +394,8 @@ public static class BatchUtil
             {
                 if (item is MemberAssignment assignment)
                 {
-                    string currentColumnName;
-                    if (columnNameValueDict.TryGetValue(assignment.Member.Name, out string value))
+                    string? currentColumnName;
+                    if (columnNameValueDict?.TryGetValue(assignment.Member.Name, out string? value) ?? false)
                         currentColumnName = value;
                     else
                         currentColumnName = assignment.Member.Name;
@@ -404,11 +416,11 @@ public static class BatchUtil
             return;
         }
 
-        if (expression is MemberExpression memberExpression 
+        if (expression is MemberExpression memberExpression
             && memberExpression.Expression is ParameterExpression parameterExpression
             && parameterExpression.Name == createBodyData.RootInstanceParameterName)
         {
-            if (columnNameValueDict.TryGetValue(memberExpression.Member.Name, out string value))
+            if (columnNameValueDict?.TryGetValue(memberExpression.Member.Name, out string? value) ?? false)
             {
                 sqlColumns.Append($" [{tableAlias}].[{value}]");
             }
@@ -501,7 +513,7 @@ public static class BatchUtil
                     sqlColumns.Append(')');
                     break;
 
-                default: 
+                default:
                     throw new NotSupportedException($"{nameof(BatchUtil)}.{nameof(CreateUpdateBody)}(..) is not supported for a binary exression of type {binaryExpression.NodeType}");
             }
 
@@ -518,20 +530,20 @@ public static class BatchUtil
     /// </summary>
     /// <param name="query"></param>
     /// <returns></returns>
-    public static DbContext GetDbContext(IQueryable query)
+    public static DbContext? GetDbContext(IQueryable query)
     {
 #pragma warning disable EF1001 // Internal EF Core API usage.
         const BindingFlags bindingFlags = BindingFlags.NonPublic | BindingFlags.Instance;
-        var queryCompiler = typeof(EntityQueryProvider).GetField("_queryCompiler", bindingFlags).GetValue(query.Provider);
-        var queryContextFactory = queryCompiler.GetType().GetField("_queryContextFactory", bindingFlags).GetValue(queryCompiler);
+        var queryCompiler = typeof(EntityQueryProvider).GetField("_queryCompiler", bindingFlags)?.GetValue(query.Provider);
+        var queryContextFactory = queryCompiler?.GetType().GetField("_queryContextFactory", bindingFlags)?.GetValue(queryCompiler);
 
-        var dependencies = typeof(RelationalQueryContextFactory).GetProperty("Dependencies", bindingFlags).GetValue(queryContextFactory);
+        var dependencies = typeof(RelationalQueryContextFactory).GetProperty("Dependencies", bindingFlags)?.GetValue(queryContextFactory);
 
-        var queryContextDependencies = typeof(DbContext).Assembly.GetType(typeof(QueryContextDependencies).FullName);
-        var stateManagerProperty = queryContextDependencies.GetProperty("StateManager", bindingFlags | BindingFlags.Public).GetValue(dependencies);
-        var stateManager = (IStateManager)stateManagerProperty;
+        var queryContextDependencies = typeof(DbContext).Assembly.GetType(typeof(QueryContextDependencies).FullName!);
+        var stateManagerProperty = queryContextDependencies?.GetProperty("StateManager", bindingFlags | BindingFlags.Public)?.GetValue(dependencies);
+        var stateManager = (IStateManager?)stateManagerProperty;
 
-        return stateManager.Context;
+        return stateManager?.Context;
 #pragma warning restore EF1001
     }
 
@@ -593,10 +605,11 @@ public static class BatchUtil
         return (leadingCommentsBuilder.ToString(), mainSqlQuery);
     }
 
-    private static void AddSqlParameter(StringBuilder sqlColumns, List<object> sqlParameters, TableInfo tableInfo, string columnName, object value)
+    private static void AddSqlParameter(StringBuilder sqlColumns, List<object> sqlParameters, TableInfo? tableInfo, string? columnName, object? value)
     {
         var paramName = $"@param_{sqlParameters.Count}";
-        if (columnName != null && tableInfo.ConvertibleColumnConverterDict.TryGetValue(columnName, out var valueConverter))
+
+        if (columnName != null && (tableInfo?.ConvertibleColumnConverterDict.TryGetValue(columnName, out var valueConverter) ?? false))
         {
             value = valueConverter.ConvertToProvider.Invoke(value);
         }
@@ -605,9 +618,10 @@ public static class BatchUtil
         var sqlParameter = TryCreateRelationalMappingParameter(columnName, paramName, value, tableInfo);
         if (sqlParameter == null)
         {
-            sqlParameter = new Microsoft.Data.SqlClient.SqlParameter(paramName, value ?? DBNull.Value);
-            var columnType = tableInfo.ColumnNamesTypesDict[columnName];
-            if (value == null && columnType.Contains(DbType.Binary.ToString(), StringComparison.OrdinalIgnoreCase)) //"varbinary(max)".Contains("binary")
+            sqlParameter = new SqlParameter(paramName, value ?? DBNull.Value);
+            var columnType = columnName is null ? null : tableInfo?.ColumnNamesTypesDict[columnName];
+            if (value == null
+                && (columnType?.Contains(DbType.Binary.ToString(), StringComparison.OrdinalIgnoreCase) ?? false)) //"varbinary(max)".Contains("binary")
             {
                 sqlParameter.DbType = DbType.Binary; // fix for ByteArray since implicit conversion nvarchar to varbinary(max) is not allowed
             }
@@ -617,7 +631,7 @@ public static class BatchUtil
         sqlColumns.Append($" {paramName}");
     }
 
-    private static readonly MethodInfo DbContextSetMethodInfo = 
+    private static readonly MethodInfo? DbContextSetMethodInfo =
         typeof(DbContext).GetMethod(nameof(DbContext.Set), BindingFlags.Public | BindingFlags.Instance, null, Array.Empty<Type>(), null);
 
     /// <summary>
@@ -629,20 +643,21 @@ public static class BatchUtil
     /// Attempt to create a DbParameter using the <see cref="Microsoft.EntityFrameworkCore.Storage.RelationalTypeMapping.CreateParameter(DbCommand, string, object, bool?)"/>
     /// call for the specified column name.
     /// </summary>
-    public static DbParameter TryCreateRelationalMappingParameter(string columnName, string parameterName, object value, TableInfo tableInfo)
+    public static DbParameter? TryCreateRelationalMappingParameter(string? columnName, string parameterName, object? value, TableInfo? tableInfo)
     {
         if (columnName == null)
             return null;
 
-        if (!tableInfo.ColumnToPropertyDictionary.TryGetValue(columnName, out var propertyInfo))
+        IProperty? propertyInfo = null;
+        if (!tableInfo?.ColumnToPropertyDictionary.TryGetValue(columnName, out propertyInfo) ?? false)
             return null;
 
         try
         {
-            var relationalTypeMapping = propertyInfo.GetRelationalTypeMapping();
+            var relationalTypeMapping = propertyInfo?.GetRelationalTypeMapping();
 
-            using var dbCommand = new Microsoft.Data.SqlClient.SqlCommand();
-            return relationalTypeMapping.CreateParameter(dbCommand, parameterName, value, propertyInfo.IsNullable);
+            using var dbCommand = new SqlCommand();
+            return relationalTypeMapping?.CreateParameter(dbCommand, parameterName, value, propertyInfo?.IsNullable);
         }
         catch (Exception) { }
 
@@ -691,14 +706,14 @@ public static class BatchUtil
                     if (currentMemberExpression.Expression is ParameterExpression finalExpression
                         && finalExpression.Name == createBodyData.RootInstanceParameterName)
                     {
-                        if (rootTypeTableInfo.AllNavigationsDictionary.TryGetValue(currentMemberExpression.Member.Name, out _))
+                        if (rootTypeTableInfo?.AllNavigationsDictionary.TryGetValue(currentMemberExpression.Member.Name, out _) ?? false)
                         {
                             rootParameterExpressionNodes.Add(new ExpressionNode(finalExpression, currentExpressionNode));
                             break;
                         }
                     }
 
-                    expressionStack.Push(new ExpressionNode(currentMemberExpression.Expression, currentExpressionNode));
+                    expressionStack.Push(new ExpressionNode(currentMemberExpression.Expression!, currentExpressionNode));
                     break;
 
                 case MethodCallExpression currentMethodCallExpresion:
@@ -751,40 +766,43 @@ public static class BatchUtil
         }
 
         var originalParameterNode = rootParameterExpressionNodes.FirstOrDefault();
-        var firstNavigationNode = originalParameterNode.Parent;
-        var firstMemberExpression = (MemberExpression)firstNavigationNode.Expression;
-        var firstNavigation = rootTypeTableInfo.AllNavigationsDictionary[firstMemberExpression.Member.Name];
-        var isFirstNavigationACollectionType = firstNavigation.IsCollection;
+        var firstNavigationNode = originalParameterNode?.Parent;
+        var firstMemberExpression = (MemberExpression?)firstNavigationNode?.Expression;
+        var firstNavigation = firstMemberExpression?.Member.Name is null ? null : rootTypeTableInfo?.AllNavigationsDictionary[firstMemberExpression?.Member.Name!];
+        var isFirstNavigationACollectionType = firstNavigation?.IsCollection;
 
-        var firstNavigationTargetType = firstNavigation.TargetEntityType;
-        var firstNavigationType = firstNavigationTargetType.ClrType;
-        var firstNavigationTableName = firstNavigationTargetType.GetTableName();
+        var firstNavigationTargetType = firstNavigation?.TargetEntityType;
+        var firstNavigationType = firstNavigationTargetType?.ClrType;
+        var firstNavigationTableName = firstNavigationTargetType?.GetTableName();
 
-        IQueryable innerQueryable;
-        if (isFirstNavigationACollectionType)
+        IQueryable? innerQueryable;
+        if (isFirstNavigationACollectionType == true)
         {
-            var dbSetGenericMethod = DbContextSetMethodInfo.MakeGenericMethod(createBodyData.RootType);
-            var dbSetQueryable = (IQueryable)dbSetGenericMethod.Invoke(createBodyData.DbContext, null);
+            var dbSetGenericMethod = DbContextSetMethodInfo?.MakeGenericMethod(createBodyData.RootType);
+            var dbSetQueryable = (IQueryable?)dbSetGenericMethod?.Invoke(createBodyData.DbContext, null);
 
-            var rootParameter = originalParameterNode.Expression as ParameterExpression;
-            innerQueryable = dbSetQueryable.Provider.CreateQuery(Expression.Call(
+            var rootParameter = originalParameterNode?.Expression as ParameterExpression;
+            innerQueryable = dbSetQueryable?.Provider.CreateQuery(Expression.Call(
                 null,
                 QueryableMethods.Select.MakeGenericMethod(createBodyData.RootType, memberPropertyInfo.PropertyType),
                 dbSetQueryable.Expression,
-                Expression.Lambda(expression, rootParameter)
+                Expression.Lambda(expression, rootParameter!)
             ));
         }
         else
         {
-            var dbSetGenericMethod = DbContextSetMethodInfo.MakeGenericMethod(firstNavigationType);
-            var dbSetQueryable = (IQueryable)dbSetGenericMethod.Invoke(createBodyData.DbContext, null);
+            var dbSetGenericMethod = firstNavigationType is null ? null : DbContextSetMethodInfo?.MakeGenericMethod(firstNavigationType);
+            var dbSetQueryable = (IQueryable?)dbSetGenericMethod?.Invoke(createBodyData.DbContext, null);
 
-            var rootParamterName = $"x{firstMemberExpression.Member.Name}";
-            var rootParameter = Expression.Parameter(firstNavigationType, rootParamterName);
+            var rootParamterName = $"x{firstMemberExpression?.Member.Name}";
+            var rootParameter = firstNavigationType is null
+                ? throw new ArgumentException("Unable to create root paramater if Navigation type is null")
+                : Expression.Parameter(firstNavigationType, rootParamterName);
 
             Expression lambdaBody = rootParameter;
             var previousNode = firstNavigationNode;
-            var currentNode = previousNode.Parent;
+            var currentNode = previousNode?.Parent;
+
             while (currentNode != null)
             {
                 var wasNodeHandled = false;
@@ -796,7 +814,7 @@ public static class BatchUtil
                         break;
 
                     case MethodCallExpression currentMethodCallExpression:
-                        if (currentMethodCallExpression.Object == previousNode.Expression)
+                        if (currentMethodCallExpression.Object == previousNode?.Expression)
                         {
                             lambdaBody = Expression.Call(lambdaBody, currentMethodCallExpression.Method, currentMethodCallExpression.Arguments);
                             wasNodeHandled = true;
@@ -807,7 +825,7 @@ public static class BatchUtil
                             var newArguments = new List<Expression>();
                             foreach (var nextArgument in currentMethodCallExpression.Arguments)
                             {
-                                if (nextArgument == previousNode.Expression)
+                                if (nextArgument == previousNode?.Expression)
                                 {
                                     newArguments.Add(lambdaBody);
                                     didFindArgumentToSwap = true;
@@ -826,7 +844,7 @@ public static class BatchUtil
                         break;
 
                     case UnaryExpression currentUnaryExpression:
-                        if (currentUnaryExpression.Operand == previousNode.Expression)
+                        if (currentUnaryExpression.Operand == previousNode?.Expression)
                         {
                             lambdaBody = Expression.MakeUnary(currentUnaryExpression.NodeType, lambdaBody, currentUnaryExpression.Type);
                             wasNodeHandled = true;
@@ -834,12 +852,12 @@ public static class BatchUtil
                         break;
 
                     case BinaryExpression currentBinaryExpression:
-                        if (currentBinaryExpression.Left == previousNode.Expression)
+                        if (currentBinaryExpression.Left == previousNode?.Expression)
                         {
                             lambdaBody = Expression.MakeBinary(currentBinaryExpression.NodeType, lambdaBody, currentBinaryExpression.Right);
                             wasNodeHandled = true;
                         }
-                        else if (currentBinaryExpression.Right == previousNode.Expression)
+                        else if (currentBinaryExpression.Right == previousNode?.Expression)
                         {
                             lambdaBody = Expression.MakeBinary(currentBinaryExpression.NodeType, currentBinaryExpression.Left, lambdaBody);
                             wasNodeHandled = true;
@@ -847,7 +865,7 @@ public static class BatchUtil
                         break;
 
                     case LambdaExpression currentLambdaExpression:
-                        if (currentLambdaExpression.Body == previousNode.Expression)
+                        if (currentLambdaExpression.Body == previousNode?.Expression)
                         {
                             lambdaBody = Expression.Lambda(lambdaBody, currentLambdaExpression.Parameters);
                             wasNodeHandled = true;
@@ -855,17 +873,17 @@ public static class BatchUtil
                         break;
 
                     case ConditionalExpression currentConditionalExpression:
-                        if (currentConditionalExpression.Test == previousNode.Expression)
+                        if (currentConditionalExpression.Test == previousNode?.Expression)
                         {
                             lambdaBody = Expression.Condition(lambdaBody, currentConditionalExpression.IfTrue, currentConditionalExpression.IfFalse, currentConditionalExpression.Type);
                             wasNodeHandled = true;
                         }
-                        else if (currentConditionalExpression.IfTrue == previousNode.Expression)
+                        else if (currentConditionalExpression.IfTrue == previousNode?.Expression)
                         {
                             lambdaBody = Expression.Condition(currentConditionalExpression.Test, lambdaBody, currentConditionalExpression.IfFalse, currentConditionalExpression.Type);
                             wasNodeHandled = true;
                         }
-                        else if (currentConditionalExpression.IfFalse == previousNode.Expression)
+                        else if (currentConditionalExpression.IfFalse == previousNode?.Expression)
                         {
                             lambdaBody = Expression.Condition(currentConditionalExpression.Test, currentConditionalExpression.IfTrue, lambdaBody, currentConditionalExpression.Type);
                             wasNodeHandled = true;
@@ -885,7 +903,7 @@ public static class BatchUtil
                 currentNode = currentNode.Parent;
             }
 
-            innerQueryable = dbSetQueryable.Provider.CreateQuery(Expression.Call(
+            innerQueryable = dbSetQueryable?.Provider.CreateQuery(Expression.Call(
                 null,
                 QueryableMethods.Select.MakeGenericMethod(firstNavigationType, memberPropertyInfo.PropertyType),
                 dbSetQueryable.Expression,
@@ -893,11 +911,17 @@ public static class BatchUtil
             ));
         }
 
+        if (innerQueryable is null)
+        {
+            throw new ArgumentException("InnerQuerable is null");
+        }
+
         var (innerSql, innerSqlParameters) = innerQueryable.ToParametrizedSql();
+
         innerSql = innerSql.Trim();
 
-        string firstNavigationAlias = null;
-        var rootTableNameWithBrackets = $"[{rootTypeTableInfo.TableName}]";
+        string? firstNavigationAlias = null;
+        var rootTableNameWithBrackets = $"[{rootTypeTableInfo?.TableName}]";
         var rootTableAliasWithBrackets = $"[{createBodyData.TableAlias}]";
         var firstNavigationTableNameWithBrackets = $"[{firstNavigationTableName}]";
         foreach (Match match in TableAliasPattern.Matches(innerSql))
@@ -905,7 +929,7 @@ public static class BatchUtil
             var tableName = match.Groups[1].Value;
             var originalAlias = match.Groups[2].Value;
 
-            if (isFirstNavigationACollectionType
+            if ((isFirstNavigationACollectionType ?? false)
                 && tableName.Equals(rootTableNameWithBrackets, StringComparison.OrdinalIgnoreCase)
                 && originalAlias.Equals(rootTableAliasWithBrackets, StringComparison.OrdinalIgnoreCase))
             {
@@ -944,10 +968,9 @@ public static class BatchUtil
             }
         }
 
-        if (isFirstNavigationACollectionType)
+        if (isFirstNavigationACollectionType ?? false)
         {
             innerSql = innerSql[6..].Trim();
-            
             if (innerSql.StartsWith("("))
             {
                 createBodyData.UpdateColumnsSql.Append(' ').Append(innerSql);
@@ -962,37 +985,37 @@ public static class BatchUtil
         }
 
         var whereClauseCondition = new StringBuilder("WHERE ");
-        var dependencyKeyProperties = firstNavigation.ForeignKey.Properties;
-        var principalKeyProperties = firstNavigation.ForeignKey.PrincipalKey.Properties;
-        var navigationColumnFastLookup = createBodyData.GetTableInfoForType(firstNavigationType).PropertyColumnNamesDict;
-        var columnNameValueDict = rootTypeTableInfo.PropertyColumnNamesDict;
-        var rootTableAlias = createBodyData.TableAlias;
-        if (firstNavigation.IsOnDependent)
+        var dependencyKeyProperties = firstNavigation?.ForeignKey.Properties;
+        var principalKeyProperties = firstNavigation?.ForeignKey.PrincipalKey.Properties;
+        var navigationColumnFastLookup = createBodyData?.GetTableInfoForType(firstNavigationType!)?.PropertyColumnNamesDict;
+        var columnNameValueDict = rootTypeTableInfo?.PropertyColumnNamesDict;
+        var rootTableAlias = createBodyData?.TableAlias;
+        if (firstNavigation?.IsOnDependent ?? false)
         {
-            for (int keyIndex = 0; keyIndex < dependencyKeyProperties.Count; ++keyIndex)
+            for (int keyIndex = 0; keyIndex < dependencyKeyProperties?.Count; ++keyIndex)
             {
                 if (keyIndex > 0)
                 {
                     whereClauseCondition.Append(" AND ");
                 }
 
-                var dependencyColumnName = navigationColumnFastLookup[dependencyKeyProperties[keyIndex].Name];
-                var principalColumnName = columnNameValueDict[principalKeyProperties[keyIndex].Name];
+                var dependencyColumnName = navigationColumnFastLookup![dependencyKeyProperties[keyIndex].Name];
+                var principalColumnName = columnNameValueDict![principalKeyProperties![keyIndex].Name];
                 whereClauseCondition.Append(firstNavigationAlias).Append(".[").Append(principalColumnName).Append("] = [")
                     .Append(rootTableAlias).Append("].[").Append(dependencyColumnName).Append(']');
             }
         }
         else
         {
-            for (int keyIndex = 0; keyIndex < dependencyKeyProperties.Count; ++keyIndex)
+            for (int keyIndex = 0; keyIndex < dependencyKeyProperties?.Count; ++keyIndex)
             {
                 if (keyIndex > 0)
                 {
                     whereClauseCondition.Append(" AND ");
                 }
 
-                var dependencyColumnName = navigationColumnFastLookup[dependencyKeyProperties[keyIndex].Name];
-                var principalColumnName = columnNameValueDict[principalKeyProperties[keyIndex].Name];
+                var dependencyColumnName = navigationColumnFastLookup![dependencyKeyProperties[keyIndex].Name];
+                var principalColumnName = columnNameValueDict![principalKeyProperties![keyIndex].Name];
                 whereClauseCondition.Append(firstNavigationAlias).Append(".[").Append(dependencyColumnName).Append("] = [")
                     .Append(rootTableAlias).Append("].[").Append(principalColumnName).Append(']');
             }
@@ -1017,8 +1040,8 @@ public static class BatchUtil
 
         }
 
-        createBodyData.UpdateColumnsSql.Append(" (\n    ").Append(innerSql.Replace("\n", "\n    ")).Append(')');
-        createBodyData.SqlParameters.AddRange(innerSqlParameters);
+        createBodyData?.UpdateColumnsSql.Append(" (\n    ").Append(innerSql.Replace("\n", "\n    ")).Append(')');
+        createBodyData?.SqlParameters.AddRange(innerSqlParameters);
 
         return true;
     }
@@ -1029,14 +1052,14 @@ public static class BatchUtil
     public class ExpressionNode
     {
 #pragma warning disable CS1591 // No XML comment required here. Used internally only
-        public ExpressionNode (Expression expression, ExpressionNode parent)
+        public ExpressionNode (Expression expression, ExpressionNode? parent)
         {
             Expression = expression;
             Parent = parent;
         }
 
         public Expression Expression { get; }
-        public ExpressionNode Parent { get; }
+        public ExpressionNode? Parent { get; }
 #pragma warning restore CS1591 // No XML comment required here. Used internally only
     }
 }

@@ -10,7 +10,7 @@ namespace EFCore.BulkExtensions;
 
 internal class GraphUtil
 {
-    public static IEnumerable<GraphNode> GetTopologicallySortedGraph(DbContext dbContext, IEnumerable<object> entities)
+    public static IEnumerable<GraphNode>? GetTopologicallySortedGraph(DbContext dbContext, IEnumerable<object> entities)
     {
         if (!entities.Any())
         {
@@ -41,7 +41,7 @@ internal class GraphUtil
         return result;
     }
 
-    private static GraphDependency GetFlatGraph(DbContext dbContext, object graphEntity, IDictionary<object, GraphDependency> result)
+    private static GraphDependency? GetFlatGraph(DbContext dbContext, object graphEntity, IDictionary<object, GraphDependency> result)
     {
         var entityType = dbContext.Model.FindEntityType(graphEntity.GetType());
 
@@ -49,8 +49,7 @@ internal class GraphUtil
         if (entityType is null)
             return null;
 
-
-        if (!result.TryGetValue(graphEntity, out GraphDependency graphDependency))
+        if (!result.TryGetValue(graphEntity, out GraphDependency? graphDependency))
         {
             graphDependency = new GraphDependency();
             result.Add(graphEntity, graphDependency);
@@ -150,8 +149,8 @@ internal class GraphUtil
 
     public class GraphNode
     {
-        public object Entity { get; set; }
-        public GraphDependency Dependencies { get; set; }
+        public object Entity { get; set; } = null!;
+        public GraphDependency Dependencies { get; set; } = null!;
     }
 
     public class GraphDependency
