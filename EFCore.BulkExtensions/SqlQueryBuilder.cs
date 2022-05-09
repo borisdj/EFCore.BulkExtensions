@@ -243,7 +243,7 @@ public static class SqlQueryBuilder
     /// <param name="entityPropertyWithDefaultValue"></param>
     /// <returns></returns>
     /// <exception cref="InvalidBulkConfigException"></exception>
-    public static (string sql, IEnumerable<object> parameters) MergeTable<T>(DbContext context, TableInfo tableInfo, OperationType operationType, IEnumerable<string>? entityPropertyWithDefaultValue = default) where T : class
+    public static (string sql, IEnumerable<object> parameters) MergeTable<T>(DbContext? context, TableInfo tableInfo, OperationType operationType, IEnumerable<string>? entityPropertyWithDefaultValue = default) where T : class
     {
         List<object> parameters = new();
         string targetTable = tableInfo.FullTableName;
