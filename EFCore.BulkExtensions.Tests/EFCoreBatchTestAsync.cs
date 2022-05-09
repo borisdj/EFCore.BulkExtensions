@@ -11,7 +11,7 @@ namespace EFCore.BulkExtensions.Tests;
 
 public class EFCoreBatchTestAsync
 {
-    protected int EntitiesNumber => 1000;
+    protected static int EntitiesNumber => 1000;
 
     [Theory]
     [InlineData(DbServer.SQLServer)]
@@ -106,31 +106,29 @@ WHERE [p].[PhoneNumber] = @__oldPhoneNumber_0";
         context.Database.ExecuteSqlRaw(deleteTableSql);
     }
 
-    private async Task RunInsertAsync()
+    private static async Task RunInsertAsync()
     {
-        using (var context = new TestContext(ContextUtil.GetOptions()))
+        using var context = new TestContext(ContextUtil.GetOptions());
+        var entities = new List<Item>();
+        for (int i = 1; i <= EntitiesNumber; i++)
         {
-            var entities = new List<Item>();
-            for (int i = 1; i <= EntitiesNumber; i++)
+            var entity = new Item
             {
-                var entity = new Item
-                {
-                    Name = "name " + i,
-                    Description = "info " + Guid.NewGuid().ToString().Substring(0, 3),
-                    Quantity = i % 10,
-                    Price = i / (i % 5 + 1),
-                    TimeUpdated = DateTime.Now,
-                    ItemHistories = new List<ItemHistory>()
-                };
-                entities.Add(entity);
-            }
-
-            await context.Items.AddRangeAsync(entities);
-            await context.SaveChangesAsync();
+                Name = "name " + i,
+                Description = string.Concat("info ", Guid.NewGuid().ToString().AsSpan(0, 3)),
+                Quantity = i % 10,
+                Price = i / (i % 5 + 1),
+                TimeUpdated = DateTime.Now,
+                ItemHistories = new List<ItemHistory>()
+            };
+            entities.Add(entity);
         }
+
+        await context.Items.AddRangeAsync(entities);
+        await context.SaveChangesAsync();
     }
 
-    private async Task RunBatchUpdateAsync(DbServer dbServer)
+    private static async Task RunBatchUpdateAsync(DbServer dbServer)
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -179,19 +177,19 @@ WHERE [p].[PhoneNumber] = @__oldPhoneNumber_0";
         }
     }
 
-    private async Task<int> RunTopBatchDeleteAsync()
+    private static async Task<int> RunTopBatchDeleteAsync()
     {
         using var context = new TestContext(ContextUtil.GetOptions());
         return await context.Items.Where(a => a.ItemId > 500).Take(1).BatchDeleteAsync();
     }
 
-    private async Task RunBatchDeleteAsync()
+    private static async Task RunBatchDeleteAsync()
     {
         using var context = new TestContext(ContextUtil.GetOptions());
         await context.Items.Where(a => a.ItemId > 500).BatchDeleteAsync();
     }
 
-    private async Task UpdateSettingAsync(SettingsEnum settings, object value)
+    private static async Task UpdateSettingAsync(SettingsEnum settings, object value)
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -206,7 +204,7 @@ WHERE [p].[PhoneNumber] = @__oldPhoneNumber_0";
         await context.TruncateAsync<Setting>();
     }
 
-    private async Task UpdateByteArrayToDefaultAsync()
+    private static async Task UpdateByteArrayToDefaultAsync()
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 

@@ -16,58 +16,58 @@ namespace EFCore.BulkExtensions.Tests;
 
 public class TestContext : DbContext
 {
-    public DbSet<Item> Items { get; set; }
-    public DbSet<ItemHistory> ItemHistories { get; set; }
+    public DbSet<Item> Items { get; set; } = null!;
+    public DbSet<ItemHistory> ItemHistories { get; set; } = null!;
 
-    public DbSet<UserRole> UserRoles { get; set; }
+    public DbSet<UserRole> UserRoles { get; set; } = null!;
 
-    public DbSet<Document> Documents { get; set; }
-    public DbSet<Letter> Letters { get; set; }
+    public DbSet<Document> Documents { get; set; } = null!;
+    public DbSet<Letter> Letters { get; set; } = null!;
 
-    public DbSet<Storage> Storages { get; set; }
+    public DbSet<Storage> Storages { get; set; } = null!;
 
-    public DbSet<File> Files { get; set; }
+    public DbSet<File> Files { get; set; } = null!;
 
-    public DbSet<Box> Boxes { get; set; }
-    public DbSet<Person> Persons { get; set; }
-    public DbSet<Student> Students { get; set; }
-    public DbSet<Teacher> Teachers { get; set; }
-    public DbSet<Entry> Entries { get; set; }
-    public DbSet<EntryArchive> EntryArchives { get; set; }
-    public DbSet<EntryPrep> EntryPreps { get; set; }
-    public DbSet<Modul> Moduls { get; set; }
-    public DbSet<Info> Infos { get; set; }
-    public DbSet<ChangeLog> ChangeLogs { get; set; }
-    public DbSet<ItemLink> ItemLinks { get; set; }
-    public DbSet<Address> Addresses { get; set; }
-    public DbSet<Category> Categories { get; set; }
+    public DbSet<Box> Boxes { get; set; } = null!;
+    public DbSet<Person> Persons { get; set; } = null!;
+    public DbSet<Student> Students { get; set; } = null!;
+    public DbSet<Teacher> Teachers { get; set; } = null!;
+    public DbSet<Entry> Entries { get; set; } = null!;
+    public DbSet<EntryArchive> EntryArchives { get; set; } = null!;
+    public DbSet<EntryPrep> EntryPreps { get; set; } = null!;
+    public DbSet<Modul> Moduls { get; set; } = null!;
+    public DbSet<Info> Infos { get; set; } = null!;
+    public DbSet<ChangeLog> ChangeLogs { get; set; } = null!;
+    public DbSet<ItemLink> ItemLinks { get; set; } = null!;
+    public DbSet<Address> Addresses { get; set; } = null!;
+    public DbSet<Category> Categories { get; set; } = null!;
 
-    public DbSet<Parent> Parents { get; set; }
-    public DbSet<ParentDetail> ParentDetails { get; set; }
-    public DbSet<Child> Children { get; set; }
+    public DbSet<Parent> Parents { get; set; } = null!;
+    public DbSet<ParentDetail> ParentDetails { get; set; } = null!;
+    public DbSet<Child> Children { get; set; } = null!;
 
-    public DbSet<Animal> Animals { get; set; }
+    public DbSet<Animal> Animals { get; set; } = null!;
 
-    public DbSet<Setting> Settings { get; set; }
+    public DbSet<Setting> Settings { get; set; } = null!;
 
-    public DbSet<LogPersonReport> LogPersonReports { get; set; }
+    public DbSet<LogPersonReport> LogPersonReports { get; set; } = null!;
 
-    public DbSet<AtypicalRowVersionEntity> AtypicalRowVersionEntities { get; set; }
+    public DbSet<AtypicalRowVersionEntity> AtypicalRowVersionEntities { get; set; } = null!;
 
-    public DbSet<AtypicalRowVersionConverterEntity> AtypicalRowVersionConverterEntities { get; set; }
+    public DbSet<AtypicalRowVersionConverterEntity> AtypicalRowVersionConverterEntities { get; set; } = null!;
 
-    public DbSet<Event> Events { get; set; }
+    public DbSet<Event> Events { get; set; } = null!;
 
-    public DbSet<Archive> Archives { get; set; }
+    public DbSet<Archive> Archives { get; set; } = null!;
 
-    public DbSet<Counter> Counters { get; set; }
+    public DbSet<Counter> Counters { get; set; } = null!;
 
-    public DbSet<Source> Sources { get; set; }
+    public DbSet<Source> Sources { get; set; } = null!;
 
-    public DbSet<Department> Departments { get; set; }
-    public DbSet<Division> Divisions { get; set; }
-    public DbSet<PrivateKey> PrivateKeys { get; set; }
-    public DbSet<Wall> Walls { get; set; }
+    public DbSet<Department> Departments { get; set; } = null!;
+    public DbSet<Division> Divisions { get; set; } = null!;
+    public DbSet<PrivateKey> PrivateKeys { get; set; } = null!;
+    public DbSet<Wall> Walls { get; set; } = null!;
 
     public TestContext(DbContextOptions options) : base(options)
     {
@@ -191,13 +191,13 @@ public static class ContextUtil
     public static DbServer DbServer { get; set; }
 
     public static DbContextOptions GetOptions(IInterceptor dbInterceptor) => GetOptions(new[] { dbInterceptor });
-    public static DbContextOptions GetOptions(IEnumerable<IInterceptor> dbInterceptors = null) => GetOptions<TestContext>(dbInterceptors);
+    public static DbContextOptions GetOptions(IEnumerable<IInterceptor>? dbInterceptors = null) => GetOptions<TestContext>(dbInterceptors);
 
-    public static DbContextOptions GetOptions<TDbContext>(IEnumerable<IInterceptor> dbInterceptors = null, string databaseName = nameof(EFCoreBulkTest))
+    public static DbContextOptions GetOptions<TDbContext>(IEnumerable<IInterceptor>? dbInterceptors = null, string databaseName = nameof(EFCoreBulkTest))
         where TDbContext : DbContext
         => GetOptions<TDbContext>(ContextUtil.DbServer, dbInterceptors, databaseName);
 
-    public static DbContextOptions GetOptions<TDbContext>(DbServer dbServerType, IEnumerable<IInterceptor> dbInterceptors = null, string databaseName = nameof(EFCoreBulkTest))
+    public static DbContextOptions GetOptions<TDbContext>(DbServer dbServerType, IEnumerable<IInterceptor>? dbInterceptors = null, string databaseName = nameof(EFCoreBulkTest))
         where TDbContext : DbContext
     {
         var optionsBuilder = new DbContextOptionsBuilder<TDbContext>();
@@ -285,12 +285,27 @@ public static class ModelBuilderExtensions
 
 public class Item
 {
+    public Item()
+    {
+
+    }
+    public Item(int itemId, string name, string description, int quantity, decimal? price, DateTime? timeUpdated, ICollection<ItemHistory> itemHistories)
+    {
+        ItemId = itemId;
+        Name = name;
+        Description = description;
+        Quantity = quantity;
+        Price = price;
+        TimeUpdated = timeUpdated;
+        ItemHistories = itemHistories;
+    }
+
     public int ItemId { get; set; }
 
-    public string Name { get; set; }
+    public string Name { get; set; } = null!;
 
     [MaxLength(50)]
-    public string Description { get; set; }
+    public string Description { get; set; } = null!;
 
     public int Quantity { get; set; }
 
@@ -299,7 +314,7 @@ public class Item
     //[Column(TypeName = (nameof(DateTime)))] // Column to be of DbType 'datetime' instead of default 'datetime2'
     public DateTime? TimeUpdated { get; set; }
 
-    public ICollection<ItemHistory> ItemHistories { get; set; }
+    public ICollection<ItemHistory> ItemHistories { get; set; } = null!;
 }
 
 // ItemHistory is used to test bulk Ops to multiple tables(Item and ItemHistory), to test Guid as PK and to test other Schema(his)
@@ -309,21 +324,32 @@ public class ItemHistory
     public Guid ItemHistoryId { get; set; }
 
     public int ItemId { get; set; }
-    public virtual Item Item { get; set; }
+    public virtual Item Item { get; set; } = null!;
 
-    public string Remark { get; set; }
+    public string Remark { get; set; } = null!;
 }
 
 // UserRole is used to test tables with Composite PrimaryKey
 public class UserRole
 {
+    public UserRole()
+    {
+
+    }
+    public UserRole(int userId, int roleId, string description)
+    {
+        UserId = userId;
+        RoleId = roleId;
+        Description = description;
+    }
+
     [Key]
     public int UserId { get; set; }
 
     [Key]
     public int RoleId { get; set; }
 
-    public string Description { get; set; }
+    public string Description { get; set; } = null!;
 }
 
 // User Defined Table Type
@@ -338,7 +364,7 @@ public abstract class Person
 {
     public int PersonId { get; set; }
 
-    public string Name { get; set; }
+    public string Name { get; set; } = null!;
 }
 
 public class Wall
@@ -355,7 +381,7 @@ public enum WallType
 
 public class Student : Person
 {
-    public string Subject { get; set; }
+    public string Subject { get; set; } = null!;
 }
 
 // To Test custom Destination and Source tables
@@ -363,42 +389,42 @@ public class Entry
 {
     public int EntryId { get; set; }
 
-    public string Name { get; set; }
+    public string Name { get; set; } = null!;
 }
 public class EntryArchive
 {
     [Key]
     public int EntryId { get; set; }
 
-    public string Name { get; set; }
+    public string Name { get; set; } = null!;
 }
 public class EntryPrep
 {
     [Key]
     public int EntryPrepId { get; set; }
 
-    public string NameInfo { get; set; }
+    public string NameInfo { get; set; } = null!;
 }
 
 public class Address
 {
     public int AddressId { get; set; }
-    public string Street { get; set; }
+    public string Street { get; set; } = null!;
 
-    public Geometry LocationGeography { get; set; }
-    public Geometry LocationGeometry { get; set; }
+    public Geometry LocationGeography { get; set; } = null!;
+    public Geometry LocationGeometry { get; set; } = null!;
 }
 
 public class Category
 {
     public int CategoryId { get; set; }
-    public string Name { get; set; }
-    public HierarchyId HierarchyDescription { get; set; }
+    public string Name { get; set; } = null!;
+    public HierarchyId HierarchyDescription { get; set; } = null!;
 }
 
 public class Teacher : Person
 {
-    public string Class { get; set; }
+    public string Class { get; set; } = null!;
 }
 
 // For testing Computed columns Default values
@@ -413,10 +439,10 @@ public class Document
 
     //HasDefaultValueSql
     [Required]
-    public string Content { get; set; }
+    public string Content { get; set; } = null!;
 
     //HasComputedColumnSql
-    public string Tag { get; set; }
+    public string? Tag { get; set; }
 
     [DatabaseGenerated(DatabaseGeneratedOption.Computed)] // Computed columns also have to be configured with FluentAPI
     public int ContentLength { get; set; }
@@ -439,7 +465,7 @@ public class Storage
 {
     public Guid StorageId { get; set; }
 
-    public string Data { get; set; }
+    public string Data { get; set; } = null!;
 }
 
 // For testing type 'jsonb' on Postgres
@@ -451,7 +477,7 @@ public class Box
     public System.Text.Json.JsonElement ElementContent { get; set; }
 
     [NotMapped] // used only for Postgres so mapped wiht FluentAPI 
-    public JsonDocument DocumentContent { get; set; }
+    public JsonDocument DocumentContent { get; set; } = null!;
 }
 
 // For testing TimeStamp Property and Column with Concurrency Lock
@@ -461,12 +487,12 @@ public class File
     public int FileId { get; set; }
 
     [Required]
-    public string Description { get; set; }
+    public string Description { get; set; } = null!;
 
-    public byte[] DataBytes { get; set; }
+    public byte[]? DataBytes { get; set; }
 
     [Timestamp]
-    public byte[] VersionChange { get; set; }
+    public byte[] VersionChange { get; set; } = null!;
     //public ulong RowVersion { get; set; }
 }
 
@@ -478,10 +504,11 @@ public enum InfoType
 
 public class Modul
 {
+
     [Key]
     [Required]
-    public string Code { get; set; }
-    public string Name { get; set; }
+    public string Code { get; set; } = null!;
+    public string Name { get; set; } = null!;
 }
 
 // For testring ValueConversion
@@ -497,7 +524,7 @@ public class Info
 
     public long InfoId { get; set; }
 
-    public string Message { get; set; }
+    public string Message { get; set; } = null!;
 
     public DateTime ConvertedTime { get; set; }
 
@@ -505,7 +532,7 @@ public class Info
 
     public string Note { get; protected set; } = "NN"; // To test protected Setter
 
-    public string Remark { get; } // To test without Setter
+    public string? Remark { get; } // To test without Setter
 
     private DateTime TimeCreated { get; set; } // To test private Property
 
@@ -524,12 +551,12 @@ public class Animal
     public int AnimalId { get; set; }
 
     [Required]
-    public string Name { get; set; }
+    public string Name { get; set; } = null!;
 }
 
 public class Mammal : Animal
 {
-    public string Category { get; set; }
+    public string Category { get; set; } = null!;
 }
 
 public enum SettingsEnum
@@ -544,7 +571,7 @@ public class Setting
     public SettingsEnum Settings { get; set; }
     [Required]
     [MaxLength(20)]
-    public string Value { get; set; }
+    public string? Value { get; set; }
 }
 
 
@@ -552,7 +579,7 @@ public class Setting
 public class ItemLink
 {
     public int ItemLinkId { get; set; }
-    public virtual Item Item { get; set; }
+    public virtual Item Item { get; set; } = null!;
 }
 
 // For testing OwnedTypes
@@ -560,20 +587,21 @@ public class ChangeLog
 {
     public int ChangeLogId { get; set; }
 
-    public string Description { get; set; }
+    public string Description { get; set; } = null!;
 
-    public Audit Audit { get; set; }
+    public Audit Audit { get; set; } = null!;
 
-    public AuditExtended AuditExtended { get; set; }
+    public AuditExtended AuditExtended { get; set; } = null!;
 
-    public AuditExtended AuditExtendedSecond { get; set; }
+    public AuditExtended AuditExtendedSecond { get; set; } = null!;
 }
 
 [Owned]
 public class Audit
 {
+
     [Column(nameof(ChangedBy))] // for setting custom column name, in this case prefix OwnedType_ ('Audit_') removed, so column would be only ('ChangedBy')
-    public string ChangedBy { get; set; } // default Column name for Property of OwnedType is OwnedType_Property ('Audit_ChangedBy')
+    public string ChangedBy { get; set; } = null!; // default Column name for Property of OwnedType is OwnedType_Property ('Audit_ChangedBy')
 
     public bool IsDeleted { get; set; }
 
@@ -586,25 +614,25 @@ public class Audit
 [Owned]
 public class AuditExtended
 {
-    public string CreatedBy { get; set; }
+    public string CreatedBy { get; set; } = null!;
 
     [NotMapped]
     public DateTime? CreatedTime { get; set; }
 
     [NotMapped]
-    public string Remark { get; set; }
+    public string Remark { get; set; } = null!;
 }
 
 // For testing BatchUpdate expressions that use nested queries
 public class Parent
 {
-    public ICollection<Child> Children { get; set; }
+    public ICollection<Child> Children { get; set; } = null!;
     public decimal CombinedChildBalance { get; set; }
-    public string Description { get; set; }
-    public virtual ParentDetail Details { get; set; }
+    public string Description { get; set; } = null!;
+    public virtual ParentDetail Details { get; set; } = null!;
     public int ParentId { get; set; }
 
-    private string _phoneNumber;
+    private string _phoneNumber = null!;
     public string PhoneNumber { get => _phoneNumber; set => _phoneNumber = value; }
 
     public decimal Value { get; set; }
@@ -614,10 +642,10 @@ public class ParentDetail
 {
     public int ParentDetailId { get; set; }
 
-    public virtual Parent Parent { get; set; }
+    public virtual Parent Parent { get; set; } = null!;
     public int ParentId { get; set; }
 
-    public string Notes { get; set; }
+    public string? Notes { get; set; }
 }
 
 public class Child
@@ -626,7 +654,7 @@ public class Child
     public bool IsEnabled { get; set; }
     public decimal Value { get; set; }
 
-    public virtual Parent Parent { get; set; }
+    public virtual Parent Parent { get; set; } = null!;
     public int ParentId { get; set; }
 }
 
@@ -647,25 +675,26 @@ public class AtypicalRowVersionEntity
 {
     public Guid Id { get; set; }
     public long RowVersion { get; set; }
-    public string SyncDevice { get; set; }
-    public string Name { get; set; }
+    public string SyncDevice { get; set; } = null!;
+    public string Name { get; set; } = null!;
 }
 
 public class AtypicalRowVersionConverterEntity
 {
     public Guid Id { get; set; }
     public long RowVersionConverted { get; set; }
-    public string Name { get; set; }
+    public string Name { get; set; } = null!;
 }
 
 public class Event // CustomPrecision DateTime Test (SqlServer only)
 {
+
     public int EventId { get; set; }
 
     [Required]
-    public string Name { get; set; }
+    public string Name { get; set; } = null!;
 
-    public string Description { get; set; }
+    public string Description { get; set; } = null!;
 
     [Column(TypeName = "datetime2(3)")]
     public DateTime TimeCreated { get; set; }
@@ -673,14 +702,14 @@ public class Event // CustomPrecision DateTime Test (SqlServer only)
 
 public class Archive
 {
-    public byte[] ArchiveId { get; set; }
-    public string Description { get; set; }
+    public byte[] ArchiveId { get; set; } = null!;
+    public string Description { get; set; } = null!;
 }
 
 public class Counter
 {
     public uint CounterId { get; set; }
-    public string Name { get; set; }
+    public string? Name { get; set; }
 }
 
 public class Source
@@ -695,22 +724,21 @@ public enum Type : byte { Undefined, Type1, Type2 }
 public class Department
 {
     public Guid Id { get; set; }
-    public string Name { get; set; }
+    public string Name { get; set; } = null!;
 
-    public ICollection<Division> Divisions { get; set; }
+    public ICollection<Division> Divisions { get; set; } = null!;
 }
 
 public class Division
 {
     public Guid Id { get; set; }
-    public string Name { get; set; }
+    public string Name { get; set; } = null!;
 
     public Guid DepartmentId { get; set; }
-    public Department Department { get; set; }
+    public Department? Department { get; set; }
 }
 
 public class PrivateKey
 {
-    private long Id { get; set; }
-    public string Name { get; set; }
+    public string Name { get; set; } = null!;
 }

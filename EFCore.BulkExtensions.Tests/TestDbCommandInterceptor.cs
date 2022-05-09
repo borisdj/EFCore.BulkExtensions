@@ -20,23 +20,23 @@ public class TestDbCommandInterceptor : DbCommandInterceptor
     public List<DbCommandInformation> ExecutedReaderCommands { get; } = new List<DbCommandInformation>();
     public List<DbCommandInformation> ExecutedScalarCommands { get; } = new List<DbCommandInformation>();
 
-    protected DbCommandInformation BuildCommandInformation(DbCommand dbCommand)
+    protected static DbCommandInformation BuildCommandInformation(DbCommand DbCommand)
     {
-        _ = dbCommand ?? throw new ArgumentNullException(nameof(dbCommand));
+        _ = DbCommand ?? throw new ArgumentNullException(nameof(DbCommand));
 
         var dbParameters = new List<DbParameter>();
-        if (dbCommand.Parameters != null)
+        if (DbCommand.Parameters != null)
         {
-            foreach (DbParameter parameter in dbCommand.Parameters)
+            foreach (DbParameter parameter in DbCommand.Parameters)
                 dbParameters.Add(parameter);
         }
 
-        return new DbCommandInformation(dbParameters, dbCommand.CommandText);
+        return new DbCommandInformation(dbParameters, DbCommand.CommandText);
     }
 
     public override int NonQueryExecuted(DbCommand command, CommandExecutedEventData eventData, int result)
     {
-        if (command?.CommandText != null)
+        if (command.CommandText != null)
         {
             lock (ExecutedNonQueryCommands)
             {
@@ -49,7 +49,7 @@ public class TestDbCommandInterceptor : DbCommandInterceptor
 
     public override ValueTask<int> NonQueryExecutedAsync(DbCommand command, CommandExecutedEventData eventData, int result, CancellationToken cancellationToken = default)
     {
-        if (command?.CommandText != null)
+        if (command.CommandText != null)
         {
             lock (ExecutedNonQueryCommands)
             {
@@ -62,7 +62,7 @@ public class TestDbCommandInterceptor : DbCommandInterceptor
 
     public override InterceptionResult<int> NonQueryExecuting(DbCommand command, CommandEventData eventData, InterceptionResult<int> result)
     {
-        if (command?.CommandText != null)
+        if (command.CommandText != null)
         {
             lock (AboutToBeExecutedCommands)
             {
@@ -75,7 +75,7 @@ public class TestDbCommandInterceptor : DbCommandInterceptor
 
     public override ValueTask<InterceptionResult<int>> NonQueryExecutingAsync(DbCommand command, CommandEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
     {
-        if (command?.CommandText != null)
+        if (command.CommandText != null)
         {
             lock (AboutToBeExecutedCommands)
             {
@@ -88,7 +88,7 @@ public class TestDbCommandInterceptor : DbCommandInterceptor
 
     public override DbDataReader ReaderExecuted(DbCommand command, CommandExecutedEventData eventData, DbDataReader result)
     {
-        if (command?.CommandText != null)
+        if (command.CommandText != null)
         {
             lock (ExecutedReaderCommands)
             {
@@ -101,7 +101,7 @@ public class TestDbCommandInterceptor : DbCommandInterceptor
 
     public override ValueTask<DbDataReader> ReaderExecutedAsync(DbCommand command, CommandExecutedEventData eventData, DbDataReader result, CancellationToken cancellationToken = default)
     {
-        if (command?.CommandText != null)
+        if (command.CommandText != null)
         {
             lock (ExecutedReaderCommands)
             {
@@ -114,7 +114,7 @@ public class TestDbCommandInterceptor : DbCommandInterceptor
 
     public override InterceptionResult<DbDataReader> ReaderExecuting(DbCommand command, CommandEventData eventData, InterceptionResult<DbDataReader> result)
     {
-        if (command?.CommandText != null)
+        if (command.CommandText != null)
         {
             lock (AboutToBeExecutedCommands)
             {
@@ -127,7 +127,7 @@ public class TestDbCommandInterceptor : DbCommandInterceptor
 
     public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(DbCommand command, CommandEventData eventData, InterceptionResult<DbDataReader> result, CancellationToken cancellationToken = default)
     {
-        if (command?.CommandText != null)
+        if (command.CommandText != null)
         {
             lock (AboutToBeExecutedCommands)
             {
@@ -138,9 +138,9 @@ public class TestDbCommandInterceptor : DbCommandInterceptor
         return base.ReaderExecutingAsync(command, eventData, result, cancellationToken);
     }
 
-    public override object ScalarExecuted(DbCommand command, CommandExecutedEventData eventData, object result)
+    public override object? ScalarExecuted(DbCommand command, CommandExecutedEventData eventData, object? result)
     {
-        if (command?.CommandText != null)
+        if (command.CommandText != null)
         {
             lock (ExecutedScalarCommands)
             {
@@ -151,9 +151,9 @@ public class TestDbCommandInterceptor : DbCommandInterceptor
         return base.ScalarExecuted(command, eventData, result);
     }
 
-    public override ValueTask<object> ScalarExecutedAsync(DbCommand command, CommandExecutedEventData eventData, object result, CancellationToken cancellationToken = default)
+    public override ValueTask<object?> ScalarExecutedAsync(DbCommand command, CommandExecutedEventData eventData, object? result, CancellationToken cancellationToken = default)
     {
-        if (command?.CommandText != null)
+        if (command.CommandText != null)
         {
             lock (ExecutedScalarCommands)
             {
@@ -166,7 +166,7 @@ public class TestDbCommandInterceptor : DbCommandInterceptor
 
     public override InterceptionResult<object> ScalarExecuting(DbCommand command, CommandEventData eventData, InterceptionResult<object> result)
     {
-        if (command?.CommandText != null)
+        if (command.CommandText != null)
         {
             lock (AboutToBeExecutedCommands)
             {
@@ -179,7 +179,7 @@ public class TestDbCommandInterceptor : DbCommandInterceptor
 
     public override ValueTask<InterceptionResult<object>> ScalarExecutingAsync(DbCommand command, CommandEventData eventData, InterceptionResult<object> result, CancellationToken cancellationToken = default)
     {
-        if (command?.CommandText != null)
+        if (command.CommandText != null)
         {
             lock (AboutToBeExecutedCommands)
             {

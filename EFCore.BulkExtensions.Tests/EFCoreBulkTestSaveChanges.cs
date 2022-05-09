@@ -78,7 +78,7 @@ public class EFCoreBulkTestSaveChanges
         return newEntities;
     }
 
-    private void RunSaveChangesOnInsert()
+    private static void RunSaveChangesOnInsert()
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -89,13 +89,13 @@ public class EFCoreBulkTestSaveChanges
 
         // Validate Test
         int entitiesCount = context.Items.Count();
-        Item firstEntity = context.Items.SingleOrDefault(a => a.ItemId == 1);
+        Item? firstEntity = context.Items.SingleOrDefault(a => a.ItemId == 1);
 
         Assert.Equal(5000, entitiesCount);
-        Assert.Equal("Name 1", firstEntity.Name);
+        Assert.Equal("Name 1", firstEntity?.Name);
     }
 
-    private async Task RunSaveChangesOnInsertAsync()
+    private static async Task RunSaveChangesOnInsertAsync()
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -106,13 +106,13 @@ public class EFCoreBulkTestSaveChanges
 
         // Validate Test
         int entitiesCount = await context.Items.CountAsync();
-        Item firstEntity = await context.Items.SingleOrDefaultAsync(a => a.ItemId == 1);
+        Item? firstEntity = await context.Items.SingleOrDefaultAsync(a => a.ItemId == 1);
 
         Assert.Equal(5000, entitiesCount);
-        Assert.Equal("Name 1", firstEntity.Name);
+        Assert.Equal("Name 1", firstEntity?.Name);
     }
 
-    private void RunSaveChangesOnInsertAndUpdate()
+    private static void RunSaveChangesOnInsertAndUpdate()
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -121,7 +121,7 @@ public class EFCoreBulkTestSaveChanges
         foreach (var existingEntity in existingEntites)
         {
             existingEntity.Description += " UPDATED";
-            existingEntity.ItemHistories.FirstOrDefault().Remark += " UPD";
+            existingEntity.ItemHistories.First().Remark += " UPD";
         }
 
         var newEntities = GetNewEntities(4000, "NEW ");
@@ -131,13 +131,13 @@ public class EFCoreBulkTestSaveChanges
 
         // Validate Test
         int entitiesCount = context.Items.Count();
-        Item firstEntity = context.Items.SingleOrDefault(a => a.ItemId == 1);
+        Item? firstEntity = context.Items.SingleOrDefault(a => a.ItemId == 1);
 
         Assert.Equal(9000, entitiesCount);
-        Assert.EndsWith(" UPDATED", firstEntity.Description);
+        Assert.EndsWith(" UPDATED", firstEntity?.Description);
     }
 
-    private async Task RunSaveChangesOnInsertAndUpdateAsync()
+    private static async Task RunSaveChangesOnInsertAndUpdateAsync()
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -146,7 +146,7 @@ public class EFCoreBulkTestSaveChanges
         foreach (var existingEntity in existingEntites)
         {
             existingEntity.Description += " UPDATED";
-            existingEntity.ItemHistories.FirstOrDefault().Remark += " UPD";
+            existingEntity.ItemHistories.First().Remark += " UPD";
         }
 
         var newEntities = GetNewEntities(4000, "NEW ");
@@ -156,9 +156,9 @@ public class EFCoreBulkTestSaveChanges
 
         // Validate Test
         int entitiesCount = await context.Items.CountAsync();
-        Item firstEntity = await context.Items.SingleOrDefaultAsync(a => a.ItemId == 1);
+        Item? firstEntity = await context.Items.SingleOrDefaultAsync(a => a.ItemId == 1);
 
         Assert.Equal(9000, entitiesCount);
-        Assert.EndsWith(" UPDATED", firstEntity.Description);
+        Assert.EndsWith(" UPDATED", firstEntity?.Description);
     }
 }

@@ -16,13 +16,11 @@ namespace EFCore.BulkExtensions.Tests;
 
 public class EFCoreBulkTest
 {
-    protected int EntitiesNumber => 10000;
+    protected static int EntitiesNumber => 10000;
 
-    private static Func<TestContext, int> ItemsCountQuery = EF.CompileQuery<TestContext, int>(ctx => ctx.Items.Count());
-
-    private static Func<TestContext, Item> LastItemQuery = EF.CompileQuery<TestContext, Item>(ctx => ctx.Items.LastOrDefault());
-
-    private static Func<TestContext, IEnumerable<Item>> AllItemsQuery = EF.CompileQuery<TestContext, IEnumerable<Item>>(ctx => ctx.Items.AsNoTracking());
+    private static readonly Func<TestContext, int> ItemsCountQuery = EF.CompileQuery<TestContext, int>(ctx => ctx.Items.Count());
+    private static readonly Func<TestContext, Item?> LastItemQuery = EF.CompileQuery<TestContext, Item?>(ctx => ctx.Items.LastOrDefault());
+    private static readonly Func<TestContext, IEnumerable<Item>> AllItemsQuery = EF.CompileQuery<TestContext, IEnumerable<Item>>(ctx => ctx.Items.AsNoTracking());
 
     [Theory]
     [InlineData(DbServer.PostgreSQL)]
@@ -127,14 +125,14 @@ public class EFCoreBulkTest
         // INSERT
         context.BulkInsert(entities);
 
-        Assert.Equal("info 1", context.Items.Where(a => a.Name == "Name 1").AsNoTracking().FirstOrDefault().Description);
-        Assert.Equal("info 2", context.Items.Where(a => a.Name == "Name 2").AsNoTracking().FirstOrDefault().Description);
+        Assert.Equal("info 1", context.Items.Where(a => a.Name == "Name 1").AsNoTracking().FirstOrDefault()?.Description);
+        Assert.Equal("info 2", context.Items.Where(a => a.Name == "Name 2").AsNoTracking().FirstOrDefault()?.Description);
 
         // UPDATE
         context.BulkInsertOrUpdate(entities2, new BulkConfig() { NotifyAfter = 1 }, (a) => WriteProgress(a));
 
-        Assert.Equal("UPDATE 2", context.Items.Where(a => a.Name == "Name 2").AsNoTracking().FirstOrDefault().Description);
-        Assert.Equal("UPDATE 3", context.Items.Where(a => a.Name == "Name 3").AsNoTracking().FirstOrDefault().Description);
+        Assert.Equal("UPDATE 2", context.Items.Where(a => a.Name == "Name 2").AsNoTracking().FirstOrDefault()?.Description);
+        Assert.Equal("UPDATE 3", context.Items.Where(a => a.Name == "Name 3").AsNoTracking().FirstOrDefault()?.Description);
 
         var configUpdateBy = new BulkConfig { UpdateByProperties = new List<string> { nameof(Item.Name) } };
 
@@ -144,8 +142,8 @@ public class EFCoreBulkTest
         Assert.Equal(3, entities3[0].ItemId); // to test Output
         Assert.Equal(4, entities3[1].ItemId);
 
-        Assert.Equal("CHANGE 3", context.Items.Where(a => a.Name == "Name 3").AsNoTracking().FirstOrDefault().Description);
-        Assert.Equal("CHANGE 4", context.Items.Where(a => a.Name == "Name 4").AsNoTracking().FirstOrDefault().Description);
+        Assert.Equal("CHANGE 3", context.Items.Where(a => a.Name == "Name 3").AsNoTracking().FirstOrDefault()?.Description);
+        Assert.Equal("CHANGE 4", context.Items.Where(a => a.Name == "Name 4").AsNoTracking().FirstOrDefault()?.Description);
 
         // Test Multiple KEYS
         var userRoles = new List<UserRole> { new UserRole { Description = "Info" } };
@@ -157,8 +155,8 @@ public class EFCoreBulkTest
         // READ
         var secondEntity = new List<Item>() { new Item { Name = entities[1].Name } };
         context.BulkRead(secondEntity, configUpdateBy);
-        Assert.Equal(2, secondEntity.FirstOrDefault().ItemId);
-        Assert.Equal("UPDATE 2", secondEntity.FirstOrDefault().Description);
+        Assert.Equal(2, secondEntity.FirstOrDefault()?.ItemId);
+        Assert.Equal("UPDATE 2", secondEntity.FirstOrDefault()?.Description);
 
         // SAVE CHANGES
         context.AddRange(entities56);
@@ -208,7 +206,7 @@ public class EFCoreBulkTest
         RunInsertOrUpdate(isBulk, dbServer);
         RunUpdate(isBulk, dbServer);
 
-        RunRead(isBulk);
+        RunRead();
 
         if (dbServer == DbServer.SQLServer)
         {
@@ -266,13 +264,13 @@ public class EFCoreBulkTest
         }
     }
 
-    private void DeletePreviousDatabase()
+    private static void DeletePreviousDatabase()
     {
         using var context = new TestContext(ContextUtil.GetOptions());
         context.Database.EnsureDeleted();
     }
 
-    private void CheckQueryCache()
+    private static void CheckQueryCache()
     {
         using var context = new TestContext(ContextUtil.GetOptions());
         var compiledQueryCache = ((MemoryCache)context.GetService<IMemoryCache>());
@@ -280,12 +278,12 @@ public class EFCoreBulkTest
         Assert.Equal(0, compiledQueryCache.Count);
     }
 
-    private void WriteProgress(decimal percentage)
+    private static void WriteProgress(decimal percentage)
     {
         Debug.WriteLine(percentage);
     }
 
-    private void RunInsert(bool isBulk)
+    private static void RunInsert(bool isBulk)
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -297,7 +295,7 @@ public class EFCoreBulkTest
             {
                 ItemId = 0, //isBulk ? j : 0, // no longer used since order(Identity temporary filled with negative values from -N to -1) is set automaticaly with default config PreserveInsertOrder=TRUE
                 Name = "name " + i,
-                Description = "info " + Guid.NewGuid().ToString().Substring(0, 3),
+                Description = string.Concat("info ", Guid.NewGuid().ToString().AsSpan(0, 3)),
                 Quantity = i % 10,
                 Price = i / (i % 5 + 1),
                 TimeUpdated = DateTime.Now,
@@ -334,9 +332,9 @@ public class EFCoreBulkTest
                     CalculateStats = true
                 };
                 context.BulkInsert(entities, bulkConfig, (a) => WriteProgress(a));
-                Assert.Equal(EntitiesNumber - 1, bulkConfig.StatsInfo.StatsNumberInserted);
-                Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberUpdated);
-                Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberDeleted);
+                Assert.Equal(EntitiesNumber - 1, bulkConfig.StatsInfo?.StatsNumberInserted);
+                Assert.Equal(0, bulkConfig.StatsInfo?.StatsNumberUpdated);
+                Assert.Equal(0, bulkConfig.StatsInfo?.StatsNumberDeleted);
 
                 foreach (var entity in entities)
                 {
@@ -378,14 +376,14 @@ public class EFCoreBulkTest
 
         // TEST
         int entitiesCount = ItemsCountQuery(context);
-        Item lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
+        Item? lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
 
         Assert.Equal(EntitiesNumber - 1, entitiesCount);
         Assert.NotNull(lastEntity);
-        Assert.Equal("name " + (EntitiesNumber - 1), lastEntity.Name);
+        Assert.Equal("name " + (EntitiesNumber - 1), lastEntity?.Name);
     }
 
-    private void RunInsertOrUpdate(bool isBulk, DbServer dbServer)
+    private static void RunInsertOrUpdate(bool isBulk, DbServer dbServer)
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -409,27 +407,27 @@ public class EFCoreBulkTest
             context.BulkInsertOrUpdate(entities, bulkConfig, (a) => WriteProgress(a));
             if (dbServer == DbServer.SQLServer)
             {
-                Assert.Equal(1, bulkConfig.StatsInfo.StatsNumberInserted);
-                Assert.Equal(EntitiesNumber / 2 - 1, bulkConfig.StatsInfo.StatsNumberUpdated);
-                Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberDeleted);
+                Assert.Equal(1, bulkConfig.StatsInfo?.StatsNumberInserted);
+                Assert.Equal(EntitiesNumber / 2 - 1, bulkConfig.StatsInfo?.StatsNumberUpdated);
+                Assert.Equal(0, bulkConfig.StatsInfo?.StatsNumberDeleted);
             }
         }
         else
         {
-            context.Items.Add(entities[entities.Count - 1]);
+            context.Items.Add(entities[^1]);
             context.SaveChanges();
         }
 
         // TEST
         int entitiesCount = context.Items.Count();
-        Item lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
+        Item? lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
 
         Assert.Equal(EntitiesNumber, entitiesCount);
         Assert.NotNull(lastEntity);
-        Assert.Equal("name InsertOrUpdate " + EntitiesNumber, lastEntity.Name);
+        Assert.Equal("name InsertOrUpdate " + EntitiesNumber, lastEntity?.Name);
     }
 
-    private void RunInsertOrUpdateOrDelete(bool isBulk)
+    private static void RunInsertOrUpdateOrDelete(bool isBulk)
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -451,9 +449,9 @@ public class EFCoreBulkTest
         {
             var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
             context.BulkInsertOrUpdateOrDelete(entities, bulkConfig, (a) => WriteProgress(a));
-            Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberInserted);
-            Assert.Equal(EntitiesNumber / 2, bulkConfig.StatsInfo.StatsNumberUpdated);
-            Assert.Equal(EntitiesNumber / 2, bulkConfig.StatsInfo.StatsNumberDeleted);
+            Assert.Equal(0, bulkConfig.StatsInfo?.StatsNumberInserted);
+            Assert.Equal(EntitiesNumber / 2, bulkConfig.StatsInfo?.StatsNumberUpdated);
+            Assert.Equal(EntitiesNumber / 2, bulkConfig.StatsInfo?.StatsNumberDeleted);
         }
         else
         {
@@ -466,17 +464,17 @@ public class EFCoreBulkTest
 
         // TEST
         int entitiesCount = context.Items.Count();
-        Item firstEntity = context.Items.OrderBy(a => a.ItemId).FirstOrDefault();
-        Item lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
+        Item? firstEntity = context.Items.OrderBy(a => a.ItemId).FirstOrDefault();
+        Item? lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
 
         Assert.Equal(EntitiesNumber / 2, entitiesCount);
         Assert.NotNull(firstEntity);
-        Assert.Equal("name InsertOrUpdateOrDelete 2", firstEntity.Name);
+        Assert.Equal("name InsertOrUpdateOrDelete 2", firstEntity?.Name);
         Assert.NotNull(lastEntity);
-        Assert.Equal("name InsertOrUpdateOrDelete " + EntitiesNumber, lastEntity.Name);
+        Assert.Equal("name InsertOrUpdateOrDelete " + EntitiesNumber, lastEntity?.Name);
     }
 
-    private void RunUpdate(bool isBulk, DbServer dbServer)
+    private static void RunUpdate(bool isBulk, DbServer dbServer)
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -498,9 +496,9 @@ public class EFCoreBulkTest
             context.BulkUpdate(entities, bulkConfig);
             if (dbServer == DbServer.SQLServer)
             {
-                Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberInserted);
-                Assert.Equal(EntitiesNumber, bulkConfig.StatsInfo.StatsNumberUpdated);
-                Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberDeleted);
+                Assert.Equal(0, bulkConfig.StatsInfo?.StatsNumberInserted);
+                Assert.Equal(EntitiesNumber, bulkConfig.StatsInfo?.StatsNumberUpdated);
+                Assert.Equal(0, bulkConfig.StatsInfo?.StatsNumberDeleted);
             }
         }
         else
@@ -511,14 +509,14 @@ public class EFCoreBulkTest
 
         // TEST
         int entitiesCount = context.Items.Count();
-        Item lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
+        Item? lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
 
         Assert.Equal(EntitiesNumber, entitiesCount);
         Assert.NotNull(lastEntity);
-        Assert.Equal("name InsertOrUpdate " + EntitiesNumber, lastEntity.Name);
+        Assert.Equal("name InsertOrUpdate " + EntitiesNumber, lastEntity?.Name);
     }
 
-    private void RunRead(bool isBulk)
+    private static void RunRead()
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -558,9 +556,9 @@ public class EFCoreBulkTest
             context.BulkDelete(entities, bulkConfig);
             if (dbServer == DbServer.SQLServer)
             {
-                Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberInserted);
-                Assert.Equal(0, bulkConfig.StatsInfo.StatsNumberUpdated);
-                Assert.Equal(entities.Count, bulkConfig.StatsInfo.StatsNumberDeleted);
+                Assert.Equal(0, bulkConfig.StatsInfo?.StatsNumberInserted);
+                Assert.Equal(0, bulkConfig.StatsInfo?.StatsNumberUpdated);
+                Assert.Equal(entities.Count, bulkConfig.StatsInfo?.StatsNumberDeleted);
             }
         }
         else
@@ -571,7 +569,7 @@ public class EFCoreBulkTest
 
         // TEST
         int entitiesCount = context.Items.Count();
-        Item lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
+        Item? lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
 
         Assert.Equal(0, entitiesCount);
         Assert.Null(lastEntity);

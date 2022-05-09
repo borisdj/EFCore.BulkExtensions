@@ -12,7 +12,7 @@ namespace EFCore.BulkExtensions.Tests.IncludeGraph;
 
 public class IncludeGraphTests : IDisposable
 {
-    private static WorkOrder WorkOrder1 = new WorkOrder
+    private readonly static WorkOrder WorkOrder1 = new ()
     {
         Description = "Fix belt",
         Asset = new Asset
@@ -45,7 +45,7 @@ public class IncludeGraphTests : IDisposable
             }
     };
 
-    private static WorkOrder WorkOrder2 = new WorkOrder
+    private static readonly WorkOrder WorkOrder2 = new ()
     {
         Description = "Fix toilets",
         Asset = new Asset
@@ -106,7 +106,7 @@ public class IncludeGraphTests : IDisposable
         WorkOrder1.Asset.ParentAsset = WorkOrder2.Asset;
         WorkOrder2.Asset.ChildAssets.Add(WorkOrder1.Asset);
 
-        var testData = this.GetTestData(db).ToList();
+        var testData = GetTestData().ToList();
         await db.BulkInsertOrUpdateAsync(testData, new BulkConfig
         {
             IncludeGraph = true
@@ -125,7 +125,7 @@ public class IncludeGraphTests : IDisposable
         }
     }
 
-    private IEnumerable<WorkOrder> GetTestData(DbContext db)
+    private static IEnumerable<WorkOrder> GetTestData()
     {
         yield return WorkOrder1;
         yield return WorkOrder2;

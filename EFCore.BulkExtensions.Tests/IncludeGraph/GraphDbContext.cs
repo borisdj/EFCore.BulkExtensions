@@ -11,10 +11,10 @@ public class GraphDbContext : DbContext
         this.Database.EnsureCreated();
     }
 
-    public DbSet<WorkOrder> WorkOrders { get; set; }
-    public DbSet<WorkOrderSpare> WorkOrderSpares { get; set; }
-    public DbSet<Asset> Assets { get; set; }
-    public DbSet<Spare> Spares { get; set; }
+    public DbSet<WorkOrder> WorkOrders { get; set; } = null!;
+    public DbSet<WorkOrderSpare> WorkOrderSpares { get; set; } = null!;
+    public DbSet<Asset> Assets { get; set; } = null!;
+    public DbSet<Spare> Spares { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -12,7 +12,7 @@ public class VcDbContext : DbContext
         this.Database.EnsureCreated();
     }
 
-    public DbSet<VcModel> VcModels { get; set; }
+    public DbSet<VcModel> VcModels { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -11,7 +11,7 @@ public class SpDbContext : DbContext
         Database.EnsureCreated();
     }
 
-    public DbSet<SpModel> SpModels { get; set; }
+    public DbSet<SpModel> SpModels { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

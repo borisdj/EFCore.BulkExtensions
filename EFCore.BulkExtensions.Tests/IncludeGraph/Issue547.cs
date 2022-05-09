@@ -13,26 +13,26 @@ namespace EFCore.BulkExtensions.Tests.IncludeGraph;
 public class RootEntity
 {
     public int Id { get; set; }
-    public OwnedType Owned { get; set; }
-    public OwnedInSeparateTable OwnedInSeparateTable { get; set; }
+    public OwnedType Owned { get; set; } = null!;
+    public OwnedInSeparateTable OwnedInSeparateTable { get; set; } = null!;
 }
 
 public class OwnedType
 {
     public int? ChildId { get; set; }
-    public ChildEntity Child { get; set; }
-    public string Field1 { get; set; }
+    public ChildEntity Child { get; set; } = null!;
+    public string Field1 { get; set; } = null!;
 }
 
 public class OwnedInSeparateTable
 {
-    public string Flowers { get; set; }
+    public string Flowers { get; set; } = null!;
 }
 
 public class ChildEntity
 {
     public int Id { get; set; }
-    public string Name { get; set; }
+    public string Name { get; set; } = null!;
 }
 
 public class Issue547DbContext : DbContext
@@ -41,7 +41,7 @@ public class Issue547DbContext : DbContext
     {
     }
 
-    public DbSet<RootEntity> RootEntities { get; set; }
+    public DbSet<RootEntity> RootEntities { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
