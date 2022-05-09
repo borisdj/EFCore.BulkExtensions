@@ -192,7 +192,7 @@ public class SqliteOperationsAdapter : ISqlOperationsAdapter
     }
     
     /// <inheritdoc/>
-    protected async Task ReadAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken) where T : class
+    protected static async Task ReadAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken) where T : class
     {
         SqliteConnection connection = isAsync ? await OpenAndGetSqliteConnectionAsync(context, cancellationToken).ConfigureAwait(false)
                                                     : OpenAndGetSqliteConnection(context);
@@ -231,7 +231,7 @@ public class SqliteOperationsAdapter : ISqlOperationsAdapter
             // INSERT
             if (isAsync)
             {
-                await InsertAsync(context, type, entities, tableInfo, progress, cancellationToken, isAsync: true).ConfigureAwait(false);
+                await InsertAsync(context, type, entities, tableInfo, progress, isAsync: true, cancellationToken).ConfigureAwait(false);
             }
             else
             {

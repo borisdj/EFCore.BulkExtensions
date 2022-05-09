@@ -16,8 +16,6 @@ public static class SqlQueryBuilderPostgreSql
     /// </summary>
     /// <param name="existingTableName"></param>
     /// <param name="newTableName"></param>
-    /// <param name="tableInfo"></param>
-    /// <param name="isOutputTable"></param>
     public static string CreateTableCopy(string existingTableName, string newTableName)
     {
         var q = $"CREATE TABLE {newTableName} " +
@@ -55,8 +53,6 @@ public static class SqlQueryBuilderPostgreSql
     /// <typeparam name="T"></typeparam>
     /// <param name="tableInfo"></param>
     /// <param name="operationType"></param>
-    /// <param name="context"></param>
-    /// <param name="entityPropertyWithDefaultValue"></param> 
     /// <exception cref="NotImplementedException"></exception>
     public static string MergeTable<T>(TableInfo tableInfo, OperationType operationType) where T : class
     {
@@ -183,7 +179,6 @@ public static class SqlQueryBuilderPostgreSql
     /// Generates SQL query to drop a table
     /// </summary>
     /// <param name="tableName"></param>
-    /// <param name="isTempTable"></param>
     public static string DropTable(string tableName)
     {
         string q = $"DROP TABLE IF EXISTS {tableName}";

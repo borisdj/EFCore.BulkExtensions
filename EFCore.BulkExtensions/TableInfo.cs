@@ -956,7 +956,6 @@ public class TableInfo
     /// Updates the entities' identity field
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    /// <param name="context"></param>
     /// <param name="tableInfo"></param>
     /// <param name="entities"></param>
     /// <param name="entitiesWithOutputIdentity"></param>

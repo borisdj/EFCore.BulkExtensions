@@ -41,7 +41,6 @@ public static class SqlQueryBuilder
     /// </summary>
     /// <param name="tableName"></param>
     /// <param name="tableInfo"></param>
-    /// <param name="isOutputTable"></param>
     /// <returns></returns>
     public static string AlterTableColumnsToNullable(string tableName, TableInfo tableInfo)
     {
