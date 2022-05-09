@@ -71,8 +71,10 @@ namespace EFCore.BulkExtensions.Tests
             Assert.Equal(countDb, countEntities);
         }
 
-        [Fact]
-        private void RunDefaultPKInsertWithGraph()
+    [Fact]
+    private void RunDefaultPKInsertWithGraph()
+    {
+        using (var context = new TestContext(ContextUtil.GetOptions()))
         {
             using (var context = new TestContext(ContextUtil.GetOptions()))
             {

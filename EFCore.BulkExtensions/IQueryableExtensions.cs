@@ -11,8 +11,17 @@ using System.Reflection;
 
 namespace EFCore.BulkExtensions;
 
+/// <summary>
+/// Contains a list of IQuerable extensions
+/// </summary>
 public static class IQueryableExtensions
 {
+    /// <summary>
+    /// Extension method to paramatize sql query
+    /// </summary>
+    /// <param name="query"></param>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException"></exception>
     public static (string, IEnumerable<SqlParameter>) ToParametrizedSql(this IQueryable query)
     {
         string relationalQueryContextText = "_relationalQueryContext";
@@ -25,7 +34,7 @@ public static class IQueryableExtensions
         var parameterValues = queryContext.ParameterValues;
 
 #pragma warning disable EF1001 // Internal EF Core API usage.
-        var relationalCommandCache = (RelationalCommandCache)enumerator.Private(relationalCommandCacheText);
+        var relationalCommandCache = (RelationalCommandCache?)enumerator.Private(relationalCommandCacheText);
 #pragma warning restore EF1001
 
         IRelationalCommand command;
@@ -82,7 +91,7 @@ public static class IQueryableExtensions
 
     private static readonly BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.NonPublic;
 
-    private static object Private(this object obj, string privateField) => obj?.GetType().GetField(privateField, bindingFlags)?.GetValue(obj);
+    private static object? Private(this object obj, string privateField) => obj?.GetType().GetField(privateField, bindingFlags)?.GetValue(obj);
 
-    private static T Private<T>(this object obj, string privateField) => (T)obj?.GetType().GetField(privateField, bindingFlags)?.GetValue(obj);
+    private static T? Private<T>(this object obj, string privateField) => (T?)obj?.GetType().GetField(privateField, bindingFlags)?.GetValue(obj);
 }
