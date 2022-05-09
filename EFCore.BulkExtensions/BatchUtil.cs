@@ -248,7 +248,7 @@ public static class BatchUtil
     /// <param name="context"></param>
     /// <param name="isUpdate"></param>
     /// <returns></returns>
-    public static (string, string, string, string, string, IEnumerable<object>) GetBatchSql(IQueryable query, DbContext context, bool isUpdate)
+    public static (string Sql, string TableAlias, string TableAliasSufixAs, string TopStatement, string LeadingComments, IEnumerable<object> InnerParameters) GetBatchSql(IQueryable query, DbContext context, bool isUpdate)
     {
         var sqlQueryBuilder = SqlAdaptersMapping.GetAdapterDialect(context);
         var (fullSqlQuery, innerParameters) = query.ToParametrizedSql();
@@ -263,9 +263,9 @@ public static class BatchUtil
         (tableAlias, topStatement) = sqlQueryBuilder.GetBatchSqlReformatTableAliasAndTopStatement(sqlQuery, databaseType);
 
         int indexFrom = sqlQuery.IndexOf(Environment.NewLine, StringComparison.Ordinal);
-        string sql = sqlQuery.Substring(indexFrom, sqlQuery.Length - indexFrom);
-        sql = sql.Contains("{") ? sql.Replace("{", "{{") : sql; // Curly brackets have to be escaped:
-        sql = sql.Contains("}") ? sql.Replace("}", "}}") : sql; // https://github.com/aspnet/EntityFrameworkCore/issues/8820
+        string sql = sqlQuery[indexFrom..];
+        sql = sql.Contains('{') ? sql.Replace("{", "{{") : sql; // Curly brackets have to be escaped:
+        sql = sql.Contains('}') ? sql.Replace("}", "}}") : sql; // https://github.com/aspnet/EntityFrameworkCore/issues/8820
 
         if (isUpdate)
         {
@@ -292,10 +292,10 @@ public static class BatchUtil
     public static string GetSqlSetSegment(DbContext context, Type? updateValuesType, object? updateValues, List<string>? updateColumns, List<object> parameters)
     {
         var tableInfo = TableInfo.CreateInstance(context, updateValuesType, new List<object>(), OperationType.Read, new BulkConfig());
-        return GetSqlSetSegment(context, tableInfo, updateValuesType, updateValues, updateValuesType is null ? null : Activator.CreateInstance(updateValuesType), updateColumns, parameters);
+        return GetSqlSetSegment(tableInfo, updateValuesType, updateValues, updateValuesType is null ? null : Activator.CreateInstance(updateValuesType), updateColumns, parameters);
     }
 
-    private static string GetSqlSetSegment(DbContext context, TableInfo tableInfo, Type? updateValuesType, object? updateValues, object? defaultValues, List<string>? updateColumns, List<object> parameters)
+    private static string GetSqlSetSegment(TableInfo tableInfo, Type? updateValuesType, object? updateValues, object? defaultValues, List<string>? updateColumns, List<object> parameters)
     {
         string sql = string.Empty;
         foreach (var propertyNameColumnName in tableInfo.PropertyColumnNamesDict)
@@ -347,7 +347,8 @@ public static class BatchUtil
                     if (param == null)
                     {
                         propertyUpdateValue ??= DBNull.Value;
-                        param = new Microsoft.Data.SqlClient.SqlParameter
+
+                        param = new SqlParameter
                         {
                             ParameterName = $"@{columnName}",
                             Value = propertyUpdateValue
@@ -563,8 +564,8 @@ public static class BatchUtil
                 var indexOfNextNewLine = mainSqlQuery.IndexOf(Environment.NewLine, StringComparison.Ordinal);
                 if (indexOfNextNewLine > -1)
                 {
-                    leadingCommentsBuilder.Append(mainSqlQuery.Substring(0, indexOfNextNewLine + Environment.NewLine.Length));
-                    mainSqlQuery = mainSqlQuery.Substring(indexOfNextNewLine + Environment.NewLine.Length);
+                    leadingCommentsBuilder.Append(mainSqlQuery[..(indexOfNextNewLine + Environment.NewLine.Length)]);
+                    mainSqlQuery = mainSqlQuery[(indexOfNextNewLine + Environment.NewLine.Length)..];
                     continue;
                 }
             }
@@ -574,8 +575,8 @@ public static class BatchUtil
                 var nextBlockCommentEndIndex = mainSqlQuery.IndexOf("*/", StringComparison.Ordinal);
                 if (nextBlockCommentEndIndex > -1)
                 {
-                    leadingCommentsBuilder.Append(mainSqlQuery.Substring(0, nextBlockCommentEndIndex + 2));
-                    mainSqlQuery = mainSqlQuery.Substring(nextBlockCommentEndIndex + 2);
+                    leadingCommentsBuilder.Append(mainSqlQuery.AsSpan(0, nextBlockCommentEndIndex + 2));
+                    mainSqlQuery = mainSqlQuery[(nextBlockCommentEndIndex + 2)..];
                     continue;
                 }
             }
@@ -584,8 +585,8 @@ public static class BatchUtil
 
             if (nextNonWhitespaceIndex > 0)
             {
-                leadingCommentsBuilder.Append(mainSqlQuery.Substring(0, nextNonWhitespaceIndex));
-                mainSqlQuery = mainSqlQuery.Substring(nextNonWhitespaceIndex);
+                leadingCommentsBuilder.Append(mainSqlQuery[..nextNonWhitespaceIndex]);
+                mainSqlQuery = mainSqlQuery[nextNonWhitespaceIndex..];
                 continue;
             }
 
@@ -593,8 +594,8 @@ public static class BatchUtil
             var selectIndex = mainSqlQuery.IndexOf("SELECT", StringComparison.OrdinalIgnoreCase);
             if (selectIndex > 0)
             {
-                leadingCommentsBuilder.Append(mainSqlQuery.Substring(0, selectIndex));
-                mainSqlQuery = mainSqlQuery.Substring(selectIndex);
+                leadingCommentsBuilder.Append(mainSqlQuery[..selectIndex]);
+                mainSqlQuery = mainSqlQuery[selectIndex..];
             }
 
             break;
@@ -635,7 +636,7 @@ public static class BatchUtil
     /// <summary>
     /// Regex pattern to get table alias
     /// </summary>
-    public static readonly Regex TableAliasPattern = new Regex(@"(?:FROM|JOIN)\s+(\[\S+\]) AS (\[\S+\])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    public static readonly Regex TableAliasPattern = new(@"(?:FROM|JOIN)\s+(\[\S+\]) AS (\[\S+\])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     /// <summary>
     /// Attempt to create a DbParameter using the <see cref="Microsoft.EntityFrameworkCore.Storage.RelationalTypeMapping.CreateParameter(DbCommand, string, object, bool?)"/>
@@ -969,7 +970,6 @@ public static class BatchUtil
         if (isFirstNavigationACollectionType ?? false)
         {
             innerSql = innerSql[6..].Trim();
-
             if (innerSql.StartsWith("("))
             {
                 createBodyData.UpdateColumnsSql.Append(' ').Append(innerSql);
@@ -1023,7 +1023,7 @@ public static class BatchUtil
         var whereClauseIndex = innerSql.LastIndexOf("WHERE ", StringComparison.OrdinalIgnoreCase);
         if (whereClauseIndex > -1)
         {
-            innerSql = string.Concat(innerSql[..whereClauseIndex], whereClauseCondition.ToString(), "AND ", innerSql.AsSpan(whereClauseIndex + 5));
+            innerSql = innerSql[..whereClauseIndex] + whereClauseCondition.ToString() + "AND " + innerSql[(whereClauseIndex + 5)..];
         }
         else
         {

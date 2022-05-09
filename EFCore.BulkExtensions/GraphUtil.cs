@@ -48,10 +48,8 @@ internal class GraphUtil
         // The entity is not being apart of the DbContext model, do nothing
         if (entityType is null)
             return null;
-        
-        GraphDependency? graphDependency;
 
-        if (!result.TryGetValue(graphEntity, out graphDependency))
+        if (!result.TryGetValue(graphEntity, out GraphDependency? graphDependency))
         {
             graphDependency = new GraphDependency();
             result.Add(graphEntity, graphDependency);

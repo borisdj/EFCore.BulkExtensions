@@ -45,7 +45,7 @@ public class SqliteDialect : IQueryBuilderSpecialization
         var match = Regex.Match(fullQuery, @"FROM (""[^""]+"")( AS ""[^""]+"")");
         result.TableAlias = match.Groups[1].Value;
         result.TableAliasSuffixAs = match.Groups[2].Value;
-        result.Sql = fullQuery.Substring(match.Index + match.Length);
+        result.Sql = fullQuery[(match.Index + match.Length)..];
 
         return result;
     }

@@ -41,9 +41,8 @@ public static class SqlQueryBuilder
     /// </summary>
     /// <param name="tableName"></param>
     /// <param name="tableInfo"></param>
-    /// <param name="isOutputTable"></param>
     /// <returns></returns>
-    public static string AlterTableColumnsToNullable(string tableName, TableInfo tableInfo, bool isOutputTable = false)
+    public static string AlterTableColumnsToNullable(string tableName, TableInfo tableInfo)
     {
         string q = "";
         foreach (var column in tableInfo.ColumnNamesTypesDict)
@@ -156,7 +155,7 @@ public static class SqlQueryBuilder
     /// <returns></returns>
     public static string DropTable(string tableName, bool isTempTable)
     {
-        string q = "";
+        string q;
         if (isTempTable)
         {
             q = $"IF OBJECT_ID ('tempdb..[#{tableName.Split('#')[1]}', 'U') IS NOT NULL DROP TABLE {tableName}";
@@ -329,15 +328,16 @@ public static class SqlQueryBuilder
                     .IgnoreQueryFilters()
                     .IgnoreAutoIncludes()
                     .Where((Expression<Func<T, bool>>)tableInfo.BulkConfig.SynchronizeFilter);
-                var batchSql = BatchUtil.GetBatchSql(querable, context, false);
+                var (Sql, TableAlias, TableAliasSufixAs, TopStatement, LeadingComments, InnerParameters) = BatchUtil.GetBatchSql(querable, context, false);
                 var whereClause = $"{Environment.NewLine}WHERE ";
-                int wherePos = batchSql.Item1.IndexOf(whereClause, StringComparison.OrdinalIgnoreCase);
+                int wherePos = Sql.IndexOf(whereClause, StringComparison.OrdinalIgnoreCase);
                 if (wherePos > 0)
                 {
-                    var sqlWhere = batchSql.Item1[(wherePos + whereClause.Length)..];
-                    sqlWhere = sqlWhere.Replace($"[{batchSql.Item2}].", string.Empty);
+                    var sqlWhere = Sql[(wherePos + whereClause.Length)..];
+                    sqlWhere = sqlWhere.Replace($"[{TableAlias}].", string.Empty);
+
                     deleteSearchCondition = " AND " + sqlWhere;
-                    parameters.AddRange(batchSql.Item6);
+                    parameters.AddRange(InnerParameters);
                 }
                 else
                 {

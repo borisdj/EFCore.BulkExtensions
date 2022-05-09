@@ -16,15 +16,15 @@ internal static class DbContextBulkTransactionSaveChanges
     #region SaveChanges
     public static void SaveChanges(DbContext context, BulkConfig? bulkConfig, Action<decimal>? progress)
     {
-        SaveChangesAsync(context, bulkConfig, progress, CancellationToken.None, isAsync: false).GetAwaiter().GetResult();
+        SaveChangesAsync(context, bulkConfig, progress, isAsync: false, CancellationToken.None).GetAwaiter().GetResult();
     }
 
     public static async Task SaveChangesAsync(DbContext context, BulkConfig? bulkConfig, Action<decimal>? progress, CancellationToken cancellationToken)
     {
-        await SaveChangesAsync(context, bulkConfig, progress, cancellationToken, isAsync: true).ConfigureAwait(false);
+        await SaveChangesAsync(context, bulkConfig, progress, isAsync: true, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async Task SaveChangesAsync(DbContext context, BulkConfig? bulkConfig, Action<decimal>? progress, CancellationToken cancellationToken, bool isAsync)
+    private static async Task SaveChangesAsync(DbContext context, BulkConfig? bulkConfig, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken)
     {
         // 2 ways:
         // OPTION 1) iteration with Dic and Fast member
@@ -116,6 +116,7 @@ internal static class DbContextBulkTransactionSaveChanges
                                 if (fastPropertyDicts.ContainsKey(navigation.ClrType.Name)) // otherwise set it:
                                 {
                                     var parentPropertyDict = fastPropertyDicts[navigation.ClrType.Name];
+
                                     var fkName = navigation.ForeignKey.Properties.Count > 0
                                         ? navigation.ForeignKey.Properties[0].Name
                                         : null;
@@ -149,11 +150,11 @@ internal static class DbContextBulkTransactionSaveChanges
                     string methodName = EntityStateBulkMethodDict[entryGroup.EntityState].Key;
                     if (isAsync)
                     {
-                        await InvokeBulkMethod(context, entryGroup.Entities, entityType, methodName, bulkConfig, progress, cancellationToken, isAsync: true).ConfigureAwait(false);
+                        await InvokeBulkMethod(context, entryGroup.Entities, entityType, methodName, bulkConfig, progress, isAsync: true, cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {
-                        InvokeBulkMethod(context, entryGroup.Entities, entityType, methodName, bulkConfig, progress, cancellationToken, isAsync: false).GetAwaiter().GetResult();
+                        InvokeBulkMethod(context, entryGroup.Entities, entityType, methodName, bulkConfig, progress, isAsync: false, cancellationToken).GetAwaiter().GetResult();
                     }
                 }
             }
@@ -164,11 +165,11 @@ internal static class DbContextBulkTransactionSaveChanges
                 {
                     if (isAsync)
                     {
-                        await InvokeBulkMethod(context, bulkMethod.Entries, bulkMethod.Type, bulkMethod.MethodName, bulkConfig, progress, cancellationToken, isAsync: true).ConfigureAwait(false);
+                        await InvokeBulkMethod(context, bulkMethod.Entries, bulkMethod.Type, bulkMethod.MethodName, bulkConfig, progress, isAsync: true, cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {
-                        InvokeBulkMethod(context, bulkMethod.Entries, bulkMethod.Type, bulkMethod.MethodName, bulkConfig, progress, cancellationToken, isAsync: false).GetAwaiter().GetResult();
+                        InvokeBulkMethod(context, bulkMethod.Entries, bulkMethod.Type, bulkMethod.MethodName, bulkConfig, progress, isAsync: false, cancellationToken).GetAwaiter().GetResult();
                     }
                 }
             }
@@ -195,7 +196,7 @@ internal static class DbContextBulkTransactionSaveChanges
         }
     }
 
-    private static async Task InvokeBulkMethod(DbContext context, List<object> entities, Type entityType, string methodName, BulkConfig bulkConfig, Action<decimal>? progress, CancellationToken cancellationToken, bool isAsync)
+    private static async Task InvokeBulkMethod(DbContext context, List<object> entities, Type entityType, string methodName, BulkConfig bulkConfig, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken)
     {
         methodName += isAsync ? "Async" : "";
         MethodInfo? bulkMethod = typeof(DbContextBulkExtensions)
@@ -227,7 +228,7 @@ internal static class DbContextBulkTransactionSaveChanges
         }
     }
 
-    private static Dictionary<EntityState, KeyValuePair<string, int>> EntityStateBulkMethodDict => new Dictionary<EntityState, KeyValuePair<string, int>>
+    private static Dictionary<EntityState, KeyValuePair<string, int>> EntityStateBulkMethodDict => new()
     {
         { EntityState.Deleted, new KeyValuePair<string, int>(nameof(DbContextBulkExtensions.BulkDelete), 1) },
         { EntityState.Modified, new KeyValuePair<string, int>(nameof(DbContextBulkExtensions.BulkUpdate), 2) },

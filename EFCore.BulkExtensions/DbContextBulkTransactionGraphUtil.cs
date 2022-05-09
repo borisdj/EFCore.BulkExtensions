@@ -14,15 +14,15 @@ internal static class DbContextBulkTransactionGraphUtil
 {
     public static void ExecuteWithGraph(DbContext context, IEnumerable<object> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal>? progress)
     {
-        ExecuteWithGraphAsync(context, entities, operationType, bulkConfig, progress, CancellationToken.None, isAsync: false).GetAwaiter().GetResult();
+        ExecuteWithGraphAsync(context, entities, operationType, bulkConfig, progress, isAsync: false, CancellationToken.None).GetAwaiter().GetResult();
     }
 
     public static async Task ExecuteWithGraphAsync(DbContext context, IEnumerable<object> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal>? progress, CancellationToken cancellationToken)
     {
-        await ExecuteWithGraphAsync(context, entities, operationType, bulkConfig, progress, cancellationToken, isAsync: true);
+        await ExecuteWithGraphAsync(context, entities, operationType, bulkConfig, progress, isAsync: true, cancellationToken);
     }
 
-    private static async Task ExecuteWithGraphAsync(DbContext context, IEnumerable<object> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal>? progress, CancellationToken cancellationToken, bool isAsync)
+    private static async Task ExecuteWithGraphAsync(DbContext context, IEnumerable<object> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken)
     {
         if (operationType != OperationType.Insert
                    && operationType != OperationType.InsertOrUpdate

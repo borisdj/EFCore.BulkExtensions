@@ -617,6 +617,7 @@ public class TableInfo
     #endregion
 
     #region SqlCommands
+      
     /// <summary>
     /// Checks if the table exists
     /// </summary>
@@ -625,7 +626,7 @@ public class TableInfo
     /// <param name="cancellationToken"></param>
     /// <param name="isAsync"></param>
     /// <returns></returns>
-    public async Task<bool> CheckTableExistAsync(DbContext context, TableInfo tableInfo, CancellationToken cancellationToken, bool isAsync)
+    public static async Task<bool> CheckTableExistAsync(DbContext context, TableInfo tableInfo, bool isAsync, CancellationToken cancellationToken)
     {
         if (isAsync)
         {
@@ -683,7 +684,7 @@ public class TableInfo
         }
         return tableExist;
     }
-
+  
     /// <summary>
     /// Checks the number of updated entities
     /// </summary>
@@ -691,7 +692,7 @@ public class TableInfo
     /// <param name="cancellationToken"></param>
     /// <param name="isAsync"></param>
     /// <returns></returns>
-    protected async Task<int> GetNumberUpdatedAsync(DbContext context, CancellationToken cancellationToken, bool isAsync)
+    protected async Task<int> GetNumberUpdatedAsync(DbContext context, bool isAsync, CancellationToken cancellationToken)
     {
         var resultParameter = (IDbDataParameter?)Activator.CreateInstance(typeof(Microsoft.Data.SqlClient.SqlParameter));
         if (resultParameter is null)
@@ -722,7 +723,7 @@ public class TableInfo
     /// <param name="cancellationToken"></param>
     /// <param name="isAsync"></param>
     /// <returns></returns>
-    protected async Task<int> GetNumberDeletedAsync(DbContext context, CancellationToken cancellationToken, bool isAsync)
+    protected async Task<int> GetNumberDeletedAsync(DbContext context, bool isAsync, CancellationToken cancellationToken)
     {
         var resultParameter = (IDbDataParameter?)Activator.CreateInstance(typeof(Microsoft.Data.SqlClient.SqlParameter));
         if (resultParameter is null)
@@ -757,7 +758,7 @@ public class TableInfo
     /// <returns></returns>
     public static string GetUniquePropertyValues(object entity, List<string> propertiesNames, Dictionary<string, FastProperty> fastPropertyDict)
     {
-        StringBuilder uniqueBuilder = new StringBuilder(1024);
+        StringBuilder uniqueBuilder = new(1024);
         string delimiter = "_"; // TODO: Consider making it Config-urable
         foreach (var propertyName in propertiesNames)
         {
@@ -777,7 +778,7 @@ public class TableInfo
             uniqueBuilder.Append(delimiter);
         }
         string result = uniqueBuilder.ToString();
-        result = result.Substring(0, result.Length - 1); // removes last delimiter
+        result = result[0..^1]; // removes last delimiter
         return result;
     }
 
@@ -950,16 +951,15 @@ public class TableInfo
         }
         return existingEntities;
     }
-
+  
     /// <summary>
     /// Updates the entities' identity field
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    /// <param name="context"></param>
     /// <param name="tableInfo"></param>
     /// <param name="entities"></param>
     /// <param name="entitiesWithOutputIdentity"></param>
-    public void UpdateEntitiesIdentity<T>(DbContext context, TableInfo tableInfo, IList<T> entities, IList<object> entitiesWithOutputIdentity)
+    public void UpdateEntitiesIdentity<T>(TableInfo tableInfo, IList<T> entities, IList<object> entitiesWithOutputIdentity)
     {
         var identifierPropertyName = IdentityColumnName != null ? OutputPropertyColumnNamesDict.SingleOrDefault(a => a.Value == IdentityColumnName).Key // it Identity autoincrement 
                                                                 : PrimaryKeysPropertyColumnNameDict.FirstOrDefault().Key;                               // or PK with default sql value
@@ -1066,7 +1066,7 @@ public class TableInfo
     /// <param name="cancellationToken"></param>
     /// <param name="isAsync"></param>
     /// <returns></returns>
-    public async Task LoadOutputDataAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, CancellationToken cancellationToken, bool isAsync) where T : class
+    public async Task LoadOutputDataAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, bool isAsync, CancellationToken cancellationToken) where T : class
     {
         bool hasIdentity = OutputPropertyColumnNamesDict.Any(a => a.Value == IdentityColumnName) ||
                            (tableInfo.HasSinglePrimaryKey && tableInfo.DefaultValueProperties.Contains(tableInfo.PrimaryKeysPropertyColumnNameDict.FirstOrDefault().Key));
@@ -1079,7 +1079,7 @@ public class TableInfo
             //var entitiesWithOutputIdentity = (typeof(T) == type) ? QueryOutputTable<object>(context, sqlQuery).ToList() : QueryOutputTable(context, type, sqlQuery).Cast<object>().ToList();
 
             //var entitiesObjects = entities.Cast<object>().ToList();
-            UpdateEntitiesIdentity(context, tableInfo, entities, entitiesWithOutputIdentity);
+            UpdateEntitiesIdentity(tableInfo, entities, entitiesWithOutputIdentity);
             totalNumber = entitiesWithOutputIdentity.Count;
         }
         if (BulkConfig.CalculateStats)
@@ -1088,13 +1088,13 @@ public class TableInfo
             int numberDeleted;
             if (isAsync)
             {
-                numberUpdated = await GetNumberUpdatedAsync(context, cancellationToken, isAsync: true).ConfigureAwait(false);
-                numberDeleted = await GetNumberDeletedAsync(context, cancellationToken, isAsync: true).ConfigureAwait(false);
+                numberUpdated = await GetNumberUpdatedAsync(context, isAsync: true, cancellationToken).ConfigureAwait(false);
+                numberDeleted = await GetNumberDeletedAsync(context, isAsync: true, cancellationToken).ConfigureAwait(false);
             }
             else
             {
-                numberUpdated = GetNumberUpdatedAsync(context, cancellationToken, isAsync: false).GetAwaiter().GetResult();
-                numberDeleted = GetNumberDeletedAsync(context, cancellationToken, isAsync: false).GetAwaiter().GetResult();
+                numberUpdated = GetNumberUpdatedAsync(context, isAsync: false, cancellationToken).GetAwaiter().GetResult();
+                numberDeleted = GetNumberDeletedAsync(context, isAsync: false, cancellationToken).GetAwaiter().GetResult();
             }
             BulkConfig.StatsInfo = new StatsInfo
             {

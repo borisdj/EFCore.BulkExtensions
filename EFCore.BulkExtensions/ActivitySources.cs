@@ -8,7 +8,7 @@ namespace EFCore.BulkExtensions;
 /// </summary>
 public static class ActivitySources
 {
-    private static readonly ActivitySource ActivitySource = new ActivitySource("EFCore.BulkExtensions");
+    private static readonly ActivitySource ActivitySource = new ("EFCore.BulkExtensions");
 
     /// <summary>
     /// Starts the activity
