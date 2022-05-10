@@ -1,0 +1,28 @@
+# To get started with Dependabot version updates, you'll need to specify which
+# package ecosystems to update and where the package manifests are located.
+# Please see the documentation for all configuration options:
+# https://help.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
+
+version: 1
+updates:
+  # Maintain dependencies for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    reviewers:
+      - "borisdj"
+  # Maintain dependencies for .NET projects (EFCore.BulkExtensions.Tests)
+  - package-ecosystem: "nuget"
+    directory: "/EFCore.BulkExtensions.Tests/"
+    schedule:
+      interval: "weekly"
+    reviewers:
+      - "borisdj"
+  # Maintain dependencies for .NET projects (EFCore.BulkExtensions)
+  - package-ecosystem: "nuget"
+    directory: "/EFCore.BulkExtensions/"
+    schedule:
+      interval: "weekly"
+    reviewers:
+      - "borisdj"
