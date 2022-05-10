@@ -174,7 +174,7 @@ public class EFCoreBulkTest
         query.BatchDelete();
 
         var descriptionsToDelete = new List<string> { "info" };
-        var query3 = context.Items.Where(a => descriptionsToDelete.Contains(a.Description));
+        var query3 = context.Items.Where(a => descriptionsToDelete.Contains(a.Description ?? ""));
         query3.BatchDelete();
 
         // for type 'jsonb'

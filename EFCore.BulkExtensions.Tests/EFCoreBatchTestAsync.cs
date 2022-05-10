@@ -160,7 +160,7 @@ WHERE [p].[PhoneNumber] = @__oldPhoneNumber_0";
         var list = new List<string>() { "Updated" };
         var updatedCount = await context.Set<Item>()
                                         .TagWith("From: someCallSite in someClassName") // To test parsing Sql with Tag leading comment
-                                        .Where(a => list.Contains(a.Description))
+                                        .Where(a => list.Contains(a.Description ?? ""))
                                         .BatchUpdateAsync(a => new Item() { TimeUpdated = DateTime.Now })
                                         .ConfigureAwait(false);
 

@@ -302,10 +302,10 @@ public class Item
 
     public int ItemId { get; set; }
 
-    public string Name { get; set; } = null!;
+    public string? Name { get; set; }
 
     [MaxLength(50)]
-    public string Description { get; set; } = null!;
+    public string? Description { get; set; }
 
     public int Quantity { get; set; }
 
@@ -349,7 +349,7 @@ public class UserRole
     [Key]
     public int RoleId { get; set; }
 
-    public string Description { get; set; } = null!;
+    public string? Description { get; set; }
 }
 
 // User Defined Table Type
@@ -740,5 +740,6 @@ public class Division
 
 public class PrivateKey
 {
+    private long Id { get; set; }
     public string Name { get; set; } = null!;
 }

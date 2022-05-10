@@ -283,7 +283,7 @@ WHERE [p].[ParentId] = 1";
     {
         var descriptionsToDelete = new List<string> { "info" };
         using var context = new TestContext(ContextUtil.GetOptions());
-        context.Items.Where(a => descriptionsToDelete.Contains(a.Description)).BatchDelete();
+        context.Items.Where(a => descriptionsToDelete.Contains(a.Description ?? "")).BatchDelete();
     }
 
     private static void RunContainsBatchDelete2()
@@ -291,14 +291,14 @@ WHERE [p].[ParentId] = 1";
         var descriptionsToDelete = new List<string> { "info" };
         var nameToDelete = "N4";
         using var context = new TestContext(ContextUtil.GetOptions());
-        context.Items.Where(a => descriptionsToDelete.Contains(a.Description) || a.Name == nameToDelete).BatchDelete();
+        context.Items.Where(a => descriptionsToDelete.Contains(a.Description ?? "") || a.Name == nameToDelete).BatchDelete();
     }
 
     private static void RunContainsBatchDelete3()
     {
         var descriptionsToDelete = new List<string>();
         using var context = new TestContext(ContextUtil.GetOptions());
-        context.Items.Where(a => descriptionsToDelete.Contains(a.Description)).BatchDelete();
+        context.Items.Where(a => descriptionsToDelete.Contains(a.Description ?? "")).BatchDelete();
     }
 
     private static void RunAnyBatchDelete()
@@ -353,6 +353,8 @@ WHERE [p].[ParentId] = 1";
         // read with User Defined Table Type parameter
         using (var context = new TestContext(ContextUtil.GetOptions()))
         {
+            var ll = context.UserRoles.ToList();
+
             var keysToUpdateQueryable = GetQueryableUdtt(context, keysToUpdate);
             var userRolesToUpdate = context.UserRoles
                 .Where(x => keysToUpdateQueryable.Where(y => y.C1 == x.UserId && y.C2 == x.RoleId).Any())
