@@ -1,11 +1,9 @@
-﻿using EFCore.BulkExtensions.SQLAdapters.PostgreSql;
-using EFCore.BulkExtensions.SQLAdapters.SQLite;
-using EFCore.BulkExtensions.SQLAdapters.SQLServer;
+﻿using EFCore.BulkExtensions.Sqlite.SqlAdapters.SQLite;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.ComponentModel;
 
-namespace EFCore.BulkExtensions.SqlAdapters;
+namespace EFCore.BulkExtensions.Sqlite.SqlAdapters;
 
 /// <summary>
 /// A list of database servers supported by EFCore.BulkExtensions
@@ -15,8 +13,8 @@ public enum DbServer
     /// <summary>
     /// Indicates database is Microsoft's SQL Server
     /// </summary>
-    [Description("SqlServer")] //DbProvider name in attribute
-    SQLServer,
+    //[Description("SqlServer")] //DbProvider name in attribute
+    //SQLServer,
 
     /// <summary>
     /// Indicates database is SQL Lite
@@ -27,8 +25,8 @@ public enum DbServer
     /// <summary>
     /// Indicates database is Npgql
     /// </summary>
-    [Description("Npgql")]
-    PostgreSQL,
+    //[Description("Npgql")]
+    //PostgreSQL,
 
     //[Description("MySQL")]
     //MySQL,
@@ -44,9 +42,7 @@ public static class SqlAdaptersMapping
     public static readonly Dictionary<DbServer, ISqlOperationsAdapter> SqlOperationAdapterMapping =
         new()
         {
-            {DbServer.SQLServer, new SqlOperationsServerAdapter()},
             {DbServer.SQLite, new SqliteOperationsAdapter()},
-            {DbServer.PostgreSQL, new PostgreSqlAdapter()}
         };
 
     /// <summary>
@@ -55,9 +51,7 @@ public static class SqlAdaptersMapping
     public static readonly Dictionary<DbServer, IQueryBuilderSpecialization> SqlQueryBuilderSpecializationMapping =
         new()
         {
-            {DbServer.SQLServer, new SqlServerDialect()},
             {DbServer.SQLite, new SqliteDialect()},
-            {DbServer.PostgreSQL, new PostgreSqlDialect()}
         };
 
     /// <summary>
@@ -99,12 +93,6 @@ public static class SqlAdaptersMapping
     /// <returns></returns>
     public static DbServer GetDatabaseType(DbContext context)
     {
-        var databaseType = DbServer.SQLServer;
-        if (context.Database.IsSqlite())
-            databaseType = DbServer.SQLite;
-        if (context.Database.IsNpgsql())
-            databaseType = DbServer.PostgreSQL;
-
-        return databaseType;
+        return DbServer.SQLite;
     }
 }

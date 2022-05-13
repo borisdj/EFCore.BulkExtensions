@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.Serialization;
 
-namespace EFCore.BulkExtensions;
+namespace EFCore.BulkExtensions.Sqlite;
 
 /// <summary>
 /// Provides a list of static exception messages

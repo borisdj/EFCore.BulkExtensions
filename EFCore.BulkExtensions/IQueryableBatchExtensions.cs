@@ -1,4 +1,3 @@
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -7,7 +6,7 @@ using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace EFCore.BulkExtensions;
+namespace EFCore.BulkExtensions.Sqlite;
 
 /// <summary>
 /// Contains a list of Batch IQuerable extensions

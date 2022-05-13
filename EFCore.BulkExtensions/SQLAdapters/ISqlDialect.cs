@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 
-namespace EFCore.BulkExtensions.SqlAdapters;
+namespace EFCore.BulkExtensions.Sqlite.SqlAdapters;
 
 
 /// <summary>

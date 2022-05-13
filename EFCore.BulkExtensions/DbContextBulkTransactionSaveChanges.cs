@@ -1,6 +1,4 @@
-﻿using EFCore.BulkExtensions.SQLAdapters.SQLServer;
-using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using System;
 using System.Collections.Generic;
@@ -9,7 +7,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace EFCore.BulkExtensions;
+namespace EFCore.BulkExtensions.Sqlite;
 
 internal static class DbContextBulkTransactionSaveChanges
 {

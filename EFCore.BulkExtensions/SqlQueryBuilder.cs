@@ -1,11 +1,9 @@
-﻿using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 
-namespace EFCore.BulkExtensions;
+namespace EFCore.BulkExtensions.Sqlite;
 
 /// <summary>
 /// Contains a compilation of SQL queries used in EFCore.
@@ -247,7 +245,6 @@ public static class SqlQueryBuilder
         List<object> parameters = new();
         string targetTable = tableInfo.FullTableName;
         string sourceTable = tableInfo.FullTempTableName;
-        bool keepIdentity = tableInfo.BulkConfig.SqlBulkCopyOptions.HasFlag(SqlBulkCopyOptions.KeepIdentity);
         List<string> primaryKeys = tableInfo.PrimaryKeysPropertyColumnNameDict.Where(a => tableInfo.PropertyColumnNamesDict.ContainsKey(a.Key)).Select(a => a.Value).ToList();
         List<string> columnsNames = tableInfo.PropertyColumnNamesDict.Values.ToList();
         List<string> columnsNamesOnCompare = tableInfo.PropertyColumnNamesCompareDict.Values.ToList();
@@ -256,7 +253,7 @@ public static class SqlQueryBuilder
         List<string> nonIdentityColumnsNames = columnsNames.Where(a => !a.Equals(tableInfo.IdentityColumnName, StringComparison.OrdinalIgnoreCase)).ToList();
         List<string> compareColumnNames = columnsNamesOnCompare.Where(a => !a.Equals(tableInfo.IdentityColumnName, StringComparison.OrdinalIgnoreCase)).ToList();
         List<string> updateColumnNames = columnsNamesOnUpdate.Where(a => !a.Equals(tableInfo.IdentityColumnName, StringComparison.OrdinalIgnoreCase)).ToList();
-        List<string> insertColumnsNames = (tableInfo.HasIdentity && !keepIdentity) ? nonIdentityColumnsNames : columnsNames;
+        List<string> insertColumnsNames = (tableInfo.HasIdentity) ? nonIdentityColumnsNames : columnsNames;
         if (tableInfo.DefaultValueProperties.Any()) // Properties with DefaultValue exclude OnInsert but keep OnUpdate
         {
             var defaults = insertColumnsNames.Where(a => tableInfo.DefaultValueProperties.Contains(a)).ToList();
@@ -286,7 +283,7 @@ public static class SqlQueryBuilder
                 $"ON {GetANDSeparatedColumns(primaryKeys, "T", "S", tableInfo.UpdateByPropertiesAreNullable)}";
         q += (primaryKeys.Count == 0) ? "1=0" : string.Empty;
 
-        if (operationType == OperationType.Insert || operationType == OperationType.InsertOrUpdate || operationType == OperationType.InsertOrUpdateOrDelete)
+        if (operationType == OperationType.Insert || operationType == OperationType.InsertOrUpdate)
         {
             q += $" WHEN NOT MATCHED BY TARGET THEN INSERT ({GetCommaSeparatedColumns(insertColumnsNames)})" +
                  $" VALUES ({GetCommaSeparatedColumns(insertColumnsNames, "S")})";
@@ -295,7 +292,7 @@ public static class SqlQueryBuilder
         q = q.Replace("INSERT () VALUES ()", "INSERT DEFAULT VALUES"); // case when table has only one column that is Identity
 
 
-        if (operationType == OperationType.Update || operationType == OperationType.InsertOrUpdate || operationType == OperationType.InsertOrUpdateOrDelete)
+        if (operationType == OperationType.Update || operationType == OperationType.InsertOrUpdate)
         {
             if (updateColumnNames.Count == 0 && operationType == OperationType.Update)
             {
@@ -315,38 +312,6 @@ public static class SqlQueryBuilder
             }
         }
 
-        if (operationType == OperationType.InsertOrUpdateOrDelete)
-        {
-            string deleteSearchCondition = string.Empty;
-            if (tableInfo.BulkConfig.SynchronizeFilter != null)
-            {
-                if (context is null)
-                {
-                    throw new ArgumentNullException(nameof(context));
-                }
-                var querable = context.Set<T>()
-                    .IgnoreQueryFilters()
-                    .IgnoreAutoIncludes()
-                    .Where((Expression<Func<T, bool>>)tableInfo.BulkConfig.SynchronizeFilter);
-                var (Sql, TableAlias, TableAliasSufixAs, TopStatement, LeadingComments, InnerParameters) = BatchUtil.GetBatchSql(querable, context, false);
-                var whereClause = $"{Environment.NewLine}WHERE ";
-                int wherePos = Sql.IndexOf(whereClause, StringComparison.OrdinalIgnoreCase);
-                if (wherePos > 0)
-                {
-                    var sqlWhere = Sql[(wherePos + whereClause.Length)..];
-                    sqlWhere = sqlWhere.Replace($"[{TableAlias}].", string.Empty);
-
-                    deleteSearchCondition = " AND " + sqlWhere;
-                    parameters.AddRange(InnerParameters);
-                }
-                else
-                {
-                    throw new InvalidBulkConfigException($"'Bulk{operationType}' SynchronizeFilter expression can not be translated to SQL");
-                }
-            }
-
-            q += " WHEN NOT MATCHED BY SOURCE" + deleteSearchCondition + " THEN DELETE";
-        }
         if (operationType == OperationType.Delete)
         {
             q += " WHEN MATCHED THEN DELETE";
@@ -354,7 +319,7 @@ public static class SqlQueryBuilder
         if (tableInfo.CreatedOutputTable)
         {
             string commaSeparatedColumnsNames;
-            if (operationType == OperationType.InsertOrUpdateOrDelete || operationType == OperationType.Delete)
+            if (operationType == OperationType.Delete)
             {
                 commaSeparatedColumnsNames = string.Join(", ", outputColumnsNames.Select(x => $"COALESCE(INSERTED.[{x}], DELETED.[{x}])"));
             }

@@ -1,6 +1,4 @@
-﻿using EFCore.BulkExtensions.SqlAdapters;
-using EFCore.BulkExtensions.SQLAdapters.SQLServer;
-using Microsoft.Data.Sqlite;
+﻿using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -10,7 +8,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace EFCore.BulkExtensions.SQLAdapters.SQLite;
+namespace EFCore.BulkExtensions.Sqlite.SqlAdapters.SQLite;
 /// <inheritdoc/>
 public class SqliteOperationsAdapter : ISqlOperationsAdapter
 {
@@ -331,9 +329,6 @@ public class SqliteOperationsAdapter : ISqlOperationsAdapter
             case OperationType.InsertOrUpdate:
                 command.CommandText = SqlQueryBuilderSqlite.InsertIntoTable(tableInfo, OperationType.InsertOrUpdate);
                 break;
-            case OperationType.InsertOrUpdateOrDelete:
-                throw new NotSupportedException("'BulkInsertOrUpdateDelete' not supported for Sqlite. Sqlite has only UPSERT statement (analog for MERGE WHEN MATCHED) but no functionality for: 'WHEN NOT MATCHED BY SOURCE THEN DELETE'." +
-                                                " Another way to achieve this is to BulkRead existing data from DB, split list into sublists and call separately Bulk methods for Insert, Update, Delete.");
             case OperationType.Update:
                 command.CommandText = SqlQueryBuilderSqlite.UpdateSetTable(tableInfo);
                 break;

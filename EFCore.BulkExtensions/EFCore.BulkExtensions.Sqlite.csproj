@@ -1,0 +1,37 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <Title>EFCore.BulkExtensions.Sqlite</Title>
+    <Version>5.0.17</Version>
+	  <Nullable>enable</Nullable>	  
+    <Authors>Respawnsive</Authors>
+    <Description>Fork of EFCore BulkExtensions special Sqlite : lighter version and minimal dependencies (EFCore.SQLite Only and EFCore5.x/dotnet5)</Description>
+    <PackageProjectUrl>https://github.com/Jerome-Liger/EFCore.BulkExtensions</PackageProjectUrl>
+    <Company />
+    <PackageIcon>EFCoreBulk.png</PackageIcon>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageTags>EFCore BulkExtensions Fork : LightWeight and low dependencies (EFCore.SQLite Only and EFCore5/dotnet5)</PackageTags>
+    <PackageReleaseNotes>Refactor and nuget update</PackageReleaseNotes>
+    <RepositoryUrl>https://github.com/Jerome-Liger/EFCore.BulkExtensions</RepositoryUrl>
+    <RepositoryType>Git</RepositoryType>
+    <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
+    <AssemblyVersion>5.0.17</AssemblyVersion>
+    <FileVersion>5.0.17</FileVersion>
+    <LangVersion>latest</LangVersion>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="5.0.17" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="5.0.17" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\EFCoreBulk.png">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+  </ItemGroup>
+
+</Project>

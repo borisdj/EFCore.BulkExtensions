@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore.Storage;
 using System.Data.Common;
 
-namespace EFCore.BulkExtensions;
+namespace EFCore.BulkExtensions.Sqlite;
 
 #pragma warning disable CS1591 // No XML comments required here
 public static class DbContextUnderlyingExtensions

@@ -1,5 +1,4 @@
-﻿using EFCore.BulkExtensions.SqlAdapters;
-using Microsoft.Data.Sqlite;
+﻿using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Data;
@@ -7,7 +6,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text.RegularExpressions;
 
-namespace EFCore.BulkExtensions.SQLAdapters.SQLite;
+namespace EFCore.BulkExtensions.Sqlite.SqlAdapters.SQLite;
 
 /// <inheritdoc/>
 public class SqliteDialect : IQueryBuilderSpecialization

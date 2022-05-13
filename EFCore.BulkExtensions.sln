@@ -1,11 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29318.209
+# Visual Studio Version 17
+VisualStudioVersion = 17.1.32421.90
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.BulkExtensions", "EFCore.BulkExtensions\EFCore.BulkExtensions.csproj", "{7D066852-F665-4FAB-B65A-5E8244496C24}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.BulkExtensions.Tests", "EFCore.BulkExtensions.Tests\EFCore.BulkExtensions.Tests.csproj", "{2328B243-982C-47B7-885B-999231149C72}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.BulkExtensions.Sqlite", "EFCore.BulkExtensions\EFCore.BulkExtensions.Sqlite.csproj", "{7D066852-F665-4FAB-B65A-5E8244496C24}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,10 +15,6 @@ Global
 		{7D066852-F665-4FAB-B65A-5E8244496C24}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7D066852-F665-4FAB-B65A-5E8244496C24}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7D066852-F665-4FAB-B65A-5E8244496C24}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2328B243-982C-47B7-885B-999231149C72}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2328B243-982C-47B7-885B-999231149C72}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2328B243-982C-47B7-885B-999231149C72}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2328B243-982C-47B7-885B-999231149C72}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

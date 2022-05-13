@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace EFCore.BulkExtensions;
+namespace EFCore.BulkExtensions.Sqlite;
 
 /// <summary>
 /// Provides a list of bulk extension methods
@@ -79,6 +79,7 @@ public static class DbContextBulkExtensions
     #endregion
 
     // InsertOrUpdate methods
+    #region BulkInsertOrUpdate
     /// <summary>
     /// Extension method to bulk insert or update data
     /// </summary>
@@ -88,7 +89,6 @@ public static class DbContextBulkExtensions
     /// <param name="bulkConfig"></param>
     /// <param name="progress"></param>
     /// <param name="type"></param>
-    #region BulkInsertOrUpdate
     public static void BulkInsertOrUpdate<T>(this DbContext context, IList<T> entities, BulkConfig? bulkConfig = null, Action<decimal>? progress = null, Type? type = null) where T : class
     {
         DbContextBulkTransaction.Execute(context, type, entities, OperationType.InsertOrUpdate, bulkConfig, progress);
@@ -142,74 +142,6 @@ public static class DbContextBulkExtensions
         BulkConfig bulkConfig = new();
         bulkAction?.Invoke(bulkConfig);
         return DbContextBulkTransaction.ExecuteAsync(context, type, entities, OperationType.InsertOrUpdate, bulkConfig, progress, cancellationToken);
-    }
-    #endregion
-
-    // InsertOrUpdateOrDelete methods
-    #region BulkInsertOrUpdateOrDelete
- 
-    /// <summary>
-    /// Extension method to bulk insert, update and delete data
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="context"></param>
-    /// <param name="entities"></param>
-    /// <param name="bulkConfig"></param>
-    /// <param name="progress"></param>
-    /// <param name="type"></param>
-    public static void BulkInsertOrUpdateOrDelete<T>(this DbContext context, IList<T> entities, BulkConfig? bulkConfig = null, Action<decimal>? progress = null, Type? type = null) where T : class
-    {
-        DbContextBulkTransaction.Execute(context, type, entities, OperationType.InsertOrUpdateOrDelete, bulkConfig, progress);
-    }
-
-    /// <summary>
-    /// Extension method to bulk insert, update and delete data
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="context"></param>
-    /// <param name="entities"></param>
-    /// <param name="bulkConfig"></param>
-    /// <param name="progress"></param>
-    /// <param name="type"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    public static Task BulkInsertOrUpdateOrDeleteAsync<T>(this DbContext context, IList<T> entities, BulkConfig? bulkConfig = null, Action<decimal>? progress = null, Type? type = null, CancellationToken cancellationToken = default) where T : class
-    {
-        return DbContextBulkTransaction.ExecuteAsync(context, type, entities, OperationType.InsertOrUpdateOrDelete, bulkConfig, progress, cancellationToken);
-    }
-
-    /// <summary>
-    /// Extension method to bulk insert, update and delete data
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="context"></param>
-    /// <param name="entities"></param>
-    /// <param name="bulkAction"></param>
-    /// <param name="progress"></param>
-    /// <param name="type"></param>
-    public static void BulkInsertOrUpdateOrDelete<T>(this DbContext context, IList<T> entities, Action<BulkConfig>? bulkAction, Action<decimal>? progress = null, Type? type = null) where T : class
-    {
-        BulkConfig bulkConfig = new();
-        bulkAction?.Invoke(bulkConfig);
-        DbContextBulkTransaction.Execute(context, type, entities, OperationType.InsertOrUpdateOrDelete, bulkConfig, progress);
-    }
-
-    /// <summary>
-    /// Extension method to bulk insert, update and delete data
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="context"></param>
-    /// <param name="entities"></param>
-    /// <param name="bulkAction"></param>
-    /// <param name="progress"></param>
-    /// <param name="type"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    public static Task BulkInsertOrUpdateOrDeleteAsync<T>(this DbContext context, IList<T> entities, Action<BulkConfig>? bulkAction, Action<decimal>? progress = null, Type? type = null, CancellationToken cancellationToken = default) where T : class
-    {
-        BulkConfig bulkConfig = new();
-        bulkAction?.Invoke(bulkConfig);
-        return DbContextBulkTransaction.ExecuteAsync(context, type, entities, OperationType.InsertOrUpdateOrDelete, bulkConfig, progress, cancellationToken);
     }
     #endregion
 

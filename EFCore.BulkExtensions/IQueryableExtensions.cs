@@ -1,4 +1,4 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.Internal;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
@@ -9,7 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace EFCore.BulkExtensions;
+namespace EFCore.BulkExtensions.Sqlite;
 
 /// <summary>
 /// Contains a list of IQuerable extensions
@@ -22,7 +22,7 @@ public static class IQueryableExtensions
     /// <param name="query"></param>
     /// <returns></returns>
     /// <exception cref="InvalidOperationException"></exception>
-    public static (string, IEnumerable<SqlParameter>) ToParametrizedSql(this IQueryable query)
+    public static (string, IEnumerable<SqliteParameter>) ToParametrizedSql(this IQueryable query)
     {
         string relationalQueryContextText = "_relationalQueryContext";
         string relationalCommandCacheText = "_relationalCommandCache";
@@ -41,7 +41,7 @@ public static class IQueryableExtensions
         if (relationalCommandCache != null)
         {
 #pragma warning disable EF1001 // Internal EF Core API usage.
-            command = (IRelationalCommand)relationalCommandCache.GetRelationalCommandTemplate(parameterValues);
+            command = (IRelationalCommand)relationalCommandCache.GetRelationalCommand(parameterValues);
 #pragma warning restore EF1001
         }
         else
@@ -54,16 +54,16 @@ public static class IQueryableExtensions
         }
         string sql = command.CommandText;
 
-        IList<SqlParameter> parameters;
+        IList<SqliteParameter> parameters;
         try
         {
-            using var dbCommand = new SqlCommand(); // Use a DbCommand to convert parameter values using ValueConverters to the correct type.
+            using var dbCommand = new SqliteCommand(); // Use a DbCommand to convert parameter values using ValueConverters to the correct type.
             foreach (var param in command.Parameters)
             {
                 var values = parameterValues[param.InvariantName];
                 param.AddDbParameter(dbCommand, values);
             }
-            parameters = new List<SqlParameter>(dbCommand.Parameters.OfType<SqlParameter>());
+            parameters = new List<SqliteParameter>(dbCommand.Parameters.OfType<SqliteParameter>());
             dbCommand.Parameters.Clear();
         }
         catch (Exception ex) // Fix for BatchDelete with 'uint' param on Sqlite. TEST: RunBatchUint
@@ -77,7 +77,7 @@ public static class IQueryableExtensions
                 ex.Message.StartsWith(npgsqlSpecParamMessage)) // Fix for BatchDelete with Contains on PostgreSQL
             {
                 var parameterNames = new HashSet<string>(command.Parameters.Select(p => p.InvariantName));
-                parameters = parameterValues.Where(pv => parameterNames.Contains(pv.Key)).Select(pv => new SqlParameter("@" + pv.Key, pv.Value)).ToList();
+                parameters = parameterValues.Where(pv => parameterNames.Contains(pv.Key)).Select(pv => new SqliteParameter("@" + pv.Key, pv.Value)).ToList();
             }
             else
             {

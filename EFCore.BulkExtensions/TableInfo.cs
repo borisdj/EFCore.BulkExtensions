@@ -1,11 +1,9 @@
-using EFCore.BulkExtensions.SqlAdapters;
-using EFCore.BulkExtensions.SQLAdapters.SQLServer;
+using EFCore.BulkExtensions.Sqlite.SqlAdapters;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Npgsql;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -18,7 +16,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace EFCore.BulkExtensions;
+namespace EFCore.BulkExtensions.Sqlite;
 
 /// <summary>
 /// Provides a list of information for EFCore.BulkExtensions that is used internally to know what to do with the data source received
@@ -85,10 +83,6 @@ public class TableInfo
     internal SqliteTransaction? SqliteTransaction { get; set; }
 
 
-    internal NpgsqlConnection? NpgsqlConnection { get; set; }
-    internal NpgsqlTransaction? NpgsqlTransaction { get; set; }
-
-
 #pragma warning restore CS1591 // No XML comments required here.
 
     /// <summary>
@@ -153,11 +147,9 @@ public class TableInfo
 
         //var relationalData = entityType.Relational(); relationalData.Schema relationalData.TableName // DEPRECATED in Core3.0
         string? providerName = context.Database.ProviderName?.ToLower();
-        bool isSqlServer = providerName?.EndsWith(DbServer.SQLServer.ToString().ToLower()) ?? false;
-        bool isNpgsql = providerName?.EndsWith(DbServer.PostgreSQL.ToString().ToLower()) ?? false;
         bool isSqlite = providerName?.EndsWith(DbServer.SQLite.ToString().ToLower()) ?? false;
 
-        string? defaultSchema = isSqlServer ? "dbo" : null;
+        string? defaultSchema = null;
 
         string? customSchema = null;
         string? customTableName = null;
@@ -266,25 +258,6 @@ public class TableInfo
         HasOwnedTypes = ownedTypes.Any();
         OwnedTypesDict = ownedTypes.ToDictionary(a => a.Name, a => a);
 
-        if (isSqlServer || isNpgsql)
-        {
-            string strategyName = (isSqlServer ? nameof(SqlServerValueGenerationStrategy) :
-                                                 nameof(Npgsql.EntityFrameworkCore.PostgreSQL.Metadata.NpgsqlValueGenerationStrategy))
-                                  .Replace("Value", ":Value"); //example 'SqlServer:ValueGenerationStrategy'
-            foreach (var property in allProperties)
-            {
-                var annotation = property.FindAnnotation(strategyName);
-                bool hasIdentity = false;
-                if (annotation != null)
-                    hasIdentity = isSqlServer ? (SqlServerValueGenerationStrategy?)annotation.Value == SqlServerValueGenerationStrategy.IdentityColumn
-                                              : (Npgsql.EntityFrameworkCore.PostgreSQL.Metadata.NpgsqlValueGenerationStrategy?)annotation.Value == Npgsql.EntityFrameworkCore.PostgreSQL.Metadata.NpgsqlValueGenerationStrategy.IdentityByDefaultColumn;
-                if (hasIdentity == true)
-                {
-                    IdentityColumnName = property.GetColumnName(ObjectIdentifier);
-                    break;
-                }
-            }
-        }
         if (isSqlite) // SQLite no ValueGenerationStrategy
         {
             // for HiLo on SqlServer was returning True when should be False
@@ -293,8 +266,7 @@ public class TableInfo
                                                     (a.ClrType.Name.StartsWith("Byte") ||
                                                      a.ClrType.Name.StartsWith("SByte") ||
                                                      a.ClrType.Name.StartsWith("Int") ||
-                                                     a.ClrType.Name.StartsWith("UInt") ||
-                                                     (isSqlServer && a.ClrType.Name.StartsWith("Decimal")))
+                                                     a.ClrType.Name.StartsWith("UInt"))
                                               )?.GetColumnName(ObjectIdentifier);
         }
 
@@ -586,34 +558,7 @@ public class TableInfo
         }
     }
 
-    /// <summary>
-    /// Supports <see cref="Microsoft.Data.SqlClient.SqlBulkCopy"/>
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="sqlBulkCopy"></param>
-    /// <param name="entities"></param>
-    /// <param name="setColumnMapping"></param>
-    /// <param name="progress"></param>
-    public void SetSqlBulkCopyConfig<T>(Microsoft.Data.SqlClient.SqlBulkCopy sqlBulkCopy, IList<T> entities, bool setColumnMapping, Action<decimal>? progress)
-    {
-        sqlBulkCopy.DestinationTableName = InsertToTempTable ? FullTempTableName : FullTableName;
-        sqlBulkCopy.BatchSize = BulkConfig.BatchSize;
-        sqlBulkCopy.NotifyAfter = BulkConfig.NotifyAfter ?? BulkConfig.BatchSize;
-        sqlBulkCopy.SqlRowsCopied += (sender, e) =>
-        {
-            progress?.Invoke(ProgressHelper.GetProgress(entities.Count, e.RowsCopied)); // round to 4 decimal places
-        };
-        sqlBulkCopy.BulkCopyTimeout = BulkConfig.BulkCopyTimeout ?? sqlBulkCopy.BulkCopyTimeout;
-        sqlBulkCopy.EnableStreaming = BulkConfig.EnableStreaming;
-
-        if (setColumnMapping)
-        {
-            foreach (var element in PropertyColumnNamesDict)
-            {
-                sqlBulkCopy.ColumnMappings.Add(element.Key, element.Value);
-            }
-        }
-    }
+    
     #endregion
 
     #region SqlCommands
@@ -684,25 +629,14 @@ public class TableInfo
         }
         return tableExist;
     }
-  
-    /// <summary>
-    /// Checks the number of updated entities
-    /// </summary>
-    /// <param name="context"></param>
-    /// <param name="cancellationToken"></param>
-    /// <param name="isAsync"></param>
-    /// <returns></returns>
-    protected async Task<int> GetNumberUpdatedAsync(DbContext context, bool isAsync, CancellationToken cancellationToken)
+
+    protected async Task<int> GetNumberDeletedAsync(DbContext context, bool isAsync, CancellationToken cancellationToken)
     {
-        var resultParameter = (IDbDataParameter?)Activator.CreateInstance(typeof(Microsoft.Data.SqlClient.SqlParameter));
-        if (resultParameter is null)
-        {
-            throw new ArgumentException("Unable to create an instance of IDbDataParameter");
-        }
+        var resultParameter = (IDbDataParameter)Activator.CreateInstance(typeof(Microsoft.Data.Sqlite.SqliteParameter));
         resultParameter.ParameterName = "@result";
         resultParameter.DbType = DbType.Int32;
         resultParameter.Direction = ParameterDirection.Output;
-        string sqlQueryCount = SqlQueryBuilder.SelectCountIsUpdateFromOutputTable(this);
+        string sqlQueryCount = SqlQueryBuilder.SelectCountIsDeleteFromOutputTable(this);
 
         var sqlSetResult = $"SET @result = ({sqlQueryCount});";
         if (isAsync)
@@ -713,19 +647,19 @@ public class TableInfo
         {
             context.Database.ExecuteSqlRaw(sqlSetResult, resultParameter);
         }
-        return (int)resultParameter.Value!;
+        return (int)resultParameter.Value;
     }
 
     /// <summary>
-    /// Checks the number of deleted entities
+    /// Checks the number of updated entities
     /// </summary>
     /// <param name="context"></param>
     /// <param name="cancellationToken"></param>
     /// <param name="isAsync"></param>
     /// <returns></returns>
-    protected async Task<int> GetNumberDeletedAsync(DbContext context, bool isAsync, CancellationToken cancellationToken)
+    protected async Task<int> GetNumberUpdatedAsync(DbContext context, bool isAsync, CancellationToken cancellationToken)
     {
-        var resultParameter = (IDbDataParameter?)Activator.CreateInstance(typeof(Microsoft.Data.SqlClient.SqlParameter));
+        var resultParameter = (IDbDataParameter?)Activator.CreateInstance(typeof(Microsoft.Data.Sqlite.SqliteParameter));
         if (resultParameter is null)
         {
             throw new ArgumentException("Unable to create an instance of IDbDataParameter");
@@ -733,7 +667,7 @@ public class TableInfo
         resultParameter.ParameterName = "@result";
         resultParameter.DbType = DbType.Int32;
         resultParameter.Direction = ParameterDirection.Output;
-        string sqlQueryCount = SqlQueryBuilder.SelectCountIsDeleteFromOutputTable(this);
+        string sqlQueryCount = SqlQueryBuilder.SelectCountIsUpdateFromOutputTable(this);
 
         var sqlSetResult = $"SET @result = ({sqlQueryCount});";
         if (isAsync)
@@ -829,11 +763,6 @@ public class TableInfo
             string uniqueProperyValues = GetUniquePropertyValues(entity!, selectByPropertyNames, FastPropertyDict);
 
             existingEntitiesDict.TryGetValue(uniqueProperyValues, out T? existingEntity);
-            bool isPostgreSQL = context.Database.ProviderName?.EndsWith(DbServer.PostgreSQL.ToString()) ?? false;
-            if (existingEntity == null && isPostgreSQL)
-            {
-                existingEntity = existingEntities[i]; // TODO check if BinaryImport with COPY on Postgres preserves order
-            }
             if (existingEntity != null)
             {
                 foreach (var propertyName in propertyNames)
@@ -874,7 +803,7 @@ public class TableInfo
         if (doSetIdentityColumnsForInsertOrder)
         {
             bool sortEntities = !reset && BulkConfig.SetOutputIdentity &&
-                                (operationType == OperationType.Update || operationType == OperationType.InsertOrUpdate || operationType == OperationType.InsertOrUpdateOrDelete);
+                                (operationType == OperationType.Update || operationType == OperationType.InsertOrUpdate);
             var entitiesExistingDict = new Dictionary<long, T>();
             var entitiesNew = new List<T>();
             var entitiesSorted = new List<T>();
@@ -991,8 +920,7 @@ public class TableInfo
                     var customPK = tableInfo.PrimaryKeysPropertyColumnNameDict.FirstOrDefault().Value;
                     if (identifierPropertyName != customPK &&
                         (tableInfo.BulkConfig.OperationType == OperationType.Update ||
-                         tableInfo.BulkConfig.OperationType == OperationType.InsertOrUpdate ||
-                         tableInfo.BulkConfig.OperationType == OperationType.InsertOrUpdateOrDelete)
+                         tableInfo.BulkConfig.OperationType == OperationType.InsertOrUpdate)
                        ) // (UpsertOrderTest) fix for BulkInsertOrUpdate assigns wrong output IDs when PreserveInsertOrder = true and SetOutputIdentity = true
                     {
                         if (entitiesDict.Count == 0)

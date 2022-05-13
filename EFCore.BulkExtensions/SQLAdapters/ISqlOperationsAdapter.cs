@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 
-namespace EFCore.BulkExtensions.SqlAdapters;
+namespace EFCore.BulkExtensions.Sqlite.SqlAdapters;
 
 /// <summary>
 /// Contains a list of SQL operations

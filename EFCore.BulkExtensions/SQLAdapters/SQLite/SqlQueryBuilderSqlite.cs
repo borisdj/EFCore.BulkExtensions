@@ -1,8 +1,7 @@
-﻿using Microsoft.Data.SqlClient;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace EFCore.BulkExtensions.SQLAdapters.SQLite;
+namespace EFCore.BulkExtensions.Sqlite.SqlAdapters.SQLite;
 
 /// <summary>
 /// Contains a list of static methods to generate SQL queries
@@ -38,8 +37,7 @@ public static class SqlQueryBuilderSqlite
         List<string> columnsList = tableInfo.PropertyColumnNamesDict.Values.ToList();
         List<string> propertiesList = tableInfo.PropertyColumnNamesDict.Keys.ToList();
 
-        bool keepIdentity = tableInfo.BulkConfig.SqlBulkCopyOptions.HasFlag(SqlBulkCopyOptions.KeepIdentity);
-        if (operationType == OperationType.Insert && !keepIdentity && tableInfo.HasIdentity)
+        if (operationType == OperationType.Insert && tableInfo.HasIdentity)
         {
             var identityPropertyName = tableInfo.PropertyColumnNamesDict.SingleOrDefault(a => a.Value == tableInfo.IdentityColumnName).Key;
             columnsList = columnsList.Where(a => a != tableInfo.IdentityColumnName).ToList();

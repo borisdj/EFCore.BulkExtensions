@@ -1,11 +1,11 @@
-using EFCore.BulkExtensions.SqlAdapters;
+using EFCore.BulkExtensions.Sqlite.SqlAdapters;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace EFCore.BulkExtensions;
+namespace EFCore.BulkExtensions.Sqlite;
 
 /// <summary>
 /// Describes the operation type
@@ -20,10 +20,6 @@ public enum OperationType
     /// Operation to insert or update a list of entities
     /// </summary>
     InsertOrUpdate,
-    /// <summary>
-    /// Operation to sync source table with a list of entities by inserting (or updating) and deleting records
-    /// </summary>
-    InsertOrUpdateOrDelete,
     /// <summary>
     /// Operation to update a list of entities
     /// </summary>

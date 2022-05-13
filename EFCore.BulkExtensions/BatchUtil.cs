@@ -1,6 +1,5 @@
-using EFCore.BulkExtensions.SqlAdapters;
-using EFCore.BulkExtensions.SQLAdapters.PostgreSql;
-using Microsoft.Data.SqlClient;
+using EFCore.BulkExtensions.Sqlite.SqlAdapters;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -16,7 +15,7 @@ using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace EFCore.BulkExtensions;
+namespace EFCore.BulkExtensions.Sqlite;
 
 /// <summary>
 /// Class responsible for all batch utilities related to EFCore.BulkExtensions
@@ -45,67 +44,7 @@ public static class BatchUtil
         innerParameters = ReloadSqlParameters(context, innerParameters.ToList()); // Sqlite requires SqliteParameters
         var databaseType = SqlAdaptersMapping.GetDatabaseType(context);
 
-        string resultQuery;
-        if (databaseType == DbServer.SQLServer)
-        {
-            tableAlias = $"[{tableAlias}]";
-            int outerQueryOrderByIndex = -1;
-            var useUpdateableCte = false;
-            var lastOrderByIndex = sql.LastIndexOf(Environment.NewLine + $"ORDER BY ", StringComparison.OrdinalIgnoreCase);
-            if (lastOrderByIndex > -1)
-            {
-                var subQueryEnd = sql.LastIndexOf($") AS {tableAlias}" + Environment.NewLine, StringComparison.OrdinalIgnoreCase);
-                if (subQueryEnd == -1 || lastOrderByIndex > subQueryEnd)
-                {
-                    outerQueryOrderByIndex = lastOrderByIndex;
-
-                    if (topStatement.Length > 0)
-                    {
-                        useUpdateableCte = true;
-                    }
-                    else
-                    {
-                        int offSetIndex = sql.LastIndexOf(Environment.NewLine + "OFFSET ", StringComparison.OrdinalIgnoreCase);
-                        if (offSetIndex > outerQueryOrderByIndex)
-                        {
-                            useUpdateableCte = true;
-                        }
-                    }
-                }
-            }
-
-            if (useUpdateableCte)
-            {
-                var cte = string.Concat("cte", Guid.NewGuid().ToString().AsSpan(0, 8)); // 8 chars of Guid as tableNameSuffix to avoid same name collision with other tables
-                resultQuery = $"{leadingComments}WITH [{cte}] AS (SELECT {topStatement}* {sql}) DELETE FROM [{cte}]";
-            }
-            else
-            {
-                if (outerQueryOrderByIndex > -1)
-                {
-                    // ORDER BY is not allowed without TOP or OFFSET.
-                    sql = sql[..outerQueryOrderByIndex];
-                }
-
-                resultQuery = $"{leadingComments}DELETE {topStatement}{tableAlias}{sql}";
-            }
-        }
-        else
-        {
-            resultQuery = $"{leadingComments}DELETE {topStatement}{tableAlias}{sql}";
-        }
-
-        if (databaseType == DbServer.PostgreSQL)
-        {
-            resultQuery = SqlQueryBuilderPostgreSql.RestructureForBatch(resultQuery, isDelete: true);
-
-            var npgsqlParameters = new List<object>();
-            foreach (var param in innerParameters)
-            {
-                npgsqlParameters.Add(new Npgsql.NpgsqlParameter(((SqlParameter)param).ParameterName, ((SqlParameter)param).Value));
-            }
-            innerParameters = npgsqlParameters;
-        }
+        string resultQuery = $"{leadingComments}DELETE {topStatement}{tableAlias}{sql}";
 
         return (resultQuery, new List<object>(innerParameters));
     }
@@ -146,27 +85,6 @@ public static class BatchUtil
             resultQuery = resultQuery.Split("ORDER", StringSplitOptions.None)[0];
         }
 
-        var databaseType = SqlAdaptersMapping.GetDatabaseType(context);
-        if (databaseType == DbServer.PostgreSQL)
-        {
-            resultQuery = SqlQueryBuilderPostgreSql.RestructureForBatch(resultQuery);
-
-            var npgsqlParameters = new List<object>();
-            foreach (var param in sqlParameters)
-            {
-                var npgsqlParam = new Npgsql.NpgsqlParameter(((SqlParameter)param).ParameterName, ((SqlParameter)param).Value);
-
-                string paramName = npgsqlParam.ParameterName.Replace("@", "");
-                var propertyType = type.GetProperties().SingleOrDefault(a => a.Name == paramName)?.PropertyType;
-                if (propertyType == typeof(System.Text.Json.JsonElement) || propertyType == typeof(System.Text.Json.JsonElement?)) // for JsonDocument works without fix
-                {
-                    npgsqlParam.NpgsqlDbType = NpgsqlTypes.NpgsqlDbType.Jsonb;
-                }
-
-                npgsqlParameters.Add(npgsqlParam);
-            }
-            sqlParameters = npgsqlParameters;
-        }
 
         return (resultQuery, sqlParameters);
     }
@@ -189,9 +107,7 @@ public static class BatchUtil
         CreateUpdateBody(createUpdateBodyData, expression.Body);
 
         var sqlParameters = ReloadSqlParameters(context, createUpdateBodyData.SqlParameters); // Sqlite requires SqliteParameters
-        var sqlColumns = (createUpdateBodyData.DatabaseType == DbServer.SQLServer) 
-            ? createUpdateBodyData.UpdateColumnsSql
-            : createUpdateBodyData.UpdateColumnsSql.Replace($"[{tableAlias}].", "");
+        var sqlColumns = createUpdateBodyData.UpdateColumnsSql.Replace($"[{tableAlias}].", "");
 
         var resultQuery = $"{leadingComments}UPDATE {topStatement}{tableAlias}{tableAliasSufixAs} SET {sqlColumns} {sql}";
 
@@ -203,28 +119,6 @@ public static class BatchUtil
         if (resultQuery.Contains("ORDER") && !resultQuery.Contains("TOP")) // When query has ORDER only without TOP(Take) then it is removed since not required and to avoid invalid Sql
         {
             resultQuery = resultQuery.Split("ORDER", StringSplitOptions.None)[0];
-        }
-
-        var databaseType = SqlAdaptersMapping.GetDatabaseType(context);
-        if (databaseType == DbServer.PostgreSQL)
-        {
-            resultQuery = SqlQueryBuilderPostgreSql.RestructureForBatch(resultQuery);
-
-            var npgsqlParameters = new List<object>();
-            foreach (var param in sqlParameters)
-            {
-                var npgsqlParam = new Npgsql.NpgsqlParameter(((SqlParameter)param).ParameterName, ((SqlParameter)param).Value);
-
-                string paramName = npgsqlParam.ParameterName.Replace("@", "");
-                var propertyType = type.GetProperties().SingleOrDefault(a => a.Name == paramName)?.PropertyType;
-                if (propertyType == typeof(System.Text.Json.JsonElement) || propertyType == typeof(System.Text.Json.JsonElement?))
-                {
-                    npgsqlParam.NpgsqlDbType = NpgsqlTypes.NpgsqlDbType.Jsonb;
-                }
-
-                npgsqlParameters.Add(npgsqlParam);
-            }
-            sqlParameters = npgsqlParameters;
         }
 
         return (resultQuery, sqlParameters);
@@ -348,7 +242,7 @@ public static class BatchUtil
                     {
                         propertyUpdateValue ??= DBNull.Value;
 
-                        param = new SqlParameter
+                        param = new SqliteParameter
                         {
                             ParameterName = $"@{columnName}",
                             Value = propertyUpdateValue
@@ -617,7 +511,7 @@ public static class BatchUtil
         var sqlParameter = TryCreateRelationalMappingParameter(columnName, paramName, value, tableInfo);
         if (sqlParameter == null)
         {
-            sqlParameter = new SqlParameter(paramName, value ?? DBNull.Value);
+            sqlParameter = new SqliteParameter(paramName, value ?? DBNull.Value);
             var columnType = columnName is null ? null : tableInfo?.ColumnNamesTypesDict[columnName];
             if (value == null
                 && (columnType?.Contains(DbType.Binary.ToString(), StringComparison.OrdinalIgnoreCase) ?? false)) //"varbinary(max)".Contains("binary")
@@ -655,7 +549,7 @@ public static class BatchUtil
         {
             var relationalTypeMapping = propertyInfo?.GetRelationalTypeMapping();
 
-            using var dbCommand = new SqlCommand();
+            using var dbCommand = new SqliteCommand();
             return relationalTypeMapping?.CreateParameter(dbCommand, parameterName, value, propertyInfo?.IsNullable);
         }
         catch (Exception) { }

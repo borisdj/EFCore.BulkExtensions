@@ -1,10 +1,9 @@
-using Microsoft.Data.SqlClient;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq.Expressions;
 
-namespace EFCore.BulkExtensions;
+namespace EFCore.BulkExtensions.Sqlite;
 
 /// <summary>
 /// Provides configration for EFCore BulkExtensions
@@ -251,12 +250,12 @@ public class BulkConfig
     /// <value>
     ///     <c>Default, KeepIdentity, CheckConstraints, TableLock, KeepNulls, FireTriggers, UseInternalTransaction</c>
     /// </value>
-    public Microsoft.Data.SqlClient.SqlBulkCopyOptions SqlBulkCopyOptions { get; set; } // is superset of System.Data.SqlClient.SqlBulkCopyOptions, gets converted to the desired type
+    //public Microsoft.Data.Sqlite..SqlBulkCopyOptions SqlBulkCopyOptions { get; set; } // is superset of System.Data.SqlClient.SqlBulkCopyOptions, gets converted to the desired type
 
     /// <summary>
     ///     List of column order hints for improving performance.
     /// </summary>
-    public List<SqlBulkCopyColumnOrderHint>? SqlBulkCopyColumnOrderHints { get; set; }
+    //public List<SqlBulkCopyColumnOrderHint>? SqlBulkCopyColumnOrderHints { get; set; }
 
     /// <summary>
     ///     A filter on entities to delete when using BulkInsertOrUpdateOrDelete.
