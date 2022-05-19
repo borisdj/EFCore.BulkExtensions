@@ -498,7 +498,7 @@ public class TableInfo
                     if (OwnedTypeUtil.IsOwnedInSameTableAsOwner(navigationProperty) == false)
                         continue;
 
-                    Type navOwnedType = type?.Assembly.GetType(property.PropertyType.FullName!) ?? throw new ArgumentException("Unable to determine Type");
+                    //Type navOwnedType = type?.Assembly.GetType(property.PropertyType.FullName!) ?? throw new ArgumentException("Unable to determine Type"); // was not used
                     var ownedEntityType = context.Model.FindEntityType(property.PropertyType);
                     if (ownedEntityType == null) // when entity has more then one ownedType (e.g. Address HomeAddress, Address WorkAddress) or one ownedType is in multiple Entities like Audit is usually.
                     {
