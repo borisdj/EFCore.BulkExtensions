@@ -89,7 +89,8 @@ public static class SqlQueryBuilderPostgreSql
             var updateByColumns = SqlQueryBuilder.GetCommaSeparatedColumns(tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList()).Replace("[", @"""").Replace("]", @"""");
 
             var columnsListEquals = GetColumnList(tableInfo, OperationType.Insert);
-            var equalsColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsListEquals, equalsTable: "EXCLUDED").Replace("[", @"""").Replace("]", @"""");
+            var columnsToUpdate = columnsListEquals.Where(c => tableInfo.PropertyColumnNamesUpdateDict.ContainsKey(c)).ToList();
+            var equalsColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsToUpdate, equalsTable: "EXCLUDED").Replace("[", @"""").Replace("]", @"""");
 
             q = $"INSERT INTO {tableInfo.FullTableName} ({commaSeparatedColumns}) " +
                 $"(SELECT {commaSeparatedColumns} FROM {tableInfo.FullTempTableName}) " +
