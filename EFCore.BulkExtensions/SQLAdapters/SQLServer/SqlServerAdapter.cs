@@ -549,7 +549,7 @@ public class SqlOperationsServerAdapter: ISqlOperationsAdapter
             }
             else if (entityNavigationOwnedDict.ContainsKey(property.Name)) // isOWned
             {
-                Type? navOwnedType = type.Assembly.GetType(property.PropertyType.FullName!);
+                //Type? navOwnedType = type.Assembly.GetType(property.PropertyType.FullName!); // was not used
 
                 var ownedEntityType = context.Model.FindEntityType(property.PropertyType);
                 if (ownedEntityType == null)
