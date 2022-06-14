@@ -4,7 +4,7 @@
     <TargetFramework>net6.0</TargetFramework>
     <Title>EFCore.BulkExtensions</Title>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <Version>6.5.0</Version>
+    <Version>6.5.1</Version>
 	<Nullable>enable</Nullable>	  
     <Authors>borisdj</Authors>
     <Description>EntityFramework EF Core Bulk Batch Extensions for Insert Update Delete Read (CRUD) operations on SQL Server, PostgreSQL, SQLite</Description>
@@ -13,12 +13,12 @@
     <PackageIcon>EFCoreBulk.png</PackageIcon>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageTags>EntityFrameworkCore Entity Framework Core EFCore EF Core SQL Server PostgreSQL SQLite Bulk Batch Extensions Insert Update Delete Read Truncate SaveChanges </PackageTags>
-    <PackageReleaseNotes>Refactor and nuget update</PackageReleaseNotes>
+    <PackageReleaseNotes>PostgreSQL PropertiesToExcludeOnUpdate</PackageReleaseNotes>
     <RepositoryUrl>https://github.com/borisdj/EFCore.BulkExtensions</RepositoryUrl>
     <RepositoryType>Git</RepositoryType>
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
-    <AssemblyVersion>6.5.0.0</AssemblyVersion>
-    <FileVersion>6.5.0.0</FileVersion>
+    <AssemblyVersion>6.5.1.0</AssemblyVersion>
+    <FileVersion>6.5.1.0</FileVersion>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>Keys\EFCore.BulkExtensions.snk</AssemblyOriginatorKeyFile>
     <DelaySign>false</DelaySign>
