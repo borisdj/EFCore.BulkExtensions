@@ -284,7 +284,7 @@ var items = itemsNames.Select(a => new Item { Name = a }).ToList(); // Items lis
 var bulkConfig = new BulkConfig { UpdateByProperties = new List<string> { nameof(Item.Name) } };
 context.BulkRead(items, bulkConfig); // Items list will be loaded from Db with data(other properties)
 ```
-[Example](https://github.com/borisdj/EFCore.BulkExtensions/issues/733#issuecomment-1017417579) of special use case when need to BulkRead child entites after BulkReading parent list. 
+[Example](https://github.com/borisdj/EFCore.BulkExtensions/issues/733#issuecomment-1017417579) of special use case when need to BulkRead child entities after BulkReading parent list. 
 
 ## Performances
 
