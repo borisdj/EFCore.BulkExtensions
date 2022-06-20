@@ -135,7 +135,7 @@ TrackingEntities: false,	                  DateTime2PrecisionForceRound: false,
 WithHoldlock: true,	                          TemporalColumns: { "PeriodStart", "PeriodEnd" },
 CalculateStats: false,	                          EnableShadowProperties: false,
 SqlBulkCopyOptions: Default,                      OnSaveChangesSetFK: true,
-SqlBulkCopyColumnOrderHints: null,
+SqlBulkCopyColumnOrderHints: null,                IgnoreGlobalQueryFilters: false,
 --------------------------------------------------------------------------------------
 METHOD: SetSynchronizeFilter<T>
 ```
