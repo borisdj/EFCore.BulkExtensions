@@ -246,6 +246,11 @@ public class BulkConfig
     public bool OnSaveChangesSetFK { get; set; } = true;
 
     /// <summary>
+    ///     When set to True it ignores GlobalQueryFilters if they exist on the DbSet.
+    /// </summary>
+    public bool IgnoreGlobalQueryFilters { get; set; }
+
+    /// <summary>
     ///     Enum with [Flags] attribute which enables specifying one or more options.
     /// </summary>
     /// <value>

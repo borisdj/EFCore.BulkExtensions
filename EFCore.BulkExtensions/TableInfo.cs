@@ -1145,15 +1145,19 @@ public class TableInfo
         Expression<Func<DbContext, IQueryable<T>>>? expression = null;
         if (BulkConfig.TrackingEntities) // If Else can not be replaced with Ternary operator for Expression
         {
-            expression = (ctx) => ctx.Set<T>().FromSqlRaw(sqlQuery);
+            expression = BulkConfig.IgnoreGlobalQueryFilters ?
+                (ctx) => ctx.Set<T>().FromSqlRaw(sqlQuery).IgnoreQueryFilters() :
+                (ctx) => ctx.Set<T>().FromSqlRaw(sqlQuery);
         }
         else
         {
-            expression = (ctx) => ctx.Set<T>().FromSqlRaw(sqlQuery).AsNoTracking();
+            expression = BulkConfig.IgnoreGlobalQueryFilters ?
+                (ctx) => ctx.Set<T>().FromSqlRaw(sqlQuery).AsNoTracking().IgnoreQueryFilters() :
+                (ctx) => ctx.Set<T>().FromSqlRaw(sqlQuery).AsNoTracking();
         }
-        return ordered
-            ? Expression.Lambda<Func<DbContext, IQueryable<T>>>(OrderBy(typeof(T), expression.Body, PrimaryKeysPropertyColumnNameDict.Select(a => a.Key).ToList()), expression.Parameters)
-            : expression;
+        return ordered ?
+            Expression.Lambda<Func<DbContext, IQueryable<T>>>(OrderBy(typeof(T), expression.Body, PrimaryKeysPropertyColumnNameDict.Select(a => a.Key).ToList()), expression.Parameters) :
+            expression;
 
         // ALTERNATIVELY OrderBy with DynamicLinq ('using System.Linq.Dynamic.Core;' NuGet required) that eliminates need for custom OrderBy<T> method with Expression.
         //var queryOrdered = query.OrderBy(PrimaryKeys[0]);
