@@ -30,7 +30,7 @@
   <ItemGroup>
     <PackageReference Include="EntityFrameworkCore.SqlServer.HierarchyId" Version="3.0.1" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="4.1.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="6.0.5" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="6.0.6" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="6.0.5" />
     <PackageReference Include="NetTopologySuite.IO.SqlServerBytes" Version="2.1.0" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="6.0.4" />
