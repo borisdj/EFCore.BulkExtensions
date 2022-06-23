@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -9,6 +11,20 @@ namespace EFCore.BulkExtensions;
 /// </summary>
 public class FastProperty
 {
+    private static readonly ConcurrentDictionary<PropertyInfo, FastProperty> FastPropertyCache = new();
+    
+    /// <summary>
+    /// Get or create a <see cref="FastProperty"/> instance for getting/setting the given property.
+    /// </summary>
+    /// <param name="property">The property to obtain a <see cref="FastProperty"/> instance for.</param>
+    /// <returns>
+    /// A new or already existing and cached <see cref="FastProperty"/> instance.
+    /// </returns>
+    public static FastProperty GetOrCreate(PropertyInfo property)
+    {
+        return FastPropertyCache.GetOrAdd(property, p => new FastProperty(p));
+    }
+    
     private Func<object, object>? _getDelegate;
     private Action<object, object>? _setDelegate;
 
@@ -16,7 +32,7 @@ public class FastProperty
     /// Constructor for FastPropery
     /// </summary>
     /// <param name="property"></param>
-    public FastProperty(PropertyInfo property)
+    private FastProperty(PropertyInfo property)
     {
         Property = property;
         InitializeGet();

@@ -88,14 +88,14 @@ internal static class DbContextBulkTransactionSaveChanges
                         {
                             if (property.PropertyInfo != null) // skip Shadow Property
                             {
-                                entityPropertyDict.Add(property.Name, new FastProperty(property.PropertyInfo));
+                                entityPropertyDict.Add(property.Name, FastProperty.GetOrCreate(property.PropertyInfo));
                             }
                         }
                         foreach (var navigationPropertyInfo in navigationPropertiesInfo)
                         {
                             if (navigationPropertyInfo != null)
                             {
-                                entityPropertyDict.Add(navigationPropertyInfo.Name, new FastProperty(navigationPropertyInfo));
+                                entityPropertyDict.Add(navigationPropertyInfo.Name, FastProperty.GetOrCreate(navigationPropertyInfo));
                             }
                         }
                         fastPropertyDicts.Add(entityType.Name, entityPropertyDict);
