@@ -381,7 +381,7 @@ public class TableInfo
         {
             if (property.PropertyInfo != null) // skip Shadow Property
             {
-                FastPropertyDict.Add(property.Name, new FastProperty(property.PropertyInfo));
+                FastPropertyDict.Add(property.Name, FastProperty.GetOrCreate(property.PropertyInfo));
             }
 
             var converter = property.GetTypeMapping().Converter;
@@ -483,7 +483,7 @@ public class TableInfo
             {
                 if (navigation.PropertyInfo is not null)
                 {
-                    FastPropertyDict.Add(navigation.Name, new FastProperty(navigation.PropertyInfo));
+                    FastPropertyDict.Add(navigation.Name, FastProperty.GetOrCreate(navigation.PropertyInfo));
                 }
             }
 
@@ -492,7 +492,7 @@ public class TableInfo
                 foreach (var navigationProperty in ownedTypes)
                 {
                     var property = navigationProperty.PropertyInfo;
-                    FastPropertyDict.Add(property!.Name, new FastProperty(property));
+                    FastPropertyDict.Add(property!.Name, FastProperty.GetOrCreate(property));
 
                     // If the OwnedType is mapped to the separate table, don't try merge it into its owner
                     if (OwnedTypeUtil.IsOwnedInSameTableAsOwner(navigationProperty) == false)
@@ -516,7 +516,7 @@ public class TableInfo
                             var ownedEntityPropertyFullName = property.Name + "_" + ownedEntityProperty.Name;
                             if (!FastPropertyDict.ContainsKey(ownedEntityPropertyFullName) && ownedEntityProperty.PropertyInfo is not null)
                             {
-                                FastPropertyDict.Add(ownedEntityPropertyFullName, new FastProperty(ownedEntityProperty.PropertyInfo));
+                                FastPropertyDict.Add(ownedEntityPropertyFullName, FastProperty.GetOrCreate(ownedEntityProperty.PropertyInfo));
                             }
                         }
 
