@@ -48,6 +48,7 @@ public class TableInfo
     public bool InsertToTempTable { get; set; }
     public string? IdentityColumnName { get; set; }
     public bool HasIdentity => IdentityColumnName != null;
+    public ValueConverter? IdentityColumnConverter { get; set; }
     public bool HasOwnedTypes { get; set; }
     public bool HasAbstractList { get; set; }
     public bool ColumnNameContainsSquareBracket { get; set; }
@@ -390,6 +391,9 @@ public class TableInfo
                 var columnName = property.GetColumnName(ObjectIdentifier) ?? string.Empty;
                 ConvertiblePropertyColumnDict.Add(property.Name, columnName);
                 ConvertibleColumnConverterDict.Add(columnName, converter);
+
+                if (columnName == IdentityColumnName)
+                    IdentityColumnConverter = converter;
             }
         }
 
@@ -864,10 +868,15 @@ public class TableInfo
         var operationType = tableInfo.BulkConfig.OperationType;
         if (doSetIdentityColumnsForInsertOrder == true)
         {
-            if (operationType == OperationType.Insert && // Insert should either have all zeros for automatic order, or they can be manually set
-                Convert.ToInt64(FastPropertyDict[identityPropertyName].Get(entities[0]!)) != 0) // (to check it fast, condition for all 0s is only done on first one)
+            if (operationType == OperationType.Insert) // Insert should either have all zeros for automatic order, or they can be manually set
             {
-                doSetIdentityColumnsForInsertOrder = false;
+                var propertyValue = FastPropertyDict[identityPropertyName].Get(entities[0]!);
+                var identityValue = Convert.ToInt64(IdentityColumnConverter != null ? IdentityColumnConverter.ConvertToProvider(propertyValue) : propertyValue);
+                
+                if (identityValue != 0) // (to check it fast, condition for all 0s is only done on first one)
+                {
+                    doSetIdentityColumnsForInsertOrder = false;
+                }
             }
         }
 
@@ -883,7 +892,8 @@ public class TableInfo
             foreach (var entity in entities)
             {
                 var identityFastProperty = FastPropertyDict[identityPropertyName];
-                long identityValue = Convert.ToInt64(identityFastProperty.Get(entity!));
+                var propertyValue = identityFastProperty.Get(entity!);
+                long identityValue = Convert.ToInt64(IdentityColumnConverter != null ? IdentityColumnConverter.ConvertToProvider(propertyValue) : propertyValue);
 
                 if (identityValue == 0 ||         // set only zero(0) values
                     (identityValue < 0 && reset)) // set only negative(-N) values if reset
@@ -906,7 +916,7 @@ public class TableInfo
                     else
                         idValue = value; // type 'long' left as default
 
-                    identityFastProperty.Set(entity!, idValue);
+                    identityFastProperty.Set(entity!, IdentityColumnConverter != null ? IdentityColumnConverter.ConvertFromProvider(idValue) : idValue);
                     i++;
                 }
                 if (sortEntities)
