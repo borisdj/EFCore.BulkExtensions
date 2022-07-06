@@ -438,9 +438,9 @@ public class SqliteOperationsAdapter : ISqlOperationsAdapter
                 }
             }
 
-            if (tableInfo.ConvertibleColumnConverterDict.ContainsKey(propertyColumn.Key) && value != DBNull.Value)
+            if (tableInfo.ConvertibleColumnConverterDict.ContainsKey(propertyColumn.Value) && value != DBNull.Value)
             {
-                value = tableInfo.ConvertibleColumnConverterDict[propertyColumn.Key].ConvertToProvider.Invoke(value);
+                value = tableInfo.ConvertibleColumnConverterDict[propertyColumn.Value].ConvertToProvider.Invoke(value);
             }
 
             command.Parameters[$"@{parameterName}"].Value = value ?? DBNull.Value;
