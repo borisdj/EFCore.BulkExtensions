@@ -16,9 +16,11 @@ public static class SqlQueryBuilderPostgreSql
     /// </summary>
     /// <param name="existingTableName"></param>
     /// <param name="newTableName"></param>
-    public static string CreateTableCopy(string existingTableName, string newTableName)
+    /// <param name="useTempDb"></param>
+    public static string CreateTableCopy(string existingTableName, string newTableName, bool useTempDb)
     {
-        var q = $"CREATE TABLE {newTableName} " +
+        string keywordTEMP = useTempDb ? "TEMP " : ""; // "TEMP " or "TEMPORARY "
+        var q = $"CREATE {keywordTEMP}TABLE {newTableName} " +
                 $"AS TABLE {existingTableName} " +
                 $"WITH NO DATA;";
         q = q.Replace("[", @"""").Replace("]", @"""");

@@ -173,7 +173,7 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
         {
             tableInfo.InsertToTempTable = true;
 
-            var sqlCreateTableCopy = SqlQueryBuilderPostgreSql.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName);
+            var sqlCreateTableCopy = SqlQueryBuilderPostgreSql.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
             if (isAsync)
             {
                 await context.Database.ExecuteSqlRawAsync(sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
