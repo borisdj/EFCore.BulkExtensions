@@ -524,7 +524,10 @@ public class SqlOperationsServerAdapter: ISqlOperationsAdapter
                     continue;
 
                 var columnName = entityProperty.GetColumnName(objectIdentifier);
-                var propertyType = entityProperty.ClrType;
+
+                var isConvertible = tableInfo.ConvertibleColumnConverterDict.ContainsKey(columnName ?? string.Empty);
+                var propertyType = isConvertible ? tableInfo.ConvertibleColumnConverterDict[columnName ?? string.Empty].ProviderClrType : entityProperty.ClrType;
+
                 var underlyingType = Nullable.GetUnderlyingType(propertyType);
                 if (underlyingType != null)
                 {
