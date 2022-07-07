@@ -173,6 +173,10 @@ public class EFCoreBulkTest
         var query2 = context.Items.AsQueryable().Where(a => a.ItemId > 1 && a.ItemId < 3);
         query.BatchDelete();
 
+        var quants = new[] { 1, 2, 3 };
+        int qu = 5;
+        query.Where(a => quants.Contains(a.Quantity)).BatchUpdate(o => new Item { Quantity = qu });
+
         var descriptionsToDelete = new List<string> { "info" };
         var query3 = context.Items.Where(a => descriptionsToDelete.Contains(a.Description ?? ""));
         query3.BatchDelete();
