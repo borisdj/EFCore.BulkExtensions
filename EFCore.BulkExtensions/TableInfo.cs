@@ -834,7 +834,7 @@ public class TableInfo
 
             existingEntitiesDict.TryGetValue(uniqueProperyValues, out T? existingEntity);
             bool isPostgreSQL = context.Database.ProviderName?.EndsWith(DbServer.PostgreSQL.ToString()) ?? false;
-            if (existingEntity == null && isPostgreSQL)
+            if (existingEntity == null && isPostgreSQL && i < existingEntities.Count)
             {
                 existingEntity = existingEntities[i]; // TODO check if BinaryImport with COPY on Postgres preserves order
             }
