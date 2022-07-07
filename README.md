@@ -71,6 +71,11 @@ var updateCols = new List<string> { nameof(Item.Quantity) }; //Update 'Quantity'
 var q = context.Items.Where(a => a.ItemId <= 500);
 int affected = q.BatchUpdate(new Item { Description="Updated" }, updateCols); //result assigned to variable
 
+// Batch example - iterating with max size 
+do {
+    rowsAffected = query.Take(chunkSize).BatchDelete();
+} while (rowsAffected >= chunkSize);
+
 // Truncate
 context.Truncate<Entity>();
 context.TruncateAsync<Entity>();
