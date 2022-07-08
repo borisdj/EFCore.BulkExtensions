@@ -52,7 +52,8 @@ context.BulkSaveChanges();                    context.BulkSaveChangesAsync();   
 
 **Batch** Extensions are made on *IQueryable* DbSet and can be used as in the following code segment.<br>
 They are done as pure sql and no check is done whether some are prior loaded in memory and are being Tracked.<br>
-(*updateColumns* is optional param in which PropertyNames added explicitly when need update to it's default value)
+(*updateColumns* is optional param in which PropertyNames added explicitly when need update to it's default value)<br>
+Info about [lock-escalation](https://docs.microsoft.com/en-us/troubleshoot/sql/performance/resolve-blocking-problems-caused-lock-escalation) in SQL Server with Batch iteration example as a solution at the bottom of code segment.
 ```C#
 // Delete
 context.Items.Where(a => a.ItemId >  500).BatchDelete();
@@ -71,7 +72,7 @@ var updateCols = new List<string> { nameof(Item.Quantity) }; //Update 'Quantity'
 var q = context.Items.Where(a => a.ItemId <= 500);
 int affected = q.BatchUpdate(new Item { Description="Updated" }, updateCols); //result assigned to variable
 
-// Batch example - iterating with max size 
+// Batch iteration (useful in same cases to avoid lock escalation)
 do {
     rowsAffected = query.Take(chunkSize).BatchDelete();
 } while (rowsAffected >= chunkSize);
