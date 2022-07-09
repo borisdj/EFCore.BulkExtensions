@@ -1,6 +1,9 @@
 ﻿namespace EFCore.BulkExtensions.SqlAdapters.MySql;
 
-public class SqlQueryBuilderMySql
+/// <summary>
+///  Contains a list of methods to generate SQL queries required by EFCore
+/// </summary>
+public static class SqlQueryBuilderMySql
 {
     
 }

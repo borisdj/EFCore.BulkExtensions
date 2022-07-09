@@ -17,6 +17,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using MySqlConnector;
 
 namespace EFCore.BulkExtensions;
 
@@ -88,6 +89,7 @@ public class TableInfo
 
     internal NpgsqlConnection? NpgsqlConnection { get; set; }
     internal NpgsqlTransaction? NpgsqlTransaction { get; set; }
+    internal MySqlConnection? MySqlConnection { get; set; }
 
 
 #pragma warning restore CS1591 // No XML comments required here.
