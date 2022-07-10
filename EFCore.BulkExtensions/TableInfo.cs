@@ -83,12 +83,16 @@ public class TableInfo
 
     public StoreObjectIdentifier ObjectIdentifier { get; set; }
 
+    //Sqlite
     internal SqliteConnection? SqliteConnection { get; set; }
     internal SqliteTransaction? SqliteTransaction { get; set; }
 
 
+    //PostgreSql
     internal NpgsqlConnection? NpgsqlConnection { get; set; }
-    internal NpgsqlTransaction? NpgsqlTransaction { get; set; }
+    //internal NpgsqlTransaction? NpgsqlTransaction { get; set; }
+    
+    //MySql
     internal MySqlConnection? MySqlConnection { get; set; }
 
 
@@ -619,6 +623,17 @@ public class TableInfo
                 sqlBulkCopy.ColumnMappings.Add(element.Key, element.Value);
             }
         }
+    }
+    /// <summary>
+    /// Supports <see cref="MySqlConnector.MySqlBulkCopy"/>
+    /// </summary>
+    /// <param name="mySqlBulkCopy"></param>
+    public void SetMySqlBulkCopyConfig(MySqlBulkCopy mySqlBulkCopy)
+    {
+        mySqlBulkCopy.DestinationTableName = InsertToTempTable ? FullTempTableName : FullTableName;
+        mySqlBulkCopy.NotifyAfter = BulkConfig.NotifyAfter ?? BulkConfig.BatchSize;
+        mySqlBulkCopy.BulkCopyTimeout = BulkConfig.BulkCopyTimeout ?? mySqlBulkCopy.BulkCopyTimeout;
+        
     }
     #endregion
 

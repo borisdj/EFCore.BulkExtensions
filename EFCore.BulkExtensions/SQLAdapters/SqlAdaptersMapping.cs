@@ -4,6 +4,7 @@ using EFCore.BulkExtensions.SQLAdapters.SQLServer;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.ComponentModel;
+using EFCore.BulkExtensions.SqlAdapters.MySql;
 
 namespace EFCore.BulkExtensions.SqlAdapters;
 
