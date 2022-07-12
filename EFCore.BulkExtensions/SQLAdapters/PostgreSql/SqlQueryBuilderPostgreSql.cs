@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql;
 
@@ -98,6 +99,11 @@ public static class SqlQueryBuilderPostgreSql
                 $"(SELECT {commaSeparatedColumns} FROM {tableInfo.FullTempTableName}) " +
                 $"ON CONFLICT ({updateByColumns}) " +
                 $"DO UPDATE SET {equalsColumns}";
+
+            if (tableInfo.BulkConfig.OnConflictUpdateWhereSql != null)
+            {
+                q += $" WHERE {tableInfo.BulkConfig.OnConflictUpdateWhereSql(tableInfo.FullTableName.Replace("[", @"""").Replace("]", @""""), "EXCLUDED")}";
+            }
 
             if (tableInfo.CreatedOutputTable)
             {

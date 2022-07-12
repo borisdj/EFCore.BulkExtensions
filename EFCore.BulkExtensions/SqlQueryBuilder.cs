@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Text.RegularExpressions;
 
 namespace EFCore.BulkExtensions;
 
@@ -257,6 +258,7 @@ public static class SqlQueryBuilder
         List<string> compareColumnNames = columnsNamesOnCompare.Where(a => !a.Equals(tableInfo.IdentityColumnName, StringComparison.OrdinalIgnoreCase)).ToList();
         List<string> updateColumnNames = columnsNamesOnUpdate.Where(a => !a.Equals(tableInfo.IdentityColumnName, StringComparison.OrdinalIgnoreCase)).ToList();
         List<string> insertColumnsNames = (tableInfo.HasIdentity && !keepIdentity) ? nonIdentityColumnsNames : columnsNames;
+
         if (tableInfo.DefaultValueProperties.Any()) // Properties with DefaultValue exclude OnInsert but keep OnUpdate
         {
             var defaults = insertColumnsNames.Where(a => tableInfo.DefaultValueProperties.Contains(a)).ToList();
@@ -288,7 +290,8 @@ public static class SqlQueryBuilder
 
         if (operationType == OperationType.Insert || operationType == OperationType.InsertOrUpdate || operationType == OperationType.InsertOrUpdateOrDelete)
         {
-            q += $" WHEN NOT MATCHED BY TARGET THEN INSERT ({GetCommaSeparatedColumns(insertColumnsNames)})" +
+            q += $" WHEN NOT MATCHED BY TARGET " +
+                 $"THEN INSERT ({GetCommaSeparatedColumns(insertColumnsNames)})" +
                  $" VALUES ({GetCommaSeparatedColumns(insertColumnsNames, "S")})";
         }
 
@@ -311,7 +314,8 @@ public static class SqlQueryBuilder
                      (!tableInfo.BulkConfig.DoNotUpdateIfTimeStampChanged || tableInfo.TimeStampColumnName == null ? string.Empty :
                       $" AND S.[{tableInfo.TimeStampColumnName}] = T.[{tableInfo.TimeStampColumnName}]"
                      ) +
-                     $" THEN UPDATE SET {GetCommaSeparatedColumns(updateColumnNames, "T", "S")}";
+                     (tableInfo.BulkConfig.OnConflictUpdateWhereSql != null ? $" AND {tableInfo.BulkConfig.OnConflictUpdateWhereSql("T", "S")}" : string.Empty )
+                     + $" THEN UPDATE SET {GetCommaSeparatedColumns(updateColumnNames, "T", "S")}";
             }
         }
 
