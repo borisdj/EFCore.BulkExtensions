@@ -271,6 +271,7 @@ public class EFCoreBulkTestAsync
             var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
             keepEntityItemId = 3;
             bulkConfig.SetSynchronizeFilter<Item>(e => e.ItemId != keepEntityItemId.Value);
+            bulkConfig.OnConflictUpdateWhereSql = (existing, inserted) => $"{inserted}.{nameof(Item.TimeUpdated)} > {existing}.{nameof(Item.TimeUpdated)}"; // can use nameof bacause in this case property name is same as column name 
             await context.BulkInsertOrUpdateOrDeleteAsync(entities, bulkConfig);
             Assert.Equal(0, bulkConfig.StatsInfo?.StatsNumberInserted);
             Assert.Equal(EntitiesNumber / 2, bulkConfig.StatsInfo?.StatsNumberUpdated);

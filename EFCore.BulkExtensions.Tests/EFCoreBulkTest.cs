@@ -449,13 +449,20 @@ public class EFCoreBulkTest
                 TimeUpdated = dateTimeNow
             });
         }
+
+        int? keepEntityItemId = null;
         if (isBulk)
         {
             var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
+
+            keepEntityItemId = 3;
+            bulkConfig.SetSynchronizeFilter<Item>(e => e.ItemId != keepEntityItemId.Value);
+            bulkConfig.OnConflictUpdateWhereSql = (existing, inserted) => $"{inserted}.{nameof(Item.TimeUpdated)} > {existing}.{nameof(Item.TimeUpdated)}"; // can use nameof bacause in this case property name is same as column name 
+
             context.BulkInsertOrUpdateOrDelete(entities, bulkConfig, (a) => WriteProgress(a));
             Assert.Equal(0, bulkConfig.StatsInfo?.StatsNumberInserted);
             Assert.Equal(EntitiesNumber / 2, bulkConfig.StatsInfo?.StatsNumberUpdated);
-            Assert.Equal(EntitiesNumber / 2, bulkConfig.StatsInfo?.StatsNumberDeleted);
+            Assert.Equal(EntitiesNumber / 2 - 1, bulkConfig.StatsInfo?.StatsNumberDeleted);
         }
         else
         {
@@ -471,7 +478,7 @@ public class EFCoreBulkTest
         Item? firstEntity = context.Items.OrderBy(a => a.ItemId).FirstOrDefault();
         Item? lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
 
-        Assert.Equal(EntitiesNumber / 2, entitiesCount);
+        Assert.Equal(EntitiesNumber / 2 + (keepEntityItemId != null ? 1 : 0), entitiesCount);
         Assert.NotNull(firstEntity);
         Assert.Equal("name InsertOrUpdateOrDelete 2", firstEntity?.Name);
         Assert.NotNull(lastEntity);
