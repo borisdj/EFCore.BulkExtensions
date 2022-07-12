@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
@@ -36,6 +37,24 @@ public class SqlQueryBuilderUnitTests
 
         Assert.Equal(result, expected);
     }
+    
+    [Fact]
+    public void MergeTableInsertOrUpdateWithOnConflictUpdateWhereSqlTest()
+    {
+        TableInfo tableInfo = GetTestTableInfo((existing, inserted) => $"{inserted}.ItemTimestamp > {existing}.ItemTimestamp");
+        tableInfo.IdentityColumnName = "ItemId";
+        string actual = SqlQueryBuilder.MergeTable<Item>(null, tableInfo, OperationType.InsertOrUpdate).sql;
+
+        string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
+                          "ON T.[ItemId] = S.[ItemId] " +
+                          "WHEN NOT MATCHED BY TARGET THEN INSERT ([Name]) VALUES (S.[Name]) " +
+                          "WHEN MATCHED AND EXISTS (SELECT S.[Name] " +
+                          "EXCEPT SELECT T.[Name]) " +
+                          $"AND S.ItemTimestamp > T.ItemTimestamp " +
+                          "THEN UPDATE SET T.[Name] = S.[Name];";
+
+        Assert.Equal(expected, actual);
+    }
 
     [Fact]
     public void MergeTableInsertOrUpdateWithCompareTest()
@@ -53,6 +72,25 @@ public class SqlQueryBuilderUnitTests
 
         Assert.Equal(result, expected);
     }
+    
+    [Fact]
+    public void MergeTableInsertOrUpdateWithCompareAndOnConflictUpdateWhereSqlTest()
+    {
+        TableInfo tableInfo = GetTestTableWithCompareInfo((existing, inserted) => $"{inserted}.ItemTimestamp > {existing}.ItemTimestamp");
+        tableInfo.IdentityColumnName = "ItemId";
+        string actual = SqlQueryBuilder.MergeTable<Item>(null, tableInfo, OperationType.InsertOrUpdate).sql;
+
+        string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
+                          "ON T.[ItemId] = S.[ItemId] " +
+                          "WHEN NOT MATCHED BY TARGET THEN INSERT ([Name], [TimeUpdated]) VALUES (S.[Name], S.[TimeUpdated]) " +
+                          "WHEN MATCHED AND EXISTS (SELECT S.[Name] " +
+                          "EXCEPT SELECT T.[Name]) " +
+                          "AND S.ItemTimestamp > T.ItemTimestamp " +
+                          "THEN UPDATE SET T.[Name] = S.[Name], T.[TimeUpdated] = S.[TimeUpdated];";
+
+        Assert.Equal(expected, actual);
+    }
+    
     [Fact]
     public void MergeTableInsertOrUpdateNoUpdateTest()
     {
@@ -69,6 +107,24 @@ public class SqlQueryBuilderUnitTests
 
         Assert.Equal(result, expected);
     }
+    
+    [Fact]
+    public void MergeTableInsertOrUpdateNoUpdateWithOnConflictUpdateWhereSqlTest()
+    {
+        TableInfo tableInfo = GetTestTableWithNoUpdateInfo((existing, inserted) => $"{inserted}.ItemTimestamp > {existing}.ItemTimestamp");
+        tableInfo.IdentityColumnName = "ItemId";
+        string actual = SqlQueryBuilder.MergeTable<Item>(null, tableInfo, OperationType.InsertOrUpdate).sql;
+
+        string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
+                          "ON T.[ItemId] = S.[ItemId] " +
+                          "WHEN NOT MATCHED BY TARGET THEN INSERT ([Name], [TimeUpdated]) VALUES (S.[Name], S.[TimeUpdated]) " +
+                          "WHEN MATCHED AND EXISTS (SELECT S.[Name], S.[TimeUpdated] " +
+                          "EXCEPT SELECT T.[Name], T.[TimeUpdated]) " +
+                          "AND S.ItemTimestamp > T.ItemTimestamp " +
+                          "THEN UPDATE SET T.[Name] = S.[Name];";
+
+        Assert.Equal(expected, actual);
+    }
 
     [Fact]
     public void MergeTableUpdateTest()
@@ -84,6 +140,23 @@ public class SqlQueryBuilderUnitTests
                           "THEN UPDATE SET T.[Name] = S.[Name];";
 
         Assert.Equal(result, expected);
+    }
+    
+    [Fact]
+    public void MergeTableUpdateWithOnConflictUpdateWhereSqlTest()
+    {
+        TableInfo tableInfo = GetTestTableInfo((existing, inserted) => $"{inserted}.ItemTimestamp > {existing}.ItemTimestamp");
+        tableInfo.IdentityColumnName = "ItemId";
+        string actual = SqlQueryBuilder.MergeTable<Item>(null, tableInfo, OperationType.Update).sql;
+
+        string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
+                          "ON T.[ItemId] = S.[ItemId] " +
+                          "WHEN MATCHED AND EXISTS (SELECT S.[Name] " +
+                          "EXCEPT SELECT T.[Name]) " +
+                          "AND S.ItemTimestamp > T.ItemTimestamp " +
+                          "THEN UPDATE SET T.[Name] = S.[Name];";
+
+        Assert.Equal(expected, actual);
     }
 
     [Fact]
@@ -113,7 +186,7 @@ public class SqlQueryBuilderUnitTests
         Assert.Equal(result, expected);
     }
 
-    private TableInfo GetTestTableInfo()
+    private TableInfo GetTestTableInfo(Func<string, string, string>? onConflictUpdateWhereSql = null)
     {
         var tableInfo = new TableInfo()
         {
@@ -124,6 +197,9 @@ public class SqlQueryBuilderUnitTests
             TempTableSufix = "Temp1234",
             PrimaryKeysPropertyColumnNameDict = new Dictionary<string, string> { { nameof(Item.ItemId), nameof(Item.ItemId) } },
             BulkConfig = new BulkConfig()
+            {
+                OnConflictUpdateWhereSql = onConflictUpdateWhereSql
+            }
         };
         const string nameText = nameof(Item.Name);
 
@@ -136,7 +212,7 @@ public class SqlQueryBuilderUnitTests
         return tableInfo;
     }
 
-    private TableInfo GetTestTableWithCompareInfo()
+    private TableInfo GetTestTableWithCompareInfo(Func<string, string, string>? onConflictUpdateWhereSql = null)
     {
         var tableInfo = new TableInfo()
         {
@@ -147,6 +223,9 @@ public class SqlQueryBuilderUnitTests
             TempTableSufix = "Temp1234",
             PrimaryKeysPropertyColumnNameDict = new Dictionary<string, string> { { nameof(Item.ItemId), nameof(Item.ItemId) } },
             BulkConfig = new BulkConfig()
+            {
+                OnConflictUpdateWhereSql = onConflictUpdateWhereSql
+            }
         };
         const string nameText = nameof(Item.Name);
         const string timeUpdatedText = nameof(Item.TimeUpdated);
@@ -163,7 +242,7 @@ public class SqlQueryBuilderUnitTests
         tableInfo.PropertyColumnNamesUpdateDict = tableInfo.PropertyColumnNamesDict;
         return tableInfo;
     }
-    private TableInfo GetTestTableWithNoUpdateInfo()
+    private TableInfo GetTestTableWithNoUpdateInfo(Func<string, string, string>? onConflictUpdateWhereSql = null)
     {
         var tableInfo = new TableInfo()
         {
@@ -174,6 +253,9 @@ public class SqlQueryBuilderUnitTests
             TempTableSufix = "Temp1234",
             PrimaryKeysPropertyColumnNameDict = new Dictionary<string, string> { { nameof(Item.ItemId), nameof(Item.ItemId) } },
             BulkConfig = new BulkConfig()
+            {
+                OnConflictUpdateWhereSql = onConflictUpdateWhereSql
+            }
         };
         const string nameText = nameof(Item.Name);
         const string timeUpdatedText = nameof(Item.TimeUpdated);

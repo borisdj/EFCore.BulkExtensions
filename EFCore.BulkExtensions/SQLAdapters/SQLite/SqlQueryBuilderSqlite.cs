@@ -1,4 +1,5 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using System;
+using Microsoft.Data.SqlClient;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -63,6 +64,11 @@ public static class SqlQueryBuilderSqlite
             q += $" ON CONFLICT({commaSeparatedPrimaryKeys}) DO UPDATE" +
                  $" SET {commaSeparatedColumnsEquals}" +
                  $" WHERE {commaANDSeparatedPrimaryKeys}";
+            
+            if (tableInfo.BulkConfig.OnConflictUpdateWhereSql != null)
+            {
+                q += $" AND {tableInfo.BulkConfig.OnConflictUpdateWhereSql($"[{tableName}]", "excluded")}";
+            }
         }
 
         tableInfo.PropertyColumnNamesDict = tempDict;

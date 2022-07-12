@@ -178,9 +178,18 @@ public class BulkConfig
     ///     Used for specifying custom properties, by which we want update to be done.
     /// </summary>
     /// <remarks>
-    ///     If Identity column exisit and is not added in UpdateByProp it will be excluded automatically
+    ///     If Identity column exists and is not added in UpdateByProp it will be excluded automatically
     /// </remarks>
     public List<string>? UpdateByProperties { get; set; }
+    
+    /// <summary>
+    ///     Used for specifying a function that returns custom SQL to use for conditional updates on merges.
+    /// </summary>
+    /// <remarks>
+    ///     Function receives (existingTablePrefix, insertedTablePrefix) and should return the SQL of the WHERE clause.
+    ///     The SQLite implementation uses UPSERT functionality added in SQLite 3.24.0 (https://www.sqlite.org/lang_UPSERT.html).
+    /// </remarks>
+    public Func<string, string, string>? OnConflictUpdateWhereSql { get; set; }
 
     /// <summary>
     ///     When set to <c>true</c> it will adding (normal) Shadow Property and persist value. It Disables automatic discrimator, so it shoud be set manually.
