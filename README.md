@@ -142,6 +142,7 @@ WithHoldlock: true,	                          TemporalColumns: { "PeriodStart", 
 CalculateStats: false,	                          EnableShadowProperties: false,
 SqlBulkCopyOptions: Default,                      OnSaveChangesSetFK: true,
 SqlBulkCopyColumnOrderHints: null,                IgnoreGlobalQueryFilters: false,
+OnConflictUpdateWhereSql: null,
 --------------------------------------------------------------------------------------
 METHOD: SetSynchronizeFilter<T>
 ```
@@ -245,7 +246,8 @@ If need to set Identity PK in memory, Not let DB do the autoincrement, then need
 Useful for example when copying from one Db to another.
 
 **SetSynchronizeFilter<T>** A method that receives and sets expresion filter on entities to delete when using BulkInsertOrUpdateOrDelete.<br>
-
+**OnConflictUpdateWhereSql<T>** To define conditional updates on merges, Func receives (existingTable, insertedTable) and returns sql segment.<br>
+--Example: `bc.OnConflictUpdateWhereSql = (ex, in) => $"{in}.TimeUpdated > {ex}.TimeUpdated";`<br>
 Last optional argument is **Action progress** (Example in *EfOperationTest.cs* *RunInsert()* with *WriteProgress()*).
 ```C#
 context.BulkInsert(entitiesList, null, (a) => WriteProgress(a));
