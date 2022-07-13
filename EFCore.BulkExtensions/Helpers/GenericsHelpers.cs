@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -9,10 +10,11 @@ namespace EFCore.BulkExtensions.Helpers;
 /// </summary>
 internal static class GenericsHelpers
 {
-    internal static IEnumerable<string> GetPropertiesDefaultValue<T>(this T value, Type type) where T : class
+    internal static IEnumerable<string> GetPropertiesDefaultValue<T>(this T value, Type type, TableInfo tableInfo) where T : class
     {
         // type not obtained from typeof(T) but sent as arg. for IncludeGraph in which case it's not declared the same way
         // Obtain all fields with type pointer.
+
         var arrayPropertyInfos = type.GetProperties();
         var result = new List<string>();
         foreach (var field in arrayPropertyInfos)
@@ -24,6 +26,11 @@ internal static class GenericsHelpers
             var name = field.Name;
             var temp = field.GetValue(value);
             object? defaultValue = null;
+
+            if (!tableInfo.PropertyColumnNamesDict.ContainsKey(name)) // skip non-EF properties
+            {
+                continue;
+            }
 
             //bypass instance creation if incoming type is an interface or class does not have parameterless constructor
             var hasParameterlessConstructor = type.GetConstructor(Type.EmptyTypes) != null;
@@ -40,10 +47,10 @@ internal static class GenericsHelpers
         return result;
     }
 
-    internal static IEnumerable<string>? GetPropertiesWithDefaultValue<T>(this IEnumerable<T> values, Type type) where T : class
+    internal static IEnumerable<string>? GetPropertiesWithDefaultValue<T>(this IEnumerable<T> values, Type type, TableInfo tableInfo) where T : class
     {
         //var result = values.SelectMany(x => x.GetPropertiesDefaultValue(type)).ToList().Distinct(); // TODO: Check all options(ComputedAndDefaultValuesTest) and consider optimisation
-        var result = values.FirstOrDefault()?.GetPropertiesDefaultValue(type)?.Distinct();
+        var result = values.FirstOrDefault()?.GetPropertiesDefaultValue(type, tableInfo)?.Distinct();
         return result;
     }
 }
