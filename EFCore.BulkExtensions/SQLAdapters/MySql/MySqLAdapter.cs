@@ -10,7 +10,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using MySqlConnector;
 using NetTopologySuite.Geometries;
-using NetTopologySuite.IO;
 
 namespace EFCore.BulkExtensions.SqlAdapters.MySql;
 
