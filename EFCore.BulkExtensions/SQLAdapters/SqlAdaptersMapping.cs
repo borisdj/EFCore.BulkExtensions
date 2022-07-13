@@ -62,7 +62,8 @@ public static class SqlAdaptersMapping
         {
             {DbServer.SQLServer, new SqlServerDialect()},
             {DbServer.SQLite, new SqliteDialect()},
-            {DbServer.PostgreSQL, new PostgreSqlDialect()}
+            {DbServer.PostgreSQL, new PostgreSqlDialect()},
+            {DbServer.MySQL, new PostgreSqlDialect()}
         };
 
     /// <summary>

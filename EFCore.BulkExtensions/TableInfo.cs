@@ -163,6 +163,7 @@ public class TableInfo
         bool isSqlServer = providerName?.EndsWith(DbServer.SQLServer.ToString().ToLower()) ?? false;
         bool isNpgsql = providerName?.EndsWith(DbServer.PostgreSQL.ToString().ToLower()) ?? false;
         bool isSqlite = providerName?.EndsWith(DbServer.SQLite.ToString().ToLower()) ?? false;
+        bool isMySql = providerName?.EndsWith(DbServer.MySQL.ToString().ToLower()) ?? false;
 
         string? defaultSchema = isSqlServer ? "dbo" : null;
 
@@ -273,19 +274,43 @@ public class TableInfo
         HasOwnedTypes = ownedTypes.Any();
         OwnedTypesDict = ownedTypes.ToDictionary(a => a.Name, a => a);
 
-        if (isSqlServer || isNpgsql)
+        if (isSqlServer || isNpgsql || isMySql)
         {
-            string strategyName = (isSqlServer ? nameof(SqlServerValueGenerationStrategy) :
-                                                 nameof(Npgsql.EntityFrameworkCore.PostgreSQL.Metadata.NpgsqlValueGenerationStrategy))
-                                  .Replace("Value", ":Value"); //example 'SqlServer:ValueGenerationStrategy'
+            var strategyName = string.Empty;
+            if (isSqlServer)
+            {
+                strategyName = nameof(SqlServerValueGenerationStrategy);
+            }
+            else if (isNpgsql)
+            {
+                strategyName = nameof(Npgsql.EntityFrameworkCore.PostgreSQL.Metadata.NpgsqlValueGenerationStrategy);
+            }
+            else
+            {
+                strategyName = nameof(MySqlValueGenerationStrategy);
+            }
+            strategyName.Replace("Value", ":Value"); //example 'SqlServer:ValueGenerationStrategy'
+            
             foreach (var property in allProperties)
             {
                 var annotation = property.FindAnnotation(strategyName);
                 bool hasIdentity = false;
                 if (annotation != null)
-                    hasIdentity = isSqlServer ? (SqlServerValueGenerationStrategy?)annotation.Value == SqlServerValueGenerationStrategy.IdentityColumn
-                                              : (Npgsql.EntityFrameworkCore.PostgreSQL.Metadata.NpgsqlValueGenerationStrategy?)annotation.Value == Npgsql.EntityFrameworkCore.PostgreSQL.Metadata.NpgsqlValueGenerationStrategy.IdentityByDefaultColumn;
-                if (hasIdentity == true)
+                {
+                    if (isSqlServer)
+                    {
+                        hasIdentity = (SqlServerValueGenerationStrategy?) annotation.Value == SqlServerValueGenerationStrategy.IdentityColumn;
+                    }
+                    else if (isNpgsql)
+                    {
+                        hasIdentity = (Npgsql.EntityFrameworkCore.PostgreSQL.Metadata.NpgsqlValueGenerationStrategy?)annotation.Value == Npgsql.EntityFrameworkCore.PostgreSQL.Metadata.NpgsqlValueGenerationStrategy.IdentityByDefaultColumn;
+                    }
+                    else
+                    {
+                        hasIdentity = (MySqlValueGenerationStrategy?) annotation.Value == MySqlValueGenerationStrategy.IdentityColumn;
+                    }
+                }
+                if (hasIdentity)
                 {
                     IdentityColumnName = property.GetColumnName(ObjectIdentifier);
                     break;
@@ -631,9 +656,9 @@ public class TableInfo
     public void SetMySqlBulkCopyConfig(MySqlBulkCopy mySqlBulkCopy)
     {
         mySqlBulkCopy.DestinationTableName = InsertToTempTable ? FullTempTableName : FullTableName;
+        mySqlBulkCopy.DestinationTableName = mySqlBulkCopy.DestinationTableName.Replace("[", "").Replace("]", "");
         mySqlBulkCopy.NotifyAfter = BulkConfig.NotifyAfter ?? BulkConfig.BatchSize;
         mySqlBulkCopy.BulkCopyTimeout = BulkConfig.BulkCopyTimeout ?? mySqlBulkCopy.BulkCopyTimeout;
-        
     }
     #endregion
 

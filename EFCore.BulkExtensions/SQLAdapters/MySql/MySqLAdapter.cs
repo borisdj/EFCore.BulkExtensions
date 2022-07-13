@@ -51,28 +51,20 @@ public class MySqLAdapter : ISqlOperationsAdapter
             var transaction = context.Database.CurrentTransaction;
             var mySqlBulkCopy = GetMySqlBulkCopy(connection, transaction, tableInfo.BulkConfig);
             tableInfo.SetMySqlBulkCopyConfig(mySqlBulkCopy);
-            try
+
+            var dataTable = GetDataTable(context, type, entities, mySqlBulkCopy, tableInfo);
+            if (isAsync)
             {
-                var dataTable = GetDataTable(context, type, entities, mySqlBulkCopy, tableInfo);
-                if (isAsync)
-                {
-                    await mySqlBulkCopy.WriteToServerAsync(dataTable, cancellationToken).ConfigureAwait(false);
-                }
-                else
-                {
-                    mySqlBulkCopy.WriteToServer(dataTable);
-                }
+                await mySqlBulkCopy.WriteToServerAsync(dataTable, cancellationToken).ConfigureAwait(false);
             }
-            catch (InvalidOperationException e)
+            else
             {
-                Console.WriteLine(e);
-                throw;
+                mySqlBulkCopy.WriteToServer(dataTable);
             }
         }
-        catch (Exception e)
+        catch (MySqlException mySqlException)
         {
-            Console.WriteLine(e);
-            throw;
+            throw new Exception(mySqlException.Message);
         }
         finally
         {
@@ -90,7 +82,6 @@ public class MySqLAdapter : ISqlOperationsAdapter
             tableInfo.CheckToSetIdentityForPreserveOrder(tableInfo, entities, reset: true);
         }
     }
-
     /// <inheritdoc/>
     public void Merge<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType,
         Action<decimal>? progress) where T : class
@@ -180,10 +171,9 @@ public class MySqLAdapter : ISqlOperationsAdapter
     {
         DataTable dataTable = InnerGetDataTable(context, ref type, entities, tableInfo);
 
-        int sourceOrdinal = 1;
+        int sourceOrdinal = 0;
         foreach (DataColumn item in dataTable.Columns)  //Add mapping
         {
-            //mySqlBulkCopy.ColumnMappings.Add(item.ColumnName, item.ColumnName);
             mySqlBulkCopy.ColumnMappings.Add(new MySqlBulkCopyColumnMapping(sourceOrdinal,item.ColumnName));
             sourceOrdinal++;
         }
@@ -207,8 +197,7 @@ public class MySqLAdapter : ISqlOperationsAdapter
 
         var databaseType = SqlAdaptersMapping.GetDatabaseType(context);
         var isMySql = databaseType == DbServer.MySQL;
-        //var sqlServerBytesWriter = new SqlServerBytesWriter();
-
+        
         var objectIdentifier = tableInfo.ObjectIdentifier;
         type = tableInfo.HasAbstractList ? entities[0]!.GetType() : type;
         var entityType = context.Model.FindEntityType(type) ?? throw new ArgumentException($"Unable to determine entity type from given type - {type.Name}");
@@ -449,18 +438,7 @@ public class MySqLAdapter : ISqlOperationsAdapter
                     string columnName = tableInfo.ConvertiblePropertyColumnDict[property.Name];
                     propertyValue = tableInfo.ConvertibleColumnConverterDict[columnName].ConvertToProvider.Invoke(propertyValue);
                 }
-
-                // if (tableInfo.HasSpatialType && propertyValue is Geometry geometryValue)
-                // {
-                //     geometryValue.SRID = tableInfo.BulkConfig.SRID;
-                //
-                //     if (tableInfo.PropertyColumnNamesDict.ContainsKey(property.Name))
-                //     {
-                //         sqlServerBytesWriter.IsGeography = tableInfo.ColumnNamesTypesDict[tableInfo.PropertyColumnNamesDict[property.Name]] == "geography"; // "geography" type is default, otherwise it's "geometry" type
-                //     }
-                //
-                //     propertyValue = sqlServerBytesWriter.Write(geometryValue);
-                // }
+                //TODO: Hamdling special types
 
                 if (propertyValue is HierarchyId hierarchyValue && isMySql)
                 {
