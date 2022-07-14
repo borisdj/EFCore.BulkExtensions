@@ -4,6 +4,7 @@ using EFCore.BulkExtensions.SQLAdapters.SQLServer;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.ComponentModel;
+using EFCore.BulkExtensions.SqlAdapters.MySql;
 
 namespace EFCore.BulkExtensions.SqlAdapters;
 
@@ -30,8 +31,11 @@ public enum DbServer
     [Description("Npgql")]
     PostgreSQL,
 
-    //[Description("MySQL")]
-    //MySQL,
+    /// <summary>
+    ///  Indicates database is MySQL
+    /// </summary>
+    [Description("MySql")]
+    MySQL,
 }
 
 #pragma warning disable CS1591 // No XML comment required here
@@ -46,7 +50,8 @@ public static class SqlAdaptersMapping
         {
             {DbServer.SQLServer, new SqlOperationsServerAdapter()},
             {DbServer.SQLite, new SqliteOperationsAdapter()},
-            {DbServer.PostgreSQL, new PostgreSqlAdapter()}
+            {DbServer.PostgreSQL, new PostgreSqlAdapter()},
+            {DbServer.MySQL, new MySqLAdapter()}
         };
 
     /// <summary>
@@ -57,7 +62,8 @@ public static class SqlAdaptersMapping
         {
             {DbServer.SQLServer, new SqlServerDialect()},
             {DbServer.SQLite, new SqliteDialect()},
-            {DbServer.PostgreSQL, new PostgreSqlDialect()}
+            {DbServer.PostgreSQL, new PostgreSqlDialect()},
+            {DbServer.MySQL, new PostgreSqlDialect()}
         };
 
     /// <summary>
@@ -104,6 +110,8 @@ public static class SqlAdaptersMapping
             databaseType = DbServer.SQLite;
         if (context.Database.IsNpgsql())
             databaseType = DbServer.PostgreSQL;
+        if (context.Database.IsMySql())
+            databaseType = DbServer.MySQL;
 
         return databaseType;
     }
