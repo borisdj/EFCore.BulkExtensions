@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using EFCore.BulkExtensions.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using MySqlConnector;
@@ -85,16 +86,66 @@ public class MySqLAdapter : ISqlOperationsAdapter
     public void Merge<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType,
         Action<decimal>? progress) where T : class
     {
-        throw new NotImplementedException();
+        MergeAsync(context, type, entities, tableInfo, operationType, progress, isAsync: false, CancellationToken.None).GetAwaiter().GetResult();
     }
 
     /// <inheritdoc/>
-    public Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType,
+    public async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType,
         Action<decimal>? progress, CancellationToken cancellationToken) where T : class
     {
-        throw new NotImplementedException();
+        await  MergeAsync(context, type, entities, tableInfo, operationType, progress, isAsync: true, CancellationToken.None).ConfigureAwait(false);
     }
 
+    /// <inheritdoc/>
+    protected async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo,
+        OperationType operationType, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken)
+        where T : class
+    {
+        var entityPropertyWithDefaultValue = entities.GetPropertiesWithDefaultValue(type);
+        if (tableInfo.BulkConfig.CustomSourceTableName == null)
+        {
+            tableInfo.InsertToTempTable = true;
+
+            var dropTempTableIfExists = tableInfo.BulkConfig.UseTempDB;
+
+            if (dropTempTableIfExists)
+            {
+                var sqlDropTable = SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
+                if (isAsync)
+                {
+                    await context.Database.ExecuteSqlRawAsync(sqlDropTable, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    context.Database.ExecuteSqlRaw(sqlDropTable);
+                }
+            }
+
+            var sqlCreateTableCopy = SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo);
+            if (isAsync)
+            {
+                await context.Database.ExecuteSqlRawAsync(sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                context.Database.ExecuteSqlRaw(sqlCreateTableCopy);
+            }
+
+            if (tableInfo.TimeStampColumnName != null)
+            {
+                var sqlAddColumn = SqlQueryBuilder.AddColumn(tableInfo.FullTempTableName, tableInfo.TimeStampColumnName, TableInfo.TimeStampOutColumnType);
+                if (isAsync)
+                {
+                    await context.Database.ExecuteSqlRawAsync(sqlAddColumn, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    context.Database.ExecuteSqlRaw(sqlAddColumn);
+                }
+            }
+        }
+        
+    }
     /// <inheritdoc/>
     public void Read<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress) where T : class
     {
