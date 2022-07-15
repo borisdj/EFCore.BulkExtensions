@@ -9,5 +9,19 @@ namespace EFCore.BulkExtensions.SqlAdapters.MySql;
 /// </summary>
 public static class SqlQueryBuilderMySql
 {
-  
+    /// <summary>
+    /// Generates SQL query to create table copy
+    /// </summary>
+    /// <param name="existingTableName"></param>
+    /// <param name="newTableName"></param>
+    /// <param name="useTempDb"></param>
+    public static string CreateTableCopy(string existingTableName, string newTableName, bool useTempDb)
+    {
+        string keywordTEMP = useTempDb ? "TEMPORARY " : ""; 
+        var query = $"CREATE {keywordTEMP} TABLE {newTableName} " +
+                $"SELECT * FROM {existingTableName} " +
+                "LIMIT 0;";
+        query = query.Replace("[", @"""").Replace("]", @"""");
+        return query;
+    }
 }
