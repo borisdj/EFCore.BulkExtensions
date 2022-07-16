@@ -17,11 +17,31 @@ public static class SqlQueryBuilderMySql
     /// <param name="useTempDb"></param>
     public static string CreateTableCopy(string existingTableName, string newTableName, bool useTempDb)
     {
-        string keywordTEMP = useTempDb ? "TEMPORARY " : ""; 
+        string keywordTEMP = useTempDb ? "TEMPORARY" : ""; 
         var query = $"CREATE {keywordTEMP} TABLE {newTableName} " +
                 $"SELECT * FROM {existingTableName} " +
                 "LIMIT 0;";
-        query = query.Replace("[", @"""").Replace("]", @"""");
+        query = query.Replace("[", "").Replace("]", "");
+        return query;
+    }
+    /// <summary>
+    /// Generates SQL query to drop table
+    /// </summary>
+    /// <param name="tableName"></param>
+    /// <param name="isTempTable"></param>
+    /// <returns></returns>
+    public static string DropTable(string tableName, bool isTempTable)
+    {
+        string query;
+        if (isTempTable)
+        {
+            query = $"DROP TEMPORARY TABLE IF EXISTS {tableName}";
+        }
+        else
+        {
+            query = $"DROP TABLE IF EXISTS {tableName}";
+        }
+        query = query.Replace("[", "").Replace("]", "");
         return query;
     }
 }
