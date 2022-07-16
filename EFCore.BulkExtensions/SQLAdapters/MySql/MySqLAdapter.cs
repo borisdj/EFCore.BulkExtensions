@@ -115,20 +115,19 @@ public class MySqLAdapter : ISqlOperationsAdapter
             {
                 context.Database.ExecuteSqlRaw(sqlCreateTableCopy);
             }
-
-            if (tableInfo.TimeStampColumnName != null)
+        }
+        if (tableInfo.BulkConfig.CustomSourceTableName == null)
+        {
+            if (isAsync)
             {
-                var sqlAddColumn = SqlQueryBuilder.AddColumn(tableInfo.FullTempTableName, tableInfo.TimeStampColumnName, TableInfo.TimeStampOutColumnType);
-                if (isAsync)
-                {
-                    await context.Database.ExecuteSqlRawAsync(sqlAddColumn, cancellationToken).ConfigureAwait(false);
-                }
-                else
-                {
-                    context.Database.ExecuteSqlRaw(sqlAddColumn);
-                }
+                await InsertAsync(context, type, entities, tableInfo, progress, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                Insert(context, type, entities, tableInfo, progress);
             }
         }
+        var sqlMergeTable = SqlQueryBuilderMySql.MergeTable<T>(tableInfo, operationType);
         
     }
     /// <inheritdoc/>
