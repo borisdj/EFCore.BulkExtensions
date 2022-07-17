@@ -116,6 +116,22 @@ public class MySqLAdapter : ISqlOperationsAdapter
                 context.Database.ExecuteSqlRaw(sqlCreateTableCopy);
             }
         }
+
+        if (tableInfo.CreatedOutputTable)
+        {
+            var sqlCreateOutputTableCopy = SqlQueryBuilderMySql.CreateTableCopy(tableInfo.FullTableName,
+                tableInfo.FullTempOutputTableName, false);
+            if (isAsync)
+            {
+                await context.Database.ExecuteSqlRawAsync(sqlCreateOutputTableCopy, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            else
+            {
+                context.Database.ExecuteSqlRaw(sqlCreateOutputTableCopy);
+            }
+        }
+
         if (tableInfo.BulkConfig.CustomSourceTableName == null)
         {
             if (isAsync)
@@ -128,6 +144,25 @@ public class MySqLAdapter : ISqlOperationsAdapter
             }
         }
         var sqlMergeTable = SqlQueryBuilderMySql.MergeTable<T>(tableInfo, operationType);
+        if (isAsync)
+        {
+            await context.Database.ExecuteSqlRawAsync(sqlMergeTable, cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            context.Database.ExecuteSqlRaw(sqlMergeTable);
+        }
+        if (tableInfo.CreatedOutputTable)
+        {
+            if (isAsync)
+            {
+                await tableInfo.LoadOutputDataAsync(context, type, entities, tableInfo, isAsync: true, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                tableInfo.LoadOutputDataAsync(context, type, entities, tableInfo, isAsync: false, cancellationToken).GetAwaiter().GetResult();
+            }
+        }
         
     }
     /// <inheritdoc/>
