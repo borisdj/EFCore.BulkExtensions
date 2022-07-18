@@ -139,4 +139,62 @@ public static class SqlQueryBuilderMySql
         query = query.Replace("[", "").Replace("]", "");
         return query;
     }
+
+    /// <summary>
+    /// Generates SQL insert statement
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="tableInfo"></param>
+    /// <param name="entities"></param>
+    /// <param name="operationType"></param>
+    public static string InsertEntities<T>(IList<T> entities, TableInfo tableInfo, OperationType operationType)
+    {
+        var columnsList = GetColumnList(tableInfo, operationType);
+        var commaSeparatedColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsList).Replace("[", "").Replace("]", "");
+        foreach (var entity in entities)
+        {
+            
+        }
+        var subQuery = GenerateSubQuery();
+        string query;
+        query= $"INSERT  INTO {tableInfo.FullTableName} ({commaSeparatedColumns}) " +
+               $"SELECT {commaSeparatedColumns} FROM ( " +
+               $"{subQuery} " +
+               $") AS Template{tableInfo.FullTableName} " +
+               "ORDER BY SortedIndex;";
+        query = query.Replace("[", "").Replace("]", "");
+        return query;
+
+    }
+    /// <summary>
+    /// Generates SQL lock statement
+    /// </summary>
+    /// <param name="tableInfo"></param>
+    public static string LockTable(TableInfo tableInfo)
+    {
+        var query = $"LOCK TABLES {tableInfo.FullTableName} WRITE, {tableInfo.FullTableName} AS DestinationTable READ; ";
+        query = query.Replace("[", "").Replace("]", "");
+        return query;
+
+    }
+    /// <summary>
+    /// Generates SQL subQuery statement
+    /// </summary>
+    
+    private static string GenerateSubQuery()
+    {
+        return String.Empty;
+    }
+    /// <summary>
+    /// Generates SQL query to select output from a table
+    /// </summary>
+    /// <param name="tableInfo"></param>
+    /// <returns></returns>
+    public static string SelectGeneratedIdsAfterInsert(TableInfo tableInfo)
+    {
+        List<string> columnsNames = tableInfo.OutputPropertyColumnNamesDict.Values.ToList();
+        var query = $"SELECT {SqlQueryBuilder.GetCommaSeparatedColumns(columnsNames)} FROM {tableInfo.FullTempOutputTableName} WHERE [{tableInfo.PrimaryKeysPropertyColumnNameDict.Select(x => x.Value).FirstOrDefault()}] IS NOT NULL";
+        query = query.Replace("[", "").Replace("]", "");
+        return query;
+    }
 }
