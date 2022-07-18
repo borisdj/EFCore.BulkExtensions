@@ -85,9 +85,6 @@ public static class SqlQueryBuilderMySql
 
         string query;
         var commaSeparatedColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsList).Replace("[", "").Replace("]", "");
-
-        var updateByColumns = SqlQueryBuilder.GetCommaSeparatedColumns(tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList()).Replace("[", "").Replace("]", "");
-
         var columnsListEquals = GetColumnList(tableInfo, OperationType.Insert);
         var columnsToUpdate = columnsListEquals.Where(c => tableInfo.PropertyColumnNamesUpdateDict.ContainsValue(c)).ToList();
         var equalsColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsToUpdate, equalsTable: "EXCLUDED").Replace("[", "").Replace("]", "");
@@ -98,11 +95,10 @@ public static class SqlQueryBuilderMySql
                 $"{equalsColumns};";
         if (tableInfo.CreatedOutputTable)
         {
-            var allColumnsList = tableInfo.PropertyColumnNamesDict.Values.ToList();
-            string commaSeparatedColumnsNames = SqlQueryBuilder.GetCommaSeparatedColumns(allColumnsList).Replace("[", @"""").Replace("]", @"""");
+            //TODO: in case of updating, make sure to respond correctly of condition LAST_INSERT_ID();
             query += $" INSERT INTO {tableInfo.FullTempOutputTableName} " +
                      $"SELECT * FROM {tableInfo.FullTableName} " +
-                     "WHERE Id >= LAST_INSERT_ID();";
+                     $"WHERE {tableInfo.PrimaryKeysPropertyColumnNameDict.FirstOrDefault().Key} >= LAST_INSERT_ID(); ";
         }
         query = query.Replace("[", "").Replace("]", "");
 
