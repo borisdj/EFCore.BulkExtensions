@@ -46,32 +46,5 @@ internal static class GenericsHelpers
         var result = values.FirstOrDefault()?.GetPropertiesDefaultValue(type)?.Distinct();
         return result;
     }
-
-    internal static string MatchPropertiesWithValues<T>(this T entity, Type type, TableInfo tableInfo) where T : class
-    {
-        var arrayPropertyInfos = type.GetProperties();
-        string result = string.Empty;
-        foreach (var field in arrayPropertyInfos)
-        {
-            if (field.GetIndexParameters().Any()) // Skip Indexer: public string this[string pPropertyName] => string.Empty;
-            {
-                continue;
-            }
-            var propertyName = field.Name;
-            var propertyValue = field.GetValue(entity);
-            var propertyType = tableInfo.ColumnNamesTypesDict[propertyName];
-            var stringColumns = tableInfo.ColumnNamesTypesDict.Where(a => a.Value.Contains("char")).Select(a => a.Key).ToList();
-            if (stringColumns.Contains(propertyName))
-            {
-                result +=$"'{propertyValue}' AS {propertyName}, ";
-            }
-            else
-            {
-                result +=$"{propertyValue} AS {propertyName}, ";
-            }
-            
-        }
-
-        return result;
-    }
+    
 }
