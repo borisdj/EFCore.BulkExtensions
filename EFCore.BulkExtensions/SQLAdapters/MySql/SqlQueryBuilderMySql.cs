@@ -197,4 +197,16 @@ public static class SqlQueryBuilderMySql
         query = query.Replace("[", "").Replace("]", "");
         return query;
     }
+    /// <summary>
+    /// Generates SQL query to select structure of table
+    /// </summary>
+    /// <param name="tableInfo"></param>
+    /// <returns></returns>
+    public static string GetTableStructure(TableInfo tableInfo)
+    {
+        string query;
+        query = $"SELECT * FROM {tableInfo.FullTableName} LIMIT 0 ";
+        query = query.Replace("[", "").Replace("]", "");
+        return query;
+    }
 }
