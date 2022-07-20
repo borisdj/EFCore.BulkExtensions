@@ -25,10 +25,10 @@ public class MySqLAdapter : ISqlOperationsAdapter
     }
 
     /// <inheritdoc/>
-    public Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress,
+    public async Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress,
         CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        await InsertAsync(context, type, entities, tableInfo, progress, isAsync: false, CancellationToken.None).ConfigureAwait(false);
     }
 
     /// <inheritdoc/>
