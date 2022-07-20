@@ -280,33 +280,42 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
         }
         finally
         {
-            if (doDropUniqueConstrain)
+            try
             {
-                string dropUniqueConstrain = SqlQueryBuilderPostgreSql.DropUniqueConstrain(tableInfo);
-                if (isAsync)
+                if (doDropUniqueConstrain)
                 {
-                    await context.Database.ExecuteSqlRawAsync(dropUniqueConstrain, cancellationToken).ConfigureAwait(false);
-                }
-                else
-                {
-                    context.Database.ExecuteSqlRaw(dropUniqueConstrain);
-                }
-            }
-
-            if (!tableInfo.BulkConfig.UseTempDB)
-            {
-                if (tableInfo.BulkConfig.CustomSourceTableName == null)
-                {
-                    var sqlDropTable = SqlQueryBuilderPostgreSql.DropTable(tableInfo.FullTempTableName);
+                    string dropUniqueConstrain = SqlQueryBuilderPostgreSql.DropUniqueConstrain(tableInfo);
                     if (isAsync)
                     {
-                        await context.Database.ExecuteSqlRawAsync(sqlDropTable, cancellationToken).ConfigureAwait(false);
+                        await context.Database.ExecuteSqlRawAsync(dropUniqueConstrain, cancellationToken)
+                            .ConfigureAwait(false);
                     }
                     else
                     {
-                        context.Database.ExecuteSqlRaw(sqlDropTable);
+                        context.Database.ExecuteSqlRaw(dropUniqueConstrain);
                     }
                 }
+
+                if (!tableInfo.BulkConfig.UseTempDB)
+                {
+                    if (tableInfo.BulkConfig.CustomSourceTableName == null)
+                    {
+                        var sqlDropTable = SqlQueryBuilderPostgreSql.DropTable(tableInfo.FullTempTableName);
+                        if (isAsync)
+                        {
+                            await context.Database.ExecuteSqlRawAsync(sqlDropTable, cancellationToken)
+                                .ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            context.Database.ExecuteSqlRaw(sqlDropTable);
+                        }
+                    }
+                }
+            }
+            catch (PostgresException ex) when (ex.SqlState == "25P02")
+            {
+                // ignore "current transaction is aborted" exception as it hides the real exception that caused it
             }
         }
     }
