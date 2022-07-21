@@ -205,6 +205,9 @@ public class EFCoreBulkTest
 
         var currentTime = DateTime.UtcNow; // default DateTime type: "timestamp with time zone"; DateTime.Now goes with: "timestamp without time zone"
 
+        context.Items.RemoveRange(context.Items.ToList());
+        context.SaveChanges();
+
         var entities = new List<Item>();
         for (int i = 1; i <= 10; i++)
         {
@@ -220,8 +223,26 @@ public class EFCoreBulkTest
             entities.Add(entity);
         }
 
+        var entities2 = new List<Item>();
+        for (int i = 5; i <= 15; i++)
+        {
+            var entity = new Item
+            {
+                //ItemId = i,
+                Name = "Name " + i,
+                Description = "info " + i,
+                Quantity = i,
+                Price = 0.1m * i,
+                TimeUpdated = currentTime,
+            };
+            entities2.Add(entity);
+        }
+
         // INSERT
         context.BulkInsert(entities);
+
+        // INSERT Or UPDATE
+        //context.BulkInsertOrUpdate(entities2, new BulkConfig { UpdateByProperties  = new List<string> { nameof(Item.Name) } });
     }
 
     [Theory]
