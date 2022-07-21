@@ -25,10 +25,10 @@ public class MySqLAdapter : ISqlOperationsAdapter
     }
 
     /// <inheritdoc/>
-    public Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress,
+    public async Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress,
         CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        await InsertAsync(context, type, entities, tableInfo, progress, isAsync: false, CancellationToken.None).ConfigureAwait(false);
     }
 
     /// <inheritdoc/>
@@ -36,34 +36,38 @@ public class MySqLAdapter : ISqlOperationsAdapter
         Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken)
     {
         tableInfo.CheckToSetIdentityForPreserveOrder(tableInfo, entities);
-        MySqlConnection? connection = tableInfo.MySqlConnection;
-        bool closeConnectionInternally = false;
-        if (connection == null)
+        if (isAsync)
         {
-            (connection, closeConnectionInternally) =
-                isAsync ? await OpenAndGetMySqlConnectionAsync(context, cancellationToken).ConfigureAwait(false)
-                        : OpenAndGetMySqlConnection(context);
+            await context.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
         }
-
+        else
+        {
+            context.Database.OpenConnection();
+        }
+        var connection = context.GetUnderlyingConnection(tableInfo.BulkConfig);
         try
         {
             var transaction = context.Database.CurrentTransaction;
-            var mySqlBulkCopy = GetMySqlBulkCopy(connection, transaction, tableInfo.BulkConfig);
-            tableInfo.SetMySqlBulkCopyConfig(mySqlBulkCopy);
+            var mySqlBulkCopy = GetMySqlBulkCopy((MySqlConnection)connection, transaction, tableInfo.BulkConfig);
+            try
+            {
+                tableInfo.SetMySqlBulkCopyConfig(mySqlBulkCopy);
 
-            var dataTable = GetDataTable(context, type, entities, mySqlBulkCopy, tableInfo);
-            if (isAsync)
-            {
-                await mySqlBulkCopy.WriteToServerAsync(dataTable, cancellationToken).ConfigureAwait(false);
+                var dataTable = GetDataTable(context, type, entities, mySqlBulkCopy, tableInfo);
+                if (isAsync)
+                {
+                    await mySqlBulkCopy.WriteToServerAsync(dataTable, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    mySqlBulkCopy.WriteToServer(dataTable);
+                }
             }
-            else
+            catch (InvalidOperationException e)
             {
-                mySqlBulkCopy.WriteToServer(dataTable);
+                Console.WriteLine(e);
+                throw;
             }
-        }
-        catch (MySqlException mySqlException)
-        {
-            throw new Exception(mySqlException.Message);
         }
         finally
         {
@@ -85,16 +89,122 @@ public class MySqLAdapter : ISqlOperationsAdapter
     public void Merge<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType,
         Action<decimal>? progress) where T : class
     {
-        throw new NotImplementedException();
+        MergeAsync(context, type, entities, tableInfo, operationType, progress, isAsync: false, CancellationToken.None).GetAwaiter().GetResult();
     }
 
     /// <inheritdoc/>
-    public Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType,
+    public async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType,
         Action<decimal>? progress, CancellationToken cancellationToken) where T : class
     {
-        throw new NotImplementedException();
+        await  MergeAsync(context, type, entities, tableInfo, operationType, progress, isAsync: true, CancellationToken.None).ConfigureAwait(false);
     }
 
+    /// <inheritdoc/>
+    protected async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo,
+        OperationType operationType, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken)
+        where T : class
+    {
+
+        if (tableInfo.BulkConfig.CustomSourceTableName == null)
+        {
+            tableInfo.InsertToTempTable = true;
+
+            var sqlCreateTableCopy = SqlQueryBuilderMySql.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo.InsertToTempTable);
+            if (isAsync)
+            {
+                await context.Database.ExecuteSqlRawAsync(sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                context.Database.ExecuteSqlRaw(sqlCreateTableCopy);
+            }
+        }
+
+        if (tableInfo.CreatedOutputTable)
+        {
+            tableInfo.InsertToTempTable = true;
+            var sqlCreateOutputTableCopy = SqlQueryBuilderMySql.CreateTableCopy(tableInfo.FullTableName,
+                tableInfo.FullTempOutputTableName, tableInfo.InsertToTempTable);
+            if (isAsync)
+            {
+                await context.Database.ExecuteSqlRawAsync(sqlCreateOutputTableCopy, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            else
+            {
+                context.Database.ExecuteSqlRaw(sqlCreateOutputTableCopy);
+            }
+        }
+
+        if (tableInfo.BulkConfig.CustomSourceTableName == null)
+        {
+            if (isAsync)
+            {
+                await InsertAsync(context, type, entities, tableInfo, progress, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                Insert(context, type, entities, tableInfo, progress);
+            }
+        }
+
+        try
+        {
+            var sqlMergeTable = SqlQueryBuilderMySql.MergeTable<T>(tableInfo, operationType);
+            if (isAsync)
+            {
+                await context.Database.ExecuteSqlRawAsync(sqlMergeTable, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                context.Database.ExecuteSqlRaw(sqlMergeTable);
+            }
+            if (tableInfo.CreatedOutputTable)
+            {
+                if (isAsync)
+                {
+                    await tableInfo.LoadOutputDataAsync(context, type, entities, tableInfo, isAsync: true, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    tableInfo.LoadOutputDataAsync(context, type, entities, tableInfo, isAsync: false, cancellationToken).GetAwaiter().GetResult();
+                }
+            }
+        }
+        finally
+        {
+            if (!tableInfo.BulkConfig.UseTempDB)
+            {
+                if (tableInfo.CreatedOutputTable)
+                {
+                    var sqlDropOutputTable = SqlQueryBuilderMySql.DropTable(tableInfo.FullTempOutputTableName, tableInfo.InsertToTempTable);
+                    if (isAsync)
+                    {
+                        await context.Database.ExecuteSqlRawAsync(sqlDropOutputTable, cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        context.Database.ExecuteSqlRaw(sqlDropOutputTable);
+                    }
+
+                }
+                if (tableInfo.BulkConfig.CustomSourceTableName == null)
+                {
+                    var sqlDropTable = SqlQueryBuilderMySql.DropTable(tableInfo.FullTempTableName, tableInfo.InsertToTempTable);
+                    if (isAsync)
+                    {
+                        await context.Database.ExecuteSqlRawAsync(sqlDropTable, cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        context.Database.ExecuteSqlRaw(sqlDropTable);
+                    }
+                }
+            }    
+        }
+        
+        
+    }
     /// <inheritdoc/>
     public void Read<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress) where T : class
     {

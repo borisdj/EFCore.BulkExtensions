@@ -17,6 +17,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using EFCore.BulkExtensions.SqlAdapters.MySql;
 using MySqlConnector;
 
 namespace EFCore.BulkExtensions;
@@ -1125,7 +1126,8 @@ public class TableInfo
         int totalNumber = entities.Count;
         if (BulkConfig.SetOutputIdentity && hasIdentity)
         {
-            string sqlQuery = SqlQueryBuilder.SelectFromOutputTable(this);
+            var databaseType = SqlAdaptersMapping.GetDatabaseType(context);
+            string sqlQuery = databaseType == DbServer.SQLServer? SqlQueryBuilder.SelectFromOutputTable(this) : SqlQueryBuilderMySql.SelectFromOutputTable(this);
             //var entitiesWithOutputIdentity = await QueryOutputTableAsync<T>(context, sqlQuery).ToListAsync(cancellationToken).ConfigureAwait(false); // TempFIX
             var entitiesWithOutputIdentity = QueryOutputTable(context, type, sqlQuery).Cast<object>().ToList();
             //var entitiesWithOutputIdentity = (typeof(T) == type) ? QueryOutputTable<object>(context, sqlQuery).ToList() : QueryOutputTable(context, type, sqlQuery).Cast<object>().ToList();

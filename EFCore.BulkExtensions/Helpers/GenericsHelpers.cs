@@ -53,4 +53,5 @@ internal static class GenericsHelpers
         var result = values.FirstOrDefault()?.GetPropertiesDefaultValue(type, tableInfo)?.Distinct();
         return result;
     }
+    
 }
