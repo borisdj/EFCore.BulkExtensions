@@ -417,6 +417,7 @@ public class EFCoreBulkTestAtypical
     [Theory]
     [InlineData(DbServer.SQLServer)]
     [InlineData(DbServer.SQLite)]
+    [InlineData(DbServer.PostgreSQL)]
     private void OwnedTypesTest(DbServer dbServer)
     {
         ContextUtil.DbServer = dbServer;
@@ -426,6 +427,10 @@ public class EFCoreBulkTestAtypical
         {
             context.Truncate<ChangeLog>();
             context.Database.ExecuteSqlRaw("TRUNCATE TABLE [" + nameof(ChangeLog) + "]");
+        }
+        else if (dbServer == DbServer.PostgreSQL)
+        {
+            context.Truncate<ChangeLog>();
         }
         else
         {
@@ -461,7 +466,7 @@ public class EFCoreBulkTestAtypical
         }
         context.BulkInsert(entities);
 
-        if (dbServer == DbServer.SQLServer)
+        if (dbServer == DbServer.SQLServer || dbServer == DbServer.PostgreSQL)
         {
             context.BulkRead(
                 entities,
@@ -477,7 +482,7 @@ public class EFCoreBulkTestAtypical
         entities[0].Description += " UPD";
         entities[0].Audit.InfoType = InfoType.InfoTypeB;
         context.BulkUpdate(entities);
-        if (dbServer == DbServer.SQLServer)
+        if (dbServer == DbServer.SQLServer || dbServer == DbServer.PostgreSQL)
         {
             context.BulkRead(entities);
         }
