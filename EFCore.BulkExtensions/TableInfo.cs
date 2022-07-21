@@ -286,14 +286,18 @@ public class TableInfo
             else if (isNpgsql)
             {
 #pragma warning disable EF1001
-                strategyName = NpgsqlAnnotationNames.ValueGenerationStrategy;
+                strategyName = NpgsqlAnnotationNames.ValueGenerationStrategy; // strategyName = nameof(Npgsql.EntityFrameworkCore.PostgreSQL.Metadata.NpgsqlValueGenerationStrategy);
 #pragma warning restore EF1001
             }
             else
             {
                 strategyName = nameof(MySqlValueGenerationStrategy);
             }
-            strategyName.Replace("Value", ":Value"); //example 'SqlServer:ValueGenerationStrategy'
+
+            if (!strategyName.Contains(":Value"))
+            {
+                strategyName = strategyName.Replace("Value", ":Value"); //example 'SqlServer:ValueGenerationStrategy'
+            }
             
             foreach (var property in allProperties)
             {
