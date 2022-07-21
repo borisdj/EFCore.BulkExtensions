@@ -136,6 +136,8 @@ public class TestContext : DbContext
             modelBuilder.Entity<Address>().Ignore(p => p.LocationGeography);
             modelBuilder.Entity<Address>().Ignore(p => p.LocationGeometry);
             modelBuilder.Entity<Category>().Ignore(p => p.HierarchyDescription);
+
+            modelBuilder.Entity<Event>().Ignore(p => p.TimeCreated);
         }
 
         if (Database.IsSqlite())
@@ -706,7 +708,7 @@ public class Event // CustomPrecision DateTime Test (SqlServer only)
 
     public string Description { get; set; } = null!;
 
-    //[Column(TypeName = "datetime2(3)")]
+    [Column(TypeName = "datetime2(3)")]
     public DateTime TimeCreated { get; set; }
 }
 
