@@ -131,7 +131,7 @@ public class TestContext : DbContext
             //modelBuilder.HasSequence<int>("SequenceData", "dbo").StartsAt(10).IncrementsBy(5);
         }
 
-        if (Database.IsSqlite() || Database.IsNpgsql())
+        if (Database.IsSqlite() || Database.IsNpgsql() || Database.IsMySql())
         {
             modelBuilder.Entity<Address>().Ignore(p => p.LocationGeography);
             modelBuilder.Entity<Address>().Ignore(p => p.LocationGeometry);
@@ -162,7 +162,7 @@ public class TestContext : DbContext
         modelBuilder.Entity<AtypicalRowVersionEntity>().Property(e => e.RowVersion).HasDefaultValue(0).IsConcurrencyToken().ValueGeneratedOnAddOrUpdate().Metadata.SetBeforeSaveBehavior(PropertySaveBehavior.Save);
         modelBuilder.Entity<AtypicalRowVersionEntity>().Property(e => e.SyncDevice).IsRequired(true).IsConcurrencyToken().HasDefaultValue("");
 
-        if (!Database.IsNpgsql())
+        if (!Database.IsNpgsql() && !Database.IsMySql())
         {
             modelBuilder.Entity<AtypicalRowVersionConverterEntity>().Property(e => e.RowVersionConverted).HasConversion(new NumberToBytesConverter<long>()).HasColumnType("timestamp").IsRowVersion().IsConcurrencyToken();
         }
@@ -231,6 +231,11 @@ public static class ContextUtil
             string connectionString = GetPostgreSqlConnectionString(databaseName);
             optionsBuilder.UseNpgsql(connectionString);
         }
+        else if (DbServer == DbServer.MySQL)
+        {
+            string connectionString = GetMySqlConnectionString(databaseName);
+            optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
+        }
         else
         {
             throw new NotSupportedException($"Database {dbServerType} is not supported. Only SQL Server and SQLite are Currently supported.");
@@ -266,6 +271,11 @@ public static class ContextUtil
     public static string GetPostgreSqlConnectionString(string databaseName)
     {
         return GetConfiguration().GetConnectionString("PostgreSql").Replace("{databaseName}", databaseName);
+    }
+
+    public static string GetMySqlConnectionString(string databaseName)
+    {
+        return GetConfiguration().GetConnectionString("MySql").Replace("{databaseName}", databaseName);
     }
 }
 
@@ -318,7 +328,7 @@ public class Item
 }
 
 // ItemHistory is used to test bulk Ops to multiple tables(Item and ItemHistory), to test Guid as PK and to test other Schema(his)
-[Table(nameof(ItemHistory), Schema = "his")] // different schema is not supported in Sqlite
+[Table(nameof(ItemHistory)/*, Schema = "his"*/)] // different schema is not supported in Sqlite
 public class ItemHistory
 {
     public Guid ItemHistoryId { get; set; }
@@ -696,7 +706,7 @@ public class Event // CustomPrecision DateTime Test (SqlServer only)
 
     public string Description { get; set; } = null!;
 
-    [Column(TypeName = "datetime2(3)")]
+    //[Column(TypeName = "datetime2(3)")]
     public DateTime TimeCreated { get; set; }
 }
 

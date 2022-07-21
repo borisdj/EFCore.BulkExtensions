@@ -196,6 +196,35 @@ public class EFCoreBulkTest
     }
 
     [Theory]
+    [InlineData(DbServer.MySQL)]
+    public void InsertTestMySQL(DbServer dbServer)
+    {
+        ContextUtil.DbServer = dbServer;
+
+        using var context = new TestContext(ContextUtil.GetOptions());
+
+        var currentTime = DateTime.UtcNow; // default DateTime type: "timestamp with time zone"; DateTime.Now goes with: "timestamp without time zone"
+
+        var entities = new List<Item>();
+        for (int i = 1; i <= 10; i++)
+        {
+            var entity = new Item
+            {
+                //ItemId = i,
+                Name = "Name " + i,
+                Description = "info " + i,
+                Quantity = i,
+                Price = 0.1m * i,
+                TimeUpdated = currentTime,
+            };
+            entities.Add(entity);
+        }
+
+        // INSERT
+        context.BulkInsert(entities);
+    }
+
+    [Theory]
     [InlineData(DbServer.SQLServer, true)]
     [InlineData(DbServer.SQLite, true)]
     //[InlineData(DbServer.SqlServer, false)] // for speed comparison with Regular EF CUD operations
