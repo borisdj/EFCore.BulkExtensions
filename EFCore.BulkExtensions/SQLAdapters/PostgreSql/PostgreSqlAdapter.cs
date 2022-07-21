@@ -43,7 +43,8 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
 
         try
         {
-            string sqlCopy = SqlQueryBuilderPostgreSql.InsertIntoTable(tableInfo, tableInfo.InsertToTempTable ? OperationType.InsertOrUpdate : OperationType.Insert);
+            var operationType = tableInfo.InsertToTempTable ? OperationType.InsertOrUpdate : OperationType.Insert;
+            string sqlCopy = SqlQueryBuilderPostgreSql.InsertIntoTable(tableInfo, operationType);
 
             using var writer = isAsync ? await connection.BeginBinaryImportAsync(sqlCopy, cancellationToken).ConfigureAwait(false)
                                        : connection.BeginBinaryImport(sqlCopy);
@@ -70,12 +71,15 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
 
                 foreach (var propertyName in propertiesNames)
                 {
-                    if (tableInfo.DefaultValueProperties.Contains(propertyName) && !tableInfo.PrimaryKeysPropertyColumnNameDict.ContainsKey(propertyName))
+                    if (operationType == OperationType.Insert
+                        && tableInfo.DefaultValueProperties.Contains(propertyName) 
+                        && !tableInfo.PrimaryKeysPropertyColumnNameDict.ContainsKey(propertyName))
+                    {
                         continue;
+                    }
 
-                    var propertyValue = tableInfo.FastPropertyDict.ContainsKey(propertyName) && entity is not null ? tableInfo.FastPropertyDict[propertyName].Get(entity) : null;
+                    var propertyValue = GetPropertyValue(tableInfo, propertyName, entity);
                     var propertyColumnName = tableInfo.PropertyColumnNamesDict.ContainsKey(propertyName) ? tableInfo.PropertyColumnNamesDict[propertyName] : string.Empty;
-
                     var columnType = tableInfo.ColumnNamesTypesDict[propertyColumnName];
 
                     // string is 'text' which works fine
@@ -150,6 +154,37 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
                 }
             }
         }
+    }
+
+    static object? GetPropertyValue<T>(TableInfo tableInfo, string propertyName, T entity)
+    {
+        if (!tableInfo.FastPropertyDict.ContainsKey(propertyName.Replace('.', '_')) || entity is null)
+        {
+            return null;
+        }
+
+        object? propertyValue = entity;
+        string fullPropertyName = string.Empty;
+        foreach (var entry in propertyName.AsSpan().Split("."))
+        {
+            if (propertyValue == null)
+            {
+                return null;
+            }
+
+            if (fullPropertyName.Length > 0)
+            {
+                fullPropertyName += $"_{entry.Token}";
+            }
+            else
+            {
+                fullPropertyName = new string(entry.Token);
+            }
+            
+            propertyValue = tableInfo.FastPropertyDict[fullPropertyName].Get(propertyValue);
+        }
+
+        return propertyValue;
     }
 
     /// <inheritdoc/>
@@ -245,33 +280,42 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
         }
         finally
         {
-            if (doDropUniqueConstrain)
+            try
             {
-                string dropUniqueConstrain = SqlQueryBuilderPostgreSql.DropUniqueConstrain(tableInfo);
-                if (isAsync)
+                if (doDropUniqueConstrain)
                 {
-                    await context.Database.ExecuteSqlRawAsync(dropUniqueConstrain, cancellationToken).ConfigureAwait(false);
-                }
-                else
-                {
-                    context.Database.ExecuteSqlRaw(dropUniqueConstrain);
-                }
-            }
-
-            if (!tableInfo.BulkConfig.UseTempDB)
-            {
-                if (tableInfo.BulkConfig.CustomSourceTableName == null)
-                {
-                    var sqlDropTable = SqlQueryBuilderPostgreSql.DropTable(tableInfo.FullTempTableName);
+                    string dropUniqueConstrain = SqlQueryBuilderPostgreSql.DropUniqueConstrain(tableInfo);
                     if (isAsync)
                     {
-                        await context.Database.ExecuteSqlRawAsync(sqlDropTable, cancellationToken).ConfigureAwait(false);
+                        await context.Database.ExecuteSqlRawAsync(dropUniqueConstrain, cancellationToken)
+                            .ConfigureAwait(false);
                     }
                     else
                     {
-                        context.Database.ExecuteSqlRaw(sqlDropTable);
+                        context.Database.ExecuteSqlRaw(dropUniqueConstrain);
                     }
                 }
+
+                if (!tableInfo.BulkConfig.UseTempDB)
+                {
+                    if (tableInfo.BulkConfig.CustomSourceTableName == null)
+                    {
+                        var sqlDropTable = SqlQueryBuilderPostgreSql.DropTable(tableInfo.FullTempTableName);
+                        if (isAsync)
+                        {
+                            await context.Database.ExecuteSqlRawAsync(sqlDropTable, cancellationToken)
+                                .ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            context.Database.ExecuteSqlRaw(sqlDropTable);
+                        }
+                    }
+                }
+            }
+            catch (PostgresException ex) when (ex.SqlState == "25P02")
+            {
+                // ignore "current transaction is aborted" exception as it hides the real exception that caused it
             }
         }
     }

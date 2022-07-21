@@ -19,6 +19,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using EFCore.BulkExtensions.SqlAdapters.MySql;
 using MySqlConnector;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata.Internal;
 
 namespace EFCore.BulkExtensions;
 
@@ -284,7 +285,9 @@ public class TableInfo
             }
             else if (isNpgsql)
             {
-                strategyName = nameof(Npgsql.EntityFrameworkCore.PostgreSQL.Metadata.NpgsqlValueGenerationStrategy);
+#pragma warning disable EF1001
+                strategyName = NpgsqlAnnotationNames.ValueGenerationStrategy;
+#pragma warning restore EF1001
             }
             else
             {
@@ -545,9 +548,10 @@ public class TableInfo
 
                     foreach (var ownedEntityProperty in ownedEntityProperties)
                     {
+                        string columnName = ownedEntityProperty.GetColumnName(ObjectIdentifier) ?? string.Empty;
+                        
                         if (!ownedEntityProperty.IsPrimaryKey())
                         {
-                            string columnName = ownedEntityProperty.GetColumnName(ObjectIdentifier) ?? string.Empty;
                             ownedEntityPropertyNameColumnNameDict.Add(ownedEntityProperty.Name, columnName);
                             var ownedEntityPropertyFullName = property.Name + "_" + ownedEntityProperty.Name;
                             if (!FastPropertyDict.ContainsKey(ownedEntityPropertyFullName) && ownedEntityProperty.PropertyInfo is not null)
@@ -561,6 +565,8 @@ public class TableInfo
                         {
                             ConvertibleColumnConverterDict.Add($"{navigationProperty.Name}_{ownedEntityProperty.Name}", converter);
                         }
+
+                        ColumnNamesTypesDict[columnName] = ownedEntityProperty.GetColumnType();
                     }
                     var ownedProperties = property.PropertyType.GetProperties();
                     foreach (var ownedProperty in ownedProperties)

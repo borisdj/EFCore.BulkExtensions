@@ -140,7 +140,7 @@ public static class SqlQueryBuilderPostgreSql
             }
         }
 
-        return q;
+        return q.TrimEnd(';');
     }
 
     /// <summary>
