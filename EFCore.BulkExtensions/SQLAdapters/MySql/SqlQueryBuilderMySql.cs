@@ -92,13 +92,22 @@ public static class SqlQueryBuilderMySql
         query = $"INSERT INTO {tableInfo.FullTableName} ({commaSeparatedColumns}) " +
                 $"SELECT {commaSeparatedColumns} FROM {tableInfo.FullTempTableName} AS EXCLUDED " +
                 "ON DUPLICATE KEY UPDATE " +
-                $"{equalsColumns};";
+                $"{equalsColumns}; ";
         if (tableInfo.CreatedOutputTable)
         {
-            //TODO: in case of updating, make sure to respond correctly of condition LAST_INSERT_ID();
-            query += $" INSERT INTO {tableInfo.FullTempOutputTableName} " +
-                     $"SELECT * FROM {tableInfo.FullTableName} " +
-                     $"WHERE {tableInfo.PrimaryKeysPropertyColumnNameDict.FirstOrDefault().Key} >= LAST_INSERT_ID(); ";
+            if (operationType == OperationType.Insert)
+            {
+                query += $"INSERT INTO {tableInfo.FullTempOutputTableName} " +
+                         $"SELECT * FROM {tableInfo.FullTableName} " +
+                         $"WHERE {tableInfo.PrimaryKeysPropertyColumnNameDict.FirstOrDefault().Key} >= LAST_INSERT_ID(); ";
+            }
+
+            if (operationType == OperationType.Update)
+            {
+                query += $"INSERT INTO {tableInfo.FullTempOutputTableName} " +
+                         $"SELECT * FROM {tableInfo.FullTempTableName} ";
+            }
+            
         }
         query = query.Replace("[", "").Replace("]", "");
 

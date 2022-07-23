@@ -104,7 +104,10 @@ public class MySqLAdapter : ISqlOperationsAdapter
         OperationType operationType, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken)
         where T : class
     {
-
+       
+         var hasExistingTransaction = context.Database.CurrentTransaction != null;
+         var transaction = context.Database.CurrentTransaction ?? (isAsync ? await context.Database.BeginTransactionAsync(cancellationToken) : context.Database.BeginTransaction());
+       
         if (tableInfo.BulkConfig.CustomSourceTableName == null)
         {
             tableInfo.InsertToTempTable = true;
@@ -170,6 +173,17 @@ public class MySqLAdapter : ISqlOperationsAdapter
                     tableInfo.LoadOutputDataAsync(context, type, entities, tableInfo, isAsync: false, cancellationToken).GetAwaiter().GetResult();
                 }
             }
+            if (hasExistingTransaction == false && !tableInfo.AllNavigationsDictionary.Any())
+            {
+                if (isAsync)
+                {
+                    await transaction.CommitAsync(cancellationToken);
+                }
+                else
+                {
+                    transaction.Commit();
+                }
+            }
         }
         finally
         {
@@ -198,6 +212,17 @@ public class MySqLAdapter : ISqlOperationsAdapter
                     else
                     {
                         context.Database.ExecuteSqlRaw(sqlDropTable);
+                    }
+                }
+                if (hasExistingTransaction == false && !tableInfo.AllNavigationsDictionary.Any())
+                {
+                    if (isAsync)
+                    {
+                        await transaction.DisposeAsync();
+                    }
+                    else
+                    {
+                        transaction.Dispose();
                     }
                 }
             }    
