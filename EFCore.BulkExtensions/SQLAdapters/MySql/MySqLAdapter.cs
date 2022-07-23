@@ -104,7 +104,7 @@ public class MySqLAdapter : ISqlOperationsAdapter
         OperationType operationType, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken)
         where T : class
     {
-       
+       //Because of using temp table in case of update, we need to access created temp table in Insert method.
          var hasExistingTransaction = context.Database.CurrentTransaction != null;
          var transaction = context.Database.CurrentTransaction ?? (isAsync ? await context.Database.BeginTransactionAsync(cancellationToken) : context.Database.BeginTransaction());
        
