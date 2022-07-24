@@ -84,31 +84,42 @@ public static class SqlQueryBuilderMySql
         }
 
         string query;
-        var commaSeparatedColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsList).Replace("[", "").Replace("]", "");
-        var columnsListEquals = GetColumnList(tableInfo, OperationType.Insert);
-        var columnsToUpdate = columnsListEquals.Where(c => tableInfo.PropertyColumnNamesUpdateDict.ContainsValue(c)).ToList();
-        var equalsColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsToUpdate, equalsTable: "EXCLUDED").Replace("[", "").Replace("]", "");
-        
-        query = $"INSERT INTO {tableInfo.FullTableName} ({commaSeparatedColumns}) " +
-                $"SELECT {commaSeparatedColumns} FROM {tableInfo.FullTempTableName} AS EXCLUDED " +
-                "ON DUPLICATE KEY UPDATE " +
-                $"{equalsColumns}; ";
-        if (tableInfo.CreatedOutputTable)
+        var firstPrimaryKey = tableInfo.PrimaryKeysPropertyColumnNameDict.FirstOrDefault().Key;
+        if(operationType == OperationType.Delete)
         {
-            if (operationType == OperationType.Insert)
-            {
-                query += $"INSERT INTO {tableInfo.FullTempOutputTableName} " +
-                         $"SELECT * FROM {tableInfo.FullTableName} " +
-                         $"WHERE {tableInfo.PrimaryKeysPropertyColumnNameDict.FirstOrDefault().Key} >= LAST_INSERT_ID(); ";
-            }
-
-            if (operationType == OperationType.Update)
-            {
-                query += $"INSERT INTO {tableInfo.FullTempOutputTableName} " +
-                         $"SELECT * FROM {tableInfo.FullTempTableName} ";
-            }
-            
+            query = "delete A " +
+                    $"FROM {tableInfo.FullTableName} AS A " +
+                    $"INNER JOIN {tableInfo.FullTempTableName} B on A.{firstPrimaryKey} = B.{firstPrimaryKey}; ";
         }
+        else
+        {
+            var commaSeparatedColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsList).Replace("[", "").Replace("]", "");
+            var columnsListEquals = GetColumnList(tableInfo, OperationType.Insert);
+            var columnsToUpdate = columnsListEquals.Where(c => tableInfo.PropertyColumnNamesUpdateDict.ContainsValue(c)).ToList();
+            var equalsColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsToUpdate, equalsTable: "EXCLUDED").Replace("[", "").Replace("]", "");
+        
+            query = $"INSERT INTO {tableInfo.FullTableName} ({commaSeparatedColumns}) " +
+                    $"SELECT {commaSeparatedColumns} FROM {tableInfo.FullTempTableName} AS EXCLUDED " +
+                    "ON DUPLICATE KEY UPDATE " +
+                    $"{equalsColumns}; ";
+            if (tableInfo.CreatedOutputTable)
+            {
+                if (operationType == OperationType.Insert)
+                {
+                    query += $"INSERT INTO {tableInfo.FullTempOutputTableName} " +
+                             $"SELECT * FROM {tableInfo.FullTableName} " +
+                             $"WHERE {firstPrimaryKey} >= LAST_INSERT_ID(); ";
+                }
+
+                if (operationType == OperationType.Update)
+                {
+                    query += $"INSERT INTO {tableInfo.FullTempOutputTableName} " +
+                             $"SELECT * FROM {tableInfo.FullTempTableName} ";
+                }
+            
+            }
+        }
+        
         query = query.Replace("[", "").Replace("]", "");
 
         Dictionary<string, string>? sourceDestinationMappings = tableInfo.BulkConfig.CustomSourceDestinationMappingColumns;
