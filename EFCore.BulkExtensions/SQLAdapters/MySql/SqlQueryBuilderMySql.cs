@@ -104,17 +104,27 @@ public static class SqlQueryBuilderMySql
                     $"{equalsColumns}; ";
             if (tableInfo.CreatedOutputTable)
             {
-                if (operationType == OperationType.Insert)
+                if (operationType == OperationType.Insert || operationType == OperationType.InsertOrUpdate)
                 {
                     query += $"INSERT INTO {tableInfo.FullTempOutputTableName} " +
                              $"SELECT * FROM {tableInfo.FullTableName} " +
-                             $"WHERE {firstPrimaryKey} >= LAST_INSERT_ID(); ";
+                             $"WHERE {firstPrimaryKey} >= LAST_INSERT_ID() " +
+                             $"AND {firstPrimaryKey} < LAST_INSERT_ID() + row_count(); ";
                 }
 
                 if (operationType == OperationType.Update)
                 {
                     query += $"INSERT INTO {tableInfo.FullTempOutputTableName} " +
                              $"SELECT * FROM {tableInfo.FullTempTableName} ";
+                }
+
+                if (operationType == OperationType.InsertOrUpdate)
+                {
+                    query += $"INSERT INTO {tableInfo.FullTempOutputTableName} " +
+                             $"SELECT A.* FROM {tableInfo.FullTempTableName} A " +
+                             $"LEFT OUTER JOIN {tableInfo.FullTempOutputTableName} B " +
+                             $" ON A.{firstPrimaryKey} = B.{firstPrimaryKey} " +
+                             $"WHERE  B.{firstPrimaryKey} IS NULL; ";
                 }
             
             }
