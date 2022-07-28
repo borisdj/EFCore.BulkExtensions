@@ -430,7 +430,6 @@ public class EFCoreBulkTestAtypical
         }
         else if (dbServer == DbServer.PostgreSQL)
         {
-            
             context.Truncate<ChangeLog>();
         }
         else
