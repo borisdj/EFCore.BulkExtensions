@@ -173,7 +173,7 @@ public class MySqLAdapter : ISqlOperationsAdapter
                     tableInfo.LoadOutputDataAsync(context, type, entities, tableInfo, isAsync: false, cancellationToken).GetAwaiter().GetResult();
                 }
             }
-            if (hasExistingTransaction == false && !tableInfo.AllNavigationsDictionary.Any())
+            if (hasExistingTransaction == false && !tableInfo.BulkConfig.IncludeGraph)
             {
                 if (isAsync)
                 {
@@ -214,7 +214,7 @@ public class MySqLAdapter : ISqlOperationsAdapter
                         context.Database.ExecuteSqlRaw(sqlDropTable);
                     }
                 }
-                if (hasExistingTransaction == false && !tableInfo.AllNavigationsDictionary.Any())
+                if (hasExistingTransaction == false && !tableInfo.BulkConfig.IncludeGraph)
                 {
                     if (isAsync)
                     {
