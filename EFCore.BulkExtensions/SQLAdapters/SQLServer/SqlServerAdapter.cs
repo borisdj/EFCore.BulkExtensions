@@ -590,14 +590,31 @@ public class SqlOperationsServerAdapter: ISqlOperationsAdapter
                             {
                                 var convertor = tableInfo.ConvertibleColumnConverterDict[propertyName];
                                 var underlyingType = Nullable.GetUnderlyingType(convertor.ProviderClrType) ?? convertor.ProviderClrType;
+          
                                 dataTable.Columns.Add(columnName, underlyingType);
                             }
                             else
                             {
                                 var ownedPropertyType = Nullable.GetUnderlyingType(innerProperty.PropertyType) ?? innerProperty.PropertyType;
+                                
+                                if (isSqlServer && (ownedPropertyType == typeof(Geometry) || ownedPropertyType.IsSubclassOf(typeof(Geometry))))
+                                {
+                                    ownedPropertyType = typeof(byte[]);
+                                    tableInfo.HasSpatialType = true;
+                                    if (tableInfo.BulkConfig.PropertiesToIncludeOnCompare != null || tableInfo.BulkConfig.PropertiesToIncludeOnCompare != null)
+                                    {
+                                        throw new InvalidOperationException("OnCompare properties Config can not be set for Entity with Spatial types like 'Geometry'");
+                                    }
+                                }
+
+                                if (isSqlServer && (ownedPropertyType == typeof(HierarchyId) || ownedPropertyType.IsSubclassOf(typeof(HierarchyId))))
+                                {
+                                    ownedPropertyType = typeof(byte[]);
+                                }
+
                                 dataTable.Columns.Add(columnName, ownedPropertyType);
                             }
-
+  ;
                             columnsDict.Add(property.Name + "_" + innerProperty.Name, null);
                         }
                     }
@@ -745,6 +762,17 @@ public class SqlOperationsServerAdapter: ISqlOperationsAdapter
                         {
                             var converter = tableInfo.ConvertibleColumnConverterDict[columnName];
                             columnsDict[columnName] = ownedPropertyValue == null ? null : converter.ConvertToProvider.Invoke(ownedPropertyValue);
+                        }
+                        else if(tableInfo.HasSpatialType && ownedPropertyValue is Geometry ownedGeometryValue)
+                        {
+                            ownedGeometryValue.SRID = tableInfo.BulkConfig.SRID;
+
+                            if (tableInfo.PropertyColumnNamesDict.ContainsKey(property.Name))
+                            {
+                                sqlServerBytesWriter.IsGeography = tableInfo.ColumnNamesTypesDict[tableInfo.PropertyColumnNamesDict[property.Name]] == "geography"; // "geography" type is default, otherwise it's "geometry" type
+                            }
+
+                            columnsDict[columnName] = sqlServerBytesWriter.Write(ownedGeometryValue);
                         }
                         else
                         {

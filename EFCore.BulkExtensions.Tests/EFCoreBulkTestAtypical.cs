@@ -492,6 +492,67 @@ public class EFCoreBulkTestAtypical
 
     [Theory]
     [InlineData(DbServer.SQLServer)]
+    private void OwnedTypeSpatialDataTest(DbServer dbServer)
+    {
+        ContextUtil.DbServer = dbServer;
+        using var context = new TestContext(ContextUtil.GetOptions());
+
+        if (dbServer == DbServer.SQLServer)
+        {
+            context.Truncate<Tracker>();
+            context.Database.ExecuteSqlRaw("TRUNCATE TABLE [" + nameof(Tracker) + "]");
+        }
+        else if (dbServer == DbServer.PostgreSQL)
+        {
+            context.Truncate<ChangeLog>();
+        }
+        else
+        {
+            //context.ChangeLogs.BatchDelete(); // TODO
+            context.BulkDelete(context.ChangeLogs.ToList());
+        }
+
+        var entities = new List<Tracker>();
+        for (int i = 1; i <= EntitiesNumber; i++)
+        {
+            entities.Add(new Tracker
+            {
+                Description = "Dsc " + i,
+                Location = new TrackerLocation()
+                {
+                    LocationName = "Anywhere",
+                    Location = new Point(0, 0) { SRID = 4326 }
+                }
+            });
+        }
+        context.BulkInsert(entities);
+
+        if (dbServer == DbServer.SQLServer || dbServer == DbServer.PostgreSQL)
+        {
+            context.BulkRead(
+                entities,
+                new BulkConfig
+                {
+                    UpdateByProperties = new List<string> { nameof(Item.Description) }
+                }
+            );
+            Assert.Equal(2, entities[1].TrackerId);
+        }
+
+        // TEST
+        entities[0].Description += " UPD";
+        entities[0].Location.Location = new Point(1, 1) { SRID = 4326 };
+        context.BulkUpdate(entities);
+        if (dbServer == DbServer.SQLServer || dbServer == DbServer.PostgreSQL)
+        {
+            context.BulkRead(entities);
+        }
+        Assert.Equal("Dsc 1 UPD", entities[0].Description);
+        Assert.Equal(new Point(1, 1) { SRID = 4326 }, entities[0].Location.Location);
+    }
+
+    [Theory]
+    [InlineData(DbServer.SQLServer)]
     //[InlineData(DbServer.Sqlite)] Not supported
     private void ShadowFKPropertiesTest(DbServer dbServer) // with Foreign Key as Shadow Property
     {

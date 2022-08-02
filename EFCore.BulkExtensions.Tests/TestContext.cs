@@ -38,6 +38,7 @@ public class TestContext : DbContext
     public DbSet<Modul> Moduls { get; set; } = null!;
     public DbSet<Info> Infos { get; set; } = null!;
     public DbSet<ChangeLog> ChangeLogs { get; set; } = null!;
+    public DbSet<Tracker> Trackers { get; set; } = null!;
     public DbSet<ItemLink> ItemLinks { get; set; } = null!;
     public DbSet<Address> Addresses { get; set; } = null!;
     public DbSet<Category> Categories { get; set; } = null!;
@@ -101,6 +102,8 @@ public class TestContext : DbContext
         modelBuilder.Entity<ChangeLog>().OwnsOne(a => a.Audit,
             b => b.Property(p => p.InfoType).HasConversion(new EnumToStringConverter<InfoType>()));
 
+        modelBuilder.Entity<Tracker>().OwnsOne(t => t.Location);
+        
         modelBuilder.Entity<Person>().HasIndex(a => a.Name)
             .IsUnique(); // In SQLite UpdateByColumn(nonPK) requires it has UniqueIndex
 
@@ -633,6 +636,20 @@ public class AuditExtended
 
     [NotMapped]
     public string Remark { get; set; } = null!;
+}
+public class Tracker
+{
+    public int TrackerId { get; set; }
+
+    public string Description { get; set; } = null!;
+
+    public TrackerLocation Location { get; set; } = null!;
+}
+[Owned]
+public class TrackerLocation
+{
+    public string LocationName { get; set; } = null!;
+    public Point Location { get; set; } = null!;
 }
 
 // For testing BatchUpdate expressions that use nested queries
