@@ -16,7 +16,7 @@ public class SqlQueryBuilderPostgreSqlTests
         string actual = SqlQueryBuilderPostgreSql.MergeTable<Item>(tableInfo, OperationType.InsertOrUpdate);
 
         string expected = @"INSERT INTO ""dbo"".""Item"" (""ItemId"", ""Name"") "
-                          + @"(SELECT ""ItemId"", ""Name"" FROM ""dbo"".""ItemTemp1234"") "
+                          + @"(SELECT ""ItemId"", ""Name"" FROM ""dbo"".""ItemTemp1234"") LIMIT 1 "
                           + @"ON CONFLICT (""ItemId"") DO UPDATE SET ""Name"" = EXCLUDED.""Name"";";
 
         Assert.Equal(expected, actual);
@@ -30,9 +30,24 @@ public class SqlQueryBuilderPostgreSqlTests
         string actual = SqlQueryBuilderPostgreSql.MergeTable<Item>(tableInfo, OperationType.InsertOrUpdate);
 
         string expected = @"INSERT INTO ""dbo"".""Item"" (""ItemId"", ""Name"") " +
-                          @"(SELECT ""ItemId"", ""Name"" FROM ""dbo"".""ItemTemp1234"") " +
+                          @"(SELECT ""ItemId"", ""Name"" FROM ""dbo"".""ItemTemp1234"") LIMIT 1 " +
                           @"ON CONFLICT (""ItemId"") DO UPDATE SET ""Name"" = EXCLUDED.""Name"" " +
                           @"WHERE EXCLUDED.ItemTimestamp > ""dbo"".""Item"".ItemTimestamp;";
+
+        Assert.Equal(expected, actual);
+    }
+    
+    [Fact]
+    public void MergeTableInsertOrUpdateWithInsertOnlyTest()
+    {
+        TableInfo tableInfo = GetTestTableInfo();
+        tableInfo.IdentityColumnName = "ItemId";
+        tableInfo.PropertyColumnNamesUpdateDict = new();
+        string actual = SqlQueryBuilderPostgreSql.MergeTable<Item>(tableInfo, OperationType.InsertOrUpdate);
+
+        string expected = @"INSERT INTO ""dbo"".""Item"" (""ItemId"", ""Name"") "
+                          + @"(SELECT ""ItemId"", ""Name"" FROM ""dbo"".""ItemTemp1234"") LIMIT 1 "
+                          + @"ON CONFLICT (""ItemId"") DO NOTHING;";
 
         Assert.Equal(expected, actual);
     }
