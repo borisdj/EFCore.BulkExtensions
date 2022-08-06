@@ -247,7 +247,7 @@ public class EFCoreBulkTest
         Assert.Equal("info 2", context.Items.Where(a => a.Name == "Name 2").AsNoTracking().FirstOrDefault()?.Description);
 
         // INSERT Or UPDATE
-        //mysql automatically detects uniq or foreign key
+        //mysql automatically detects unique or primary key
         var insertedentities = context.Items.Take(5);
         foreach (var insertedentitie in insertedentities)
         {
