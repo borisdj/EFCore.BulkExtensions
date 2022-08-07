@@ -108,8 +108,8 @@ Not supported for SQLite(Lite has only UPSERT statement) nor currently for Postg
 More info in the [Example](https://github.com/borisdj/EFCore.BulkExtensions#read-example) at the bottom.
 
 **SaveChanges** uses Change Tracker to find all modified(CUD) entities and call proper BulkOperations for each table.<br>
-Because it needs tracking it is slower then pure BulkOps but stil much faster then regular SaveChanges.<br>
-With config *OnSaveChangesSetFK* setting FKs can be controled depending on whether PKs are generated in Db or in memory.<br>
+Because it needs tracking it is slower then pure BulkOps but still much faster then regular SaveChanges.<br>
+With config *OnSaveChangesSetFK* setting FKs can be controlled depending on whether PKs are generated in Db or in memory.<br>
 Support for this method was added in version 6 of the library.<br>
 Before calling this method newly created should be added into Range:
 ```C#
@@ -118,7 +118,7 @@ context.BulkSaveChanges();
 ```
 Practical general usage could be made in a way to override regular SaveChanges and if any list of Modified entities entries is greater then say 1000 to redirect to Bulk version.
 
-Note: Bulk ops have optional argument *Type type* that can be set to type of Entity if list has dynamic runtime objects or is inhereted from Entity class.
+Note: Bulk ops have optional argument *Type type* that can be set to type of Entity if list has dynamic runtime objects or is inherited from Entity class.
 
 ## BulkConfig arguments
 
@@ -155,7 +155,7 @@ Another option that may be used in the same scenario are the **PropertiesToInclu
 If we want Insert only new and skip existing ones in Db (Insert_if_not_Exist) then use *BulkInsertOrUpdate* with config
 `PropertiesToIncludeOnUpdate = new List<string> { "" }`
 
-Additionaly there is **UpdateByProperties** for specifying custom properties, by which we want update to be done.<br>
+Additionally there is **UpdateByProperties** for specifying custom properties, by which we want update to be done.<br>
 When setting multiple props in UpdateByProps then match done by columns combined, like unique constrain based on those cols.<br>
 Using UpdateByProperties while also having Identity column requires that Id property be [Excluded](https://github.com/borisdj/EFCore.BulkExtensions/issues/131).<br>
 Also with PostgreSQL when matching is done it requires UniqueIndex so for custom UpdateByProperties that do not have Un.Ind., it is temporarily created in which case method can not be in transaction (throws: *current transaction is aborted; CREATE INDEX CONCURRENTLY cannot run inside a transaction block*).<br>
@@ -169,11 +169,11 @@ context.BulkInsertOrUpdate(entities, new BulkConfig { SetOutputIdentity = true }
 context.BulkInsertOrUpdate(entities, b => b.SetOutputIdentity = true); // e.g. BulkConfig with Action arg.
 ```
 
-**PreserveInsertOrder** is **true** by default and makes sure that entites are inserted to Db as ordered in entitiesList.<br>
+**PreserveInsertOrder** is **true** by default and makes sure that entities are inserted to Db as ordered in entitiesList.<br>
 When table has Identity column (int autoincrement) with 0 values in list they will temporary be automatically changed from 0s into range -N:-1.<br>
 Or it can be manually set with proper values for order (Negative values used to skip conflict with existing ones in Db).<br>
 Here single Id value itself doesn't matter, db will change it to next in sequence, what matters is their mutual relationship for sorting.<br>
-Insertion order is implemented with [TOP](https://docs.microsoft.com/en-us/sql/t-sql/queries/top-transact-sql) in conjuction with ORDER BY. [stackoverflow:merge-into-insertion-order](https://stackoverflow.com/questions/884187/merge-into-insertion-order).<br>
+Insertion order is implemented with [TOP](https://docs.microsoft.com/en-us/sql/t-sql/queries/top-transact-sql) in conjunction with ORDER BY. [stackoverflow:merge-into-insertion-order](https://stackoverflow.com/questions/884187/merge-into-insertion-order).<br>
 This config should remain true when *SetOutputIdentity* is set to true on Entity containing NotMapped Property. [issues/76](https://github.com/borisdj/EFCore.BulkExtensions/issues/76)<br>
 When using **SetOutputIdentity** Id values will be updated to new ones from database.<br>
 With BulkInsertOrUpdate for those that will be updated it has to match with Id column, or other unique column(s) if using UpdateByProperties in which case  [orderBy is done with those props](https://github.com/borisdj/EFCore.BulkExtensions/issues/806) instead of ID.<br>
@@ -229,8 +229,8 @@ If used for pure Insert (with Batching) then SetOutputIdentity should also be co
 **CustomDestinationTableName** can be set with 'TableName' only or with 'Schema.TableName'.<br>
 **CustomSourceTableName** when set enables source data from specified table already in Db, so input list not used and can be empty.<br>
 **CustomSourceDestinationMappingColumns** dict can be set only if CustomSourceTableName is configured and it is used for specifying Source-Destination column names when they are not the same. Example in test `DestinationAndSourceTableNameTest`.<br>
-**EnableShadowProperties** to add (normal) Shadow Property and persist value. Disables automatic discrimator, use manual method.<br>
-**IncludeGraph** when set all entites that have relations with main ones from the list are also merged into theirs tables.<br>
+**EnableShadowProperties** to add (normal) Shadow Property and persist value. Disables automatic discriminator, use manual method.<br>
+**IncludeGraph** when set all entities that have relations with main ones from the list are also merged into theirs tables.<br>
 **OmitClauseExistsExcept** removes the clause from Merge statement, required when having noncomparable types like XML, and useful when need to active triggers even for same data.<br>
 _ Also in some [sql collation](https://github.com/borisdj/EFCore.BulkExtensions/issues/641) small and capital letters are considered  same (case-insensitive) so for BulkUpdate set it false.<br>
 **DoNotUpdateIfTimeStampChanged** if set checks TimeStamp for Concurrency, ones with conflict will [not be updated](https://github.com/borisdj/EFCore.BulkExtensions/issues/469#issuecomment-803662721).<br>
