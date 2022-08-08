@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -104,10 +105,10 @@ public class MySqLAdapter : ISqlOperationsAdapter
         OperationType operationType, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken)
         where T : class
     {
-       //Because of using temp table in case of update, we need to access created temp table in Insert method.
-         var hasExistingTransaction = context.Database.CurrentTransaction != null;
-         var transaction = context.Database.CurrentTransaction ?? (isAsync ? await context.Database.BeginTransactionAsync(cancellationToken) : context.Database.BeginTransaction());
-       
+        //Because of using temp table in case of update, we need to access created temp table in Insert method.
+        var hasExistingTransaction = context.Database.CurrentTransaction != null;
+        var transaction = context.Database.CurrentTransaction ?? (isAsync ? await context.Database.BeginTransactionAsync(cancellationToken) : context.Database.BeginTransaction());
+        
         if (tableInfo.BulkConfig.CustomSourceTableName == null)
         {
             tableInfo.InsertToTempTable = true;
@@ -121,6 +122,33 @@ public class MySqLAdapter : ISqlOperationsAdapter
             {
                 context.Database.ExecuteSqlRaw(sqlCreateTableCopy);
             }
+        }
+
+        bool doDropUniqueConstrain = false;
+        bool hasUniqueConstrain = false;
+        if (string.Join("_", tableInfo.EntityPKPropertyColumnNameDict.Keys.ToList()) == string.Join("_", tableInfo.PrimaryKeysPropertyColumnNameDict.Keys.ToList()))
+        {
+            hasUniqueConstrain = true; // ExplicitUniqueConstrain not required for PK
+        }
+        if (!hasUniqueConstrain)
+        {
+        // TODO 
+        //hasUniqueConstrain = await CheckHasExplicitUniqueConstrainAsync(context, connection, tableInfo, isAsync, cancellationToken);
+        // throws "The transaction associated with this command is not the connection’s active transaction";
+        // https://mysqlconnector.net/troubleshooting/transaction-usage/
+        }
+        if (!hasUniqueConstrain)
+        {
+            string createUniqueConstrain = SqlQueryBuilderMySql.CreateUniqueConstrain(tableInfo);
+            if (isAsync)
+            {
+                await context.Database.ExecuteSqlRawAsync(createUniqueConstrain, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                context.Database.ExecuteSqlRaw(createUniqueConstrain);
+            }
+            doDropUniqueConstrain = true;
         }
 
         if (tableInfo.CreatedOutputTable)
@@ -187,6 +215,20 @@ public class MySqLAdapter : ISqlOperationsAdapter
         }
         finally
         {
+            if (doDropUniqueConstrain)
+            {
+                string dropUniqueConstrain = SqlQueryBuilderMySql.DropUniqueConstrain(tableInfo);
+                if (isAsync)
+                {
+                    await context.Database.ExecuteSqlRawAsync(dropUniqueConstrain, cancellationToken)
+                        .ConfigureAwait(false);
+                }
+                else
+                {
+                    context.Database.ExecuteSqlRaw(dropUniqueConstrain);
+                }
+            }
+
             if (!tableInfo.BulkConfig.UseTempDB)
             {
                 if (tableInfo.CreatedOutputTable)

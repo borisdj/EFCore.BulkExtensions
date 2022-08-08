@@ -1,0 +1,10 @@
+﻿ALTER TABLE `efcorebulktest`.`item`
+ADD CONSTRAINT `tempUniqueIndex_Item_Name` UNIQUE (`Name`);
+-- from ExecuteSql: ALTER TABLE `Item`
+-- if no MaxLength: (`Name`(255))
+
+SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE
+CONSTRAINT_TYPE = 'UNIQUE' AND  CONSTRAINT_NAME = 'tempUniqueIndex_Item_Name'
+
+ALTER TABLE `efcorebulktest`.`item`
+DROP INDEX `tempUniqueIndex_Item_Name`;

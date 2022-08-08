@@ -207,6 +207,8 @@ public class EFCoreBulkTest
 
         context.Items.RemoveRange(context.Items.ToList());
         context.SaveChanges();
+        context.Database.ExecuteSqlRaw("ALTER TABLE " + nameof(Item) + " AUTO_INCREMENT = 1");
+        context.SaveChanges();
 
         var entities = new List<Item>();
         for (int i = 1; i <= 10; i++)
@@ -225,13 +227,13 @@ public class EFCoreBulkTest
 
         var entities2 = new List<Item>();
         
-        for (int i = 11; i <= 15; i++)
+        for (int i = 6; i <= 15; i++)
         {
             var entity = new Item
             {
                 ItemId = i,
                 Name = "Name " + i,
-                Description = "info " + i,
+                Description = "v2 info " + i,
                 Quantity = i,
                 Price = 0.1m * i,
                 TimeUpdated = currentTime,
@@ -239,7 +241,7 @@ public class EFCoreBulkTest
             entities2.Add(entity);
         }
         var entities3 = new List<Item>();
-        
+        var entities4 = new List<Item>();
 
         // INSERT
         context.BulkInsert(entities);
@@ -248,29 +250,32 @@ public class EFCoreBulkTest
 
         // INSERT Or UPDATE
         //mysql automatically detects unique or primary key
-        var insertedentities = context.Items.Take(5);
-        foreach (var insertedentitie in insertedentities)
-        {
-            insertedentitie.Description = insertedentitie.Description?.Replace("info", "UPDATE");
-        }
-        entities2.AddRange(context.Items.Take(5));
-        
         context.BulkInsertOrUpdate(entities2, new BulkConfig { UpdateByProperties  = new List<string> { nameof(Item.ItemId) } });
-        Assert.Equal("UPDATE 5", context.Items.Where(a => a.Name == "Name 5").AsNoTracking().FirstOrDefault()?.Description);
-        Assert.Equal("info 15", context.Items.Where(a => a.Name == "Name 15").AsNoTracking().FirstOrDefault()?.Description);
+        Assert.Equal("info 5", context.Items.Where(a => a.Name == "Name 5").AsNoTracking().FirstOrDefault()?.Description);
+        Assert.Equal("v2 info 6", context.Items.Where(a => a.Name == "Name 6").AsNoTracking().FirstOrDefault()?.Description);
+        Assert.Equal("v2 info 15", context.Items.Where(a => a.Name == "Name 15").AsNoTracking().FirstOrDefault()?.Description);
         
-        var configUpdateBy = new BulkConfig { UpdateByProperties = new List<string> { nameof(Item.ItemId) } };
-        var insertedentities2 = context.Items.Take(5);
-        foreach (var insertedentitie in insertedentities2)
+        entities3.AddRange(context.Items.Where(a => a.ItemId <= 2).AsNoTracking());
+        foreach (var entity in entities3)
         {
-            insertedentitie.Description = insertedentitie.Description?.Replace("info", "CHANGE");
+            entity.Description = "UPDATED";
         }
-        entities3.AddRange(context.Items.Take(5));
-        //configUpdateBy.SetOutputIdentity = true;
-        context.BulkUpdate(entities3, configUpdateBy);
+        context.BulkUpdate(entities3);
+        Assert.Equal("UPDATED", context.Items.Where(a => a.Name == "Name 1").AsNoTracking().FirstOrDefault()?.Description);
 
-        Assert.Equal("CHANGE 13", context.Items.Where(a => a.Name == "Name 13").AsNoTracking().FirstOrDefault()?.Description);
-        Assert.Equal("CHANGE 14", context.Items.Where(a => a.Name == "Name 14").AsNoTracking().FirstOrDefault()?.Description);
+        // TODO Custom UpdateBy column not working
+        entities4.AddRange(context.Items.Where(a => a.ItemId >= 3 && a.ItemId <= 4).AsNoTracking());
+        foreach (var entity in entities4)
+        {
+            entity.ItemId = 0; // should be matched by Name
+            entity.Description = "UPDATED 2";
+        }
+        var configUpdateBy = new BulkConfig { UpdateByProperties = new List<string> { nameof(Item.Name) } }; // SetOutputIdentity = true;
+        context.BulkUpdate(entities4, configUpdateBy);
+        Assert.Equal("UPDATED 2", context.Items.Where(a => a.Name == "Name 3").AsNoTracking().FirstOrDefault()?.Description);
+
+        context.BulkDelete(new List<Item> { new Item { ItemId = 15 } });
+        Assert.False(context.Items.Where(a => a.Name == "Name 15").AsNoTracking().Any());
     }
 
     [Theory]

@@ -102,8 +102,6 @@ public class TestContext : DbContext
         modelBuilder.Entity<ChangeLog>().OwnsOne(a => a.Audit,
             b => b.Property(p => p.InfoType).HasConversion(new EnumToStringConverter<InfoType>()));
 
-        modelBuilder.Entity<Tracker>().OwnsOne(t => t.Location);
-        
         modelBuilder.Entity<Person>().HasIndex(a => a.Name)
             .IsUnique(); // In SQLite UpdateByColumn(nonPK) requires it has UniqueIndex
 
@@ -132,6 +130,12 @@ public class TestContext : DbContext
             //modelBuilder.Entity<SequentialInfo>().HasKey(a => a.Id);
             //SqlServerPropertyBuilderExtensions.UseHiLo(modelBuilder.Entity<SequentialInfo>().Property(a => a.Id), name: "SequenceData", schema: "dbo");
             //modelBuilder.HasSequence<int>("SequenceData", "dbo").StartsAt(10).IncrementsBy(5);
+
+            modelBuilder.Entity<Tracker>().OwnsOne(t => t.Location);
+        }
+        else
+        {
+            modelBuilder.Entity<Tracker>().OwnsOne(t => t.Location).Ignore(p => p.Location); // Point only on SqlServer
         }
 
         if (Database.IsSqlite() || Database.IsNpgsql() || Database.IsMySql())
@@ -317,9 +321,9 @@ public class Item
 
     public int ItemId { get; set; }
 
+    [MaxLength(50)]
     public string? Name { get; set; }
 
-    [MaxLength(50)]
     public string? Description { get; set; }
 
     public int Quantity { get; set; }

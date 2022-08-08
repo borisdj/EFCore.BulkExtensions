@@ -170,4 +170,69 @@ public static class SqlQueryBuilderMySql
         return query;
     }
 
+    /// <summary>
+    /// Generates SQL query to create a unique constraint
+    /// </summary>
+    /// <param name="tableInfo"></param>
+    public static string CreateUniqueConstrain(TableInfo tableInfo)
+    {
+        var tableName = tableInfo.TableName;
+        var schemaFormated = tableInfo.Schema == null ? "" : $@"`{tableInfo.Schema}`.";
+        var fullTableNameFormated = $@"{schemaFormated}`{tableName}`";
+
+        var uniqueColumnNames = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList();
+        var uniqueColumnNamesDash = string.Join("_", uniqueColumnNames);
+        var schemaDash = tableInfo.Schema == null ? "" : $"{tableInfo.Schema}_";
+        var uniqueConstrainName = $"tempUniqueIndex_{schemaDash}{tableName}_{uniqueColumnNamesDash}";
+
+        var uniqueColumnNamesComma = string.Join(",", uniqueColumnNames); // TODO When Column is string without defined max length, it should be UNIQUE (`Name`(255)); otherwise exception: BLOB/TEXT column 'Name' used in key specification without a key length'
+        uniqueColumnNamesComma = "`" + uniqueColumnNamesComma;
+        uniqueColumnNamesComma = uniqueColumnNamesComma.Replace(",", "`, `");
+        var uniqueColumnNamesFormated = uniqueColumnNamesComma.TrimEnd(',');
+        uniqueColumnNamesFormated = uniqueColumnNamesFormated + "`";
+
+        var q = $@"ALTER TABLE {fullTableNameFormated} " +
+                $@"ADD CONSTRAINT `{uniqueConstrainName}` " +
+                $@"UNIQUE ({uniqueColumnNamesFormated})";
+        return q;
+    }
+
+    /// <summary>
+    /// Generates SQL query to drop a unique contstraint
+    /// </summary>
+    /// <param name="tableInfo"></param>
+    public static string DropUniqueConstrain(TableInfo tableInfo)
+    {
+        var tableName = tableInfo.TableName;
+        var schemaFormated = tableInfo.Schema == null ? "" : $@"`{tableInfo.Schema}`.";
+        var fullTableNameFormated = $@"{schemaFormated}`{tableName}`";
+
+        var uniqueColumnNames = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList();
+        var uniqueColumnNamesDash = string.Join("_", uniqueColumnNames);
+        var schemaDash = tableInfo.Schema == null ? "" : $"{tableInfo.Schema}_";
+        var uniqueConstrainName = $"tempUniqueIndex_{schemaDash}{tableName}_{uniqueColumnNamesDash}";
+
+        var q = $@"ALTER TABLE {fullTableNameFormated} " +
+                $@"DROP INDEX `{uniqueConstrainName}`;";
+        return q;
+    }
+
+    /// <summary>
+    /// Generates SQL query to chaeck if a unique constrain exist
+    /// </summary>
+    /// <param name="tableInfo"></param>
+    public static string HasUniqueConstrain(TableInfo tableInfo)
+    {
+        var tableName = tableInfo.TableName;
+
+        var uniqueColumnNames = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList();
+        var uniqueColumnNamesDash = string.Join("_", uniqueColumnNames);
+        var schemaDash = tableInfo.Schema == null ? "" : $"{tableInfo.Schema}_";
+        var uniqueConstrainName = $"tempUniqueIndex_{schemaDash}{tableName}_{uniqueColumnNamesDash}";
+
+        var q = $@"SELECT DISTINCT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE " +
+                $@"CONSTRAINT_TYPE = 'UNIQUE' AND CONSTRAINT_NAME = '{uniqueConstrainName}';";
+        return q;
+    }
+
 }
