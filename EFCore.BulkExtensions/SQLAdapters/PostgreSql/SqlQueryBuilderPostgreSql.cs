@@ -93,23 +93,16 @@ public static class SqlQueryBuilderPostgreSql
             var columnsToUpdate = columnsListEquals.Where(c => tableInfo.PropertyColumnNamesUpdateDict.ContainsValue(c)).ToList();
             var equalsColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsToUpdate, equalsTable: "EXCLUDED").Replace("[", @"""").Replace("]", @"""");
 
-            /*
-            q = $"INSERT INTO {tableInfo.FullTableName} ({commaSeparatedColumns}) " +
-                $"(SELECT {commaSeparatedColumns} FROM {tableInfo.FullTempTableName}) " +
-                $"ON CONFLICT ({updateByColumns}) " +
-                $"DO UPDATE SET {equalsColumns}";
-            */
-            
-            q = $"INSERT INTO {tableInfo.FullTableName} ({commaSeparatedColumns}) " +
-                $"(SELECT {commaSeparatedColumns} FROM {tableInfo.FullTempTableName}) LIMIT 1 " +
-                $"ON CONFLICT ({updateByColumns}) ";
+            bool applySubqueryLimit = columnsToUpdate.Count == 0 || string.IsNullOrWhiteSpace(equalsColumns);
+            var subqueryText = applySubqueryLimit ? "LIMIT 1 " : "";
 
-            if(columnsToUpdate.Count == 0 || string.IsNullOrWhiteSpace(equalsColumns)) {
-                q += "DO NOTHING";
-            } else {
-                q += $"DO UPDATE SET {equalsColumns}";
-            }
-            
+            q = $"INSERT INTO {tableInfo.FullTableName} ({commaSeparatedColumns}) " +
+                $"(SELECT {commaSeparatedColumns} FROM {tableInfo.FullTempTableName}) " + subqueryText + 
+                $"ON CONFLICT ({updateByColumns}) " +
+                (applySubqueryLimit
+                 ? "DO NOTHING"
+                 : $"DO UPDATE SET {equalsColumns}");
+
             if (tableInfo.BulkConfig.OnConflictUpdateWhereSql != null)
             {
                 q += $" WHERE {tableInfo.BulkConfig.OnConflictUpdateWhereSql(tableInfo.FullTableName.Replace("[", @"""").Replace("]", @""""), "EXCLUDED")}";

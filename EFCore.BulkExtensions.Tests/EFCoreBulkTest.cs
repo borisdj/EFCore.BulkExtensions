@@ -281,11 +281,14 @@ public class EFCoreBulkTest
 
         var entities5 = context.Items.Where(a => a.ItemId == 15).AsNoTracking().ToList();
         entities5[0].Description = "SaveCh upd";
-        entities5.Add(new Item { ItemId = 16, Name = "Name 16", Description = "info 16" }); // when BulkSaveChanges with Upsert 'ItemId' has to set, and with Insert only it skips one number, Id becomes 17 instead of 16
+        entities5.Add(new Item { ItemId = 16, Name = "Name 16", Description = "info 16" }); // when BulkSaveChanges with Upsert 'ItemId' has to be set(EX.My1), and with Insert only it skips one number, Id becomes 17 instead of 16
         context.AddRange(entities5);
         context.BulkSaveChanges();
         Assert.Equal(16, entities5[1].ItemId);
         Assert.Equal("info 16", context.Items.Where(a => a.Name == "Name 16").AsNoTracking().FirstOrDefault()?.Description);
+
+        //EX.My1: "The property 'Item.ItemId' has a temporary value while attempting to change the entity's state to 'Unchanged'.
+        //         Either set a permanent value explicitly, or ensure that the database is configured to generate values for this property."
     }
 
     [Theory]
