@@ -12,7 +12,7 @@
     <Company />
     <PackageIcon>EFCoreBulk.png</PackageIcon>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageTags>EntityFrameworkCore Entity Framework Core EFCore EF Core SQL Server PostgreSQL SQLite Bulk Batch Extensions Insert Update Delete Read Truncate SaveChanges </PackageTags>
+    <PackageTags>EntityFrameworkCore Entity Framework Core EFCore EF Core SQL Server MySQL PostgreSQL SQLite Bulk Batch Extensions Insert Update Delete Read Truncate SaveChanges </PackageTags>
     <PackageReleaseNotes>MySQL CRUD support, PG limit fix</PackageReleaseNotes>
     <RepositoryUrl>https://github.com/borisdj/EFCore.BulkExtensions</RepositoryUrl>
     <RepositoryType>Git</RepositoryType>
