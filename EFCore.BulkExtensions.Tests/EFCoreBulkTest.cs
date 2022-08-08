@@ -210,7 +210,7 @@ public class EFCoreBulkTest
         context.Database.ExecuteSqlRaw("ALTER TABLE " + nameof(Item) + " AUTO_INCREMENT = 1");
         context.SaveChanges();
 
-        var entities = new List<Item>();
+        var entities1 = new List<Item>();
         for (int i = 1; i <= 10; i++)
         {
             var entity = new Item
@@ -222,7 +222,7 @@ public class EFCoreBulkTest
                 Price = 0.1m * i,
                 TimeUpdated = currentTime,
             };
-            entities.Add(entity);
+            entities1.Add(entity);
         }
 
         var entities2 = new List<Item>();
@@ -244,7 +244,9 @@ public class EFCoreBulkTest
         var entities4 = new List<Item>();
 
         // INSERT
-        context.BulkInsert(entities);
+
+        context.BulkInsert(entities1, bc => bc.SetOutputIdentity = true);
+        Assert.Equal(1, entities1[0].ItemId);
         Assert.Equal("info 1", context.Items.Where(a => a.Name == "Name 1").AsNoTracking().FirstOrDefault()?.Description);
         Assert.Equal("info 2", context.Items.Where(a => a.Name == "Name 2").AsNoTracking().FirstOrDefault()?.Description);
 
@@ -274,8 +276,16 @@ public class EFCoreBulkTest
         context.BulkUpdate(entities4, configUpdateBy);
         Assert.Equal("UPDATED 2", context.Items.Where(a => a.Name == "Name 3").AsNoTracking().FirstOrDefault()?.Description);
 
-        context.BulkDelete(new List<Item> { new Item { ItemId = 15 } });
-        Assert.False(context.Items.Where(a => a.Name == "Name 15").AsNoTracking().Any());
+        context.BulkDelete(new List<Item> { new Item { ItemId = 11 } });
+        Assert.False(context.Items.Where(a => a.Name == "Name 11").AsNoTracking().Any());
+
+        var entities5 = context.Items.Where(a => a.ItemId == 15).AsNoTracking().ToList();
+        entities5[0].Description = "SaveCh upd";
+        entities5.Add(new Item { ItemId = 16, Name = "Name 16", Description = "info 16" }); // when BulkSaveChanges with Upsert 'ItemId' has to set, and with Insert only it skips one number, Id becomes 17 instead of 16
+        context.AddRange(entities5);
+        context.BulkSaveChanges();
+        Assert.Equal(16, entities5[1].ItemId);
+        Assert.Equal("info 16", context.Items.Where(a => a.Name == "Name 16").AsNoTracking().FirstOrDefault()?.Description);
     }
 
     [Theory]
