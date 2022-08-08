@@ -224,11 +224,12 @@ public class EFCoreBulkTest
         }
 
         var entities2 = new List<Item>();
-        for (int i = 5; i <= 15; i++)
+        
+        for (int i = 11; i <= 15; i++)
         {
             var entity = new Item
             {
-                //ItemId = i,
+                ItemId = i,
                 Name = "Name " + i,
                 Description = "info " + i,
                 Quantity = i,
@@ -237,12 +238,39 @@ public class EFCoreBulkTest
             };
             entities2.Add(entity);
         }
+        var entities3 = new List<Item>();
+        
 
         // INSERT
         context.BulkInsert(entities);
+        Assert.Equal("info 1", context.Items.Where(a => a.Name == "Name 1").AsNoTracking().FirstOrDefault()?.Description);
+        Assert.Equal("info 2", context.Items.Where(a => a.Name == "Name 2").AsNoTracking().FirstOrDefault()?.Description);
 
         // INSERT Or UPDATE
-        //context.BulkInsertOrUpdate(entities2, new BulkConfig { UpdateByProperties  = new List<string> { nameof(Item.Name) } });
+        //mysql automatically detects unique or primary key
+        var insertedentities = context.Items.Take(5);
+        foreach (var insertedentitie in insertedentities)
+        {
+            insertedentitie.Description = insertedentitie.Description?.Replace("info", "UPDATE");
+        }
+        entities2.AddRange(context.Items.Take(5));
+        
+        context.BulkInsertOrUpdate(entities2, new BulkConfig { UpdateByProperties  = new List<string> { nameof(Item.ItemId) } });
+        Assert.Equal("UPDATE 5", context.Items.Where(a => a.Name == "Name 5").AsNoTracking().FirstOrDefault()?.Description);
+        Assert.Equal("info 15", context.Items.Where(a => a.Name == "Name 15").AsNoTracking().FirstOrDefault()?.Description);
+        
+        var configUpdateBy = new BulkConfig { UpdateByProperties = new List<string> { nameof(Item.ItemId) } };
+        var insertedentities2 = context.Items.Take(5);
+        foreach (var insertedentitie in insertedentities2)
+        {
+            insertedentitie.Description = insertedentitie.Description?.Replace("info", "CHANGE");
+        }
+        entities3.AddRange(context.Items.Take(5));
+        //configUpdateBy.SetOutputIdentity = true;
+        context.BulkUpdate(entities3, configUpdateBy);
+
+        Assert.Equal("CHANGE 13", context.Items.Where(a => a.Name == "Name 13").AsNoTracking().FirstOrDefault()?.Description);
+        Assert.Equal("CHANGE 14", context.Items.Where(a => a.Name == "Name 14").AsNoTracking().FirstOrDefault()?.Description);
     }
 
     [Theory]
