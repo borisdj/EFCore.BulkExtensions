@@ -122,6 +122,21 @@ public class EFCoreBulkTest
             entities56.Add(entity);
         }
 
+        var entities78 = new List<Item>();
+        for (int i = 7; i <= 8; i++)
+        {
+            var entity = new Item
+            {
+                //ItemId = i,
+                Name = "Name " + i,
+                Description = "CHANGE " + i,
+                Quantity = i,
+                Price = 0.1m * i,
+                TimeUpdated = currentTime,
+            };
+            entities78.Add(entity);
+        }
+
         // INSERT
         context.BulkInsert(entities);
 
@@ -162,6 +177,15 @@ public class EFCoreBulkTest
         context.AddRange(entities56);
         context.BulkSaveChanges();
         Assert.Equal(5, entities56[0].ItemId);
+
+        // Test PropIncludeOnUpdate (supported with: 'applySubqueryLimit')
+        var bulkConfig = new BulkConfig
+        {
+            UpdateByProperties = new List<string> { nameof(Item.Name) },
+            PropertiesToIncludeOnUpdate = new List<string> { "" },
+            SetOutputIdentity = true
+        };
+        context.BulkInsertOrUpdate(entities78, bulkConfig);
 
         // BATCH
         var query = context.Items.AsQueryable().Where(a => a.ItemId <= 1);
