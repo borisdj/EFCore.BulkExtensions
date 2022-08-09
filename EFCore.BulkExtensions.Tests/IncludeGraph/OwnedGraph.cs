@@ -60,8 +60,8 @@ public class OwnedGraphContext : DbContext
 
 public class OwnedGraph : IDisposable
 {
-    [Theory]
-    [InlineData(DbServer.SQLServer)]
+    //[Theory]
+    //[InlineData(DbServer.SQLServer)]
     public async Task Test(DbServer dbServer)
     {
         //ARRANGE
