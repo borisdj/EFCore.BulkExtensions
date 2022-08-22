@@ -94,12 +94,10 @@ Following are performances (in seconds)
 | Update   |   8 s   | 4 s       |   84 s   | 27  s      |
 | Delete   |  50 s   | 3 s       | 5340 s   | 15  s      |
 
-TestTable has 6 columns (Guid, string, string, int, decimal?, DateTime).<br>
-All were inserted and 2 of them (string, DateTime) were updated.<br>
-Test done locally on configuration: INTEL i7-10510U CPU 2.30GHz, DDR3 16 GB, SSD SAMSUNG MZ 512 GB.<br>
+TestTable has 6 columns (Guid, string x2, int, decimal?, DateTime), all inserted and 2 were updated.<br>
+Test done locally on configuration: INTEL i7-10510U CPU 2.30GHz, DDR3 16 GB, SSD SAMSUNG 512 GB.<br>
 For small data sets there is an overhead since most Bulk ops need to create Temp table and also Drop it after finish.<br>
-_Probably good advice would be to use Bulk ops for sets greater than 1000.
-
+Probably good advice would be to use **Bulk ops for sets greater than 1000**.
 
 ## Bulk info
 If Windows Authentication is used then in ConnectionString there should be *Trusted_Connection=True;* because Sql credentials are required to stay in connection.<br>
@@ -124,8 +122,20 @@ Partial Sync can be done on table subset using expression set on config with met
 `bulkConfig.SetSynchronizeFilter<Item>(a => a.Quantity > 0);`<br>
 Not supported for SQLite(Lite has only UPSERT statement) nor currently for PostgreSQL. Way to achieve there sync functionality is to Select or BulkRead existing data from DB, split list into sublists and call separately Bulk methods for BulkInsertOrUpdate and Delete.
 
-**BulkRead** does SELECT and JOIN based on one or more Unique columns that are specified in Config `UpdateByProperties`.<br>
-More info in the [Example](https://github.com/borisdj/EFCore.BulkExtensions#read-example) at the bottom.
+**BulkRead** (SELECT and JOIN done in Sql)<br>
+Useful when need to Select from big List based on one or more Unique Prop./Column that are specified in Config `UpdateByProperties`<br>
+```C#
+// instead of WhereIN which will TimeOut for List with over around 40 K records
+var entities = context.Items.Where(a => itemsNames.Contains(a.Name)).AsNoTracking().ToList(); // SQL IN
+// or JOIN in Memory that loads entire table
+var entities = context.Items.Join(itemsNames, a => a.Name, p => p, (a, p) => a).AsNoTracking().ToList();
+
+// USE
+var items = itemsNames.Select(a => new Item { Name = a }).ToList(); // Items list with only Name set
+var bulkConfig = new BulkConfig { UpdateByProperties = new List<string> { nameof(Item.Name) } };
+context.BulkRead(items, bulkConfig); // Items list will be loaded from Db with data(other properties)
+```
+[Example](https://github.com/borisdj/EFCore.BulkExtensions/issues/733#issuecomment-1017417579) of special use case when need to BulkRead child entities after BulkReading parent list. 
 
 **SaveChanges** uses Change Tracker to find all modified(CUD) entities and call proper BulkOperations for each table.<br>
 Because it needs tracking it is slower then pure BulkOps but still much faster then regular SaveChanges.<br>
@@ -299,19 +309,3 @@ context.Students.AddRange(entities); // adding to Context so that Shadow propert
 context.BulkInsert(entities);
 ```
 **TPT** (Table-Per-Type) as of v5 is [partially supported](https://github.com/borisdj/EFCore.BulkExtensions/issues/493).
-
-## Read example
-
-When we need to Select from big List of some Unique Prop./Column use BulkRead (JOIN done in Sql) for Efficiency:<br>
-```C#
-// instead of WhereIN which will TimeOut for List with over around 40 K records
-var entities = context.Items.Where(a => itemsNames.Contains(a.Name)).AsNoTracking().ToList(); // SQL IN
-// or JOIN in Memory that loads entire table
-var entities = context.Items.Join(itemsNames, a => a.Name, p => p, (a, p) => a).AsNoTracking().ToList();
-
-// USE
-var items = itemsNames.Select(a => new Item { Name = a }).ToList(); // Items list with only Name set
-var bulkConfig = new BulkConfig { UpdateByProperties = new List<string> { nameof(Item.Name) } };
-context.BulkRead(items, bulkConfig); // Items list will be loaded from Db with data(other properties)
-```
-[Example](https://github.com/borisdj/EFCore.BulkExtensions/issues/733#issuecomment-1017417579) of special use case when need to BulkRead child entities after BulkReading parent list. 
