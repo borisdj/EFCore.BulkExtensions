@@ -83,6 +83,24 @@ do {
 context.Truncate<Entity>();
 context.TruncateAsync<Entity>();
 ```
+
+## Performances
+Following are performances (in seconds)
+* For SQL Server (v. 2019):
+
+| Ops\Rows | EF 100K | Bulk 100K | EF 1 MIL.| Bulk 1 MIL.|
+| -------- | ------: | --------: | -------: | ---------: |
+| Insert   |  11 s   | 3 s       |   60 s   | 15  s      |
+| Update   |   8 s   | 4 s       |   84 s   | 27  s      |
+| Delete   |  50 s   | 3 s       | 5340 s   | 15  s      |
+
+TestTable has 6 columns (Guid, string, string, int, decimal?, DateTime).<br>
+All were inserted and 2 of them (string, DateTime) were updated.<br>
+Test done locally on configuration: INTEL i7-10510U CPU 2.30GHz, DDR3 16 GB, SSD SAMSUNG MZ 512 GB.<br>
+For small data sets there is an overhead since most Bulk ops need to create Temp table and also Drop it after finish.<br>
+_Probably good advice would be to use Bulk ops for sets greater than 1000.
+
+
 ## Bulk info
 If Windows Authentication is used then in ConnectionString there should be *Trusted_Connection=True;* because Sql credentials are required to stay in connection.<br>
 
@@ -297,20 +315,3 @@ var bulkConfig = new BulkConfig { UpdateByProperties = new List<string> { nameof
 context.BulkRead(items, bulkConfig); // Items list will be loaded from Db with data(other properties)
 ```
 [Example](https://github.com/borisdj/EFCore.BulkExtensions/issues/733#issuecomment-1017417579) of special use case when need to BulkRead child entities after BulkReading parent list. 
-
-## Performances
-
-Following are performances (in seconds)
-* For SQL Server (v. 2019):
-
-| Ops\Rows | EF 100K | Bulk 100K | EF 1 MIL.| Bulk 1 MIL.|
-| -------- | ------: | --------: | -------: | ---------: |
-| Insert   |  11 s   | 3 s       |   60 s   | 15  s      |
-| Update   |   8 s   | 4 s       |   84 s   | 27  s      |
-| Delete   |  50 s   | 3 s       | 5340 s   | 15  s      |
-
-TestTable has 6 columns (Guid, string, string, int, decimal?, DateTime).<br>
-All were inserted and 2 of them (string, DateTime) were updated.<br>
-Test done locally on configuration: INTEL i7-10510U CPU 2.30GHz, DDR3 16 GB, SSD SAMSUNG MZ 512 GB.<br>
-For small data sets there is an overhead since most Bulk ops need to create Temp table and also Drop it after finish.<br>
-_Probably good advice would be to use Bulk ops for sets greater than 1000.
