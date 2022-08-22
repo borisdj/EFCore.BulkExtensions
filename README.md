@@ -123,7 +123,7 @@ Partial Sync can be done on table subset using expression set on config with met
 Not supported for SQLite(Lite has only UPSERT statement) nor currently for PostgreSQL. Way to achieve there sync functionality is to Select or BulkRead existing data from DB, split list into sublists and call separately Bulk methods for BulkInsertOrUpdate and Delete.
 
 **BulkRead** (SELECT and JOIN done in Sql)<br>
-Useful when need to Select from big List based on one or more Unique Prop./Column that are specified in Config `UpdateByProperties`<br>
+Useful when need to Select from big List based on Unique Prop./Columns specified in config `UpdateByProperties`<br>
 ```C#
 // instead of WhereIN which will TimeOut for List with over around 40 K records
 var entities = context.Items.Where(a => itemsNames.Contains(a.Name)).AsNoTracking().ToList(); // SQL IN
