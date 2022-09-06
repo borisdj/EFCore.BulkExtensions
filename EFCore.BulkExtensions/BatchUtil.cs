@@ -1,5 +1,4 @@
 using EFCore.BulkExtensions.SqlAdapters;
-using EFCore.BulkExtensions.SQLAdapters.PostgreSql;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
@@ -43,7 +42,7 @@ public static class BatchUtil
         var (sql, tableAlias, _, topStatement, leadingComments, innerParameters) = GetBatchSql(query, context, isUpdate: false);
 
         innerParameters = ReloadSqlParameters(context, innerParameters.ToList()); // Sqlite requires SqliteParameters
-        var databaseType = SqlAdaptersMapping.GetDatabaseType(context);
+        var databaseType = SqlAdaptersMapping.GetDatabaseType();
 
         string resultQuery;
         if (databaseType == DbServer.SQLServer)
@@ -97,12 +96,12 @@ public static class BatchUtil
 
         if (databaseType == DbServer.PostgreSQL)
         {
-            resultQuery = SqlQueryBuilderPostgreSql.RestructureForBatch(resultQuery, isDelete: true);
+            resultQuery = SqlAdaptersMapping.DbServer!.QueryBuilder.RestructureForBatch(resultQuery, isDelete: true);
 
             var npgsqlParameters = new List<object>();
             foreach (var param in innerParameters)
             {
-                npgsqlParameters.Add(new Npgsql.NpgsqlParameter(((SqlParameter)param).ParameterName, ((SqlParameter)param).Value));
+                npgsqlParameters.Add(SqlAdaptersMapping.DbServer!.QueryBuilder.CreateParameter((SqlParameter)param));
             }
             innerParameters = npgsqlParameters;
         }
@@ -146,21 +145,21 @@ public static class BatchUtil
             resultQuery = resultQuery.Split("ORDER", StringSplitOptions.None)[0];
         }
 
-        var databaseType = SqlAdaptersMapping.GetDatabaseType(context);
+        var databaseType = SqlAdaptersMapping.GetDatabaseType();
         if (databaseType == DbServer.PostgreSQL)
         {
-            resultQuery = SqlQueryBuilderPostgreSql.RestructureForBatch(resultQuery);
+            resultQuery = SqlAdaptersMapping.DbServer!.QueryBuilder.RestructureForBatch(resultQuery);
 
             var npgsqlParameters = new List<object>();
             foreach (var param in sqlParameters)
             {
-                var npgsqlParam = new Npgsql.NpgsqlParameter(((SqlParameter)param).ParameterName, ((SqlParameter)param).Value);
+                dynamic npgsqlParam = SqlAdaptersMapping.DbServer!.QueryBuilder.CreateParameter((SqlParameter)param);
 
                 string paramName = npgsqlParam.ParameterName.Replace("@", "");
                 var propertyType = type.GetProperties().SingleOrDefault(a => a.Name == paramName)?.PropertyType;
                 if (propertyType == typeof(System.Text.Json.JsonElement) || propertyType == typeof(System.Text.Json.JsonElement?)) // for JsonDocument works without fix
                 {
-                    npgsqlParam.NpgsqlDbType = NpgsqlTypes.NpgsqlDbType.Jsonb;
+                    npgsqlParam.NpgsqlDbType = SqlAdaptersMapping.DbServer!.QueryBuilder.Dbtype();
                 }
 
                 npgsqlParameters.Add(npgsqlParam);
@@ -205,21 +204,21 @@ public static class BatchUtil
             resultQuery = resultQuery.Split("ORDER", StringSplitOptions.None)[0];
         }
 
-        var databaseType = SqlAdaptersMapping.GetDatabaseType(context);
+        var databaseType = SqlAdaptersMapping.GetDatabaseType();
         if (databaseType == DbServer.PostgreSQL)
         {
-            resultQuery = SqlQueryBuilderPostgreSql.RestructureForBatch(resultQuery);
+            resultQuery = SqlAdaptersMapping.DbServer!.QueryBuilder.RestructureForBatch(resultQuery);
 
             var npgsqlParameters = new List<object>();
             foreach (var param in sqlParameters)
             {
-                var npgsqlParam = new Npgsql.NpgsqlParameter(((SqlParameter)param).ParameterName, ((SqlParameter)param).Value);
+                dynamic npgsqlParam = SqlAdaptersMapping.DbServer!.QueryBuilder.CreateParameter((SqlParameter)param);
 
                 string paramName = npgsqlParam.ParameterName.Replace("@", "");
                 var propertyType = type.GetProperties().SingleOrDefault(a => a.Name == paramName)?.PropertyType;
                 if (propertyType == typeof(System.Text.Json.JsonElement) || propertyType == typeof(System.Text.Json.JsonElement?))
                 {
-                    npgsqlParam.NpgsqlDbType = NpgsqlTypes.NpgsqlDbType.Jsonb;
+                    npgsqlParam.NpgsqlDbType = SqlAdaptersMapping.DbServer!.QueryBuilder.Dbtype();
                 }
 
                 npgsqlParameters.Add(npgsqlParam);
@@ -238,7 +237,7 @@ public static class BatchUtil
     /// <returns></returns>
     public static List<object> ReloadSqlParameters(DbContext context, List<object> sqlParameters)
     {
-        return SqlAdaptersMapping.GetAdapterDialect(context).ReloadSqlParameters(context,sqlParameters);
+        return SqlAdaptersMapping.GetAdapterDialect().ReloadSqlParameters(context,sqlParameters);
     }
 
     /// <summary>
@@ -250,7 +249,7 @@ public static class BatchUtil
     /// <returns></returns>
     public static (string Sql, string TableAlias, string TableAliasSufixAs, string TopStatement, string LeadingComments, IEnumerable<object> InnerParameters) GetBatchSql(IQueryable query, DbContext context, bool isUpdate)
     {
-        var sqlQueryBuilder = SqlAdaptersMapping.GetAdapterDialect(context);
+        var sqlQueryBuilder = SqlAdaptersMapping.GetAdapterDialect();
         var (fullSqlQuery, innerParameters) = query.ToParametrizedSql();
 
         var (leadingComments, sqlQuery) = SplitLeadingCommentsAndMainSqlQuery(fullSqlQuery);
@@ -259,7 +258,7 @@ public static class BatchUtil
         string tableAliasSufixAs = string.Empty;
         string topStatement;
 
-        var databaseType = SqlAdaptersMapping.GetDatabaseType(context);
+        var databaseType = SqlAdaptersMapping.GetDatabaseType();
         (tableAlias, topStatement) = sqlQueryBuilder.GetBatchSqlReformatTableAliasAndTopStatement(sqlQuery, databaseType);
 
         int indexFrom = sqlQuery.IndexOf(Environment.NewLine, StringComparison.Ordinal);
@@ -462,7 +461,7 @@ public static class BatchUtil
             {
                 case ExpressionType.Add:
                     CreateUpdateBody(createBodyData, binaryExpression.Left, columnName);
-                    var sqlOperator = SqlAdaptersMapping.GetAdapterDialect(createBodyData.DatabaseType)
+                    var sqlOperator = SqlAdaptersMapping.GetAdapterDialect()
                         .GetBinaryExpressionAddOperation(binaryExpression);
                     sqlColumns.Append(" " + sqlOperator);
                     CreateUpdateBody(createBodyData, binaryExpression.Right, columnName);

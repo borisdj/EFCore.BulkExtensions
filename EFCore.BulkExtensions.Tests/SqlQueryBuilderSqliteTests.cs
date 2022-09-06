@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using EFCore.BulkExtensions.SQLAdapters.SQLite;
+using EFCore.BulkExtensions.SqlAdapters.SQLite;
 using Xunit;
 
 namespace EFCore.BulkExtensions.Tests;

@@ -5,10 +5,10 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq.Expressions;
 
-namespace EFCore.BulkExtensions.SQLAdapters.SQLServer;
+namespace EFCore.BulkExtensions.SqlAdapters;
 
 /// <inheritdoc/>
-public class SqlServerDialect : IQueryBuilderSpecialization
+public class SqlDefaultDialect : IQueryBuilderSpecialization
 {
     private static readonly int SelectStatementLength = "SELECT".Length;
 

@@ -4,14 +4,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Text.RegularExpressions;
-
 namespace EFCore.BulkExtensions;
 
 /// <summary>
 /// Contains a compilation of SQL queries used in EFCore.
 /// </summary>
-public static class SqlQueryBuilder
+public abstract class SqlQueryBuilder
 {
     /// <summary>
     /// Generates SQL query to create a table copy

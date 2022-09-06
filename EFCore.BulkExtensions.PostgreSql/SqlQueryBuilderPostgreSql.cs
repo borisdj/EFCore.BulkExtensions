@@ -3,12 +3,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql;
+namespace EFCore.BulkExtensions.SqlAdapters.PostgreSql;
 
 /// <summary>
 /// Contains a list of methods to generate SQL queries required by EFCore
 /// </summary>
-public static class SqlQueryBuilderPostgreSql
+public class SqlQueryBuilderPostgreSql : SqlAdapters.QueryBuilderExtensions
 {
     /// <summary>
     /// Generates SQL query to create table copy
@@ -287,7 +287,7 @@ public static class SqlQueryBuilderPostgreSql
     /// </summary>
     /// <param name="sql"></param>
     /// <param name="isDelete"></param>
-    public static string RestructureForBatch(string sql, bool isDelete = false)
+    public override string RestructureForBatch(string sql, bool isDelete = false)
     {
         sql = sql.Replace("[", @"""").Replace("]", @"""");
         string firstLetterOfTable = sql.Substring(7, 1);
@@ -338,4 +338,35 @@ public static class SqlQueryBuilderPostgreSql
 
         return sql;
     }
+
+    /// <summary>
+    /// Returns a DbParameters intanced per provider
+    /// </summary>
+    /// <param name="sqlParameter"></param>
+    /// <returns></returns>
+    public override object CreateParameter(SqlParameter sqlParameter)
+    {
+        return new Npgsql.NpgsqlParameter(sqlParameter.ParameterName, sqlParameter.Value);
+    }
+
+    /// <summary>
+    /// Generates SQL query to select output from a table
+    /// </summary>
+    /// <param name="tableInfo"></param>
+    /// <returns></returns>
+    public override string SelectFromOutputTable(TableInfo tableInfo)
+    {
+        return SqlQueryBuilder.SelectFromOutputTable(tableInfo);
+    }
+
+    /// <summary>
+    /// Returns NpgsqlDbType for PostgreSql parameters. Throws <see cref="NotImplementedException"/> for anothers providers
+    /// </summary>
+    /// <returns></returns>
+    /// <exception cref="NotImplementedException"></exception>
+    public override object Dbtype()
+    {
+        return NpgsqlTypes.NpgsqlDbType.Jsonb;
+    }
+
 }

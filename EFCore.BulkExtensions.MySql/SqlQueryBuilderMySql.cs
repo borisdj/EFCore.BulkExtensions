@@ -8,7 +8,7 @@ namespace EFCore.BulkExtensions.SqlAdapters.MySql;
 /// <summary>
 ///  Contains a list of methods to generate SQL queries required by EFCore
 /// </summary>
-public static class SqlQueryBuilderMySql
+public class SqlQueryBuilderMySql: SqlAdapters.QueryBuilderExtensions
 {
     /// <summary>
     /// Generates SQL query to create table copy
@@ -162,7 +162,7 @@ public static class SqlQueryBuilderMySql
     /// </summary>
     /// <param name="tableInfo"></param>
     /// <returns></returns>
-    public static string SelectFromOutputTable(TableInfo tableInfo)
+    public override string SelectFromOutputTable(TableInfo tableInfo)
     {
         List<string> columnsNames = tableInfo.OutputPropertyColumnNamesDict.Values.ToList();
         var query = $"SELECT {SqlQueryBuilder.GetCommaSeparatedColumns(columnsNames)} FROM {tableInfo.FullTempOutputTableName} WHERE [{tableInfo.PrimaryKeysPropertyColumnNameDict.Select(x => x.Value).FirstOrDefault()}] IS NOT NULL";
@@ -235,4 +235,34 @@ public static class SqlQueryBuilderMySql
         return q;
     }
 
+
+    /// <summary>
+    /// Restructures a sql query for batch commands
+    /// </summary>
+    /// <param name="sql"></param>
+    /// <param name="isDelete"></param>
+    public override string RestructureForBatch(string sql, bool isDelete = false)
+    {
+        return sql;
+    }
+
+    /// <summary>
+    /// Returns a DbParameters intanced per provider
+    /// </summary>
+    /// <param name="sqlParameter"></param>
+    /// <returns></returns>
+    public override object CreateParameter(SqlParameter sqlParameter)
+    {
+        return sqlParameter;
+    }
+
+    /// <summary>
+    /// Returns NpgsqlDbType for PostgreSql parameters. Throws <see cref="NotImplementedException"/> for anothers providers
+    /// </summary>
+    /// <returns></returns>
+    /// <exception cref="NotImplementedException"></exception>
+    public override object Dbtype()
+    {
+        throw new NotImplementedException();
+    }
 }

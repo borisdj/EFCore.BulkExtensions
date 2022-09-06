@@ -1,5 +1,4 @@
 ﻿using EFCore.BulkExtensions.SqlAdapters;
-using EFCore.BulkExtensions.SQLAdapters.SQLServer;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -10,7 +9,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace EFCore.BulkExtensions.SQLAdapters.SQLite;
+namespace EFCore.BulkExtensions.SqlAdapters.SQLite;
 /// <inheritdoc/>
 public class SqliteOperationsAdapter : ISqlOperationsAdapter
 {
@@ -32,7 +31,7 @@ public class SqliteOperationsAdapter : ISqlOperationsAdapter
     /// <inheritdoc/>
     public static async Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken)
     {
-        SqliteConnection? connection = tableInfo.SqliteConnection;
+        SqliteConnection? connection = (SqliteConnection?)SqlAdaptersMapping.DbServer!.DbConnection;
         if (connection == null)
         {
             connection = isAsync ? await OpenAndGetSqliteConnectionAsync(context, cancellationToken).ConfigureAwait(false)
@@ -48,7 +47,7 @@ public class SqliteOperationsAdapter : ISqlOperationsAdapter
                 doExplicitCommit = true;
             }
 
-            SqliteTransaction? transaction = tableInfo.SqliteTransaction;
+            SqliteTransaction? transaction = (SqliteTransaction?)SqlAdaptersMapping.DbServer!.DbTransaction;
             if (transaction == null)
             {
                 var dbTransaction = doExplicitCommit ? connection.BeginTransaction()
@@ -226,8 +225,8 @@ public class SqliteOperationsAdapter : ISqlOperationsAdapter
 
             tableInfo.BulkConfig.OperationType = OperationType.Insert;
             tableInfo.InsertToTempTable = true;
-            tableInfo.SqliteConnection = connection;
-            tableInfo.SqliteTransaction = transaction;
+            SqlAdaptersMapping.DbServer!.DbConnection = connection;
+            SqlAdaptersMapping.DbServer!.DbTransaction = transaction;
             // INSERT
             if (isAsync)
             {

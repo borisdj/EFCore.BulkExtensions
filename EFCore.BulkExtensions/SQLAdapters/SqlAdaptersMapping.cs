@@ -1,10 +1,7 @@
-﻿using EFCore.BulkExtensions.SQLAdapters.PostgreSql;
-using EFCore.BulkExtensions.SQLAdapters.SQLite;
-using EFCore.BulkExtensions.SQLAdapters.SQLServer;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using System.Collections.Generic;
 using System.ComponentModel;
-using EFCore.BulkExtensions.SqlAdapters.MySql;
 
 namespace EFCore.BulkExtensions.SqlAdapters;
 
@@ -41,78 +38,46 @@ public enum DbServer
 #pragma warning disable CS1591 // No XML comment required here
 public static class SqlAdaptersMapping
 {
-#pragma warning restore CS1591 // No XML comment required here
     /// <summary>
-    /// Dictionary that contains a list of DBServers and their operations server adapter
+    /// Contains a list of methods to generate Adpaters and helpers instances
     /// </summary>
-    public static readonly Dictionary<DbServer, ISqlOperationsAdapter> SqlOperationAdapterMapping =
-        new()
-        {
-            {DbServer.SQLServer, new SqlOperationsServerAdapter()},
-            {DbServer.SQLite, new SqliteOperationsAdapter()},
-            {DbServer.PostgreSQL, new PostgreSqlAdapter()},
-            {DbServer.MySQL, new MySqLAdapter()}
-        };
+    public static IDbServer? DbServer { get; set; }
 
-    /// <summary>
-    /// Dictionary that contains a list of DBServers and their server dialects
-    /// </summary>
-    public static readonly Dictionary<DbServer, IQueryBuilderSpecialization> SqlQueryBuilderSpecializationMapping =
-        new()
-        {
-            {DbServer.SQLServer, new SqlServerDialect()},
-            {DbServer.SQLite, new SqliteDialect()},
-            {DbServer.PostgreSQL, new PostgreSqlDialect()},
-            {DbServer.MySQL, new MySqlDialect()}
-        };
+#pragma warning restore CS1591 // No XML comment required here
 
     /// <summary>
     /// Creates the bulk operations adapter
     /// </summary>
-    /// <param name="context"></param>
     /// <returns></returns>
-    public static ISqlOperationsAdapter CreateBulkOperationsAdapter(DbContext context)
+    public static ISqlOperationsAdapter CreateBulkOperationsAdapter()
     {
-        var providerType = GetDatabaseType(context);
-        return SqlOperationAdapterMapping[providerType];
+        return DbServer!.Adapter;
     }
 
     /// <summary>
     /// Returns the Adapter dialect to be used
     /// </summary>
-    /// <param name="context"></param>
     /// <returns></returns>
-    public static IQueryBuilderSpecialization GetAdapterDialect(DbContext context)
+    public static IQueryBuilderSpecialization GetAdapterDialect()
     {
-        var providerType = GetDatabaseType(context);
-        return GetAdapterDialect(providerType);
-    }
-
-    /// <summary>
-    /// Returns the Adapter dialect to be used
-    /// </summary>
-    /// <param name="providerType"></param>
-    /// <returns></returns>
-    public static IQueryBuilderSpecialization GetAdapterDialect(DbServer providerType)
-    {
-        return SqlQueryBuilderSpecializationMapping[providerType];
+        return DbServer!.Dialect;
     }
 
     /// <summary>
     /// Returns the Database type
     /// </summary>
-    /// <param name="context"></param>
     /// <returns></returns>
-    public static DbServer GetDatabaseType(DbContext context)
+    public static DbServer GetDatabaseType()
     {
-        var databaseType = DbServer.SQLServer;
-        if (context.Database.IsSqlite())
-            databaseType = DbServer.SQLite;
-        if (context.Database.IsNpgsql())
-            databaseType = DbServer.PostgreSQL;
-        if (context.Database.IsMySql())
-            databaseType = DbServer.MySQL;
+        return DbServer!.Type;
+    }
 
-        return databaseType;
+    /// <summary>
+    /// Returns per provider QueryBuilder instance, containing a compilation of SQL queries used in EFCore.
+    /// </summary>
+    /// <returns></returns>
+    public static SqlAdapters.QueryBuilderExtensions GetQueryBuilder()
+    {
+        return DbServer!.QueryBuilder;
     }
 }
