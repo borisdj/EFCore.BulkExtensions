@@ -830,6 +830,16 @@ public class TableInfo
             }
         }
     }
+
+    internal void ReplaceReadEntities<T>(IList<T> entities, IList<T> existingEntities)
+    {
+        entities.Clear();
+
+        foreach (var existingEntity in existingEntities)
+        {
+            entities.Add(existingEntity);
+        }
+    }
     #endregion
     /// <summary>
     /// Sets the identity preserve order

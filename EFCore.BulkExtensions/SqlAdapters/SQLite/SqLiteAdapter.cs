@@ -244,7 +244,14 @@ public class SqliteOperationsAdapter : ISqlOperationsAdapter
             var compiled = EF.CompileQuery(expression); // instead using Compiled queries
             existingEntities = compiled(context).ToList();
 
-            tableInfo.UpdateReadEntities(entities, existingEntities, context);
+            if (tableInfo.BulkConfig.ReplaceReadEntities)
+            {
+                tableInfo.ReplaceReadEntities(entities, existingEntities);
+            }
+            else
+            {
+                tableInfo.UpdateReadEntities(entities, existingEntities, context);
+            }
 
             // DROP
             command.CommandText = SqlQueryBuilderSqlite.DropTable(tableInfo.FullTempTableName);

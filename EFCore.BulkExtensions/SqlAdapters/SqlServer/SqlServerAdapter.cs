@@ -360,7 +360,15 @@ public class SqlOperationsServerAdapter: ISqlOperationsAdapter
             }
 
             List<T> existingEntities = tableInfo.LoadOutputEntities<T>(context, type, sqlSelectJoinTable);
-            tableInfo.UpdateReadEntities(entities, existingEntities, context);
+
+            if (tableInfo.BulkConfig.ReplaceReadEntities)
+            {
+                tableInfo.ReplaceReadEntities(entities, existingEntities);
+            }
+            else
+            {
+                tableInfo.UpdateReadEntities(entities, existingEntities, context);
+            }
 
             if (tableInfo.TimeStampPropertyName != null && !tableInfo.PropertyColumnNamesDict.ContainsKey(tableInfo.TimeStampPropertyName))
             {

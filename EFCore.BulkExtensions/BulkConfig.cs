@@ -260,6 +260,11 @@ public class BulkConfig
     public bool IgnoreGlobalQueryFilters { get; set; }
 
     /// <summary>
+    ///     When set to <c>true</c> result of BulkRead operation will be provided using replace instead of update. Entities list parameter of BulkRead method will be repopulated with obtained data.
+    /// </summary>
+    public bool ReplaceReadEntities { get; set; }
+
+    /// <summary>
     ///     Enum with [Flags] attribute which enables specifying one or more options.
     /// </summary>
     /// <value>

@@ -1118,4 +1118,37 @@ public class EFCoreBulkTestAtypical
             Assert.Equal("foo", defaultValueTest.Name);
         }
     }
+
+    [Theory]
+    [InlineData(DbServerType.SQLServer)]
+    [InlineData(DbServerType.SQLite)]
+    private void ReplaceReadEntitiesTest(DbServerType dbServer)
+    {
+        ContextUtil.DbServer = dbServer;
+        using var context = new TestContext(ContextUtil.GetOptions());
+
+        context.BulkDelete(context.Items.ToList());
+
+        context.Items.Add(new Item { Name = "name 1" });
+        context.Items.Add(new Item { Name = "name 2" });
+        context.Items.Add(new Item { Name = "name 2" });
+        context.Items.Add(new Item { Name = "name 3" });
+        context.SaveChanges();
+
+        var names = new List<string> { "name 1", "name 2", "name 3", "name 4" };
+
+        var items = names.Select(i => new Item { Name = i }).ToList();
+
+        var config = new BulkConfig()
+        {
+            ReplaceReadEntities = true,
+            UpdateByProperties = new List<string> { nameof(Item.Name) },
+        };
+
+        context.BulkRead(items, config);
+
+        Assert.Equal(4, items.Count);
+        Assert.Equal(2, items.Where(i => i.Name == "name 2").Count());
+        Assert.Empty(items.Where(i => i.Name == "name 4"));
+    }
 }
