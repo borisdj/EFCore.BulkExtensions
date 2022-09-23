@@ -310,7 +310,7 @@ public static class SqlQueryBuilderPostgreSql
             //TO
             // UPDATE "Item" AS i SET "Description" = 'Update N', "Price" = 1.5 WHERE i."ItemId" <= 1
             //WOULD ALSO WORK
-            // UPDATE "Item" SET "Description" = 'Update N', "Price" = 1.5 FROM "Item" WHERE "ItemId" <= 1
+            // UPDATE "Item" SET "Description" = 'Update N', "Price" = 1.5 WHERE "ItemId" <= 1
             
             // if JOIN exists:
             //FROM
