@@ -63,16 +63,16 @@ context.Items.Where(a => a.ItemId >  500).BatchDeleteAsync();
 
 // Update (using Expression arg.) supports Increment/Decrement 
 context.Items.Where(a => a.ItemId <= 500).BatchUpdate(a => new Item { Quantity = a.Quantity + 100 });
-context.Items.Where(a => a.ItemId <= 500).BatchUpdateAsync(a => new Item { Quantity = a.Quantity + 100 });
+context.Items.Where(a => a.ItemId <= 500).BatchUpdateAsync(a => new Item { Quantity = a.Quantity + 100});
   // can be as value '+100' or as variable '+incrementStep' (int incrementStep = 100;)
   
 // Update (via simple object)
 context.Items.Where(a => a.ItemId <= 500).BatchUpdate(new Item { Description = "Updated" });
 context.Items.Where(a => a.ItemId <= 500).BatchUpdateAsync(new Item { Description = "Updated" });
 // Update (via simple object) - requires additional Argument for setting to Property default value
-var updateCols = new List<string> { nameof(Item.Quantity) }; //Update 'Quantity' to default value('0'-zero)
+var updateCols = new List<string> { nameof(Item.Quantity) }; // Update 'Quantity' to default value ('0')
 var q = context.Items.Where(a => a.ItemId <= 500);
-int affected = q.BatchUpdate(new Item { Description="Updated" }, updateCols); //result assigned to variable
+int affected = q.BatchUpdate(new Item { Description="Updated" }, updateCols); // result assigned to aff.
 
 // Batch iteration (useful in same cases to avoid lock escalation)
 do {
