@@ -155,25 +155,25 @@ Note: Bulk ops have optional argument *Type type* that can be set to type of Ent
 **Bulk** methods can have optional argument **BulkConfig** with properties (bool, int, object, List<string>):<br>
 ```C#
 PROPERTY : DEFAULTvalue
------------------------                           PropertiesToInclude: null,
-PreserveInsertOrder: true,                        PropertiesToIncludeOnCompare: null,
-SetOutputIdentity: false,	                  PropertiesToIncludeOnUpdate: null,
-BatchSize: 2000,	                          PropertiesToExclude: null,
-NotifyAfter: null,	                          PropertiesToExcludeOnCompare: null,
-BulkCopyTimeout: null,	                          PropertiesToExcludeOnUpdate: null,
-EnableStreaming: false,	                          UpdateByProperties: null,
-UseTempDB: false,	                          EnableShadowProperties: false,
-UniqueTableNameTempDb: true,	                  IncludeGraph: false,
-CustomDestinationTableName: null,	          OmitClauseExistsExcept: false,
-CustomSourceTableName: null,	                  DoNotUpdateIfTimeStampChanged: false,
-CustomSourceDestinationMappingColumns: null,      SRID: 4326,
-TrackingEntities: false,	                  DateTime2PrecisionForceRound: false,
-WithHoldlock: true,	                          TemporalColumns: { "PeriodStart", "PeriodEnd" },
-CalculateStats: false,	                          EnableShadowProperties: false,
-SqlBulkCopyOptions: Default,                      OnSaveChangesSetFK: true,
-SqlBulkCopyColumnOrderHints: null,                IgnoreGlobalQueryFilters: false,
+----------------------------------------------------------------------------------------------
+PreserveInsertOrder: true,                    PropertiesToInclude: null,
+SetOutputIdentity: false,                     PropertiesToIncludeOnCompare: null,
+BatchSize: 2000,                              PropertiesToIncludeOnUpdate: null,
+NotifyAfter: null,                            PropertiesToExclude: null,
+BulkCopyTimeout: null,                        PropertiesToExcludeOnCompare: null,
+EnableStreaming: false,                       PropertiesToExcludeOnUpdate: null,
+UseTempDB: false,                             UpdateByProperties: null,
+UniqueTableNameTempDb: true,                  EnableShadowProperties: false,
+CustomDestinationTableName: null,             IncludeGraph: false,
+CustomSourceTableName: null,                  OmitClauseExistsExcept: false,
+CustomSourceDestinationMappingColumns: null,  DoNotUpdateIfTimeStampChanged: false,
+TrackingEntities: false,                      SRID: 4326,
+WithHoldlock: true,                           DateTime2PrecisionForceRound: false,
+CalculateStats: false,                        TemporalColumns: { "PeriodStart", "PeriodEnd" },
+SqlBulkCopyOptions: Default,                  OnSaveChangesSetFK: true,
+SqlBulkCopyColumnOrderHints: null,            IgnoreGlobalQueryFilters: false,
 OnConflictUpdateWhereSql: null,
---------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------
 METHOD: SetSynchronizeFilter<T>
 ```
 If we want to change defaults, BulkConfig should be added explicitly with one or more bool properties set to true, and/or int props like **BatchSize** to different number.<br> Config also has DelegateFunc for setting *Underlying-Connection/Transaction*, e.g. in UnderlyingTest.<br>
