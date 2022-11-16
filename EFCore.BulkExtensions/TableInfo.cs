@@ -1134,7 +1134,7 @@ public class TableInfo
         bool hasIdentity = OutputPropertyColumnNamesDict.Any(a => a.Value == IdentityColumnName) ||
                            (tableInfo.HasSinglePrimaryKey && tableInfo.DefaultValueProperties.Contains(tableInfo.PrimaryKeysPropertyColumnNameDict.FirstOrDefault().Key));
         int totalNumber = entities.Count;
-        if (BulkConfig.SetOutputIdentity && hasIdentity)
+        if (BulkConfig.SetOutputIdentity && (hasIdentity || BulkConfig.DoNotUpdateIfTimeStampChanged))
         {
             var databaseType = SqlAdaptersMapping.GetDatabaseType(context);
             string sqlQuery = databaseType == DbServer.SQLServer? SqlQueryBuilder.SelectFromOutputTable(this) : SqlQueryBuilderMySql.SelectFromOutputTable(this);
