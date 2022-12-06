@@ -369,4 +369,12 @@ public class SqlQueryBuilderPostgreSql : SqlAdapters.QueryBuilderExtensions
         return NpgsqlTypes.NpgsqlDbType.Jsonb;
     }
 
+    /// <summary>
+    /// Returns void. Throws <see cref="NotImplementedException"/> for anothers providers
+    /// </summary>
+    /// <exception cref="NotImplementedException"></exception>
+    public override void SetDbTypeParam(object npgsqlParameter, object dbType)
+    {
+        ((Npgsql.NpgsqlParameter)npgsqlParameter).NpgsqlDbType = (NpgsqlTypes.NpgsqlDbType)dbType;
+    }
 }

@@ -23,8 +23,8 @@ public class EFCoreBulkTest
     private static readonly Func<TestContext, IEnumerable<Item>> AllItemsQuery = EF.CompileQuery<TestContext, IEnumerable<Item>>(ctx => ctx.Items.AsNoTracking());
 
     [Theory]
-    [InlineData(DbServer.PostgreSQL)]
-    public void InsertEnumStringValue(DbServer dbServer)
+    [InlineData(DbServerType.PostgreSQL)]
+    public void InsertEnumStringValue(DbServerType dbServer)
     {
         ContextUtil.DbServer = dbServer;
 
@@ -45,8 +45,8 @@ public class EFCoreBulkTest
     }
 
     [Theory]
-    [InlineData(DbServer.PostgreSQL)]
-    public void InsertTestPostgreSql(DbServer dbServer)
+    [InlineData(DbServerType.PostgreSQL)]
+    public void InsertTestPostgreSql(DbServerType dbServer)
     {
         ContextUtil.DbServer = dbServer;
 
@@ -218,10 +218,10 @@ public class EFCoreBulkTest
         //var suffix = " Concatenated";
         //query.BatchUpdate(a => new Item { Name = a.Name + suffix, Quantity = a.Quantity + incrementStep }); // example of BatchUpdate Increment/Decrement value in variable
     }
-
+    
     [Theory]
-    [InlineData(DbServer.MySQL)]
-    public void InsertTestMySQL(DbServer dbServer)
+    [InlineData(DbServerType.MySQL)]
+    public void InsertTestMySQL(DbServerType dbServer)
     {
         ContextUtil.DbServer = dbServer;
 
@@ -314,12 +314,12 @@ public class EFCoreBulkTest
         //EX.My1: "The property 'Item.ItemId' has a temporary value while attempting to change the entity's state to 'Unchanged'.
         //         Either set a permanent value explicitly, or ensure that the database is configured to generate values for this property."
     }
-
+    
     [Theory]
-    [InlineData(DbServer.SQLServer, true)]
-    [InlineData(DbServer.SQLite, true)]
+    [InlineData(DbServerType.SQLServer, true)]
+    [InlineData(DbServerType.SQLite, true)]
     //[InlineData(DbServer.SqlServer, false)] // for speed comparison with Regular EF CUD operations
-    public void OperationsTest(DbServer dbServer, bool isBulk)
+    public void OperationsTest(DbServerType dbServer, bool isBulk)
     {
         ContextUtil.DbServer = dbServer;
 
@@ -332,7 +332,7 @@ public class EFCoreBulkTest
 
         RunRead();
 
-        if (dbServer == DbServer.SQLServer)
+        if (dbServer == DbServerType.SQLServer)
         {
             RunInsertOrUpdateOrDelete(isBulk); // Not supported for Sqlite (has only UPSERT), instead use BulkRead, then split list into sublists and call separately Bulk methods for Insert, Update, Delete.
         }
@@ -342,15 +342,15 @@ public class EFCoreBulkTest
     }
 
     [Theory]
-    [InlineData(DbServer.SQLServer)]
-    [InlineData(DbServer.SQLite)]
-    public void SideEffectsTest(DbServer dbServer)
+    [InlineData(DbServerType.SQLServer)]
+    [InlineData(DbServerType.SQLite)]
+    public void SideEffectsTest(DbServerType dbServer)
     {
         BulkOperationShouldNotCloseOpenConnection(dbServer, context => context.BulkInsert(new[] { new Item() }));
         BulkOperationShouldNotCloseOpenConnection(dbServer, context => context.BulkUpdate(new[] { new Item() }));
     }
 
-    private static void BulkOperationShouldNotCloseOpenConnection(DbServer dbServer, Action<TestContext> bulkOperation)
+    private static void BulkOperationShouldNotCloseOpenConnection(DbServerType dbServer, Action<TestContext> bulkOperation)
     {
         ContextUtil.DbServer = dbServer;
         using var context = new TestContext(ContextUtil.GetOptions());
@@ -367,8 +367,8 @@ public class EFCoreBulkTest
 
             createTableSql = dbServer switch
             {
-                DbServer.SQLite => $"CREATE TEMPORARY {createTableSql}",
-                DbServer.SQLServer => $"CREATE {createTableSql}",
+                DbServerType.SQLite => $"CREATE TEMPORARY {createTableSql}",
+                DbServerType.SQLServer => $"CREATE {createTableSql}",
                 _ => throw new ArgumentException($"Unknown database type: '{dbServer}'.", nameof(dbServer)),
             };
 
@@ -444,7 +444,7 @@ public class EFCoreBulkTest
 
         if (isBulk)
         {
-            if (ContextUtil.DbServer == DbServer.SQLServer)
+            if (ContextUtil.DbServer == DbServerType.SQLServer)
             {
                 using var transaction = context.Database.BeginTransaction();
                 var bulkConfig = new BulkConfig
@@ -472,7 +472,7 @@ public class EFCoreBulkTest
 
                 transaction.Commit();
             }
-            else if (ContextUtil.DbServer == DbServer.SQLite)
+            else if (ContextUtil.DbServer == DbServerType.SQLite)
             {
                 using var transaction = context.Database.BeginTransaction();
                 var bulkConfig = new BulkConfig() { SetOutputIdentity = true };
@@ -507,7 +507,7 @@ public class EFCoreBulkTest
         Assert.Equal("name " + (EntitiesNumber - 1), lastEntity?.Name);
     }
 
-    private static void RunInsertOrUpdate(bool isBulk, DbServer dbServer)
+    private static void RunInsertOrUpdate(bool isBulk, DbServerType dbServer)
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -529,7 +529,7 @@ public class EFCoreBulkTest
         {
             var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
             context.BulkInsertOrUpdate(entities, bulkConfig, (a) => WriteProgress(a));
-            if (dbServer == DbServer.SQLServer)
+            if (dbServer == DbServerType.SQLServer)
             {
                 Assert.Equal(1, bulkConfig.StatsInfo?.StatsNumberInserted);
                 Assert.Equal(EntitiesNumber / 2 - 1, bulkConfig.StatsInfo?.StatsNumberUpdated);
@@ -605,7 +605,7 @@ public class EFCoreBulkTest
         Assert.Equal("name InsertOrUpdateOrDelete " + EntitiesNumber, lastEntity?.Name);
     }
 
-    private static void RunUpdate(bool isBulk, DbServer dbServer)
+    private static void RunUpdate(bool isBulk, DbServerType dbServer)
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -621,11 +621,11 @@ public class EFCoreBulkTest
             var bulkConfig = new BulkConfig
             {
                 PropertiesToInclude = new List<string> { nameof(Item.Description) },
-                UpdateByProperties = dbServer == DbServer.SQLServer ? new List<string> { nameof(Item.Name) } : null,
+                UpdateByProperties = dbServer == DbServerType.SQLServer ? new List<string> { nameof(Item.Name) } : null,
                 CalculateStats = true
             };
             context.BulkUpdate(entities, bulkConfig);
-            if (dbServer == DbServer.SQLServer)
+            if (dbServer == DbServerType.SQLServer)
             {
                 Assert.Equal(0, bulkConfig.StatsInfo?.StatsNumberInserted);
                 Assert.Equal(EntitiesNumber, bulkConfig.StatsInfo?.StatsNumberUpdated);
@@ -675,7 +675,7 @@ public class EFCoreBulkTest
         Assert.Equal(0, entities[3].ItemId);
     }
 
-    private void RunDelete(bool isBulk, DbServer dbServer)
+    private void RunDelete(bool isBulk, DbServerType dbServer)
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -685,7 +685,7 @@ public class EFCoreBulkTest
         {
             var bulkConfig = new BulkConfig() { CalculateStats = true };
             context.BulkDelete(entities, bulkConfig);
-            if (dbServer == DbServer.SQLServer)
+            if (dbServer == DbServerType.SQLServer)
             {
                 Assert.Equal(0, bulkConfig.StatsInfo?.StatsNumberInserted);
                 Assert.Equal(0, bulkConfig.StatsInfo?.StatsNumberUpdated);
@@ -708,8 +708,8 @@ public class EFCoreBulkTest
         // RESET AutoIncrement
         string deleteTableSql = dbServer switch
         {
-            DbServer.SQLServer => $"DBCC CHECKIDENT('[dbo].[{nameof(Item)}]', RESEED, 0);",
-            DbServer.SQLite => $"DELETE FROM sqlite_sequence WHERE name = '{nameof(Item)}';",
+            DbServerType.SQLServer => $"DBCC CHECKIDENT('[dbo].[{nameof(Item)}]', RESEED, 0);",
+            DbServerType.SQLite => $"DELETE FROM sqlite_sequence WHERE name = '{nameof(Item)}';",
             _ => throw new ArgumentException($"Unknown database type: '{dbServer}'.", nameof(dbServer)),
         };
         context.Database.ExecuteSqlRaw(deleteTableSql);

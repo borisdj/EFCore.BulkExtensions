@@ -52,9 +52,9 @@ public class SqlDefaultDialect : IQueryBuilderSpecialization
     }
 
     /// <inheritdoc/>
-    public (string, string) GetBatchSqlReformatTableAliasAndTopStatement(string sqlQuery, DbServer databaseType)
+    public (string, string) GetBatchSqlReformatTableAliasAndTopStatement(string sqlQuery, DbServerType databaseType)
     {
-        var isPostgreSql = databaseType == DbServer.PostgreSQL;
+        var isPostgreSql = databaseType == DbServerType.PostgreSQL;
         var escapeSymbolEnd = isPostgreSql ? "." : "]";
         var escapeSymbolStart = isPostgreSql ? " " : "["; // SqlServer : PostrgeSql;
         var tableAliasEnd = sqlQuery[SelectStatementLength..sqlQuery.IndexOf(escapeSymbolEnd, StringComparison.Ordinal)]; // " TOP(10) [table_alias" / " [table_alias" : " table_alias"

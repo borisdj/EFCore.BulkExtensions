@@ -3,12 +3,12 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using System.Data.Common;
 
-namespace EFCore.BulkExtensions.SqlAdapters.SQLServer;
+namespace EFCore.BulkExtensions.SqlAdapters.SqlServer;
 
 /// <inheritdoc/>
 public class SqlDbServer : IDbServer
 {
-    DbServer IDbServer.Type => DbServer.SQLServer;
+    DbServerType IDbServer.Type => DbServerType.SQLServer;
 
     SqlOperationsServerAdapter _adapter = new ();
     ISqlOperationsAdapter IDbServer.Adapter => _adapter;

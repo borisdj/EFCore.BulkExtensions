@@ -159,4 +159,10 @@ public class SqlQueryBuilderSqlite : SqlAdapters.QueryBuilderExtensions
     {
         return EFCore.BulkExtensions.SqlQueryBuilder.SelectFromOutputTable(tableInfo);
     }
+
+    /// <inheritdoc/>
+    public override void SetDbTypeParam(object npgsqlParameter, object dbType)
+    {
+        throw new NotImplementedException();
+    }
 }

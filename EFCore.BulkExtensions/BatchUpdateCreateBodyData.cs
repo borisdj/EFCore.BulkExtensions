@@ -63,7 +63,7 @@ public class BatchUpdateCreateBodyData
 
 #pragma warning disable CS1591 // No need for XML comments here.
     public string BaseSql { get; }
-    public DbServer DatabaseType { get; }
+    public DbServerType DatabaseType { get; }
     public DbContext DbContext { get; }
     public IQueryable Query { get; }
     public string? RootInstanceParameterName { get; }

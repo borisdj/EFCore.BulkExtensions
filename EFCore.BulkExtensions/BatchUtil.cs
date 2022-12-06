@@ -45,7 +45,7 @@ public static class BatchUtil
         var databaseType = SqlAdaptersMapping.GetDatabaseType();
 
         string resultQuery;
-        if (databaseType == DbServer.SQLServer)
+        if (databaseType == DbServerType.SQLServer)
         {
             tableAlias = $"[{tableAlias}]";
             int outerQueryOrderByIndex = -1;
@@ -94,7 +94,7 @@ public static class BatchUtil
             resultQuery = $"{leadingComments}DELETE {topStatement}{tableAlias}{sql}";
         }
 
-        if (databaseType == DbServer.PostgreSQL)
+        if (databaseType == DbServerType.PostgreSQL)
         {
             resultQuery = SqlAdaptersMapping.DbServer!.QueryBuilder.RestructureForBatch(resultQuery, isDelete: true);
 
@@ -146,7 +146,7 @@ public static class BatchUtil
         }
 
         var databaseType = SqlAdaptersMapping.GetDatabaseType();
-        if (databaseType == DbServer.PostgreSQL)
+        if (databaseType == DbServerType.PostgreSQL)
         {
             resultQuery = SqlAdaptersMapping.DbServer!.QueryBuilder.RestructureForBatch(resultQuery);
 
@@ -159,7 +159,8 @@ public static class BatchUtil
                 var propertyType = type.GetProperties().SingleOrDefault(a => a.Name == paramName)?.PropertyType;
                 if (propertyType == typeof(System.Text.Json.JsonElement) || propertyType == typeof(System.Text.Json.JsonElement?)) // for JsonDocument works without fix
                 {
-                    npgsqlParam.NpgsqlDbType = SqlAdaptersMapping.DbServer!.QueryBuilder.Dbtype();
+                    var dbtypeJsonb = SqlAdaptersMapping.DbServer!.QueryBuilder.Dbtype();
+                    SqlAdaptersMapping.DbServer!.QueryBuilder.SetDbTypeParam(npgsqlParam, dbtypeJsonb);
                 }
 
                 npgsqlParameters.Add(npgsqlParam);
@@ -188,7 +189,7 @@ public static class BatchUtil
         CreateUpdateBody(createUpdateBodyData, expression.Body);
 
         var sqlParameters = ReloadSqlParameters(context, createUpdateBodyData.SqlParameters); // Sqlite requires SqliteParameters
-        var sqlColumns = (createUpdateBodyData.DatabaseType == DbServer.SQLServer) 
+        var sqlColumns = (createUpdateBodyData.DatabaseType == DbServerType.SQLServer) 
             ? createUpdateBodyData.UpdateColumnsSql
             : createUpdateBodyData.UpdateColumnsSql.Replace($"[{tableAlias}].", "");
 
@@ -205,7 +206,7 @@ public static class BatchUtil
         }
 
         var databaseType = SqlAdaptersMapping.GetDatabaseType();
-        if (databaseType == DbServer.PostgreSQL)
+        if (databaseType == DbServerType.PostgreSQL)
         {
             resultQuery = SqlAdaptersMapping.DbServer!.QueryBuilder.RestructureForBatch(resultQuery);
 
@@ -249,6 +250,7 @@ public static class BatchUtil
     /// <returns></returns>
     public static (string Sql, string TableAlias, string TableAliasSufixAs, string TopStatement, string LeadingComments, IEnumerable<object> InnerParameters) GetBatchSql(IQueryable query, DbContext context, bool isUpdate)
     {
+        SqlAdaptersMapping.ProviderName = context.Database.ProviderName;
         var sqlQueryBuilder = SqlAdaptersMapping.GetAdapterDialect();
         var (fullSqlQuery, innerParameters) = query.ToParametrizedSql();
 

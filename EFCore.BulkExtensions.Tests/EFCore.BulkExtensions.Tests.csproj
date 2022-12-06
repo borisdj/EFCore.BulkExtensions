@@ -25,11 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\EFCore.BulkExtensions.MySql\EFCore.BulkExtensions.MySql.csproj" />
-    <ProjectReference Include="..\EFCore.BulkExtensions.PostgreSql\EFCore.BulkExtensions.PostgreSql.csproj" />
-    <ProjectReference Include="..\EFCore.BulkExtensions.SQLite\EFCore.BulkExtensions.SQLite.csproj" />
-    <ProjectReference Include="..\EFCore.BulkExtensions.SqlServer\EFCore.BulkExtensions.SqlServer.csproj" />
-    <ProjectReference Include="..\EFCore.BulkExtensions\EFCore.BulkExtensions.csproj" />
+    <ProjectReference Include="..\EFCore.BulkExtensions.Common\EFCore.BulkExtensions.Common.csproj" />
   </ItemGroup>
   
   <ItemGroup>

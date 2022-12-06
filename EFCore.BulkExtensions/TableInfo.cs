@@ -87,7 +87,7 @@ public class TableInfo
     ////PostgreSql
     //internal NpgsqlConnection? NpgsqlConnection { get; set; }
     ////internal NpgsqlTransaction? NpgsqlTransaction { get; set; }
-    
+
     ////MySql
     //internal MySqlConnection? MySqlConnection { get; set; }
 
@@ -156,10 +156,10 @@ public class TableInfo
 
         //var relationalData = entityType.Relational(); relationalData.Schema relationalData.TableName // DEPRECATED in Core3.0
         string? providerName = context.Database.ProviderName?.ToLower();
-        bool isSqlServer = providerName?.EndsWith(DbServer.SQLServer.ToString().ToLower()) ?? false;
-        bool isNpgsql = providerName?.EndsWith(DbServer.PostgreSQL.ToString().ToLower()) ?? false;
-        bool isSqlite = providerName?.EndsWith(DbServer.SQLite.ToString().ToLower()) ?? false;
-        bool isMySql = providerName?.EndsWith(DbServer.MySQL.ToString().ToLower()) ?? false;
+        bool isSqlServer = providerName?.EndsWith(DbServerType.SQLServer.ToString().ToLower()) ?? false;
+        bool isNpgsql = providerName?.EndsWith(DbServerType.PostgreSQL.ToString().ToLower()) ?? false;
+        bool isSqlite = providerName?.EndsWith(DbServerType.SQLite.ToString().ToLower()) ?? false;
+        bool isMySql = providerName?.EndsWith(DbServerType.MySQL.ToString().ToLower()) ?? false;
 
         string? defaultSchema = isSqlServer ? "dbo" : null;
 
@@ -815,7 +815,7 @@ public class TableInfo
             string uniqueProperyValues = GetUniquePropertyValues(entity!, selectByPropertyNames, FastPropertyDict);
 
             existingEntitiesDict.TryGetValue(uniqueProperyValues, out T? existingEntity);
-            bool isPostgreSQL = context.Database.ProviderName?.EndsWith(DbServer.PostgreSQL.ToString()) ?? false;
+            bool isPostgreSQL = context.Database.ProviderName?.EndsWith(DbServerType.PostgreSQL.ToString()) ?? false;
             if (existingEntity == null && isPostgreSQL && i < existingEntities.Count)
             {
                 existingEntity = existingEntities[i]; // TODO check if BinaryImport with COPY on Postgres preserves order
@@ -1066,7 +1066,7 @@ public class TableInfo
         if (BulkConfig.SetOutputIdentity && hasIdentity)
         {
             var databaseType = SqlAdaptersMapping.GetDatabaseType();
-            string sqlQuery = databaseType == DbServer.SQLServer ? SqlQueryBuilder.SelectFromOutputTable(this) : SqlAdaptersMapping.DbServer!.QueryBuilder.SelectFromOutputTable(this);
+            string sqlQuery = databaseType == DbServerType.SQLServer ? SqlQueryBuilder.SelectFromOutputTable(this) : SqlAdaptersMapping.DbServer!.QueryBuilder.SelectFromOutputTable(this);
             //var entitiesWithOutputIdentity = await QueryOutputTableAsync<T>(context, sqlQuery).ToListAsync(cancellationToken).ConfigureAwait(false); // TempFIX
             var entitiesWithOutputIdentity = QueryOutputTable(context, type, sqlQuery).Cast<object>().ToList();
             //var entitiesWithOutputIdentity = (typeof(T) == type) ? QueryOutputTable<object>(context, sqlQuery).ToList() : QueryOutputTable(context, type, sqlQuery).Cast<object>().ToList();

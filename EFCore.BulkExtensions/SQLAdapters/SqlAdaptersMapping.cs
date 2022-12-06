@@ -1,31 +1,30 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata;
-using System.Collections.Generic;
+﻿using System;
 using System.ComponentModel;
+using System.Reflection;
 
 namespace EFCore.BulkExtensions.SqlAdapters;
 
 /// <summary>
 /// A list of database servers supported by EFCore.BulkExtensions
 /// </summary>
-public enum DbServer
+public enum DbServerType
 {
     /// <summary>
     /// Indicates database is Microsoft's SQL Server
     /// </summary>
-    [Description("SqlServer")] //DbProvider name in attribute
+    [Description("SqlServer")]
     SQLServer,
 
     /// <summary>
     /// Indicates database is SQL Lite
     /// </summary>
-    [Description("Sqlite")]
+    [Description("SQLite")]
     SQLite,
 
     /// <summary>
-    /// Indicates database is Npgql
+    /// Indicates database is Postgres
     /// </summary>
-    [Description("Npgql")]
+    [Description("PostgreSql")]
     PostgreSQL,
 
     /// <summary>
@@ -38,10 +37,65 @@ public enum DbServer
 #pragma warning disable CS1591 // No XML comment required here
 public static class SqlAdaptersMapping
 {
+    public static string? ProviderName { get; set; }
+
+    public static DbServerType DbServerType { get; set; }
+
+    private static IDbServer? _dbServer { get; set; }
+
     /// <summary>
-    /// Contains a list of methods to generate Adpaters and helpers instances
+    /// Contains a list of methods to generate Adapters and helpers instances
     /// </summary>
-    public static IDbServer? DbServer { get; set; }
+    public static IDbServer? DbServer {
+        get
+        {
+            //Context.Database. methods: -IsSqlServer() -IsNpgsql() -IsMySql() -IsSqlite() requires specific provider so instead here used -ProviderName
+
+            DbServerType serverType = DbServerType.SQLServer;
+            if (ProviderName?.ToLower().EndsWith(DbServerType.PostgreSQL.ToString().ToLower()) ?? false)
+            {
+                serverType = DbServerType.PostgreSQL;
+            }
+            else if (ProviderName?.ToLower().EndsWith(DbServerType.MySQL.ToString().ToLower()) ?? false)
+            {
+                serverType = DbServerType.MySQL;
+            }
+            else if(ProviderName?.ToLower().EndsWith(DbServerType.SQLite.ToString().ToLower()) ?? false)
+            {
+                serverType = DbServerType.SQLite;
+            }
+
+            if (_dbServer == null || _dbServer.Type != serverType)
+            {
+                string EFCoreBulkExtensionsTEXT = "EFCore.BulkExtensions";
+                Type? dbServerType = null;
+                if (serverType == DbServerType.SQLServer)
+                {
+                    var assembly = Assembly.Load(EFCoreBulkExtensionsTEXT + ".SqlServer");
+                    dbServerType = assembly.GetType(EFCoreBulkExtensionsTEXT + ".SqlAdapters.SqlServer.SqlDbServer");
+                }
+                else if (serverType == DbServerType.PostgreSQL)
+                {
+                    var assembly = Assembly.Load(EFCoreBulkExtensionsTEXT + ".PostgreSql");
+                    dbServerType = assembly.GetType(EFCoreBulkExtensionsTEXT + ".SqlAdapters.PostgreSql.PostgreSqlDbServer");
+                }
+                else if (serverType == DbServerType.MySQL)
+                {
+                    var assembly = Assembly.Load(EFCoreBulkExtensionsTEXT + ".MySql");
+                    dbServerType = assembly.GetType(EFCoreBulkExtensionsTEXT + ".SqlAdapters.MySql.MySqlDbServer");
+                }
+                else if (serverType == DbServerType.SQLite)
+                {
+                    var assembly = Assembly.Load(EFCoreBulkExtensionsTEXT + ".SQLite");
+                    dbServerType = assembly.GetType(EFCoreBulkExtensionsTEXT + ".SqlAdapters.SQLite.SqlLiteDbServer");
+                }
+
+                var dbServerInstance = Activator.CreateInstance(dbServerType ?? typeof(int));
+                _dbServer = dbServerInstance as IDbServer;
+            }
+            return _dbServer;
+        }
+    }
 
 #pragma warning restore CS1591 // No XML comment required here
 
@@ -67,7 +121,7 @@ public static class SqlAdaptersMapping
     /// Returns the Database type
     /// </summary>
     /// <returns></returns>
-    public static DbServer GetDatabaseType()
+    public static DbServerType GetDatabaseType()
     {
         return DbServer!.Type;
     }

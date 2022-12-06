@@ -36,9 +36,8 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
         bool closeConnectionInternally = false;
         if (connection == null)
         {
-            (connection, closeConnectionInternally) =
-                isAsync ? await OpenAndGetNpgsqlConnectionAsync(context, cancellationToken).ConfigureAwait(false)
-                        : OpenAndGetNpgsqlConnection(context);
+            (connection, closeConnectionInternally) = isAsync ? await OpenAndGetNpgsqlConnectionAsync(context, cancellationToken).ConfigureAwait(false)
+                                                              : OpenAndGetNpgsqlConnection(context);
         }
 
         try
@@ -208,7 +207,7 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
         {
             tableInfo.InsertToTempTable = true;
 
-            var sqlCreateTableCopy = SqlQueryBuilderPostgreSql.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
+            var sqlCreateTableCopy = SqlQueryBuilderPostgreSql.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, false); //  tableInfo.BulkConfig.UseTempDB
             if (isAsync)
             {
                 await context.Database.ExecuteSqlRawAsync(sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
@@ -274,7 +273,8 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
             }
             else
             {
-                List<T> outputEntities = tableInfo.LoadOutputEntities<T>(context, type, sqlMergeTable);
+                var sqlMergeTableOutput = sqlMergeTable.TrimEnd(';'); // when ends with ';' Test Atypical - OwnedTypes throws from LoadOutputEntities exception: postgresql '42601: syntax error at or near ";"
+                List<T> outputEntities = tableInfo.LoadOutputEntities<T>(context, type, sqlMergeTableOutput);
                 tableInfo.UpdateReadEntities(entities, outputEntities, context);
             }
         }

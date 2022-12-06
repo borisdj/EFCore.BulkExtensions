@@ -50,24 +50,17 @@ public class MySqlAdapter : ISqlOperationsAdapter
         {
             var transaction = context.Database.CurrentTransaction;
             var mySqlBulkCopy = GetMySqlBulkCopy((MySqlConnection)connection, transaction, tableInfo.BulkConfig);
-            try
-            {
-                SetMySqlBulkCopyConfig(mySqlBulkCopy, tableInfo);
 
-                var dataTable = GetDataTable(context, type, entities, mySqlBulkCopy, tableInfo);
-                if (isAsync)
-                {
-                    await mySqlBulkCopy.WriteToServerAsync(dataTable, cancellationToken).ConfigureAwait(false);
-                }
-                else
-                {
-                    mySqlBulkCopy.WriteToServer(dataTable);
-                }
-            }
-            catch (InvalidOperationException e)
+            SetMySqlBulkCopyConfig(mySqlBulkCopy, tableInfo);
+
+            var dataTable = GetDataTable(context, type, entities, mySqlBulkCopy, tableInfo);
+            if (isAsync)
             {
-                Console.WriteLine(e);
-                throw;
+                await mySqlBulkCopy.WriteToServerAsync(dataTable, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                mySqlBulkCopy.WriteToServer(dataTable);
             }
         }
         finally
@@ -385,7 +378,7 @@ public class MySqlAdapter : ISqlOperationsAdapter
         var ownedEntitiesMappedProperties = new HashSet<string>();
 
         var databaseType = SqlAdaptersMapping.GetDatabaseType();
-        var isMySql = databaseType == DbServer.MySQL;
+        var isMySql = databaseType == DbServerType.MySQL;
         
         var objectIdentifier = tableInfo.ObjectIdentifier;
         type = tableInfo.HasAbstractList ? entities[0]!.GetType() : type;

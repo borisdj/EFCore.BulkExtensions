@@ -3,17 +3,19 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.4.32804.182
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.BulkExtensions", "EFCore.BulkExtensions\EFCore.BulkExtensions.csproj", "{7D066852-F665-4FAB-B65A-5E8244496C24}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.BulkExtensions.Tests", "EFCore.BulkExtensions.Tests\EFCore.BulkExtensions.Tests.csproj", "{2328B243-982C-47B7-885B-999231149C72}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EFCore.BulkExtensions.SqlServer", "EFCore.BulkExtensions.SqlServer\EFCore.BulkExtensions.SqlServer.csproj", "{2A68508D-9E8F-4996-A11D-94AFB313D9C6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.BulkExtensions.SqlServer", "EFCore.BulkExtensions.SqlServer\EFCore.BulkExtensions.SqlServer.csproj", "{2A68508D-9E8F-4996-A11D-94AFB313D9C6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EFCore.BulkExtensions.MySql", "EFCore.BulkExtensions.MySql\EFCore.BulkExtensions.MySql.csproj", "{A3A22BB6-D230-4079-AA84-20FB380D5C40}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.BulkExtensions.MySql", "EFCore.BulkExtensions.MySql\EFCore.BulkExtensions.MySql.csproj", "{A3A22BB6-D230-4079-AA84-20FB380D5C40}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EFCore.BulkExtensions.PostgreSql", "EFCore.BulkExtensions.PostgreSql\EFCore.BulkExtensions.PostgreSql.csproj", "{5C539532-9885-4E10-B1F3-4AD04EC54904}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.BulkExtensions.PostgreSql", "EFCore.BulkExtensions.PostgreSql\EFCore.BulkExtensions.PostgreSql.csproj", "{5C539532-9885-4E10-B1F3-4AD04EC54904}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EFCore.BulkExtensions.SQLite", "EFCore.BulkExtensions.SQLite\EFCore.BulkExtensions.SQLite.csproj", "{2A416BCF-642B-4BAF-94FE-5C165E63860C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.BulkExtensions.SQLite", "EFCore.BulkExtensions.SQLite\EFCore.BulkExtensions.SQLite.csproj", "{2A416BCF-642B-4BAF-94FE-5C165E63860C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.BulkExtensions", "EFCore.BulkExtensions\EFCore.BulkExtensions.csproj", "{6796CE3B-B8AA-4F6E-ADAE-DDA86CF79882}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.BulkExtensions.Common", "EFCore.BulkExtensions.Common\EFCore.BulkExtensions.Common.csproj", "{7007C727-FE43-4B57-BED2-7F9433884136}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,10 +23,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{7D066852-F665-4FAB-B65A-5E8244496C24}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7D066852-F665-4FAB-B65A-5E8244496C24}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7D066852-F665-4FAB-B65A-5E8244496C24}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7D066852-F665-4FAB-B65A-5E8244496C24}.Release|Any CPU.Build.0 = Release|Any CPU
 		{2328B243-982C-47B7-885B-999231149C72}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{2328B243-982C-47B7-885B-999231149C72}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2328B243-982C-47B7-885B-999231149C72}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -45,6 +43,14 @@ Global
 		{2A416BCF-642B-4BAF-94FE-5C165E63860C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2A416BCF-642B-4BAF-94FE-5C165E63860C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2A416BCF-642B-4BAF-94FE-5C165E63860C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6796CE3B-B8AA-4F6E-ADAE-DDA86CF79882}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6796CE3B-B8AA-4F6E-ADAE-DDA86CF79882}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6796CE3B-B8AA-4F6E-ADAE-DDA86CF79882}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6796CE3B-B8AA-4F6E-ADAE-DDA86CF79882}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7007C727-FE43-4B57-BED2-7F9433884136}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7007C727-FE43-4B57-BED2-7F9433884136}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7007C727-FE43-4B57-BED2-7F9433884136}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7007C727-FE43-4B57-BED2-7F9433884136}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

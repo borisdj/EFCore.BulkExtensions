@@ -62,7 +62,7 @@ public class OwnedGraph : IDisposable
 {
     //[Theory]
     //[InlineData(DbServer.SQLServer)]
-    public async Task Test(DbServer dbServer)
+    public async Task Test(DbServerType dbServer)
     {
         //ARRANGE
         ContextUtil.DbServer = dbServer;

@@ -40,4 +40,10 @@ public abstract class QueryBuilderExtensions
     /// </summary>
     /// <returns></returns>
     public abstract object Dbtype();
+
+    /// <summary>
+    /// Returns void. Throws <see cref="NotImplementedException"/> for anothers providers
+    /// </summary>
+    /// <exception cref="NotImplementedException"></exception>
+    public abstract void SetDbTypeParam(object npgsqlParameter, object dbType);
 }

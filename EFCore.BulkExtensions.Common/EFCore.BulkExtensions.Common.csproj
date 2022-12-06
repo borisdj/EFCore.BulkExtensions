@@ -1,19 +1,19 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-    <Title>EFCore.BulkExtensions.SqlServer</Title>
+    <Title>EFCore.BulkExtensions</Title>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <Version>6.6.0</Version>
-    <Nullable>enable</Nullable>
+	<Nullable>enable</Nullable>	  
     <Authors>borisdj</Authors>
     <Description>EntityFramework EF Core Bulk Batch Extensions for Insert Update Delete Read (CRUD) operations on SQL Server, PostgreSQL, MySQL, SQLite</Description>
     <PackageProjectUrl>https://github.com/borisdj/EFCore.BulkExtensions</PackageProjectUrl>
     <Company />
     <PackageIcon>EFCoreBulk.png</PackageIcon>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageTags>EntityFrameworkCore Entity Framework Core EFCore EF Core SQL Server Bulk Batch Extensions Insert Update Delete Read Truncate SaveChanges </PackageTags>
-    <PackageReleaseNotes>Single Provider</PackageReleaseNotes>
+    <PackageTags>EntityFrameworkCore Entity Framework Core EFCore EF Core SQL Server PostgreSQL MySQL SQLite Bulk Batch Extensions Insert Update Delete Read Truncate SaveChanges </PackageTags>
+    <PackageReleaseNotes>Project split per provider</PackageReleaseNotes>
     <RepositoryUrl>https://github.com/borisdj/EFCore.BulkExtensions</RepositoryUrl>
     <RepositoryType>Git</RepositoryType>
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
@@ -25,24 +25,21 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <LangVersion>latest</LangVersion>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <PackageId>EFCore.BulkExtensions</PackageId>
   </PropertyGroup>
-
+  
   <ItemGroup>
-      <PackageReference Include="EntityFrameworkCore.SqlServer.HierarchyId" Version="3.0.1" />
-      <PackageReference Include="Microsoft.Data.SqlClient" Version="2.1.4" />
-      <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="6.0.8" />
-      <PackageReference Include="NetTopologySuite.IO.SqlServerBytes" Version="2.1.0" />
-      <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="6.0.0" />
+    <None Include="..\EFCoreBulk.png">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
-      <None Include="..\EFCoreBulk.png">
-          <Pack>True</Pack>
-          <PackagePath></PackagePath>
-      </None>
+    <ProjectReference Include="..\EFCore.BulkExtensions.MySql\EFCore.BulkExtensions.MySql.csproj" />
+    <ProjectReference Include="..\EFCore.BulkExtensions.PostgreSql\EFCore.BulkExtensions.PostgreSql.csproj" />
+    <ProjectReference Include="..\EFCore.BulkExtensions.SQLite\EFCore.BulkExtensions.SQLite.csproj" />
+    <ProjectReference Include="..\EFCore.BulkExtensions.SqlServer\EFCore.BulkExtensions.SqlServer.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\EFCore.BulkExtensions\EFCore.BulkExtensions.csproj" />
-  </ItemGroup>    
 </Project>

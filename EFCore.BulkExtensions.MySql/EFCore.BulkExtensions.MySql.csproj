@@ -4,7 +4,7 @@
         <TargetFramework>net6.0</TargetFramework>
         <Title>EFCore.BulkExtensions.MySql</Title>
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-        <Version>6.5.6</Version>
+        <Version>6.6.0</Version>
         <Nullable>enable</Nullable>
         <Authors>borisdj</Authors>
         <Description>EntityFramework EF Core Bulk Batch Extensions for Insert Update Delete Read (CRUD) operations on SQL Server, PostgreSQL, MySQL, SQLite</Description>
@@ -12,13 +12,13 @@
         <Company />
         <PackageIcon>EFCoreBulk.png</PackageIcon>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <PackageTags>EntityFrameworkCore Entity Framework Core EFCore EF Core SQL Server MySQL PostgreSQL SQLite Bulk Batch Extensions Insert Update Delete Read Truncate SaveChanges </PackageTags>
-        <PackageReleaseNotes>MySQL CRUD support, PG limit fix</PackageReleaseNotes>
+        <PackageTags>EntityFrameworkCore Entity Framework Core EFCore EF Core MySQL Bulk Batch Extensions Insert Update Delete Read Truncate SaveChanges </PackageTags>
+        <PackageReleaseNotes>Single Provider</PackageReleaseNotes>
         <RepositoryUrl>https://github.com/borisdj/EFCore.BulkExtensions</RepositoryUrl>
         <RepositoryType>Git</RepositoryType>
         <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
-        <AssemblyVersion>6.5.6.0</AssemblyVersion>
-        <FileVersion>6.5.6.0</FileVersion>
+        <AssemblyVersion>6.6.0.0</AssemblyVersion>
+        <FileVersion>6.6.0.0</FileVersion>
         <SignAssembly>true</SignAssembly>
         <AssemblyOriginatorKeyFile>..\Keys\EFCore.BulkExtensions.snk</AssemblyOriginatorKeyFile>
         <DelaySign>false</DelaySign>
@@ -34,14 +34,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\EFCore.BulkExtensions\EFCore.BulkExtensions.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
       <None Include="..\EFCoreBulk.png">
           <Pack>True</Pack>
           <PackagePath></PackagePath>
       </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EFCore.BulkExtensions\EFCore.BulkExtensions.csproj" />
   </ItemGroup>
 
 </Project>

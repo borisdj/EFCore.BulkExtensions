@@ -6,7 +6,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Text.RegularExpressions;
 
-namespace EFCore.BulkExtensions.SqlAdapters.SQLServer;
+namespace EFCore.BulkExtensions.SqlAdapters.SqlServer;
 
 /// <summary>
 /// Contains a compilation of SQL queries used in EFCore.
@@ -35,5 +35,11 @@ public class SqlQueryBuilderSqlServer : SqlAdapters.QueryBuilderExtensions
     public override string SelectFromOutputTable(TableInfo tableInfo)
     {
         return EFCore.BulkExtensions.SqlQueryBuilder.SelectFromOutputTable(tableInfo);
+    }
+
+    /// <inheritdoc/>
+    public override void SetDbTypeParam(object npgsqlParameter, object dbType)
+    {
+        throw new NotImplementedException();
     }
 }

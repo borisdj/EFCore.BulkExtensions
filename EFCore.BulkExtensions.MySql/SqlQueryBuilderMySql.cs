@@ -256,12 +256,14 @@ public class SqlQueryBuilderMySql: SqlAdapters.QueryBuilderExtensions
         return sqlParameter;
     }
 
-    /// <summary>
-    /// Returns NpgsqlDbType for PostgreSql parameters. Throws <see cref="NotImplementedException"/> for anothers providers
-    /// </summary>
-    /// <returns></returns>
-    /// <exception cref="NotImplementedException"></exception>
+    /// <inheritdoc/>
     public override object Dbtype()
+    {
+        throw new NotImplementedException();
+    }
+
+    /// <inheritdoc/>
+    public override void SetDbTypeParam(object npgsqlParameter, object dbType)
     {
         throw new NotImplementedException();
     }

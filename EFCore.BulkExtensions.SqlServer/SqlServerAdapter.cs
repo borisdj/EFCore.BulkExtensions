@@ -14,7 +14,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace EFCore.BulkExtensions.SqlAdapters.SQLServer;
+namespace EFCore.BulkExtensions.SqlAdapters.SqlServer;
 
 /// <inheritdoc/>
 public class SqlOperationsServerAdapter: ISqlOperationsAdapter
@@ -481,7 +481,7 @@ public class SqlOperationsServerAdapter: ISqlOperationsAdapter
         var ownedEntitiesMappedProperties = new HashSet<string>();
 
         var databaseType = SqlAdaptersMapping.GetDatabaseType();
-        var isSqlServer = databaseType == DbServer.SQLServer;
+        var isSqlServer = databaseType == DbServerType.SQLServer;
         var sqlServerBytesWriter = new SqlServerBytesWriter();
 
         var objectIdentifier = tableInfo.ObjectIdentifier;

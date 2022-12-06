@@ -14,15 +14,15 @@ public class EFCoreBulkTestAtypical
     protected static int EntitiesNumber => 1000;
 
     [Theory]
-    [InlineData(DbServer.SQLServer)]
-    [InlineData(DbServer.SQLite)]
-    private void DefaultValuesTest(DbServer dbServer)
+    [InlineData(DbServerType.SQLServer)]
+    [InlineData(DbServerType.SQLite)]
+    private void DefaultValuesTest(DbServerType dbServer)
     {
         ContextUtil.DbServer = dbServer;
         using var context = new TestContext(ContextUtil.GetOptions());
         context.Truncate<Document>();
         context.Documents.BatchDelete();
-        bool isSqlite = dbServer == DbServer.SQLite;
+        bool isSqlite = dbServer == DbServerType.SQLite;
 
         var entities = new List<Document>() 
         {
@@ -48,8 +48,8 @@ public class EFCoreBulkTestAtypical
     }
 
     [Theory]
-    [InlineData(DbServer.SQLServer)]
-    private void TemporalTableTest(DbServer dbServer)
+    [InlineData(DbServerType.SQLServer)]
+    private void TemporalTableTest(DbServerType dbServer)
     {
         ContextUtil.DbServer = dbServer;
         using var context = new TestContext(ContextUtil.GetOptions());
@@ -72,8 +72,8 @@ public class EFCoreBulkTestAtypical
     }
 
     [Theory]
-    [InlineData(DbServer.SQLServer)]
-    private void RunDefaultPKInsertWithGraph(DbServer dbServer)
+    [InlineData(DbServerType.SQLServer)]
+    private void RunDefaultPKInsertWithGraph(DbServerType dbServer)
     {
         ContextUtil.DbServer = dbServer;
         using var context = new TestContext(ContextUtil.GetOptions());
@@ -92,8 +92,8 @@ public class EFCoreBulkTestAtypical
     }
 
     [Theory]
-    [InlineData(DbServer.SQLServer)]
-    public void UpsertOrderTest(DbServer dbServer)
+    [InlineData(DbServerType.SQLServer)]
+    public void UpsertOrderTest(DbServerType dbServer)
     {
         ContextUtil.DbServer = dbServer;
         new EFCoreBatchTest().RunDeleteAll(dbServer);
@@ -121,14 +121,14 @@ public class EFCoreBulkTestAtypical
     }
 
     [Theory]
-    [InlineData(DbServer.SQLServer)]
-    [InlineData(DbServer.SQLite)] // Does NOT have Computed Columns
-    private void ComputedAndDefaultValuesTest(DbServer dbServer)
+    [InlineData(DbServerType.SQLServer)]
+    [InlineData(DbServerType.SQLite)] // Does NOT have Computed Columns
+    private void ComputedAndDefaultValuesTest(DbServerType dbServer)
     {
         ContextUtil.DbServer = dbServer;
         using var context = new TestContext(ContextUtil.GetOptions());
         context.Truncate<Document>();
-        bool isSqlite = dbServer == DbServer.SQLite;
+        bool isSqlite = dbServer == DbServerType.SQLite;
 
         var entities = new List<Document>();
         for (int i = 1; i <= EntitiesNumber; i++)
@@ -179,9 +179,9 @@ public class EFCoreBulkTestAtypical
     }
 
     [Theory]
-    [InlineData(DbServer.SQLServer)]
-    [InlineData(DbServer.SQLite)] // Does NOT have Computed Columns
-    private void ParameterlessConstructorTest(DbServer dbServer)
+    [InlineData(DbServerType.SQLServer)]
+    [InlineData(DbServerType.SQLite)] // Does NOT have Computed Columns
+    private void ParameterlessConstructorTest(DbServerType dbServer)
     {
         ContextUtil.DbServer = dbServer;
         using var context = new TestContext(ContextUtil.GetOptions());
@@ -205,9 +205,9 @@ public class EFCoreBulkTestAtypical
     }
 
     [Theory]
-    [InlineData(DbServer.SQLServer)]
+    [InlineData(DbServerType.SQLServer)]
     //[InlineData(DbServer.Sqlite)] // No TimeStamp column type but can be set with DefaultValueSql: "CURRENT_TIMESTAMP" as it is in OnModelCreating() method.
-    private void TimeStampTest(DbServer dbServer)
+    private void TimeStampTest(DbServerType dbServer)
     {
         ContextUtil.DbServer = dbServer;
         using var context = new TestContext(ContextUtil.GetOptions());
@@ -277,9 +277,9 @@ public class EFCoreBulkTestAtypical
     }
 
     [Theory]
-    [InlineData(DbServer.SQLServer)]
-    [InlineData(DbServer.SQLite)]
-    private void CompositeKeyTest(DbServer dbServer)
+    [InlineData(DbServerType.SQLServer)]
+    [InlineData(DbServerType.SQLite)]
+    private void CompositeKeyTest(DbServerType dbServer)
     {
         ContextUtil.DbServer = dbServer;
         using var context = new TestContext(ContextUtil.GetOptions());
@@ -320,9 +320,9 @@ public class EFCoreBulkTestAtypical
     }
 
     [Theory]
-    [InlineData(DbServer.SQLServer)]
-    [InlineData(DbServer.SQLite)]
-    private void DiscriminatorShadowTest(DbServer dbServer)
+    [InlineData(DbServerType.SQLServer)]
+    [InlineData(DbServerType.SQLite)]
+    private void DiscriminatorShadowTest(DbServerType dbServer)
     {
         ContextUtil.DbServer = dbServer;
         using var context = new TestContext(ContextUtil.GetOptions());
@@ -365,9 +365,9 @@ public class EFCoreBulkTestAtypical
     }
 
     [Theory]
-    [InlineData(DbServer.SQLServer)]
-    [InlineData(DbServer.SQLite)]
-    private void ValueConversionTest(DbServer dbServer)
+    [InlineData(DbServerType.SQLServer)]
+    [InlineData(DbServerType.SQLite)]
+    private void ValueConversionTest(DbServerType dbServer)
     {
         ContextUtil.DbServer = dbServer;
         using var context = new TestContext(ContextUtil.GetOptions());
@@ -389,7 +389,7 @@ public class EFCoreBulkTestAtypical
         }
         context.BulkInsert(entitiesToInsert);
 
-        if (dbServer == DbServer.SQLServer)
+        if (dbServer == DbServerType.SQLServer)
         {
             var entities = context.Infos.ToList();
             var entity = entities.First();
@@ -415,20 +415,20 @@ public class EFCoreBulkTestAtypical
     }
 
     [Theory]
-    [InlineData(DbServer.SQLServer)]
-    [InlineData(DbServer.SQLite)]
-    [InlineData(DbServer.PostgreSQL)]
-    private void OwnedTypesTest(DbServer dbServer)
+    [InlineData(DbServerType.SQLServer)]
+    [InlineData(DbServerType.SQLite)]
+    [InlineData(DbServerType.PostgreSQL)]
+    private void OwnedTypesTest(DbServerType dbServer)
     {
         ContextUtil.DbServer = dbServer;
         using var context = new TestContext(ContextUtil.GetOptions());
 
-        if (dbServer == DbServer.SQLServer)
+        if (dbServer == DbServerType.SQLServer)
         {
             context.Truncate<ChangeLog>();
             context.Database.ExecuteSqlRaw("TRUNCATE TABLE [" + nameof(ChangeLog) + "]");
         }
-        else if (dbServer == DbServer.PostgreSQL)
+        else if (dbServer == DbServerType.PostgreSQL)
         {
             context.Truncate<ChangeLog>();
         }
@@ -466,7 +466,7 @@ public class EFCoreBulkTestAtypical
         }
         context.BulkInsert(entities);
 
-        if (dbServer == DbServer.SQLServer || dbServer == DbServer.PostgreSQL)
+        if (dbServer == DbServerType.SQLServer || dbServer == DbServerType.PostgreSQL)
         {
             context.BulkRead(
                 entities,
@@ -482,7 +482,7 @@ public class EFCoreBulkTestAtypical
         entities[0].Description += " UPD";
         entities[0].Audit.InfoType = InfoType.InfoTypeB;
         context.BulkUpdate(entities);
-        if (dbServer == DbServer.SQLServer || dbServer == DbServer.PostgreSQL)
+        if (dbServer == DbServerType.SQLServer || dbServer == DbServerType.PostgreSQL)
         {
             context.BulkRead(entities);
         }
@@ -491,18 +491,18 @@ public class EFCoreBulkTestAtypical
     }
 
     [Theory]
-    [InlineData(DbServer.SQLServer)]
-    private void OwnedTypeSpatialDataTest(DbServer dbServer)
+    [InlineData(DbServerType.SQLServer)]
+    private void OwnedTypeSpatialDataTest(DbServerType dbServer)
     {
         ContextUtil.DbServer = dbServer;
         using var context = new TestContext(ContextUtil.GetOptions());
 
-        if (dbServer == DbServer.SQLServer)
+        if (dbServer == DbServerType.SQLServer)
         {
             context.Truncate<Tracker>();
             context.Database.ExecuteSqlRaw("TRUNCATE TABLE [" + nameof(Tracker) + "]");
         }
-        else if (dbServer == DbServer.PostgreSQL)
+        else if (dbServer == DbServerType.PostgreSQL)
         {
             context.Truncate<ChangeLog>();
         }
@@ -527,7 +527,7 @@ public class EFCoreBulkTestAtypical
         }
         context.BulkInsert(entities);
 
-        if (dbServer == DbServer.SQLServer || dbServer == DbServer.PostgreSQL)
+        if (dbServer == DbServerType.SQLServer || dbServer == DbServerType.PostgreSQL)
         {
             context.BulkRead(
                 entities,
@@ -543,7 +543,7 @@ public class EFCoreBulkTestAtypical
         entities[0].Description += " UPD";
         entities[0].Location.Location = new Point(1, 1) { SRID = 4326 };
         context.BulkUpdate(entities);
-        if (dbServer == DbServer.SQLServer || dbServer == DbServer.PostgreSQL)
+        if (dbServer == DbServerType.SQLServer || dbServer == DbServerType.PostgreSQL)
         {
             context.BulkRead(entities);
         }
@@ -552,14 +552,14 @@ public class EFCoreBulkTestAtypical
     }
 
     [Theory]
-    [InlineData(DbServer.SQLServer)]
+    [InlineData(DbServerType.SQLServer)]
     //[InlineData(DbServer.Sqlite)] Not supported
-    private void ShadowFKPropertiesTest(DbServer dbServer) // with Foreign Key as Shadow Property
+    private void ShadowFKPropertiesTest(DbServerType dbServer) // with Foreign Key as Shadow Property
     {
         ContextUtil.DbServer = dbServer;
         using var context = new TestContext(ContextUtil.GetOptions());
 
-        if (dbServer == DbServer.SQLServer)
+        if (dbServer == DbServerType.SQLServer)
         {
             context.Truncate<ItemLink>();
             context.Database.ExecuteSqlRaw("TRUNCATE TABLE [" + nameof(ItemLink) + "]");
@@ -604,7 +604,7 @@ public class EFCoreBulkTestAtypical
         }
         context.BulkInsert(entities);
 
-        if (dbServer == DbServer.SQLServer)
+        if (dbServer == DbServerType.SQLServer)
         {
             List<ItemLink> links = context.ItemLinks.ToList();
             Assert.True(links.Count > 0, "ItemLink row count");
@@ -618,8 +618,8 @@ public class EFCoreBulkTestAtypical
     }
 
     [Theory]
-    [InlineData(DbServer.SQLServer)]
-    private void UpsertWithOutputSortTest(DbServer dbServer)
+    [InlineData(DbServerType.SQLServer)]
+    private void UpsertWithOutputSortTest(DbServerType dbServer)
     {
         ContextUtil.DbServer = dbServer;
         using var context = new TestContext(ContextUtil.GetOptions());
@@ -655,9 +655,9 @@ public class EFCoreBulkTestAtypical
     }
 
     [Theory]
-    [InlineData(DbServer.SQLServer)]
-    [InlineData(DbServer.SQLite)]
-    private void NoPrimaryKeyTest(DbServer dbServer)
+    [InlineData(DbServerType.SQLServer)]
+    [InlineData(DbServerType.SQLite)]
+    private void NoPrimaryKeyTest(DbServerType dbServer)
     {
         ContextUtil.DbServer = dbServer;
         using var context = new TestContext(ContextUtil.GetOptions());
@@ -693,9 +693,9 @@ public class EFCoreBulkTestAtypical
     }
 
     [Theory]
-    [InlineData(DbServer.SQLServer)]
-    [InlineData(DbServer.SQLite)]
-    private void NonEntityChildTest(DbServer dbServer)
+    [InlineData(DbServerType.SQLServer)]
+    [InlineData(DbServerType.SQLite)]
+    private void NonEntityChildTest(DbServerType dbServer)
     {
         ContextUtil.DbServer = dbServer;
 
@@ -718,7 +718,7 @@ public class EFCoreBulkTestAtypical
     [Fact]
     private void GeometryColumnTest()
     {
-        ContextUtil.DbServer = DbServer.SQLServer;
+        ContextUtil.DbServer = DbServerType.SQLServer;
         using var context = new TestContext(ContextUtil.GetOptions());
 
         context.BulkDelete(context.Addresses.ToList());
@@ -737,7 +737,7 @@ public class EFCoreBulkTestAtypical
     [Fact]
     private void GeographyAndGeometryArePersistedCorrectlyTest()
     {
-        ContextUtil.DbServer = DbServer.SQLServer;
+        ContextUtil.DbServer = DbServerType.SQLServer;
         using (var context = new TestContext(ContextUtil.GetOptions()))
         {
             context.BulkDelete(context.Addresses.ToList());
@@ -774,7 +774,7 @@ public class EFCoreBulkTestAtypical
     [Fact]
     private void HierarchyIdColumnTest()
     {
-        ContextUtil.DbServer = DbServer.SQLServer;
+        ContextUtil.DbServer = DbServerType.SQLServer;
         using (var context = new TestContext(ContextUtil.GetOptions()))
         {
             context.BulkDelete(context.Categories.ToList());
@@ -798,7 +798,7 @@ public class EFCoreBulkTestAtypical
     [Fact]
     private void HierarchyIdIsPersistedCorrectlySimpleTest()
     {
-        ContextUtil.DbServer = DbServer.SQLServer;
+        ContextUtil.DbServer = DbServerType.SQLServer;
         using (var context = new TestContext(ContextUtil.GetOptions()))
         {
             context.BulkDelete(context.Categories.ToList());
@@ -829,7 +829,7 @@ public class EFCoreBulkTestAtypical
     [Fact]
     private void HierarchyIdIsPersistedCorrectlyLargerHierarchyTest()
     {
-        ContextUtil.DbServer = DbServer.SQLServer;
+        ContextUtil.DbServer = DbServerType.SQLServer;
         using (var context = new TestContext(ContextUtil.GetOptions()))
         {
             context.BulkDelete(context.Categories.ToList());
@@ -858,9 +858,9 @@ public class EFCoreBulkTestAtypical
     }
 
     [Theory]
-    [InlineData(DbServer.SQLServer)]
-    [InlineData(DbServer.PostgreSQL)]
-    private void DestinationAndSourceTableNameTest(DbServer dbServer)
+    [InlineData(DbServerType.SQLServer)]
+    [InlineData(DbServerType.PostgreSQL)]
+    private void DestinationAndSourceTableNameTest(DbServerType dbServer)
     {
         ContextUtil.DbServer = dbServer;
         using var context = new TestContext(ContextUtil.GetOptions());
@@ -916,7 +916,7 @@ public class EFCoreBulkTestAtypical
     [Fact]
     private void TablePerTypeInsertTest()
     {
-        ContextUtil.DbServer = DbServer.SQLServer;
+        ContextUtil.DbServer = DbServerType.SQLServer;
         using var context = new TestContext(ContextUtil.GetOptions());
 
         context.LogPersonReports.Add(new LogPersonReport { }); // used for initial add so that after RESEED it starts from 1, not 0
@@ -978,7 +978,7 @@ public class EFCoreBulkTestAtypical
     [Fact]
     private void TableWithSpecialRowVersion()
     {
-        ContextUtil.DbServer = DbServer.SQLServer;
+        ContextUtil.DbServer = DbServerType.SQLServer;
         using var context = new TestContext(ContextUtil.GetOptions());
         context.AtypicalRowVersionEntities.BatchDelete();
         context.AtypicalRowVersionConverterEntities.BatchDelete();
@@ -1011,7 +1011,7 @@ public class EFCoreBulkTestAtypical
     [Fact]
     private void CustomPrecisionDateTimeTest()
     {
-        ContextUtil.DbServer = DbServer.SQLServer;
+        ContextUtil.DbServer = DbServerType.SQLServer;
         using var context = new TestContext(ContextUtil.GetOptions());
 
         context.BulkDelete(context.Events.ToList());
@@ -1059,7 +1059,7 @@ public class EFCoreBulkTestAtypical
     [Fact]
     private void ByteArrayPKBulkReadTest()
     {
-        ContextUtil.DbServer = DbServer.SQLite;
+        ContextUtil.DbServer = DbServerType.SQLite;
         using var context = new TestContext(ContextUtil.GetOptions());
 
         var list = context.Archives.ToList();
@@ -1091,9 +1091,9 @@ public class EFCoreBulkTestAtypical
     }
     
     [Theory]
-    [InlineData(DbServer.SQLServer)]
-    [InlineData(DbServer.SQLite)]
-    private void PrivateKeyTest(DbServer dbServer)
+    [InlineData(DbServerType.SQLServer)]
+    [InlineData(DbServerType.SQLite)]
+    private void PrivateKeyTest(DbServerType dbServer)
     {
         ContextUtil.DbServer = dbServer;
         using (var context = new TestContext(ContextUtil.GetOptions()))

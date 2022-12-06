@@ -9,7 +9,7 @@ namespace EFCore.BulkExtensions.SqlAdapters.SQLite;
 /// <inheritdoc/>
 public class SqlLiteDbServer : IDbServer
 {
-    DbServer IDbServer.Type => DbServer.SQLite;
+    DbServerType IDbServer.Type => DbServerType.SQLite;
 
     SqliteOperationsAdapter _adapter = new ();
     ISqlOperationsAdapter IDbServer.Adapter => _adapter;
