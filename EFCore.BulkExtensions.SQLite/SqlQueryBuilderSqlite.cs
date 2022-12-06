@@ -1,14 +1,17 @@
-﻿using System;
-using Microsoft.Data.SqlClient;
+﻿using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Text.RegularExpressions;
 
-namespace EFCore.BulkExtensions.SQLAdapters.SQLite;
+namespace EFCore.BulkExtensions.SqlAdapters.SQLite;
 
 /// <summary>
-/// Contains a list of static methods to generate SQL queries
+/// Contains a compilation of SQL queries used in EFCore.
 /// </summary>
-public static class SqlQueryBuilderSqlite
+public class SqlQueryBuilderSqlite : SqlAdapters.QueryBuilderExtensions
 {
     /// <summary>
     /// Generates SQL query to retrieve the last inserted row id
@@ -64,7 +67,7 @@ public static class SqlQueryBuilderSqlite
             q += $" ON CONFLICT({commaSeparatedPrimaryKeys}) DO UPDATE" +
                  $" SET {commaSeparatedColumnsEquals}" +
                  $" WHERE {commaANDSeparatedPrimaryKeys}";
-            
+
             if (tableInfo.BulkConfig.OnConflictUpdateWhereSql != null)
             {
                 q += $" AND {tableInfo.BulkConfig.OnConflictUpdateWhereSql($"[{tableName}]", "excluded")}";
@@ -129,7 +132,31 @@ public static class SqlQueryBuilderSqlite
     /// <param name="tableName"></param>
     public static string DropTable(string tableName)
     {
-        string q =  $"DROP TABLE IF EXISTS {tableName}";
+        string q = $"DROP TABLE IF EXISTS {tableName}";
         return q;
+    }
+
+    /// <inheritdoc/>
+    public override object CreateParameter(SqlParameter sqlParameter)
+    {
+        throw new NotImplementedException();
+    }
+
+    /// <inheritdoc/>
+    public override object Dbtype()
+    {
+        throw new NotImplementedException();
+    }
+
+    /// <inheritdoc/>
+    public override string RestructureForBatch(string sql, bool isDelete = false)
+    {
+        throw new NotImplementedException();
+    }
+
+    /// <inheritdoc/>
+    public override string SelectFromOutputTable(TableInfo tableInfo)
+    {
+        return EFCore.BulkExtensions.SqlQueryBuilder.SelectFromOutputTable(tableInfo);
     }
 }

@@ -10,7 +10,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace EFCore.BulkExtensions.SQLAdapters.PostgreSql;
+namespace EFCore.BulkExtensions.SqlAdapters.PostgreSql;
 
 /// <inheritdoc/>
 public class PostgreSqlAdapter : ISqlOperationsAdapter
@@ -32,7 +32,7 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
     /// <inheritdoc/>
     protected static async Task InsertAsync<T>(DbContext context, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken)
     {
-        NpgsqlConnection? connection = tableInfo.NpgsqlConnection;
+        NpgsqlConnection? connection = (NpgsqlConnection?)SqlAdaptersMapping.DbServer!.DbConnection;
         bool closeConnectionInternally = false;
         if (connection == null)
         {

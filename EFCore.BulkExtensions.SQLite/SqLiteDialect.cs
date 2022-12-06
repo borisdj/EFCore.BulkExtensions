@@ -7,7 +7,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text.RegularExpressions;
 
-namespace EFCore.BulkExtensions.SQLAdapters.SQLite;
+namespace EFCore.BulkExtensions.SqlAdapters.SQLite;
 
 /// <inheritdoc/>
 public class SqliteDialect : IQueryBuilderSpecialization

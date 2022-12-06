@@ -1,11 +1,8 @@
 using EFCore.BulkExtensions.SqlAdapters;
-using EFCore.BulkExtensions.SQLAdapters.SQLServer;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Npgsql;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -17,9 +14,6 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using EFCore.BulkExtensions.SqlAdapters.MySql;
-using MySqlConnector;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata.Internal;
 
 namespace EFCore.BulkExtensions;
 
@@ -85,17 +79,17 @@ public class TableInfo
 
     public StoreObjectIdentifier ObjectIdentifier { get; set; }
 
-    //Sqlite
-    internal SqliteConnection? SqliteConnection { get; set; }
-    internal SqliteTransaction? SqliteTransaction { get; set; }
+    ////Sqlite
+    //internal SqliteConnection? SqliteConnection { get; set; }
+    //internal SqliteTransaction? SqliteTransaction { get; set; }
 
 
-    //PostgreSql
-    internal NpgsqlConnection? NpgsqlConnection { get; set; }
-    //internal NpgsqlTransaction? NpgsqlTransaction { get; set; }
+    ////PostgreSql
+    //internal NpgsqlConnection? NpgsqlConnection { get; set; }
+    ////internal NpgsqlTransaction? NpgsqlTransaction { get; set; }
     
-    //MySql
-    internal MySqlConnection? MySqlConnection { get; set; }
+    ////MySql
+    //internal MySqlConnection? MySqlConnection { get; set; }
 
 
 #pragma warning restore CS1591 // No XML comments required here.
@@ -278,45 +272,19 @@ public class TableInfo
 
         if (isSqlServer || isNpgsql || isMySql)
         {
-            var strategyName = string.Empty;
-            if (isSqlServer)
-            {
-                strategyName = nameof(SqlServerValueGenerationStrategy);
-            }
-            else if (isNpgsql)
-            {
-#pragma warning disable EF1001
-                strategyName = NpgsqlAnnotationNames.ValueGenerationStrategy; // strategyName = nameof(Npgsql.EntityFrameworkCore.PostgreSQL.Metadata.NpgsqlValueGenerationStrategy);
-#pragma warning restore EF1001
-            }
-            else
-            {
-                strategyName = nameof(MySqlValueGenerationStrategy);
-            }
-
+            var strategyName = SqlAdaptersMapping.DbServer!.ValueGenerationStrategy;
             if (!strategyName.Contains(":Value"))
             {
                 strategyName = strategyName.Replace("Value", ":Value"); //example 'SqlServer:ValueGenerationStrategy'
             }
             
             foreach (var property in allProperties)
-            {
+            {       
                 var annotation = property.FindAnnotation(strategyName);
                 bool hasIdentity = false;
                 if (annotation != null)
                 {
-                    if (isSqlServer)
-                    {
-                        hasIdentity = (SqlServerValueGenerationStrategy?) annotation.Value == SqlServerValueGenerationStrategy.IdentityColumn;
-                    }
-                    else if (isNpgsql)
-                    {
-                        hasIdentity = (Npgsql.EntityFrameworkCore.PostgreSQL.Metadata.NpgsqlValueGenerationStrategy?)annotation.Value == Npgsql.EntityFrameworkCore.PostgreSQL.Metadata.NpgsqlValueGenerationStrategy.IdentityByDefaultColumn;
-                    }
-                    else
-                    {
-                        hasIdentity = (MySqlValueGenerationStrategy?) annotation.Value == MySqlValueGenerationStrategy.IdentityColumn;
-                    }
+                    hasIdentity = SqlAdaptersMapping.DbServer!.PropertyHasIdentity(annotation);
                 }
                 if (hasIdentity)
                 {
@@ -325,7 +293,7 @@ public class TableInfo
                 }
             }
         }
-        if (isSqlite) // SQLite no ValueGenerationStrategy
+         if (isSqlite) // SQLite no ValueGenerationStrategy
         {
             // for HiLo on SqlServer was returning True when should be False
             IdentityColumnName = allProperties.SingleOrDefault(a => a.IsPrimaryKey() &&
@@ -632,45 +600,6 @@ public class TableInfo
         }
     }
 
-    /// <summary>
-    /// Supports <see cref="Microsoft.Data.SqlClient.SqlBulkCopy"/>
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="sqlBulkCopy"></param>
-    /// <param name="entities"></param>
-    /// <param name="setColumnMapping"></param>
-    /// <param name="progress"></param>
-    public void SetSqlBulkCopyConfig<T>(Microsoft.Data.SqlClient.SqlBulkCopy sqlBulkCopy, IList<T> entities, bool setColumnMapping, Action<decimal>? progress)
-    {
-        sqlBulkCopy.DestinationTableName = InsertToTempTable ? FullTempTableName : FullTableName;
-        sqlBulkCopy.BatchSize = BulkConfig.BatchSize;
-        sqlBulkCopy.NotifyAfter = BulkConfig.NotifyAfter ?? BulkConfig.BatchSize;
-        sqlBulkCopy.SqlRowsCopied += (sender, e) =>
-        {
-            progress?.Invoke(ProgressHelper.GetProgress(entities.Count, e.RowsCopied)); // round to 4 decimal places
-        };
-        sqlBulkCopy.BulkCopyTimeout = BulkConfig.BulkCopyTimeout ?? sqlBulkCopy.BulkCopyTimeout;
-        sqlBulkCopy.EnableStreaming = BulkConfig.EnableStreaming;
-
-        if (setColumnMapping)
-        {
-            foreach (var element in PropertyColumnNamesDict)
-            {
-                sqlBulkCopy.ColumnMappings.Add(element.Key, element.Value);
-            }
-        }
-    }
-    /// <summary>
-    /// Supports <see cref="MySqlConnector.MySqlBulkCopy"/>
-    /// </summary>
-    /// <param name="mySqlBulkCopy"></param>
-    public void SetMySqlBulkCopyConfig(MySqlBulkCopy mySqlBulkCopy)
-    {
-        mySqlBulkCopy.DestinationTableName = InsertToTempTable ? FullTempTableName : FullTableName;
-        mySqlBulkCopy.DestinationTableName = mySqlBulkCopy.DestinationTableName.Replace("[", "").Replace("]", "");
-        mySqlBulkCopy.NotifyAfter = BulkConfig.NotifyAfter ?? BulkConfig.BatchSize;
-        mySqlBulkCopy.BulkCopyTimeout = BulkConfig.BulkCopyTimeout ?? mySqlBulkCopy.BulkCopyTimeout;
-    }
     #endregion
 
     #region SqlCommands
@@ -1136,8 +1065,8 @@ public class TableInfo
         int totalNumber = entities.Count;
         if (BulkConfig.SetOutputIdentity && hasIdentity)
         {
-            var databaseType = SqlAdaptersMapping.GetDatabaseType(context);
-            string sqlQuery = databaseType == DbServer.SQLServer? SqlQueryBuilder.SelectFromOutputTable(this) : SqlQueryBuilderMySql.SelectFromOutputTable(this);
+            var databaseType = SqlAdaptersMapping.GetDatabaseType();
+            string sqlQuery = databaseType == DbServer.SQLServer ? SqlQueryBuilder.SelectFromOutputTable(this) : SqlAdaptersMapping.DbServer!.QueryBuilder.SelectFromOutputTable(this);
             //var entitiesWithOutputIdentity = await QueryOutputTableAsync<T>(context, sqlQuery).ToListAsync(cancellationToken).ConfigureAwait(false); // TempFIX
             var entitiesWithOutputIdentity = QueryOutputTable(context, type, sqlQuery).Cast<object>().ToList();
             //var entitiesWithOutputIdentity = (typeof(T) == type) ? QueryOutputTable<object>(context, sqlQuery).ToList() : QueryOutputTable(context, type, sqlQuery).Cast<object>().ToList();
@@ -1296,7 +1225,7 @@ public class TableInfo
 
     protected IQueryable<T> QueryOutputTable<T>(DbContext context) where T : class
     {
-        string q = SqlQueryBuilder.SelectFromOutputTable(this);
+        string q = SqlQueryBuilderBase.SelectFromOutputTable(this);
         var query = context.Set<T>().FromSql(q);
         if (!BulkConfig.TrackingEntities)
         {

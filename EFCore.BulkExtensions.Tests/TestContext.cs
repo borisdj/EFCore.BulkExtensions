@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
+using System.Net.WebSockets;
 using System.Text.Json;
 
 namespace EFCore.BulkExtensions.Tests;
@@ -195,9 +196,27 @@ public class TestContext : DbContext
 
 public static class ContextUtil
 {
+    static IDbServer? _dbServerMapping;
+    static DbServer _dbServerValue;
+
     // TODO: Pass DbService through all the GetOptions methods as a parameter and eliminate this property so the automated tests
     // are thread safe
-    public static DbServer DbServer { get; set; }
+    public static DbServer DbServer 
+    {
+        get => _dbServerValue;
+        set
+        {
+            _dbServerValue = value;
+            _dbServerMapping = value switch
+            {
+                DbServer.SQLServer => new SqlAdapters.SQLServer.SqlDbServer(),
+                DbServer.SQLite => new SqlAdapters.SQLite.SqlLiteDbServer(),
+                DbServer.PostgreSQL => new SqlAdapters.PostgreSql.PostgreSqlDbServer(),
+                DbServer.MySQL => new SqlAdapters.MySql.MySqlDbServer(),
+                _ => throw new NotImplementedException(),
+            };
+        }
+    }
 
     public static DbContextOptions GetOptions(IInterceptor dbInterceptor) => GetOptions(new[] { dbInterceptor });
     public static DbContextOptions GetOptions(IEnumerable<IInterceptor>? dbInterceptors = null) => GetOptions<TestContext>(dbInterceptors);
