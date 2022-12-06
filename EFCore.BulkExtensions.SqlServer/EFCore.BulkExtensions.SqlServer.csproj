@@ -29,7 +29,7 @@
 
   <ItemGroup>
       <PackageReference Include="EntityFrameworkCore.SqlServer.HierarchyId" Version="3.0.1" />
-      <PackageReference Include="Microsoft.Data.SqlClient" Version="2.1.4" />
+      <PackageReference Include="Microsoft.Data.SqlClient" Version="2.1.5" />
       <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="6.0.11" />
       <PackageReference Include="NetTopologySuite.IO.SqlServerBytes" Version="2.1.0" />
       <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="6.0.0" />
