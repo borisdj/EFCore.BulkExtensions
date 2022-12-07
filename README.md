@@ -15,6 +15,7 @@ Instead Test options are  SqlServer(Developer or Express), LocalDb([if alongside
 
 <!--[![Button](https://img.shields.io/nuget/v/EFCore.BulkExtensions.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/)-->
 Available on <a href="https://www.nuget.org/packages/EFCore.BulkExtensions/"><img src="https://buildstats.info/nuget/EFCore.BulkExtensions" /></a><br>
+That is main nuget for all Databases, there are also specific ones with single provider for those who need small packages.<br>
 Package manager console command for installation: *Install-Package EFCore.BulkExtensions*<br>
 Its assembly is [Strong-Named](https://docs.microsoft.com/en-us/dotnet/standard/library-guidance/strong-naming) and [Signed](https://github.com/borisdj/EFCore.BulkExtensions/issues/161) with a key.
 | Nuget | Target          | Used EF v.  | For projects targeting          |
