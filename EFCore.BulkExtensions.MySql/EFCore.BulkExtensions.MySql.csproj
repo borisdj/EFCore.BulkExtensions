@@ -41,7 +41,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\EFCore.BulkExtensions\EFCore.BulkExtensions.csproj" />
+    <ProjectReference Include="..\EFCore.BulkExtensionsCore\EFCore.BulkExtensionsCore.csproj" />
   </ItemGroup>
 
 </Project>
