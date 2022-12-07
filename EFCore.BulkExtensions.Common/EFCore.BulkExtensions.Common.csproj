@@ -4,7 +4,7 @@
     <TargetFramework>net6.0</TargetFramework>
     <Title>EFCore.BulkExtensions</Title>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <Version>6.6.1</Version>
+    <Version>6.6.2</Version>
 	<Nullable>enable</Nullable>	  
     <Authors>borisdj</Authors>
     <Description>EntityFramework EF Core Bulk Batch Extensions for Insert Update Delete Read (CRUD) operations on SQL Server, PostgreSQL, MySQL, SQLite</Description>
@@ -13,12 +13,12 @@
     <PackageIcon>EFCoreBulk.png</PackageIcon>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageTags>EntityFrameworkCore Entity Framework Core EFCore EF Core SQL Server PostgreSQL MySQL SQLite Bulk Batch Extensions Insert Update Delete Read Truncate SaveChanges </PackageTags>
-    <PackageReleaseNotes>Project split per provider</PackageReleaseNotes>
+    <PackageReleaseNotes>Nuget fix</PackageReleaseNotes>
     <RepositoryUrl>https://github.com/borisdj/EFCore.BulkExtensions</RepositoryUrl>
     <RepositoryType>Git</RepositoryType>
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
-    <AssemblyVersion>6.6.1.0</AssemblyVersion>
-    <FileVersion>6.6.1.0</FileVersion>
+    <AssemblyVersion>6.6.2.0</AssemblyVersion>
+    <FileVersion>6.6.2.0</FileVersion>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>..\Keys\EFCore.BulkExtensions.snk</AssemblyOriginatorKeyFile>
     <DelaySign>false</DelaySign>
@@ -29,17 +29,24 @@
   </PropertyGroup>
   
   <ItemGroup>
+    <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="6.0.0" />
+	<PackageReference Include="NetTopologySuite.IO.SqlServerBytes" Version="2.1.0" />
+	<PackageReference Include="EntityFrameworkCore.SqlServer.HierarchyId" Version="3.0.1" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="6.0.7" />
+	<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" Version="6.0.11" />
+    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="6.0.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="6.0.11" />
+  </ItemGroup>
+  
+  <ItemGroup>
     <None Include="..\EFCoreBulk.png">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>
   </ItemGroup>
-
+  
   <ItemGroup>
-    <ProjectReference Include="..\EFCore.BulkExtensions.MySql\EFCore.BulkExtensions.MySql.csproj" />
-    <ProjectReference Include="..\EFCore.BulkExtensions.PostgreSql\EFCore.BulkExtensions.PostgreSql.csproj" />
-    <ProjectReference Include="..\EFCore.BulkExtensions.SQLite\EFCore.BulkExtensions.SQLite.csproj" />
-    <ProjectReference Include="..\EFCore.BulkExtensions.SqlServer\EFCore.BulkExtensions.SqlServer.csproj" />
+    <ProjectReference Include="..\EFCore.BulkExtensionsCore\EFCore.BulkExtensionsCore.csproj" />
   </ItemGroup>
 
 </Project>

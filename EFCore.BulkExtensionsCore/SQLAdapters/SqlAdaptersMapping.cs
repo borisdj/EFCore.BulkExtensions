@@ -69,24 +69,28 @@ public static class SqlAdaptersMapping
             {
                 string EFCoreBulkExtensionsTEXT = "EFCore.BulkExtensions";
                 Type? dbServerType = null;
+
+                Assembly? assemblyCommon = null;
+                try { assemblyCommon = Assembly.Load(EFCoreBulkExtensionsTEXT + ".Common"); } catch (Exception) { }
+
                 if (serverType == DbServerType.SQLServer)
                 {
-                    var assembly = Assembly.Load(EFCoreBulkExtensionsTEXT + ".SqlServer");
+                    var assembly = assemblyCommon ?? Assembly.Load(EFCoreBulkExtensionsTEXT + ".SqlServer");
                     dbServerType = assembly.GetType(EFCoreBulkExtensionsTEXT + ".SqlAdapters.SqlServer.SqlDbServer");
                 }
                 else if (serverType == DbServerType.PostgreSQL)
                 {
-                    var assembly = Assembly.Load(EFCoreBulkExtensionsTEXT + ".PostgreSql");
+                    var assembly = assemblyCommon ?? Assembly.Load(EFCoreBulkExtensionsTEXT + ".PostgreSql");
                     dbServerType = assembly.GetType(EFCoreBulkExtensionsTEXT + ".SqlAdapters.PostgreSql.PostgreSqlDbServer");
                 }
                 else if (serverType == DbServerType.MySQL)
                 {
-                    var assembly = Assembly.Load(EFCoreBulkExtensionsTEXT + ".MySql");
+                    var assembly = assemblyCommon ?? Assembly.Load(EFCoreBulkExtensionsTEXT + ".MySql");
                     dbServerType = assembly.GetType(EFCoreBulkExtensionsTEXT + ".SqlAdapters.MySql.MySqlDbServer");
                 }
                 else if (serverType == DbServerType.SQLite)
                 {
-                    var assembly = Assembly.Load(EFCoreBulkExtensionsTEXT + ".SQLite");
+                    var assembly = assemblyCommon ?? Assembly.Load(EFCoreBulkExtensionsTEXT +".SQLite");
                     dbServerType = assembly.GetType(EFCoreBulkExtensionsTEXT + ".SqlAdapters.SQLite.SqlLiteDbServer");
                 }
 
