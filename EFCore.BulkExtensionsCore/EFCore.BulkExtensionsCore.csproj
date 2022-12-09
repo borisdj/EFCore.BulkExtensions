@@ -1,10 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFrameworks>net6.0;net7.0</TargetFrameworks>
     <Title>EFCore.BulkExtensionsCore</Title>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <Version>6.6.2</Version>
+    <Version>7.0.0-alpha.1</Version>
 	<Nullable>enable</Nullable>	  
     <Authors>borisdj</Authors>
     <Description>EFCore.BulkExtensions shared project with base code for all provider</Description>
@@ -23,8 +23,17 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.SqlClient" Version="2.1.5" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="6.0.11" />
   </ItemGroup>
+
+    <!-- net 6.0 -->
+    <ItemGroup Condition=" '$(TargetFramework)' == 'net6.0' ">
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="6.0.11" />
+    </ItemGroup>
+
+    <!-- net 7.0 -->
+    <ItemGroup Condition=" '$(TargetFramework)' == 'net7.0' ">
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="7.0.0" />
+    </ItemGroup>
 
   <ItemGroup>
     <None Include="..\EFCoreBulk.png">

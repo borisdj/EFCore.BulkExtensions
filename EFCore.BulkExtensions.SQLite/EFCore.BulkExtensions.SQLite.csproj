@@ -1,10 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-      <TargetFramework>net6.0</TargetFramework>
+      <TargetFrameworks>net6.0;net7.0</TargetFrameworks>
       <Title>EFCore.BulkExtensions.SQLite</Title>
       <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-      <Version>6.6.2</Version>
+      <Version>7.0.0-alpha.1</Version>
       <Nullable>enable</Nullable>
       <Authors>borisdj</Authors>
       <Description>EntityFramework EF Core Bulk Batch Extensions for Insert Update Delete Read (CRUD) operations on SQL Server, PostgreSQL, MySQL, SQLite</Description>
@@ -27,11 +27,17 @@
       <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="6.0.11" />
-  </ItemGroup>
+    <!-- net 6.0 -->
+    <ItemGroup Condition=" '$(TargetFramework)' == 'net6.0' ">
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="6.0.11" />
+    </ItemGroup>
 
-  <ItemGroup>
+    <!-- net 7.0 -->
+    <ItemGroup Condition=" '$(TargetFramework)' == 'net7.0' ">
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="7.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
       <None Include="..\EFCoreBulk.png">
           <Pack>True</Pack>
           <PackagePath></PackagePath>

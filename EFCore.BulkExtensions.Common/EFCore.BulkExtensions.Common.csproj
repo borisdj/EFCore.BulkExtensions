@@ -1,10 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFrameworks>net6.0;net7.0</TargetFrameworks>
     <Title>EFCore.BulkExtensions</Title>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <Version>6.6.2</Version>
+    <Version>7.0.0-alpha.1</Version>
 	<Nullable>enable</Nullable>	  
     <Authors>borisdj</Authors>
     <Description>EntityFramework EF Core Bulk Batch Extensions for Insert Update Delete Read (CRUD) operations on SQL Server, PostgreSQL, MySQL, SQLite</Description>
@@ -31,12 +31,24 @@
   <ItemGroup>
     <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="6.0.0" />
 	<PackageReference Include="NetTopologySuite.IO.SqlServerBytes" Version="2.1.0" />
-	<PackageReference Include="EntityFrameworkCore.SqlServer.HierarchyId" Version="3.0.1" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="6.0.7" />
-	<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" Version="6.0.11" />
-    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="6.0.2" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="6.0.11" />
+    <PackageReference Include="EntityFrameworkCore.SqlServer.HierarchyId" Version="3.0.1" />
   </ItemGroup>
+
+    <!-- net 6.0 -->
+    <ItemGroup Condition=" '$(TargetFramework)' == 'net6.0' ">
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="6.0.7" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" Version="6.0.11" />
+        <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="6.0.2" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="6.0.11" />
+    </ItemGroup>
+
+    <!-- net 7.0 -->
+    <ItemGroup Condition=" '$(TargetFramework)' == 'net7.0' ">
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="7.0.0" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" Version="7.0.0" />
+        <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="7.0.0-alpha.1" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="7.0.0" />
+    </ItemGroup>
   
   <ItemGroup>
     <None Include="..\EFCoreBulk.png">
