@@ -27,18 +27,16 @@
         <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="EntityFrameworkCore.SqlServer.HierarchyId" Version="3.0.1" />
-  </ItemGroup>
-
     <!-- net 6.0 -->
     <ItemGroup Condition=" '$(TargetFramework)' == 'net6.0' ">
+        <PackageReference Include="EntityFrameworkCore.SqlServer.HierarchyId" Version="3.0.1" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" Version="6.0.11" />
         <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="6.0.2" />
     </ItemGroup>
 
     <!-- net 7.0 -->
     <ItemGroup Condition=" '$(TargetFramework)' == 'net7.0' ">
+        <PackageReference Include="EntityFrameworkCore.SqlServer.HierarchyId" Version="4.0.0" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" Version="7.0.0" />
         <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="7.0.0-alpha.1" />
     </ItemGroup>
