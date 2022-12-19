@@ -67,31 +67,24 @@ public static class SqlAdaptersMapping
 
             if (_dbServer == null || _dbServer.Type != serverType)
             {
-                string EFCoreBulkExtensionsTEXT = "EFCore.BulkExtensions";
+                string EFCoreBulkExtensionsSqlAdaptersTEXT = "EFCore.BulkExtensions.SqlAdapters";
                 Type? dbServerType = null;
-
-                Assembly? assemblyCommon = null;
-                try { assemblyCommon = Assembly.Load(EFCoreBulkExtensionsTEXT + ".Common"); } catch (Exception) { }
 
                 if (serverType == DbServerType.SQLServer)
                 {
-                    var assembly = assemblyCommon ?? Assembly.Load(EFCoreBulkExtensionsTEXT + ".SqlServer");
-                    dbServerType = assembly.GetType(EFCoreBulkExtensionsTEXT + ".SqlAdapters.SqlServer.SqlDbServer");
+                    dbServerType = Type.GetType(EFCoreBulkExtensionsSqlAdaptersTEXT + ".SqlServer.SqlDbServer");
                 }
                 else if (serverType == DbServerType.PostgreSQL)
                 {
-                    var assembly = assemblyCommon ?? Assembly.Load(EFCoreBulkExtensionsTEXT + ".PostgreSql");
-                    dbServerType = assembly.GetType(EFCoreBulkExtensionsTEXT + ".SqlAdapters.PostgreSql.PostgreSqlDbServer");
+                    dbServerType = Type.GetType(EFCoreBulkExtensionsSqlAdaptersTEXT + ".PostgreSql.PostgreSqlDbServer");
                 }
                 else if (serverType == DbServerType.MySQL)
                 {
-                    var assembly = assemblyCommon ?? Assembly.Load(EFCoreBulkExtensionsTEXT + ".MySql");
-                    dbServerType = assembly.GetType(EFCoreBulkExtensionsTEXT + ".SqlAdapters.MySql.MySqlDbServer");
+                    dbServerType = Type.GetType(EFCoreBulkExtensionsSqlAdaptersTEXT + ".MySql.MySqlDbServer");
                 }
                 else if (serverType == DbServerType.SQLite)
                 {
-                    var assembly = assemblyCommon ?? Assembly.Load(EFCoreBulkExtensionsTEXT +".SQLite");
-                    dbServerType = assembly.GetType(EFCoreBulkExtensionsTEXT + ".SqlAdapters.SQLite.SqlLiteDbServer");
+                    dbServerType = Type.GetType(EFCoreBulkExtensionsSqlAdaptersTEXT + ".SQLite.SqlLiteDbServer");
                 }
 
                 var dbServerInstance = Activator.CreateInstance(dbServerType ?? typeof(int));

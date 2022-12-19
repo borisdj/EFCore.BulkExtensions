@@ -6,7 +6,7 @@ using System.Data.Common;
 namespace EFCore.BulkExtensions.SqlAdapters.SqlServer;
 
 /// <inheritdoc/>
-public class SqlDbServer : IDbServer
+public class SqlServerDbServer : IDbServer
 {
     DbServerType IDbServer.Type => DbServerType.SQLServer;
 

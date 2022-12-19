@@ -209,7 +209,7 @@ public static class ContextUtil
             _dbServerValue = value;
             _dbServerMapping = value switch
             {
-                DbServerType.SQLServer => new SqlAdapters.SqlServer.SqlDbServer(),
+                DbServerType.SQLServer => new SqlAdapters.SqlServer.SqlServerDbServer(),
                 DbServerType.SQLite => new SqlAdapters.SQLite.SqlLiteDbServer(),
                 DbServerType.PostgreSQL => new SqlAdapters.PostgreSql.PostgreSqlDbServer(),
                 DbServerType.MySQL => new SqlAdapters.MySql.MySqlDbServer(),

@@ -4,10 +4,10 @@
       <TargetFramework>net6.0</TargetFramework>
       <Title>EFCore.BulkExtensions.PostgreSql</Title>
       <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-      <Version>6.6.2</Version>
+      <Version>6.6.3</Version>
       <Nullable>enable</Nullable>
       <Authors>borisdj</Authors>
-      <Description>EntityFramework EF Core Bulk Batch Extensions for Insert Update Delete Read (CRUD) operations on SQL Server, PostgreSQL, MySQL, SQLite</Description>
+      <Description>EntityFramework EF Core Bulk Batch Extensions for Insert Update Delete Read (CRUD) operations on PostgreSQL</Description>
       <PackageProjectUrl>https://github.com/borisdj/EFCore.BulkExtensions</PackageProjectUrl>
       <Company />
       <PackageIcon>EFCoreBulk.png</PackageIcon>
@@ -17,8 +17,8 @@
       <RepositoryUrl>https://github.com/borisdj/EFCore.BulkExtensions</RepositoryUrl>
       <RepositoryType>Git</RepositoryType>
       <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
-      <AssemblyVersion>6.6.2.0</AssemblyVersion>
-      <FileVersion>6.6.2.0</FileVersion>
+      <AssemblyVersion>6.6.3.0</AssemblyVersion>
+      <FileVersion>6.6.3.0</FileVersion>
       <SignAssembly>true</SignAssembly>
       <AssemblyOriginatorKeyFile>..\Keys\EFCore.BulkExtensions.snk</AssemblyOriginatorKeyFile>
       <DelaySign>false</DelaySign>
@@ -28,7 +28,18 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="6.0.7" />
+      <Content Include="..\EFCore.BulkExtensions\**\*" Link="Resources\%(RecursiveDir)%(Filename)%(Extension)" />
+      <Content Remove="..\EFCore.BulkExtensions\bin\**" />
+      <Content Remove="..\EFCore.BulkExtensions\obj\**" />
+      <Content Remove="..\EFCore.BulkExtensions\SQLAdapters\SqlServer\**" />
+      <Content Remove="..\EFCore.BulkExtensions\SQLAdapters\MySql\**" />
+      <Content Remove="..\EFCore.BulkExtensions\SQLAdapters\SQLite\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+      <PackageReference Include="Microsoft.Data.SqlClient" Version="2.1.5" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="6.0.11" />
+      <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="6.0.7" />
   </ItemGroup>
 
   <ItemGroup>
@@ -36,9 +47,5 @@
           <Pack>True</Pack>
           <PackagePath></PackagePath>
       </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\EFCore.BulkExtensionsCore\EFCore.BulkExtensionsCore.csproj" />
   </ItemGroup>
 </Project>

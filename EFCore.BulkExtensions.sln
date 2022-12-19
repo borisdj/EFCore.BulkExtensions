@@ -13,9 +13,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.BulkExtensions.Postg
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.BulkExtensions.SQLite", "EFCore.BulkExtensions.SQLite\EFCore.BulkExtensions.SQLite.csproj", "{2A416BCF-642B-4BAF-94FE-5C165E63860C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.BulkExtensionsCore", "EFCore.BulkExtensionsCore\EFCore.BulkExtensionsCore.csproj", "{6796CE3B-B8AA-4F6E-ADAE-DDA86CF79882}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.BulkExtensions.Common", "EFCore.BulkExtensions.Common\EFCore.BulkExtensions.Common.csproj", "{7007C727-FE43-4B57-BED2-7F9433884136}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.BulkExtensions", "EFCore.BulkExtensions\EFCore.BulkExtensions.csproj", "{6796CE3B-B8AA-4F6E-ADAE-DDA86CF79882}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -47,10 +45,6 @@ Global
 		{6796CE3B-B8AA-4F6E-ADAE-DDA86CF79882}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6796CE3B-B8AA-4F6E-ADAE-DDA86CF79882}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6796CE3B-B8AA-4F6E-ADAE-DDA86CF79882}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7007C727-FE43-4B57-BED2-7F9433884136}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7007C727-FE43-4B57-BED2-7F9433884136}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7007C727-FE43-4B57-BED2-7F9433884136}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7007C727-FE43-4B57-BED2-7F9433884136}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

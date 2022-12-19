@@ -25,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\EFCore.BulkExtensions.Common\EFCore.BulkExtensions.Common.csproj" />
+    <ProjectReference Include="..\EFCore.BulkExtensions\EFCore.BulkExtensions.csproj" />
   </ItemGroup>
   
   <ItemGroup>

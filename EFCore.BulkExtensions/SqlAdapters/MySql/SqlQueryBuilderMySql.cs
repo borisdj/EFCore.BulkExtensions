@@ -8,7 +8,7 @@ namespace EFCore.BulkExtensions.SqlAdapters.MySql;
 /// <summary>
 ///  Contains a list of methods to generate SQL queries required by EFCore
 /// </summary>
-public class SqlQueryBuilderMySql: SqlAdapters.QueryBuilderExtensions
+public class SqlQueryBuilderMySql : QueryBuilderExtensions
 {
     /// <summary>
     /// Generates SQL query to create table copy

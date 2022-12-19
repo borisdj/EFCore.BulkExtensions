@@ -8,7 +8,6 @@ using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace EFCore.BulkExtensions.SqlAdapters;
 
-
 /// <summary>
 /// Contains a list of methods to generate Adpaters and helpers instances
 /// </summary>
