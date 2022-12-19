@@ -4,7 +4,7 @@
     <TargetFramework>net6.0</TargetFramework>
     <Title>EFCore.BulkExtensions.SqlServer</Title>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <Version>6.6.3</Version>
+    <Version>6.6.4</Version>
     <Nullable>enable</Nullable>
     <Authors>borisdj</Authors>
     <Description>EntityFramework EF Core Bulk Batch Extensions for Insert Update Delete Read (CRUD) operations on SQL Server</Description>
@@ -17,8 +17,8 @@
     <RepositoryUrl>https://github.com/borisdj/EFCore.BulkExtensions</RepositoryUrl>
     <RepositoryType>Git</RepositoryType>
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
-    <AssemblyVersion>6.6.3.0</AssemblyVersion>
-    <FileVersion>6.6.3.0</FileVersion>
+    <AssemblyVersion>6.6.4.0</AssemblyVersion>
+    <FileVersion>6.6.4.0</FileVersion>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>..\Keys\EFCore.BulkExtensions.snk</AssemblyOriginatorKeyFile>
     <DelaySign>false</DelaySign>
@@ -26,15 +26,6 @@
     <LangVersion>latest</LangVersion>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
-
-  <ItemGroup>
-      <Content Include="..\EFCore.BulkExtensions\**\*" Link="Resources\%(RecursiveDir)%(Filename)%(Extension)" />
-      <Content Remove="..\EFCore.BulkExtensions\bin\**" />
-      <Content Remove="..\EFCore.BulkExtensions\obj\**" />
-      <Content Remove="..\EFCore.BulkExtensions\SQLAdapters\MySql\**" />
-      <Content Remove="..\EFCore.BulkExtensions\SQLAdapters\PostgreSql\**" />
-      <Content Remove="..\EFCore.BulkExtensions\SQLAdapters\SQLite\**" />
-  </ItemGroup>
   
   <ItemGroup>
 	<PackageReference Include="Microsoft.Data.SqlClient" Version="2.1.5" />
