@@ -3,4 +3,10 @@ obj
 .vs
 *.user
 .idea
+
 /EFCore.BulkExtensions.Tests/testsettings.local.json
+!*.csproj
+/EFCore.BulkExtensions.MySql/*
+/EFCore.BulkExtensions.PostgreSql/*
+/EFCore.BulkExtensions.SQLite/*
+/EFCore.BulkExtensions.SqlServer/*
