@@ -72,7 +72,7 @@ public static class SqlAdaptersMapping
 
                 if (serverType == DbServerType.SQLServer)
                 {
-                    dbServerType = Type.GetType(EFCoreBulkExtensionsSqlAdaptersTEXT + ".SqlServer.SqlDbServer");
+                    dbServerType = Type.GetType(EFCoreBulkExtensionsSqlAdaptersTEXT + ".SqlServer.SqlServerDbServer");
                 }
                 else if (serverType == DbServerType.PostgreSQL)
                 {
