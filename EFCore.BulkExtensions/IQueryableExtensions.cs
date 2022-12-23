@@ -8,6 +8,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using EFCore.BulkExtensions.Helpers;
 
 namespace EFCore.BulkExtensions;
 
@@ -50,7 +51,8 @@ public static class IQueryableExtensions
             string querySqlGeneratorFactoryText = "_querySqlGeneratorFactory";
             SelectExpression selectExpression = enumerator.Private<SelectExpression>(selectExpressionText) ?? throw new InvalidOperationException($"{cannotGetText} {selectExpressionText}");
             IQuerySqlGeneratorFactory factory = enumerator.Private<IQuerySqlGeneratorFactory>(querySqlGeneratorFactoryText) ?? throw new InvalidOperationException($"{cannotGetText} {querySqlGeneratorFactoryText}");
-            command = factory.Create().GetCommand(selectExpression);
+            var querySqlGenerator = factory.Create();
+            command = QuerySqlGeneratorHelpers.GetCommand(querySqlGenerator, selectExpression);
         }
         string sql = command.CommandText;
 
