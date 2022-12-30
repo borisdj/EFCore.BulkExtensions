@@ -217,7 +217,7 @@ public static class DbContextBulkExtensions
     #region BulkUpdate
 
     /// <summary>
-    /// Extension method to bulk ipdate data
+    /// Extension method to bulk update data
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="context"></param>
@@ -231,7 +231,7 @@ public static class DbContextBulkExtensions
     }
 
     /// <summary>
-    /// Extension method to bulk ipdate data
+    /// Extension method to bulk update data
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="context"></param>
@@ -247,7 +247,7 @@ public static class DbContextBulkExtensions
     }
 
     /// <summary>
-    /// Extension method to bulk ipdate data
+    /// Extension method to bulk update data
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="context"></param>
@@ -263,7 +263,7 @@ public static class DbContextBulkExtensions
     }
 
     /// <summary>
-    /// Extension method to bulk ipdate data
+    /// Extension method to bulk update data
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="context"></param>
