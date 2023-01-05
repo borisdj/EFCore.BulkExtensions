@@ -59,7 +59,7 @@ public class BulkConfig
     public bool UseTempDB { get; set; }
 
     /// <summary>
-    ///     When set to false temp table name will be only 'Temp' without random numbers
+    ///     When set to false temp table name will be only 'Temp' without random numbers.
     /// </summary>
     /// <value>
     ///     Default value is <c>true</c>.
@@ -78,12 +78,12 @@ public class BulkConfig
     ///     Source data from specified table already in Db, so input list not used and can be empty.
     /// </summary>
     /// <value>
-    ///     Can be set with 'TableName' only or with 'Schema.TableName' (Not supported for Sqlite)
+    ///     Can be set with 'TableName' only or with 'Schema.TableName' (Not supported for Sqlite).
     /// </value>
     public string? CustomSourceTableName { get; set; }
 
     /// <summary>
-    ///     Only if CustomSourceTableName is set and used for specifying Source - Destination column names when they are not the same
+    ///     Only if CustomSourceTableName is set and used for specifying Source - Destination column names when they are not the same.
     /// </summary>
     public Dictionary<string, string>? CustomSourceDestinationMappingColumns { get; set; }
 
@@ -101,7 +101,7 @@ public class BulkConfig
     public bool WithHoldlock { get; set; } = true;
 
     /// <summary>
-    ///     When set to <c>true</c> the result is return in <c>BulkConfig.StatsInfo { StatsNumberInserted, StatsNumberUpdated}</c>c>.
+    ///     When set to <c>true</c> the result is return in <c>BulkConfig.StatsInfo { StatsNumberInserted, StatsNumberUpdated}</c>.
     /// </summary>
     /// <remarks>
     ///     If used for pure Insert (with Batching) then SetOutputIdentity should also be configured because Merge have to be used.
@@ -109,15 +109,15 @@ public class BulkConfig
     public bool CalculateStats { get; set; }
 
     /// <summary>
-    ///     Ignore handling RowVersion column
+    ///     Ignore handling RowVersion column.
     /// </summary>
     /// <value>
-    ///     Default value is <c>false</c>, if table have any RowVersion column, it will have special handling and needs to be binary
+    ///     Default value is <c>false</c>, if table have any RowVersion column, it will have special handling and needs to be binary.
     /// </value>
     public bool IgnoreRowVersion { get; set; } = false;
 
     /// <summary>
-    ///     Used as object for returning Stats Info when <c>BulkConfig.CalculateStats = true</c>
+    ///     Used as object for returning Stats Info when <c>BulkConfig.CalculateStats = true</c>.
     /// </summary>
     /// <value>
     ///     Contains info in Properties: <c>StatsNumberInserted, StatsNumberUpdated, StatsNumberDeleted</c>
@@ -125,7 +125,7 @@ public class BulkConfig
     public StatsInfo? StatsInfo { get; internal set; }
 
     /// <summary>
-    ///     Used as object for returning TimeStamp Info when <c>BulkConfig.DoNotUpdateIfTimeStampChanged = true</c>
+    ///     Used as object for returning TimeStamp Info when <c>BulkConfig.DoNotUpdateIfTimeStampChanged = true</c>.
     /// </summary>
     public TimeStampInfo? TimeStampInfo { get; internal set; }
 
@@ -146,7 +146,7 @@ public class BulkConfig
     public List<string>? PropertiesToIncludeOnCompare { get; set; }
 
     /// <summary>
-    ///     Ensures that only certain columns with selected properties are Updated, can differ from PropertiesToInclude that can that be used for Insert config only
+    ///     Ensures that only certain columns with selected properties are Updated. Can differ from PropertiesToInclude that can that be used for Insert config only.
     /// </summary>
     /// <remarks>
     ///     When need to Insert only new and skip existing ones in Db (Insert_if_not_Exist) then use BulkInsertOrUpdate with this list set to empty: <c>new List<string> { "" }</string></c>
@@ -170,7 +170,7 @@ public class BulkConfig
     public List<string>? PropertiesToExcludeOnCompare { get; set; }
 
     /// <summary>
-    ///     Selected properties are excluded from being updated, can differ from PropertiesToExclude that can be used for Insert config only
+    ///     Selected properties are excluded from being updated, can differ from PropertiesToExclude that can be used for Insert config only.
     /// </summary>
     public List<string>? PropertiesToExcludeOnUpdate { get; set; }
 
@@ -178,7 +178,7 @@ public class BulkConfig
     ///     Used for specifying custom properties, by which we want update to be done.
     /// </summary>
     /// <remarks>
-    ///     If Identity column exists and is not added in UpdateByProp it will be excluded automatically
+    ///     If Identity column exists and is not added in UpdateByProp it will be excluded automatically.
     /// </remarks>
     public List<string>? UpdateByProperties { get; set; }
     
@@ -238,10 +238,10 @@ public class BulkConfig
     public int SRID { get; set; } = 4326;
 
     /// <summary>
-    ///     When type dbtype datetime2 has precision less then default 7, for example 'datetime2(3)' SqlBulkCopy does Floor instead of Round so Rounding done in memory to make sure inserted values are same as with regular SaveChanges
+    ///     When type dbtype datetime2 has precision less then default 7, for example 'datetime2(3)' SqlBulkCopy does Floor instead of Round so Rounding done in memory to make sure inserted values are same as with regular SaveChanges.
     /// </summary>
     /// <remarks>
-    ///     Only for SqlServer
+    ///     Only for SqlServer.
     /// </remarks>
     public bool DateTime2PrecisionForceRound { get; set; }
 
@@ -250,7 +250,7 @@ public class BulkConfig
     ///     IF PK are generated in memory like are some Guid then this can be set to false for better efficiency.
     /// </summary>
     /// <remarks>
-    ///     Only used with BulkSaveChanges
+    ///     Only used with BulkSaveChanges.
     /// </remarks>
     public bool OnSaveChangesSetFK { get; set; } = true;
 
@@ -281,12 +281,12 @@ public class BulkConfig
     }
 
     /// <summary>
-    /// A func to set the underlying DB connection
+    /// A func to set the underlying DB connection.
     /// </summary>
     public Func<DbConnection, DbConnection>? UnderlyingConnection { get; set; }
 
     /// <summary>
-    /// A func to set the underlying DB transaction
+    /// A func to set the underlying DB transaction.
     /// </summary>
     public Func<DbTransaction, DbTransaction>? UnderlyingTransaction { get; set; }
 
@@ -296,38 +296,38 @@ public class BulkConfig
 }
 
 /// <summary>
-/// Class to provide information about how many records have been updated, deleted and inserted
+/// Class to provide information about how many records have been updated, deleted and inserted.
 /// </summary>
 public class StatsInfo
 {
     /// <summary>
-    /// Indicates the number of inserted records
+    /// Indicates the number of inserted records.
     /// </summary>
     public int StatsNumberInserted { get; set; }
 
     /// <summary>
-    /// Indicates the number of updated records
+    /// Indicates the number of updated records.
     /// </summary>
     public int StatsNumberUpdated { get; set; }
 
     /// <summary>
-    /// Indicates the number of deleted records
+    /// Indicates the number of deleted records.
     /// </summary>
     public int StatsNumberDeleted { get; set; }
 }
 
 /// <summary>
-/// Provides information about entities
+/// Provides information about entities.
 /// </summary>
 public class TimeStampInfo
 {
     /// <summary>
-    /// Indicates the number of entities skipped for an update
+    /// Indicates the number of entities skipped for an update.
     /// </summary>
     public int NumberOfSkippedForUpdate { get; set; }
 
     /// <summary>
-    /// Output the entities
+    /// Output the entities.
     /// </summary>
     public List<object> EntitiesOutput { get; set; } = null!;
 }
