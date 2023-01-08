@@ -353,6 +353,8 @@ public class Item
     public DateTime? TimeUpdated { get; set; }
 
     public ICollection<ItemHistory> ItemHistories { get; set; } = null!;
+
+    public ItemCategory? Category { get; set; }
 }
 
 // ItemHistory is used to test bulk Ops to multiple tables(Item and ItemHistory), to test Guid as PK and to test other Schema(his)
@@ -365,6 +367,17 @@ public class ItemHistory
     public virtual Item Item { get; set; } = null!;
 
     public string Remark { get; set; } = null!;
+}
+
+
+public class ItemCategory
+{
+    [Key]
+    public int Id { get; set; }
+
+    [MaxLength(50)]
+    public string? Name { get; set; }
+
 }
 
 // UserRole is used to test tables with Composite PrimaryKey

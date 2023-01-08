@@ -1,6 +1,7 @@
 ﻿using EFCore.BulkExtensions.SqlAdapters;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -350,16 +351,30 @@ public class SqliteOperationsAdapter : ISqlOperationsAdapter
         var entityPropertiesDict = entityType?.GetProperties().Where(a => tableInfo.PropertyColumnNamesDict.ContainsKey(a.Name)).ToDictionary(a => a.Name, a => a);
         var properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
+        var entityShadowFkPropertiesDict = entityType?.GetProperties().Where(a => a.IsShadowProperty() &&
+                                                                   a.IsForeignKey() &&
+                                                                   a.GetContainingForeignKeys().FirstOrDefault()?.DependentToPrincipal?.Name != null)
+                                                             .ToDictionary(x => x.GetContainingForeignKeys()?.First()?.DependentToPrincipal?.Name ?? string.Empty, a => a);
+
         foreach (var property in properties)
         {
+            IProperty? propertyEntityType = null;
             if (entityPropertiesDict?.ContainsKey(property.Name) ?? false)
             {
-                var propertyEntityType = entityPropertiesDict[property.Name];
+                propertyEntityType = entityPropertiesDict[property.Name];
+            }
+            else if (entityShadowFkPropertiesDict?.ContainsKey(property.Name) ?? false)
+            {
+                propertyEntityType = entityShadowFkPropertiesDict[property.Name];
+            }
+
+            if (propertyEntityType != null)
+            {
                 string? columnName = propertyEntityType.GetColumnName(tableInfo.ObjectIdentifier);
                 var propertyType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
 
                 //SqliteType(CpropertyType.Name): Text(String, Decimal, DateTime); Integer(Int16, Int32, Int64) Real(Float, Double) Blob(Guid)
-                var parameter = new SqliteParameter($"@{property.Name}", propertyType); // ,sqliteType // ,null //()
+                var parameter = new SqliteParameter($"@{columnName}", propertyType); // ,sqliteType // ,null //()
                 command.Parameters.Add(parameter);
             }
         }
@@ -382,7 +397,7 @@ public class SqliteOperationsAdapter : ISqlOperationsAdapter
         {
             var isShadowProperty = tableInfo.ShadowProperties.Contains(propertyColumn.Key);
             string parameterName = propertyColumn.Key.Replace(".", "_");
-            object? value;
+            object? value = null;
             if (!isShadowProperty)
             {
                 if (propertyColumn.Key.Contains('.')) // ToDo: change IF clause to check for NavigationProperties, optimise, integrate with same code segment from LoadData method
@@ -411,9 +426,26 @@ public class SqliteOperationsAdapter : ISqlOperationsAdapter
                         value = ownedPropertyValue == null ? null : tableInfo.FastPropertyDict[subPropertyFullName]?.Get(ownedPropertyValue);
                     }
                 }
-                else
+                else if (tableInfo.FastPropertyDict.ContainsKey(propertyColumn.Key))
                 {
                     value = entity is null ? null : tableInfo.FastPropertyDict[propertyColumn.Key].Get(entity);
+                }
+                else if (tableInfo.ColumnToPropertyDictionary.ContainsKey(propertyColumn.Key))
+                {
+                    var property = tableInfo.ColumnToPropertyDictionary[propertyColumn.Key];
+
+                    if (property.IsShadowProperty() && property.IsForeignKey())
+                    {
+                        var foreignKey = property.GetContainingForeignKeys().FirstOrDefault();
+                        var principalNavigation = foreignKey?.DependentToPrincipal;
+                        var pkPropertyName = foreignKey?.PrincipalKey.Properties.FirstOrDefault()?.Name;
+                        if (principalNavigation is not null && pkPropertyName is not null)
+                        {
+                            pkPropertyName = principalNavigation.Name + "_" + pkPropertyName;
+                            var fkPropertyValue = entity == null ? null : tableInfo.FastPropertyDict[principalNavigation.Name].Get(entity);
+                            value = fkPropertyValue == null ? null : tableInfo.FastPropertyDict[pkPropertyName]?.Get(fkPropertyValue);
+                        }
+                    }
                 }
             }
             else
@@ -428,8 +460,6 @@ public class SqliteOperationsAdapter : ISqlOperationsAdapter
                     {
                         value = entity is null ? null : tableInfo.BulkConfig.ShadowPropertyValue(entity, propertyColumn.Key);
                     }
-
-
                 }
                 else
                 {

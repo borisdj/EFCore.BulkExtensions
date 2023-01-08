@@ -410,7 +410,7 @@ public class EFCoreBulkTest
     private static void RunInsert(bool isBulk)
     {
         using var context = new TestContext(ContextUtil.GetOptions());
-
+        var categores  = new List<ItemCategory> { new ItemCategory { Id = 1, Name = "Some 1" }, new ItemCategory { Id = 2, Name = "Some 2" } };
         var entities = new List<Item>();
         var subEntities = new List<ItemHistory>();
         for (int i = 1, j = -(EntitiesNumber - 1); i < EntitiesNumber; i++, j++)
@@ -425,6 +425,8 @@ public class EFCoreBulkTest
                 TimeUpdated = DateTime.Now,
                 ItemHistories = new List<ItemHistory>()
             };
+
+            entity.Category = categores[i%categores.Count];
 
             var subEntity1 = new ItemHistory
             {
@@ -444,6 +446,7 @@ public class EFCoreBulkTest
 
         if (isBulk)
         {
+            context.BulkInsertOrUpdate(categores);
             if (ContextUtil.DbServer == DbServerType.SQLServer)
             {
                 using var transaction = context.Database.BeginTransaction();
