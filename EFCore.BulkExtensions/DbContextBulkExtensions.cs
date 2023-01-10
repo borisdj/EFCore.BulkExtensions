@@ -147,7 +147,7 @@ public static class DbContextBulkExtensions
 
     // InsertOrUpdateOrDelete methods
     #region BulkInsertOrUpdateOrDelete
- 
+
     /// <summary>
     /// Extension method to bulk insert, update and delete data
     /// </summary>
@@ -217,7 +217,7 @@ public static class DbContextBulkExtensions
     #region BulkUpdate
 
     /// <summary>
-    /// Extension method to bulk ipdate data
+    /// Extension method to bulk update data
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="context"></param>
@@ -231,7 +231,7 @@ public static class DbContextBulkExtensions
     }
 
     /// <summary>
-    /// Extension method to bulk ipdate data
+    /// Extension method to bulk update data
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="context"></param>
@@ -247,7 +247,7 @@ public static class DbContextBulkExtensions
     }
 
     /// <summary>
-    /// Extension method to bulk ipdate data
+    /// Extension method to bulk update data
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="context"></param>
@@ -263,7 +263,7 @@ public static class DbContextBulkExtensions
     }
 
     /// <summary>
-    /// Extension method to bulk ipdate data
+    /// Extension method to bulk update data
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="context"></param>
@@ -328,7 +328,7 @@ public static class DbContextBulkExtensions
         bulkAction?.Invoke(bulkConfig);
         DbContextBulkTransaction.Execute(context, type, entities, OperationType.Delete, bulkConfig, progress);
     }
-  
+
     /// <summary>
     /// Extension method to bulk delete data
     /// </summary>
