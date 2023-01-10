@@ -151,7 +151,7 @@ public class TableInfo
         }
         if (entityType == null)
         {
-            throw new InvalidOperationException($"DbContext does not contain EntitySet for Type: { type?.Name }");
+            throw new InvalidOperationException($"DbContext does not contain EntitySet for Type: {type?.Name}");
         }
 
         //var relationalData = entityType.Relational(); relationalData.Schema relationalData.TableName // DEPRECATED in Core3.0
@@ -277,9 +277,9 @@ public class TableInfo
             {
                 strategyName = strategyName.Replace("Value", ":Value"); //example 'SqlServer:ValueGenerationStrategy'
             }
-            
+
             foreach (var property in allProperties)
-            {       
+            {
                 var annotation = property.FindAnnotation(strategyName);
                 bool hasIdentity = false;
                 if (annotation != null)
@@ -293,7 +293,7 @@ public class TableInfo
                 }
             }
         }
-         if (isSqlite) // SQLite no ValueGenerationStrategy
+        if (isSqlite) // SQLite no ValueGenerationStrategy
         {
             // for HiLo on SqlServer was returning True when should be False
             IdentityColumnName = allProperties.SingleOrDefault(a => a.IsPrimaryKey() &&
@@ -521,7 +521,7 @@ public class TableInfo
                     foreach (var ownedEntityProperty in ownedEntityProperties)
                     {
                         string columnName = ownedEntityProperty.GetColumnName(ObjectIdentifier) ?? string.Empty;
-                        
+
                         if (!ownedEntityProperty.IsPrimaryKey())
                         {
                             ownedEntityPropertyNameColumnNameDict.Add(ownedEntityProperty.Name, columnName);
@@ -603,7 +603,7 @@ public class TableInfo
     #endregion
 
     #region SqlCommands
-      
+
     /// <summary>
     /// Checks if the table exists
     /// </summary>
@@ -670,7 +670,7 @@ public class TableInfo
         }
         return tableExist;
     }
-  
+
     /// <summary>
     /// Checks the number of updated entities
     /// </summary>
@@ -854,7 +854,7 @@ public class TableInfo
             {
                 var propertyValue = FastPropertyDict[identityPropertyName].Get(entities[0]!);
                 var identityValue = Convert.ToInt64(IdentityColumnConverter != null ? IdentityColumnConverter.ConvertToProvider(propertyValue) : propertyValue);
-                
+
                 if (identityValue != 0) // (to check it fast, condition for all 0s is only done on first one)
                 {
                     doSetIdentityColumnsForInsertOrder = false;
@@ -943,7 +943,7 @@ public class TableInfo
         }
         return existingEntities;
     }
-  
+
     /// <summary>
     /// Updates the entities' identity field
     /// </summary>
@@ -980,8 +980,8 @@ public class TableInfo
             {
                 if (identifierPropertyName != null)
                 {
-                    var customPK = tableInfo.PrimaryKeysPropertyColumnNameDict.FirstOrDefault().Value;
-                    if (identifierPropertyName != customPK &&
+                    var customPK = tableInfo.PrimaryKeysPropertyColumnNameDict.Values;
+                    if (!(customPK.Count == 1 && customPK.First() == identifierPropertyName) &&
                         (tableInfo.BulkConfig.OperationType == OperationType.Update ||
                          tableInfo.BulkConfig.OperationType == OperationType.InsertOrUpdate ||
                          tableInfo.BulkConfig.OperationType == OperationType.InsertOrUpdateOrDelete)
@@ -991,17 +991,13 @@ public class TableInfo
                         {
                             foreach (var entity in entities)
                             {
-                                var customPKValue = FastPropertyDict[customPK].Get(entity!);
-                                entitiesDict.Add(customPKValue!, entity);
+                                PrimaryKeysPropertyColumnNameValues customPKValue = new(customPK.Select(c => FastPropertyDict[c].Get(entity!)));
+                                entitiesDict.Add(customPKValue, entity);
                             }
                         }
                         var identityPropertyValue = FastPropertyDict[identifierPropertyName].Get(entitiesWithOutputIdentity[i]);
-                        var customPKOutputValue = FastPropertyDict[customPK].Get(entitiesWithOutputIdentity[i]);
-                        if (customPKOutputValue is not null)
-                        {
-                            FastPropertyDict[identifierPropertyName].Set(entitiesDict[customPKOutputValue]!, identityPropertyValue);
-                        }
-
+                        PrimaryKeysPropertyColumnNameValues customPKOutputValue = new(customPK.Select(c => FastPropertyDict[c].Get(entitiesWithOutputIdentity[i])));
+                        FastPropertyDict[identifierPropertyName].Set(entitiesDict[customPKOutputValue]!, identityPropertyValue);
                     }
                     else
                     {
@@ -1251,4 +1247,33 @@ public class TableInfo
         return orderedQuery;
     }*/
     #endregion
+}
+
+internal class PrimaryKeysPropertyColumnNameValues
+{
+    public List<object?> PkValues { get; }
+
+    public PrimaryKeysPropertyColumnNameValues(IEnumerable<object?> pkValues)
+    {
+        PkValues = pkValues.ToList();
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is PrimaryKeysPropertyColumnNameValues values &&
+               PkValues.SequenceEqual(values.PkValues);
+    }
+
+    public override int GetHashCode()
+    {
+        unchecked
+        {
+            int hash = 19;
+            foreach (var value in PkValues)
+            {
+                hash = hash * 31 + (value == null ? 0 : value.GetHashCode());
+            }
+            return hash;
+        }
+    }
 }
