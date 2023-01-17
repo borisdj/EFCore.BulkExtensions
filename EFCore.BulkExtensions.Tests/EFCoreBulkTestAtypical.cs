@@ -115,8 +115,14 @@ public class EFCoreBulkTestAtypical
                 Description = "info x " + j,
             });
         }
+        entities.Add(new Item
+        {
+            Name = "name 2",
+            Quantity = 1,
+            Description = "info x 5",
+        });
 
-        context.BulkInsertOrUpdate(entities, new BulkConfig { SetOutputIdentity = true, UpdateByProperties = new List<string> { nameof(Item.Name) } });
+        context.BulkInsertOrUpdate(entities, new BulkConfig { SetOutputIdentity = true, UpdateByProperties = new List<string> { nameof(Item.Name), nameof(Item.Quantity) } });
         Assert.Equal(2, entities[0].ItemId);
     }
 
