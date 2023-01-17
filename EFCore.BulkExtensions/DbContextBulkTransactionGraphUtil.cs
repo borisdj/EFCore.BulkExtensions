@@ -7,6 +7,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Transactions;
 
 namespace EFCore.BulkExtensions;
 
@@ -46,8 +47,8 @@ internal static class DbContextBulkTransactionGraphUtil
             return;
 
         // Inserting an entity graph must be done within a transaction otherwise the database could end up in a bad state
-        var hasExistingTransaction = context.Database.CurrentTransaction != null;
-        var transaction = context.Database.CurrentTransaction ?? (isAsync ? await context.Database.BeginTransactionAsync(cancellationToken) : context.Database.BeginTransaction());
+        var hasExistingTransaction = context.Database.CurrentTransaction != null || Transaction.Current != null;
+        var transaction = hasExistingTransaction ? null : context.Database.CurrentTransaction ?? (isAsync ? await context.Database.BeginTransactionAsync(cancellationToken) : context.Database.BeginTransaction());
 
         try
         {
@@ -101,11 +102,11 @@ internal static class DbContextBulkTransactionGraphUtil
             {
                 if (isAsync)
                 {
-                    await transaction.CommitAsync(cancellationToken);
+                    await transaction!.CommitAsync(cancellationToken);
                 }
                 else
                 {
-                    transaction.Commit();
+                    transaction!.Commit();
                 }
             }
         }
@@ -115,11 +116,11 @@ internal static class DbContextBulkTransactionGraphUtil
             {
                 if (isAsync)
                 {
-                    await transaction.DisposeAsync();
+                    await transaction!.DisposeAsync();
                 }
                 else
                 {
-                    transaction.Dispose();
+                    transaction!.Dispose();
                 }
             }
         }
