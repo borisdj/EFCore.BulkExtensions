@@ -109,7 +109,7 @@ public class SqliteOperationsAdapter : ISqlOperationsAdapter
     /// <inheritdoc/>
     public async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress, CancellationToken cancellationToken) where T : class
     {
-        await MergeAsync(context, type, entities, tableInfo, operationType, progress, isAsync: true, cancellationToken);
+        await MergeAsync(context, type, entities, tableInfo, operationType, progress, isAsync: true, cancellationToken).ConfigureAwait(false);
     }
     
     /// <inheritdoc/>
@@ -270,7 +270,7 @@ public class SqliteOperationsAdapter : ISqlOperationsAdapter
                 {
                     if (transaction is not null)
                     {
-                        await transaction.DisposeAsync();
+                        await transaction.DisposeAsync().ConfigureAwait(false);
                     }
 
                     await context.Database.CloseConnectionAsync().ConfigureAwait(false);

@@ -74,11 +74,11 @@ internal static class DbContextBulkTransaction
 
             if (operationType == OperationType.SaveChanges)
             {
-                await DbContextBulkTransactionSaveChanges.SaveChangesAsync(context, bulkConfig, progress, cancellationToken);
+                await DbContextBulkTransactionSaveChanges.SaveChangesAsync(context, bulkConfig, progress, cancellationToken).ConfigureAwait(false);
             }
             else if(bulkConfig?.IncludeGraph == true)
             {
-                await DbContextBulkTransactionGraphUtil.ExecuteWithGraphAsync(context, entities, operationType, bulkConfig, progress, cancellationToken);
+                await DbContextBulkTransactionGraphUtil.ExecuteWithGraphAsync(context, entities, operationType, bulkConfig, progress, cancellationToken).ConfigureAwait(false);
             }
             else
             {
@@ -86,19 +86,19 @@ internal static class DbContextBulkTransaction
 
                 if (operationType == OperationType.Insert && !tableInfo.BulkConfig.SetOutputIdentity)
                 {
-                    await SqlBulkOperation.InsertAsync(context, type, entities, tableInfo, progress, cancellationToken);
+                    await SqlBulkOperation.InsertAsync(context, type, entities, tableInfo, progress, cancellationToken).ConfigureAwait(false);
                 }
                 else if (operationType == OperationType.Read)
                 {
-                    await SqlBulkOperation.ReadAsync(context, type, entities, tableInfo, progress, cancellationToken);
+                    await SqlBulkOperation.ReadAsync(context, type, entities, tableInfo, progress, cancellationToken).ConfigureAwait(false);
                 }
                 else if (operationType == OperationType.Truncate)
                 {
-                    await SqlBulkOperation.TruncateAsync(context, tableInfo, cancellationToken);
+                    await SqlBulkOperation.TruncateAsync(context, tableInfo, cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
-                    await SqlBulkOperation.MergeAsync(context, type, entities, tableInfo, operationType, progress, cancellationToken);
+                    await SqlBulkOperation.MergeAsync(context, type, entities, tableInfo, operationType, progress, cancellationToken).ConfigureAwait(false);
                 }
             }
         }

@@ -59,7 +59,7 @@ internal static class SqlBulkOperation
     public static async Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress, CancellationToken cancellationToken)
     {
         var adapter = SqlAdaptersMapping.CreateBulkOperationsAdapter();
-        await adapter.InsertAsync(context, type, entities, tableInfo, progress, cancellationToken);
+        await adapter.InsertAsync(context, type, entities, tableInfo, progress, cancellationToken).ConfigureAwait(false);
     }
 
     public static void Merge<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress) where T : class
@@ -71,7 +71,7 @@ internal static class SqlBulkOperation
     public static async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress, CancellationToken cancellationToken = default) where T : class
     {
         var adapter = SqlAdaptersMapping.CreateBulkOperationsAdapter();
-        await adapter.MergeAsync(context, type, entities, tableInfo, operationType, progress, cancellationToken);
+        await adapter.MergeAsync(context, type, entities, tableInfo, operationType, progress, cancellationToken).ConfigureAwait(false);
     }
 
     public static void Read<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress) where T : class
@@ -91,7 +91,7 @@ internal static class SqlBulkOperation
             await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB), cancellationToken).ConfigureAwait(false);
         }
         var adapter = SqlAdaptersMapping.CreateBulkOperationsAdapter();
-        await adapter.ReadAsync(context, type, entities, tableInfo, progress, cancellationToken);
+        await adapter.ReadAsync(context, type, entities, tableInfo, progress, cancellationToken).ConfigureAwait(false);
     }
 
     public static void Truncate(DbContext context, TableInfo tableInfo)
