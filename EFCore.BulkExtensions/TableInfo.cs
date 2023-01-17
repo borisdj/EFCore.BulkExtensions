@@ -392,6 +392,26 @@ public class TableInfo
                 FastPropertyDict.Add(property.Name, FastProperty.GetOrCreate(property.PropertyInfo));
             }
 
+            if (property.IsShadowProperty() && property.IsForeignKey())
+            {
+                // TODO: Does Shadow ForeignKey Property aways contain only one ForgeignKey? 
+                var navigationProperty = property.GetContainingForeignKeys().FirstOrDefault()?.DependentToPrincipal?.PropertyInfo;
+                if (navigationProperty is not null)
+                {
+                    var navigationEntityType = context.Model.FindEntityType(navigationProperty.PropertyType);
+                    var navigationProperties = navigationEntityType?.GetProperties().Where(p => p.IsPrimaryKey()).ToList() ?? new();
+
+                    foreach (var navEntityProperty in navigationProperties)
+                    {
+                        var fullName = navigationProperty.Name + "_" + navEntityProperty.Name;
+                        if (!FastPropertyDict.ContainsKey(fullName) && navEntityProperty.PropertyInfo is not null)
+                        {
+                            FastPropertyDict.Add(fullName, FastProperty.GetOrCreate(navEntityProperty.PropertyInfo));
+                        }
+                    }
+                }
+            }
+
             var converter = property.GetTypeMapping().Converter;
             if (converter is not null)
             {
@@ -824,8 +844,16 @@ public class TableInfo
             {
                 foreach (var propertyName in propertyNames)
                 {
-                    var propertyValue = FastPropertyDict[propertyName].Get(existingEntity);
-                    FastPropertyDict[propertyName].Set(entity!, propertyValue);
+                    if (FastPropertyDict.ContainsKey(propertyName))
+                    {
+                        var propertyValue = FastPropertyDict[propertyName].Get(existingEntity);
+                        FastPropertyDict[propertyName].Set(entity!, propertyValue);
+                    }
+                    else
+                    {
+                       //TODO: Shadow FK property update
+                    }
+                    
                 }
             }
         }
