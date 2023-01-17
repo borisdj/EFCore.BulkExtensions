@@ -214,7 +214,7 @@ internal static class DbContextBulkTransactionSaveChanges
                 var task = (Task?)bulkMethod.Invoke(null, methodArguments);
                 if (task != null)
                 {
-                    await task;
+                    await task.ConfigureAwait(false);
                 }
             }
 

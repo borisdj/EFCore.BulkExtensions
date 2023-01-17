@@ -19,7 +19,7 @@ internal static class DbContextBulkTransactionGraphUtil
 
     public static async Task ExecuteWithGraphAsync(DbContext context, IEnumerable<object> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal>? progress, CancellationToken cancellationToken)
     {
-        await ExecuteWithGraphAsync(context, entities, operationType, bulkConfig, progress, isAsync: true, cancellationToken);
+        await ExecuteWithGraphAsync(context, entities, operationType, bulkConfig, progress, isAsync: true, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task ExecuteWithGraphAsync(DbContext context, IEnumerable<object> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken)
@@ -47,7 +47,7 @@ internal static class DbContextBulkTransactionGraphUtil
 
         // Inserting an entity graph must be done within a transaction otherwise the database could end up in a bad state
         var hasExistingTransaction = context.Database.CurrentTransaction != null;
-        var transaction = context.Database.CurrentTransaction ?? (isAsync ? await context.Database.BeginTransactionAsync(cancellationToken) : context.Database.BeginTransaction());
+        var transaction = context.Database.CurrentTransaction ?? (isAsync ? await context.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false) : context.Database.BeginTransaction());
 
         try
         {
@@ -71,7 +71,7 @@ internal static class DbContextBulkTransactionGraphUtil
 
                 if (isAsync)
                 {
-                    await SqlBulkOperation.MergeAsync(context, entityClrType, entitiesToAction, tableInfo, operationType, progress, cancellationToken);
+                    await SqlBulkOperation.MergeAsync(context, entityClrType, entitiesToAction, tableInfo, operationType, progress, cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
@@ -88,7 +88,7 @@ internal static class DbContextBulkTransactionGraphUtil
 
                     if (isAsync)
                     {
-                        await SqlBulkOperation.MergeAsync(context, entityClrType, dependentsOfSameType, dependentTableInfo, operationType, progress, cancellationToken);
+                        await SqlBulkOperation.MergeAsync(context, entityClrType, dependentsOfSameType, dependentTableInfo, operationType, progress, cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {
@@ -101,7 +101,7 @@ internal static class DbContextBulkTransactionGraphUtil
             {
                 if (isAsync)
                 {
-                    await transaction.CommitAsync(cancellationToken);
+                    await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
@@ -115,7 +115,7 @@ internal static class DbContextBulkTransactionGraphUtil
             {
                 if (isAsync)
                 {
-                    await transaction.DisposeAsync();
+                    await transaction.DisposeAsync().ConfigureAwait(false);
                 }
                 else
                 {

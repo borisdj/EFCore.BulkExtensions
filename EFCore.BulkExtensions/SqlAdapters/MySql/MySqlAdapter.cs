@@ -100,7 +100,7 @@ public class MySqlAdapter : ISqlOperationsAdapter
     {
         //Because of using temp table in case of update, we need to access created temp table in Insert method.
         var hasExistingTransaction = context.Database.CurrentTransaction != null;
-        var transaction = context.Database.CurrentTransaction ?? (isAsync ? await context.Database.BeginTransactionAsync(cancellationToken) : context.Database.BeginTransaction());
+        var transaction = context.Database.CurrentTransaction ?? (isAsync ? await context.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false) : context.Database.BeginTransaction());
         
         if (tableInfo.BulkConfig.CustomSourceTableName == null)
         {
@@ -198,7 +198,7 @@ public class MySqlAdapter : ISqlOperationsAdapter
             {
                 if (isAsync)
                 {
-                    await transaction.CommitAsync(cancellationToken);
+                    await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
@@ -253,7 +253,7 @@ public class MySqlAdapter : ISqlOperationsAdapter
                 {
                     if (isAsync)
                     {
-                        await transaction.DisposeAsync();
+                        await transaction.DisposeAsync().ConfigureAwait(false);
                     }
                     else
                     {

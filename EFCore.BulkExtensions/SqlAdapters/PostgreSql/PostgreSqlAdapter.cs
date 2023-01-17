@@ -145,7 +145,7 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
             {
                 if (isAsync)
                 {
-                    await connection.CloseAsync();
+                    await connection.CloseAsync().ConfigureAwait(false);
                 }
                 else
                 {
@@ -218,7 +218,7 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
             }
         }
 
-        bool hasUniqueConstrain = await CheckHasExplicitUniqueConstrainAsync(context, tableInfo, isAsync,  cancellationToken);
+        bool hasUniqueConstrain = await CheckHasExplicitUniqueConstrainAsync(context, tableInfo, isAsync,  cancellationToken).ConfigureAwait(false);
         if (hasUniqueConstrain == false)
         {
             if (tableInfo.EntityPKPropertyColumnNameDict == tableInfo.PrimaryKeysPropertyColumnNameDict)
@@ -330,7 +330,7 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
 
     /// <inheritdoc/>
     protected async Task ReadAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken) where T : class
-        =>  await MergeAsync(context, type, entities, tableInfo, OperationType.Read, progress, isAsync, cancellationToken);
+        =>  await MergeAsync(context, type, entities, tableInfo, OperationType.Read, progress, isAsync, cancellationToken).ConfigureAwait(false);
 
     /// <inheritdoc/>
     public void Truncate(DbContext context, TableInfo tableInfo)
