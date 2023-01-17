@@ -173,7 +173,7 @@ WithHoldlock: true,                           DateTime2PrecisionForceRound: fals
 CalculateStats: false,                        TemporalColumns: { "PeriodStart", "PeriodEnd" },
 SqlBulkCopyOptions: Default,                  OnSaveChangesSetFK: true,
 SqlBulkCopyColumnOrderHints: null,            IgnoreGlobalQueryFilters: false,
-OnConflictUpdateWhereSql: null,
+OnConflictUpdateWhereSql: null,               ReplaceReadEntities: false,
 ----------------------------------------------------------------------------------------------
 METHOD: SetSynchronizeFilter<T>
 ```
@@ -270,8 +270,9 @@ _ Also in some [sql collation](https://github.com/borisdj/EFCore.BulkExtensions/
 **SRID** Spatial Reference Identifier - for SQL Server with NetTopologySuite.<br>
 **DateTime2PrecisionForceRound** If dbtype datetime2 has precision less then default 7, example 'datetime2(3)' SqlBulkCopy does Floor instead of Round so when this Property is set then Rounding will be done in memory to make sure inserted values are same as with regular SaveChanges.<br>
 **TemporalColumns** are shadow columns used for Temporal table. Default elements 'PeriodStart' and 'PeriodEnd' can be changed if those columns have custom names.<br>
-**OnSaveChangesSetFK** is used only for BulkSaveChanges. When multiply entries have FK relationship which is Db generated, this set proper value after reading parent PK from Db. IF PK are generated in memory like are some Guid then this can be set to false for better efficiency.
-  
+**OnSaveChangesSetFK** is used only for BulkSaveChanges. When multiply entries have FK relationship which is Db generated, this set proper value after reading parent PK from Db. IF PK are generated in memory like are some Guid then this can be set to false for better efficiency.<br>
+**ReplaceReadEntities** when set to True result of BulkRead operation will be provided using replace instead of update. Entities list parameter of BulkRead method will be repopulated with obtained data.
+
 **SqlBulkCopyOptions** is Enum (only for SqlServer) with [[Flags]](https://stackoverflow.com/questions/8447/what-does-the-flags-enum-attribute-mean-in-c) attribute which enables specifying one or more options:<br>
 *Default, KeepIdentity, CheckConstraints, TableLock, KeepNulls, FireTriggers, UseInternalTransaction*<br>
 If need to set Identity PK in memory, Not let DB do the autoincrement, then need to use **KeepIdentity**:<br>
