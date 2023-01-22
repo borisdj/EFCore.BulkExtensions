@@ -15,13 +15,13 @@ Instead Test options are  SqlServer(Developer or Express), LocalDb([if alongside
 
 ## License
 * BulkExtensions are [licensed](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE.txt) under the [Dual License v 1.0](https://www.codis.tech/efcorebulk/)
-[**ContactForm**](https://docs.google.com/forms/d/e/1FAIpQLSfcUe15zxZS_YI6zZIt-l3L0mpmQRPUsaoxylfgFTfSVu_gmg/viewform) for Development & Consulting.
 
 ## Support
 If you find this project useful you can mark it by leaving a Github **Star** :star:.</br>
 OpenSource needs funding, so if you can please consider making a DONATION:<br>
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/yellow_img.png)](https://www.buymeacoffee.com/boris.dj) _ or _ 
 [![Button](https://img.shields.io/badge/donate-Bitcoin-orange.svg?logo=bitcoin):zap:](https://borisdj.net/donation/donate-btc.html) (lightning)<br>
+[**ContactForm**](https://docs.google.com/forms/d/e/1FAIpQLSfcUe15zxZS_YI6zZIt-l3L0mpmQRPUsaoxylfgFTfSVu_gmg/viewform) for Development & Consulting.
 
 ## Contributing
 Please read [CONTRIBUTING](CONTRIBUTING.md) for details on code of conduct, and the process for submitting pull requests.<br>
