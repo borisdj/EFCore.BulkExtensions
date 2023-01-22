@@ -288,22 +288,30 @@ public static class ContextUtil
 
     public static string GetSqlServerConnectionString(string databaseName)
     {
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
         return GetConfiguration().GetConnectionString("SqlServer").Replace("{databaseName}", databaseName);
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
     }
 
     public static string GetSqliteConnectionString(string databaseName)
     {
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
         return GetConfiguration().GetConnectionString("Sqlite").Replace("{databaseName}", databaseName);
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
     }
 
     public static string GetPostgreSqlConnectionString(string databaseName)
     {
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
         return GetConfiguration().GetConnectionString("PostgreSql").Replace("{databaseName}", databaseName);
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
     }
 
     public static string GetMySqlConnectionString(string databaseName)
     {
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
         return GetConfiguration().GetConnectionString("MySql").Replace("{databaseName}", databaseName);
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
     }
 }
 

@@ -191,6 +191,7 @@ public class EFCoreBatchTest
             .BatchUpdate(parent => new Parent { Description = parent.Details.Notes ?? "Fallback" });
 
         var actualSqlExecuted = testDbCommandInterceptor.ExecutedNonQueryCommands?.LastOrDefault()?.Sql;
+        actualSqlExecuted = actualSqlExecuted?.Replace("\r\n", "\n");
         var expectedSql =
 @"UPDATE p SET  [p].[Description] = (
     SELECT COALESCE([p1].[Notes], N'Fallback')
@@ -198,23 +199,24 @@ public class EFCoreBatchTest
     WHERE [p1].[ParentId] = [p].[ParentId]) 
 FROM [Parent] AS [p]
 LEFT JOIN [ParentDetail] AS [p0] ON [p].[ParentId] = [p0].[ParentId]
-WHERE ([p].[ParentId] < 5) AND (([p0].[Notes] IS NOT NULL) AND NOT ([p0].[Notes] LIKE N''))";
-
-        Assert.Equal(expectedSql.Replace("\r\n", "\n"), actualSqlExecuted?.Replace("\r\n", "\n"));
+WHERE [p].[ParentId] < 5 AND ([p0].[Notes] IS NOT NULL) AND NOT ([p0].[Notes] LIKE N'')";
+        expectedSql = expectedSql.Replace("\r\n", "\n");
+        Assert.Equal(expectedSql, actualSqlExecuted);
 
         context.Parents.Where(parent => parent.ParentId == 1)
             .BatchUpdate(parent => new Parent { Value = parent.Children.Where(child => child.IsEnabled).Sum(child => child.Value) });
 
         actualSqlExecuted = testDbCommandInterceptor.ExecutedNonQueryCommands?.LastOrDefault()?.Sql;
+        actualSqlExecuted = actualSqlExecuted?.Replace("\r\n", "\n");
         expectedSql =
 @"UPDATE p SET  [p].[Value] = (
     SELECT COALESCE(SUM([c].[Value]), 0.0)
     FROM [Child] AS [c]
-    WHERE ([p].[ParentId] = [c].[ParentId]) AND ([c].[IsEnabled] = CAST(1 AS bit))) 
+    WHERE [p].[ParentId] = [c].[ParentId] AND [c].[IsEnabled] = CAST(1 AS bit)) 
 FROM [Parent] AS [p]
 WHERE [p].[ParentId] = 1";
-
-        Assert.Equal(expectedSql.Replace("\r\n", "\n"), actualSqlExecuted?.Replace("\r\n", "\n"));
+        expectedSql = expectedSql.Replace("\r\n", "\n");
+        Assert.Equal(expectedSql, actualSqlExecuted);
 
         var newValue = 5;
 
@@ -226,15 +228,16 @@ WHERE [p].[ParentId] = 1";
             });
 
         actualSqlExecuted = testDbCommandInterceptor.ExecutedNonQueryCommands?.LastOrDefault()?.Sql;
+        actualSqlExecuted = actualSqlExecuted?.Replace("\r\n", "\n");
         expectedSql =
 @"UPDATE p SET  [p].[Description] = (CONVERT(varchar(100), (
     SELECT COALESCE(SUM([c].[Value]), 0.0)
     FROM [Child] AS [c]
-    WHERE ([p].[ParentId] = [c].[ParentId]) AND (([c].[IsEnabled] = CAST(1 AS bit)) AND ([c].[Value] = @__p_0))))) , [p].[Value] = @param_1 
+    WHERE [p].[ParentId] = [c].[ParentId] AND [c].[IsEnabled] = CAST(1 AS bit) AND [c].[Value] = @__p_0))) , [p].[Value] = @param_1 
 FROM [Parent] AS [p]
 WHERE [p].[ParentId] = 1";
-
-        Assert.Equal(expectedSql.Replace("\r\n", "\n"), actualSqlExecuted?.Replace("\r\n", "\n"));
+        expectedSql = expectedSql.Replace("\r\n", "\n");
+        Assert.Equal(expectedSql, actualSqlExecuted);
     }
 
     private static void RunInsert()
