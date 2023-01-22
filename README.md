@@ -34,7 +34,7 @@ Package manager console command for installation: *Install-Package EFCore.BulkEx
 Its assembly is [Strong-Named](https://docs.microsoft.com/en-us/dotnet/standard/library-guidance/strong-naming) and [Signed](https://github.com/borisdj/EFCore.BulkExtensions/issues/161) with a key.
 | Nuget | Target          | Used EF v.  | For projects targeting          |
 | ----- | --------------- | ----------- | ------------------------------- |
-| 7.x   | Net 6.0         | EF Core 7.0 | Net 7.0+                        |
+| 7.x   | Net 6.0         | EF Core 7.0 | Net 7.0+ or 6.0+                |
 | 6.x   | Net 6.0         | EF Core 6.0 | Net 6.0+                        |
 | 5.x   | NetStandard 2.1 | EF Core 5.0 | Net 5.0+                        |
 | 3.x   | NetStandard 2.0 | EF Core 3.n | NetCore(3.0+) or NetFrm(4.6.1+) [MoreInfo](https://github.com/borisdj/EFCore.BulkExtensions/issues/271#issuecomment-567117488)|
