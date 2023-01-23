@@ -14,7 +14,7 @@ Bulk Tests can not have UseInMemoryDb because InMemoryProvider does not support 
 Instead Test options are  SqlServer(Developer or Express), LocalDb([if alongside Developer v.](https://stackoverflow.com/questions/42885377/sql-server-2016-developer-version-can-not-connect-to-localdb-mssqllocaldb?noredirect=1&lq=1)), or for other adapters PostgreSQL/MySQL/SQLite.
 
 ## License
-* BulkExtensions are [licensed](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE.txt) under the [Dual License v1.0](https://www.codis.tech/efcorebulk/)
+* BulkExtensions are [licensed](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE.txt) under the [*Dual License v1.0*](https://www.codis.tech/efcorebulk/) which you must Buy if do not meet criteria for free usage or would like to have active support.
 
 ## Support
 If you find this project useful you can mark it by leaving a Github **Star** :star:.</br>
