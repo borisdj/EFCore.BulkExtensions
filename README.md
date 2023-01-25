@@ -14,7 +14,7 @@ Bulk Tests can not have UseInMemoryDb because InMemoryProvider does not support 
 Instead Test options are  SqlServer(Developer or Express), LocalDb([if alongside Developer v.](https://stackoverflow.com/questions/42885377/sql-server-2016-developer-version-can-not-connect-to-localdb-mssqllocaldb?noredirect=1&lq=1)), or for other adapters PostgreSQL/MySQL/SQLite.
 
 ## License
-* BulkExtensions are [licensed](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE.txt) under the [**Dual License v1.0**](https://www.codis.tech/efcorebulk/) which you must Buy if do not meet criteria for free usage or would like to have active support.
+* BulkExtensions are [licensed](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE.txt) under the [**Dual License v1.0**](https://www.codis.tech/efcorebulk/) which you must Buy if do not meet criteria for free usage or want to have active support.
 
 ## Support
 If you find this project useful you can mark it by leaving a Github **Star** :star:.</br>
@@ -270,7 +270,7 @@ If used for pure Insert (with Batching) then SetOutputIdentity should also be co
 **EnableShadowProperties** to add (normal) Shadow Property and persist value. Disables automatic discriminator, use manual method.<br>
 **IncludeGraph** when set all entities that have relations with main ones from the list are also merged into theirs tables.<br>
 **OmitClauseExistsExcept** removes the clause from Merge statement, required when having noncomparable types like XML, and useful when need to active triggers even for same data.<br>
-_ Also in some [sql collation](https://github.com/borisdj/EFCore.BulkExtensions/issues/641) small and capital letters are considered  same (case-insensitive) so for BulkUpdate set it false.<br>
+_ Also in some [sql collation](https://github.com/borisdj/EFCore.BulkExtensions/issues/641), small and capital letters are considered  same (case-insensitive) so for BulkUpdate set it false.<br>
 **DoNotUpdateIfTimeStampChanged** if set checks TimeStamp for Concurrency, ones with conflict will [not be updated](https://github.com/borisdj/EFCore.BulkExtensions/issues/469#issuecomment-803662721).<br>
 **SRID** Spatial Reference Identifier - for SQL Server with NetTopologySuite.<br>
 **DateTime2PrecisionForceRound** If dbtype datetime2 has precision less then default 7, example 'datetime2(3)' SqlBulkCopy does Floor instead of Round so when this Property is set then Rounding will be done in memory to make sure inserted values are same as with regular SaveChanges.<br>
