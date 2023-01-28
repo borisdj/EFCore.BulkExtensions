@@ -5,7 +5,7 @@ EntityFrameworkCore extensions: <br>
 Library is Lightweight and very Efficient, having all mostly used [CRUD](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete) operation.<br>
 Was selected in top 20 [EF Core Extensions](https://docs.microsoft.com/en-us/ef/core/extensions/) recommended by Microsoft.<br>
 Latest version is using EF Core 7 and targeting .Net 7.<br>
-Supports all 4 mayor databases: **SQLServer, PostgreSQL, MySQL, SQLite
+Supports all 4 mayor databases: **SQLServer, PostgreSQL, MySQL, SQLite**
 
 ## License
 * BulkExtensions are [licensed](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE.txt) under the [**Dual License v1.0**](https://www.codis.tech/efcorebulk/) which you must Buy if do not meet criteria for free usage or want to have active support.
