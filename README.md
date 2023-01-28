@@ -21,14 +21,11 @@ If you find this project useful you can mark it by leaving a Github **Star** :st
 OpenSource needs funding, so if you can please consider making a DONATION:<br>
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/yellow_img.png)](https://www.buymeacoffee.com/boris.dj) _ or _ 
 [![Button](https://img.shields.io/badge/donate-Bitcoin-orange.svg?logo=bitcoin):zap:](https://borisdj.net/donation/donate-btc.html) (lightning)<br>
-[**ContactForm**](https://docs.google.com/forms/d/e/1FAIpQLSfcUe15zxZS_YI6zZIt-l3L0mpmQRPUsaoxylfgFTfSVu_gmg/viewform) for Development & Consulting.
-
+When opening issues write detailed explanation of the problem or feature with reproducible example.<br>
+If need the issue to be dealt with priority you can make a donation for it ($20).
 
 ## Contributing
 Please read [CONTRIBUTING](CONTRIBUTING.md) for details on code of conduct, and the process for submitting pull requests.<br>
-When opening issues write detailed explanition of the problem or feature with reproducible example.<br>
-If need the issue to be dealt with priority you can make a donation for it ($20).<br>
-<br>
 
 ## Installation
 <!--[![Button](https://img.shields.io/nuget/v/EFCore.BulkExtensions.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/)-->
