@@ -4,7 +4,7 @@
     <TargetFramework>net6.0</TargetFramework>
     <Title>EFCore.BulkExtensions.MySQL</Title>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <Version>7.0.0</Version>
+    <Version>7.0.1</Version>
     <Nullable>enable</Nullable>
     <Authors>borisdj</Authors>
     <Description>EntityFramework EF Core Bulk Batch Extensions for Insert Update Delete Read (CRUD) operations on MySQL</Description>
@@ -12,14 +12,14 @@
     <Company>CODIS LLC</Company>
     <PackageIcon>EFCoreBulk.png</PackageIcon>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
-	<PackageReleaseNotes>EFCore 7 upgrade</PackageReleaseNotes>
+	<PackageReleaseNotes>Sync SoftDelete feature</PackageReleaseNotes>
     <PackageTags>EntityFrameworkCore Entity Framework Core EFCore EF Core MySQL Bulk Batch Extensions Insert Update Delete Read Truncate SaveChanges </PackageTags>
 	<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
     <RepositoryUrl>https://github.com/borisdj/EFCore.BulkExtensions</RepositoryUrl>
     <RepositoryType>Git</RepositoryType>
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
-    <AssemblyVersion>7.0.0.0</AssemblyVersion>
-    <FileVersion>7.0.0.0</FileVersion>
+    <AssemblyVersion>7.0.1.0</AssemblyVersion>
+    <FileVersion>7.0.1.0</FileVersion>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>..\Keys\EFCore.BulkExtensions.snk</AssemblyOriginatorKeyFile>
     <DelaySign>false</DelaySign>
