@@ -319,7 +319,7 @@ public abstract class SqlQueryBuilder
 
         if (operationType == OperationType.InsertOrUpdateOrDelete)
         {
-            string deleteSearchCondition = string.Empty;
+            string syncFilterCondition = string.Empty;
             if (tableInfo.BulkConfig.SynchronizeFilter != null)
             {
                 if (context is null)
@@ -338,7 +338,7 @@ public abstract class SqlQueryBuilder
                     var sqlWhere = Sql[(wherePos + whereClause.Length)..];
                     sqlWhere = sqlWhere.Replace($"[{TableAlias}].", string.Empty);
 
-                    deleteSearchCondition = " AND " + sqlWhere;
+                    syncFilterCondition = " AND " + sqlWhere;
                     parameters.AddRange(InnerParameters);
                 }
                 else
@@ -347,7 +347,30 @@ public abstract class SqlQueryBuilder
                 }
             }
 
-            q += " WHEN NOT MATCHED BY SOURCE" + deleteSearchCondition + " THEN DELETE";
+            q += " WHEN NOT MATCHED BY SOURCE" + syncFilterCondition;
+
+            string softDeleteAssignment = string.Empty;
+            if (tableInfo.BulkConfig.SynchronizeSoftDelete != null)
+            {
+                if (context is null)
+                {
+                    throw new ArgumentNullException(nameof(context));
+                }
+                var querable = context.Set<T>().IgnoreQueryFilters().IgnoreAutoIncludes();
+                var expression = (Expression<Func<T, T>>)tableInfo.BulkConfig.SynchronizeSoftDelete;
+                var (sqlOriginal, sqlParameters) = BatchUtil.GetSqlUpdate(querable, context, typeof(T), expression);
+
+                var sql = sqlOriginal.Replace("[i]", "T");
+                int indexFrom = sql.IndexOf(".") - 1;
+                int indexTo = sql.IndexOf("\r\n") - indexFrom;
+                softDeleteAssignment = sql.Substring(indexFrom, indexTo);
+                softDeleteAssignment = softDeleteAssignment.TrimEnd();
+                parameters.AddRange(sqlParameters);
+            }
+
+            q += (softDeleteAssignment != string.Empty) ?
+                 $" THEN UPDATE SET {softDeleteAssignment}" :
+                  " THEN DELETE";
         }
         if (operationType == OperationType.Delete)
         {

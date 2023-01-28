@@ -577,12 +577,12 @@ public class EFCoreBulkTest
         if (isBulk)
         {
             var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
-
             keepEntityItemId = 3;
             bulkConfig.SetSynchronizeFilter<Item>(e => e.ItemId != keepEntityItemId.Value);
             bulkConfig.OnConflictUpdateWhereSql = (existing, inserted) => $"{inserted}.{nameof(Item.TimeUpdated)} > {existing}.{nameof(Item.TimeUpdated)}"; // can use nameof bacause in this case property name is same as column name 
 
             context.BulkInsertOrUpdateOrDelete(entities, bulkConfig, (a) => WriteProgress(a));
+
             Assert.Equal(0, bulkConfig.StatsInfo?.StatsNumberInserted);
             Assert.Equal(EntitiesNumber / 2, bulkConfig.StatsInfo?.StatsNumberUpdated);
             Assert.Equal(EntitiesNumber / 2 - 1, bulkConfig.StatsInfo?.StatsNumberDeleted);
@@ -606,6 +606,14 @@ public class EFCoreBulkTest
         Assert.Equal("name InsertOrUpdateOrDelete 2", firstEntity?.Name);
         Assert.NotNull(lastEntity);
         Assert.Equal("name InsertOrUpdateOrDelete " + EntitiesNumber, lastEntity?.Name);
+
+        var bulkConfigSoftDel = new BulkConfig();
+        bulkConfigSoftDel.SetSynchronizeSoftDelete<Item>(a => new Item { Quantity = 0 }); // Instead of Deleting from DB it updates Quantity to 0 (usual usecase would be: IsDeleted to True)
+        context.BulkInsertOrUpdateOrDelete(new List<Item> { entities[1] }, bulkConfigSoftDel);
+
+        var list = context.Items.Take(2).ToList();
+        Assert.True(list[0].Quantity != 0);
+        Assert.True(list[1].Quantity == 0);
     }
 
     private static void RunUpdate(bool isBulk, DbServerType dbServer)

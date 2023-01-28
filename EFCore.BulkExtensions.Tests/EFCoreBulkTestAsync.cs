@@ -298,21 +298,13 @@ public class EFCoreBulkTestAsync
         Assert.NotNull(lastEntity);
         Assert.Equal("name InsertOrUpdateOrDelete " + EntitiesNumber, lastEntity?.Name);
 
-        if (keepEntityItemId != null)
-        {
-            Assert.NotNull(context.Items.Where(x => x.ItemId == keepEntityItemId.Value).FirstOrDefault());
-        }
+        var bulkConfigSoftDel = new BulkConfig();
+        bulkConfigSoftDel.SetSynchronizeSoftDelete<Item>(a => new Item { Quantity = 0 }); // Instead of Deleting from DB it updates Quantity to 0 (usual usecase would be: IsDeleted to True)
+        context.BulkInsertOrUpdateOrDelete(new List<Item> { entities[1] }, bulkConfigSoftDel);
 
-        if (isBulk)
-        {
-            var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
-            bulkConfig.SetSynchronizeFilter<Item>(e => e.ItemId != keepEntityItemId);
-            await context.BulkInsertOrUpdateOrDeleteAsync(new List<Item>(), bulkConfig);
-
-            var storedEntities = contextRead.Items.ToList();
-            Assert.Single(storedEntities);
-            Assert.Equal(3, storedEntities[0].ItemId);
-        }
+        var list = await context.Items.Take(2).ToListAsync();
+        Assert.True(list[0].Quantity != 0);
+        Assert.True(list[1].Quantity == 0);
     }
 
     private static async Task RunUpdateAsync(bool isBulk, DbServerType dbServer)
