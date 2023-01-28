@@ -1,7 +1,7 @@
 # EFCore.BulkExtensions
 EntityFrameworkCore extensions: <br>
 -Bulk operations **(Insert, Update, Delete, Read, Upsert, Sync, SaveChanges)**<br>
--Batch ops (**Delete, Update**) and **Truncate**.<br>
+-Batch ops (**Delete, Update** - will be Deprecated since EF7 has native Execute-Up/Del) and **Truncate**.<br>
 Library is Lightweight and very Efficient, having all mostly used [CRUD](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete) operation.<br>
 Was selected in top 20 [EF Core Extensions](https://docs.microsoft.com/en-us/ef/core/extensions/) recommended by Microsoft.<br>
 Latest version is using EF Core 6 and targeting .Net 6.<br>
@@ -30,6 +30,7 @@ Please read [CONTRIBUTING](CONTRIBUTING.md) for details on code of conduct, and 
 <!--[![Button](https://img.shields.io/nuget/v/EFCore.BulkExtensions.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/)-->
 Available on <a href="https://www.nuget.org/packages/EFCore.BulkExtensions/"><img src="https://buildstats.info/nuget/EFCore.BulkExtensions" /></a><br>
 That is main nuget for all Databases, there are also specific ones with single provider for those who need small packages.<br>
+Only single specific can installed in one project, if need more use main one with all providers.<br>
 Package manager console command for installation: *Install-Package EFCore.BulkExtensions*<br>
 Its assembly is [Strong-Named](https://docs.microsoft.com/en-us/dotnet/standard/library-guidance/strong-naming) and [Signed](https://github.com/borisdj/EFCore.BulkExtensions/issues/161) with a key.
 | Nuget | Target          | Used EF v.  | For projects targeting          |
@@ -289,7 +290,7 @@ Useful for example when copying from one Db to another.
 --Example: `bc.OnConflictUpdateWhereSql = (ex, in) => $"{in}.TimeUpdated > {ex}.TimeUpdated";`<br>
 **SetSynchronizeFilter<T>** A method that receives and sets expresion filter on entities to delete when using BulkInsertOrUpdateOrDelete.<br>
 **SetSynchronizeSoftDelete<T>** A method that receives and sets expresion on entities to update property instead od deleting when using BulkInsertOrUpdateOrDelete.<br>
-`bulkConfig.SetSynchronizeSoftDelete<SomeObject>(a => new SomeObject { IsDelete = true });`<br>
+`bulkConfig.SetSynchronizeSoftDelete<SomeObject>(a => new SomeObject { IsDeleted = true });`<br>
 
 Last optional argument is **Action progress** (Example in *EfOperationTest.cs* *RunInsert()* with *WriteProgress()*).
 ```C#
