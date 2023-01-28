@@ -181,6 +181,7 @@ SqlBulkCopyColumnOrderHints: null,            IgnoreGlobalQueryFilters: false,
 OnConflictUpdateWhereSql: null,               ReplaceReadEntities: false,
 ----------------------------------------------------------------------------------------------
 METHOD: SetSynchronizeFilter<T>
+        SetSynchronizeSoftDelete<T>
 ```
 If we want to change defaults, BulkConfig should be added explicitly with one or more bool properties set to true, and/or int props like **BatchSize** to different number.<br> Config also has DelegateFunc for setting *Underlying-Connection/Transaction*, e.g. in UnderlyingTest.<br>
 When doing update we can chose to exclude one or more properties by adding their names into **PropertiesToExclude**, or if we need to update less then half column then **PropertiesToInclude** can be used. Setting both Lists are not allowed.
@@ -284,9 +285,14 @@ If need to set Identity PK in memory, Not let DB do the autoincrement, then need
 `var bulkConfig = new BulkConfig { SqlBulkCopyOptions = SqlBulkCopyOptions.KeepIdentity };`<br>
 Useful for example when copying from one Db to another.
 
-**SetSynchronizeFilter<T>** A method that receives and sets expresion filter on entities to delete when using BulkInsertOrUpdateOrDelete.<br>
 **OnConflictUpdateWhereSql<T>** To define conditional updates on merges, receives (existingTable, insertedTable).<br>
 --Example: `bc.OnConflictUpdateWhereSql = (ex, in) => $"{in}.TimeUpdated > {ex}.TimeUpdated";`<br>
+**SetSynchronizeFilter<T>** A method that receives and sets expresion filter on entities to delete when using BulkInsertOrUpdateOrDelete.<br>
+
+//bulkConfigSoftDel.SetSynchronizeSoftDelete<Item>(a => new Item { Quantity = 0 }); 
+**SetSynchronizeSoftDelete<T>** A method that receives and sets expresion on entities to update property instead od deleting when using BulkInsertOrUpdateOrDelete.<br>
+`bulkConfig.SetSynchronizeSoftDelete<Item>(a => new SomeObject { IsDelete = true });`<br>
+
 Last optional argument is **Action progress** (Example in *EfOperationTest.cs* *RunInsert()* with *WriteProgress()*).
 ```C#
 context.BulkInsert(entitiesList, null, (a) => WriteProgress(a));
