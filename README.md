@@ -291,7 +291,7 @@ Useful for example when copying from one Db to another.
 
 **OnConflictUpdateWhereSql<T>** To define conditional updates on merges, receives (existingTable, insertedTable).<br>
 --Example: `bc.OnConflictUpdateWhereSql = (ex, in) => $"{in}.TimeUpdated > {ex}.TimeUpdated";`<br>
-**SetSynchronizeFilter<T>** A method that receives and sets expresion filter on entities to delete when using BulkInsertOrUpdateOrDelete.<br>
+**SetSynchronizeFilter<T>** A method that receives and sets expresion filter on entities to delete when using BulkInsertOrUpdateOrDelete. Those that are filterd out will be ignored and not deleted.<br>
 **SetSynchronizeSoftDelete<T>** A method that receives and sets expresion on entities to update property instead od deleting when using BulkInsertOrUpdateOrDelete.<br>
 `bulkConfig.SetSynchronizeSoftDelete<SomeObject>(a => new SomeObject { IsDeleted = true });`<br>
 
