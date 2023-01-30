@@ -130,10 +130,10 @@ public class BulkConfig
     public TimeStampInfo? TimeStampInfo { get; internal set; }
 
     /// <summary>
-    ///     When doing Insert/Update one or more properties can be exclude by adding their names into PropertiesToExclude.
+    ///     When doing Insert/Update properties to affect can be explicitly selected by adding their names into PropertiesToInclude.
     /// </summary>
     /// <remarks>
-    ///     If need to change less then half column then PropertiesToInclude can be used. Setting both Lists are not allowed.
+    ///     If need to change more then half columns then PropertiesToExclude can be used. Setting both Lists are not allowed.
     /// </remarks>
     public List<string>? PropertiesToInclude { get; set; }
 
@@ -154,10 +154,10 @@ public class BulkConfig
     public List<string>? PropertiesToIncludeOnUpdate { get; set; }
 
     /// <summary>
-    ///     When doing Insert/Update properties to affect can be explicitly selected by adding their names into PropertiesToInclude.
+    ///     When doing Insert/Update one or more properties can be exclude by adding their names into PropertiesToExclude.
     /// </summary>
     /// <remarks>
-    ///     If need to change more then half columns then PropertiesToExclude can be used. Setting both Lists are not allowed.
+    ///     If need to change less then half column then PropertiesToInclude can be used. Setting both Lists are not allowed.
     /// </remarks>
     public List<string>? PropertiesToExclude { get; set; }
 
