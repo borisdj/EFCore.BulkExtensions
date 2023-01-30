@@ -15,8 +15,7 @@ If you find this project useful you can mark it by leaving a Github **Star** :st
 OpenSource needs funding, so if you can please consider making a DONATION:<br>
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/yellow_img.png)](https://www.buymeacoffee.com/boris.dj) _ or _ 
 [![Button](https://img.shields.io/badge/donate-Bitcoin-orange.svg?logo=bitcoin):zap:](https://borisdj.net/donation/donate-btc.html)<br>
-When opening issues write detailed explanation of the problem or feature with reproducible example.<br>
-If need the issue to be dealt with priority you can make a donation for it ($20).
+When opening issues write detailed explanation of the problem or feature with reproducible example.
 
 ## Contributing
 Please read [CONTRIBUTING](CONTRIBUTING.md) for details on code of conduct, and the process for submitting pull requests.<br>
