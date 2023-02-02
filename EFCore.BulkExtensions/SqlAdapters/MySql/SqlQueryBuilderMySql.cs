@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.Data.SqlClient;
 
 namespace EFCore.BulkExtensions.SqlAdapters.MySql;
@@ -18,7 +20,7 @@ public class SqlQueryBuilderMySql : QueryBuilderExtensions
     /// <param name="useTempDb"></param>
     public static string CreateTableCopy(string existingTableName, string newTableName, bool useTempDb)
     {
-        string keywordTemp = useTempDb ? "TEMPORARY " : ""; 
+        string keywordTemp = useTempDb ? "TEMPORARY " : "";
         var query = $"CREATE {keywordTemp}TABLE {newTableName} " +
                 $"SELECT * FROM {existingTableName} " +
                 "LIMIT 0;";
@@ -85,7 +87,7 @@ public class SqlQueryBuilderMySql : QueryBuilderExtensions
 
         string query;
         var firstPrimaryKey = tableInfo.PrimaryKeysPropertyColumnNameDict.FirstOrDefault().Key;
-        if(operationType == OperationType.Delete)
+        if (operationType == OperationType.Delete)
         {
             query = "delete A " +
                     $"FROM {tableInfo.FullTableName} AS A " +
@@ -97,7 +99,7 @@ public class SqlQueryBuilderMySql : QueryBuilderExtensions
             var columnsListEquals = GetColumnList(tableInfo, OperationType.Insert);
             var columnsToUpdate = columnsListEquals.Where(c => tableInfo.PropertyColumnNamesUpdateDict.ContainsValue(c)).ToList();
             var equalsColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsToUpdate, equalsTable: "EXCLUDED").Replace("[", "").Replace("]", "");
-        
+
             query = $"INSERT INTO {tableInfo.FullTableName} ({commaSeparatedColumns}) " +
                     $"SELECT {commaSeparatedColumns} FROM {tableInfo.FullTempTableName} AS EXCLUDED " +
                     "ON DUPLICATE KEY UPDATE " +
@@ -126,10 +128,10 @@ public class SqlQueryBuilderMySql : QueryBuilderExtensions
                              $" ON A.{firstPrimaryKey} = B.{firstPrimaryKey} " +
                              $"WHERE  B.{firstPrimaryKey} IS NULL; ";
                 }
-            
+
             }
         }
-        
+
         query = query.Replace("[", "").Replace("]", "");
 
         Dictionary<string, string>? sourceDestinationMappings = tableInfo.BulkConfig.CustomSourceDestinationMappingColumns;
@@ -183,7 +185,7 @@ public class SqlQueryBuilderMySql : QueryBuilderExtensions
         var uniqueColumnNames = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList();
         var uniqueColumnNamesDash = string.Join("_", uniqueColumnNames);
         var schemaDash = tableInfo.Schema == null ? "" : $"{tableInfo.Schema}_";
-        var uniqueConstrainName = $"tempUniqueIndex_{schemaDash}{tableName}_{uniqueColumnNamesDash}";
+        var uniqueConstrainName = $"tempUniqueIndex_{Md5Hash($"{schemaDash}{tableName}_{uniqueColumnNamesDash}")}";
 
         var uniqueColumnNamesComma = string.Join(",", uniqueColumnNames); // TODO When Column is string without defined max length, it should be UNIQUE (`Name`(255)); otherwise exception: BLOB/TEXT column 'Name' used in key specification without a key length'
         uniqueColumnNamesComma = "`" + uniqueColumnNamesComma;
@@ -210,7 +212,7 @@ public class SqlQueryBuilderMySql : QueryBuilderExtensions
         var uniqueColumnNames = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList();
         var uniqueColumnNamesDash = string.Join("_", uniqueColumnNames);
         var schemaDash = tableInfo.Schema == null ? "" : $"{tableInfo.Schema}_";
-        var uniqueConstrainName = $"tempUniqueIndex_{schemaDash}{tableName}_{uniqueColumnNamesDash}";
+        var uniqueConstrainName = $"tempUniqueIndex_{Md5Hash($"{schemaDash}{tableName}_{uniqueColumnNamesDash}")}";
 
         var q = $@"ALTER TABLE {fullTableNameFormated} " +
                 $@"DROP INDEX `{uniqueConstrainName}`;";
@@ -228,7 +230,7 @@ public class SqlQueryBuilderMySql : QueryBuilderExtensions
         var uniqueColumnNames = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList();
         var uniqueColumnNamesDash = string.Join("_", uniqueColumnNames);
         var schemaDash = tableInfo.Schema == null ? "" : $"{tableInfo.Schema}_";
-        var uniqueConstrainName = $"tempUniqueIndex_{schemaDash}{tableName}_{uniqueColumnNamesDash}";
+        var uniqueConstrainName = $"tempUniqueIndex_{Md5Hash($"{schemaDash}{tableName}_{uniqueColumnNamesDash}")}";
 
         var q = $@"SELECT DISTINCT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE " +
                 $@"CONSTRAINT_TYPE = 'UNIQUE' AND CONSTRAINT_NAME = '{uniqueConstrainName}';";
@@ -266,5 +268,12 @@ public class SqlQueryBuilderMySql : QueryBuilderExtensions
     public override void SetDbTypeParam(object npgsqlParameter, object dbType)
     {
         throw new NotImplementedException();
+    }
+
+    private static string Md5Hash(string value)
+    {
+        using var md5 = MD5.Create();
+        var buffer = Encoding.UTF8.GetBytes(value);
+        return BitConverter.ToString(md5.ComputeHash(buffer)).Replace("-", string.Empty);
     }
 }
