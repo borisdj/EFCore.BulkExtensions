@@ -377,7 +377,7 @@ public class SqliteOperationsAdapter : ISqlOperationsAdapter
 
             if (propertyEntityType != null)
             {
-                string? columnName = propertyEntityType.GetColumnName(tableInfo.ObjectIdentifier);
+                string? columnName = propertyEntityType.Name;
                 var propertyType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
 
                 //SqliteType(CpropertyType.Name): Text(String, Decimal, DateTime); Integer(Int16, Int32, Int64) Real(Float, Double) Blob(Guid)
