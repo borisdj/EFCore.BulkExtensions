@@ -73,7 +73,7 @@ public class SqlQueryBuilderPostgreSql : SqlAdapters.QueryBuilderExtensions
                 $"JOIN {tableInfo.FullTempTableName} " +
                 $"USING ({readByColumns})"; //$"ON ({tableInfo.FullTableName}.readByColumns = {tableInfo.FullTempTableName}.readByColumns);";
         }
-        else if(operationType == OperationType.Delete)
+        else if (operationType == OperationType.Delete)
         {
             var deleteByColumns = SqlQueryBuilder.GetCommaSeparatedColumns(tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList(), tableInfo.FullTableName, tableInfo.FullTempTableName);
             deleteByColumns = deleteByColumns.Replace(",", " AND");
@@ -82,6 +82,19 @@ public class SqlQueryBuilderPostgreSql : SqlAdapters.QueryBuilderExtensions
             q = $"DELETE FROM {tableInfo.FullTableName} " +
                 $"USING {tableInfo.FullTempTableName} " +
                 $@"WHERE {deleteByColumns}";
+        }
+        else if (operationType == OperationType.Update)
+        {
+            var columnsListEquals = GetColumnList(tableInfo, OperationType.Insert);
+            var columnsToUpdate = columnsListEquals.Where(tableInfo.PropertyColumnNamesUpdateDict.ContainsValue).ToList();
+
+            var updateByColumns = SqlQueryBuilder.GetANDSeparatedColumns(tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList(),
+                prefixTable: tableInfo.FullTableName, equalsTable: tableInfo.FullTempTableName).Replace("[", @"""").Replace("]", @"""");
+            var equalsColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsToUpdate,
+                equalsTable: tableInfo.FullTempTableName).Replace("[", @"""").Replace("]", @"""");
+            q = $"UPDATE {tableInfo.FullTableName} SET {equalsColumns} " +
+                $"FROM {tableInfo.FullTempTableName} " +
+                $"WHERE {updateByColumns}";
         }
         else
         {
@@ -97,7 +110,7 @@ public class SqlQueryBuilderPostgreSql : SqlAdapters.QueryBuilderExtensions
             var subqueryText = applySubqueryLimit ? "LIMIT 1 " : "";
 
             q = $"INSERT INTO {tableInfo.FullTableName} ({commaSeparatedColumns}) " +
-                $"(SELECT {commaSeparatedColumns} FROM {tableInfo.FullTempTableName}) " + subqueryText + 
+                $"(SELECT {commaSeparatedColumns} FROM {tableInfo.FullTempTableName}) " + subqueryText +
                 $"ON CONFLICT ({updateByColumns}) " +
                 (applySubqueryLimit
                  ? "DO NOTHING"
@@ -313,7 +326,7 @@ public class SqlQueryBuilderPostgreSql : SqlAdapters.QueryBuilderExtensions
             // UPDATE "Item" SET "Description" = 'Update N', "Price" = 1.5 FROM "Item" WHERE "ItemId" <= 1
 
             string tableAS = sql.Substring(sql.IndexOf("FROM") + 4, sql.IndexOf($"AS {firstLetterOfTable}") - sql.IndexOf("FROM"));
-            
+
             if (!sql.Contains("JOIN"))
             {
                 sql = sql.Replace($"AS {firstLetterOfTable}", "");
