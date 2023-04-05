@@ -860,7 +860,12 @@ public class SqlOperationsServerAdapter: ISqlOperationsAdapter
         if (!tableInfo.BulkConfig.EnableShadowProperties && tableInfo.ShadowProperties.Count > 0)
         {
             var stringColumns = tableInfo.ColumnNamesTypesDict.Where(a => a.Value.Contains("char")).Select(a => a.Key).ToList();
-            discriminatorColumn = tableInfo.ShadowProperties.Where(a => stringColumns.Contains(a)).ElementAt(0);
+            var shadowProps = tableInfo.ShadowProperties.Where(a => stringColumns.Contains(a));
+
+            if (shadowProps is not null && shadowProps.Any())
+            {
+                discriminatorColumn = shadowProps.ElementAt(0);
+            }
         }
         return discriminatorColumn;
     }
