@@ -1209,6 +1209,10 @@ public class TableInfo
         {
             expression = Expression.Call(typeof(EntityFrameworkQueryableExtensions), "AsNoTracking", new Type[] { entityType }, expression);
         }
+        if (BulkConfig.IgnoreGlobalQueryFilters)
+        {
+            expression = Expression.Call(typeof(EntityFrameworkQueryableExtensions), "IgnoreQueryFilters", new Type[] { entityType }, expression);
+        }
         expression = ordered ? OrderBy(entityType, expression, PrimaryKeysPropertyColumnNameDict.Select(a => a.Key).ToList()) : expression;
         return Expression.Lambda<Func<DbContext, IEnumerable>>(expression, parameter);
 
