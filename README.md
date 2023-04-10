@@ -199,7 +199,6 @@ If we want Insert only new and skip existing ones in Db (Insert_if_not_Exist) th
 Additionally there is **UpdateByProperties** for specifying custom properties, by which we want update to be done.<br>
 When setting multiple props in UpdateByProps then match done by columns combined, like unique constrain based on those cols.<br>
 Using UpdateByProperties while also having Identity column requires that Id property be [Excluded](https://github.com/borisdj/EFCore.BulkExtensions/issues/131).<br>
-With SQLServer when having *BulkInsertOrUpdate* and using *UpdateByProperties* [insert order](https://github.com/borisdj/EFCore.BulkExtensions/issues/806) is not guaranteed due to how Sql MERGE works (alternative would be to first use BulkRead and find which records already exist then split the list into 2 lists entitiesForUpdate and entitiesForInsert without configuring UpdateByProps).<br>
 Also with PostgreSQL when matching is done it requires UniqueIndex so for custom UpdateByProperties that do not have Un.Ind., it is temporarily created in which case method can not be in transaction (throws: *current transaction is aborted; CREATE INDEX CONCURRENTLY cannot run inside a transaction block*).<br>
 Similar is done with MySQL by temporarily adding UNIQUE CONSTRAINT.<br>
 
@@ -220,8 +219,8 @@ Here single Id value itself doesn't matter, db will change it to next in sequenc
 Insertion order is implemented with [TOP](https://docs.microsoft.com/en-us/sql/t-sql/queries/top-transact-sql) in conjunction with ORDER BY. [stackoverflow:merge-into-insertion-order](https://stackoverflow.com/questions/884187/merge-into-insertion-order).<br>
 This config should remain true when *SetOutputIdentity* is set to true on Entity containing NotMapped Property. [issues/76](https://github.com/borisdj/EFCore.BulkExtensions/issues/76)<br>
 When using **SetOutputIdentity** Id values will be updated to new ones from database.<br>
-With BulkInsertOrUpdate for those that will be updated it has to match with Id column, or other unique column(s) if using UpdateByProperties in which case  [orderBy is done with those props](https://github.com/borisdj/EFCore.BulkExtensions/issues/806) instead of ID.<br>
-For Sqlite combination of BulkInsertOrUpdate and IdentityId automatic set will not work properly since it does [not have full MERGE](https://github.com/borisdj/EFCore.BulkExtensions/issues/556) capabilities like SqlServer. Instead list can be split into 2 lists, and call separately BulkInsert and BulkUpdate.<br>
+With BulkInsertOrUpdate on SQLServer for those that will be updated it has to match with Id column, or other unique column(s) if using UpdateByProperties in which case  [orderBy is done with those props](https://github.com/borisdj/EFCore.BulkExtensions/issues/806) instead of ID, due to how Sql MERGE works. To preserve insert order by Id in this case alternative would be first to use BulkRead and find which records already exist, then split the list into 2 lists entitiesForUpdate and entitiesForInsert without configuring UpdateByProps).<br>
+Alos for Sqlite combination of BulkInsertOrUpdate and IdentityId automatic set will not work properly since it does [not have full MERGE](https://github.com/borisdj/EFCore.BulkExtensions/issues/556) capabilities like SqlServer. Instead list can be split into 2 lists, and call separately BulkInsert and BulkUpdate.<br>
   
 **SetOutputIdentity** is useful when BulkInsert is done to multiple related tables, that have Identity column.<br>
 After Insert is done to first table, we need Id-s (if using Option 1) that were generated in Db because they are FK(ForeignKey) in second table.<br>
