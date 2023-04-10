@@ -199,6 +199,7 @@ If we want Insert only new and skip existing ones in Db (Insert_if_not_Exist) th
 Additionally there is **UpdateByProperties** for specifying custom properties, by which we want update to be done.<br>
 When setting multiple props in UpdateByProps then match done by columns combined, like unique constrain based on those cols.<br>
 Using UpdateByProperties while also having Identity column requires that Id property be [Excluded](https://github.com/borisdj/EFCore.BulkExtensions/issues/131).<br>
+With SQLServer when having *BulkInsertOrUpdate* and using *UpdateByProperties* [insert order](https://github.com/borisdj/EFCore.BulkExtensions/issues/806) is not guaranteed due to how Sql MERGE works (alternative would be to first use BulkRead and find which records already exist then split the list into 2 lists entitiesForUpdate and entitiesForInsert without configuring UpdateByProps).<br>
 Also with PostgreSQL when matching is done it requires UniqueIndex so for custom UpdateByProperties that do not have Un.Ind., it is temporarily created in which case method can not be in transaction (throws: *current transaction is aborted; CREATE INDEX CONCURRENTLY cannot run inside a transaction block*).<br>
 Similar is done with MySQL by temporarily adding UNIQUE CONSTRAINT.<br>
 
