@@ -1,6 +1,8 @@
+using DelegateDecompiler.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace EFCore.BulkExtensions.Tests;
@@ -272,5 +274,17 @@ public class SqlQueryBuilderUnitTests
             tableInfo.PropertyColumnNamesDict.Where(p => p.Key != timeUpdatedText).ToDictionary(p => p.Key, p => p.Value);
 
         return tableInfo;
+    }
+
+    [Fact]
+    public async Task DelegateDecompiler_DecompileAsync_WorksAsync()
+    {
+        using var context = new TestContext(ContextUtil.GetOptions());
+
+        await context.Items
+            .Where(x => x.ItemId < 0)
+            .DecompileAsync()
+            .BatchDeleteAsync()
+        ;
     }
 }

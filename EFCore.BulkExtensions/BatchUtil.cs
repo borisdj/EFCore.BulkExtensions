@@ -534,7 +534,15 @@ public static class BatchUtil
     {
 #pragma warning disable EF1001 // Internal EF Core API usage.
         const BindingFlags bindingFlags = BindingFlags.NonPublic | BindingFlags.Instance;
-        var queryCompiler = typeof(EntityQueryProvider).GetField("_queryCompiler", bindingFlags)?.GetValue(query.Provider);
+
+        var provider = query.Provider;
+        if (provider is not EntityQueryProvider) // handling wrapped instances for cases like the DelegateDecompiler
+        {
+            var providerProp = query.Provider.GetType().GetProperties(bindingFlags).FirstOrDefault(x => x.PropertyType == typeof(IQueryProvider));
+            provider = providerProp?.GetValue(query.Provider) as IQueryProvider ?? throw new NotSupportedException($"Could not an EntityQueryProvider either directly or from a wrapped instance");
+        }
+        var queryCompiler = typeof(EntityQueryProvider).GetField("_queryCompiler", bindingFlags)?.GetValue(provider);
+
         var queryContextFactory = queryCompiler?.GetType().GetField("_queryContextFactory", bindingFlags)?.GetValue(queryCompiler);
 
         var dependencies = typeof(RelationalQueryContextFactory).GetProperty("Dependencies", bindingFlags)?.GetValue(queryContextFactory);
