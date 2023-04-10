@@ -77,4 +77,32 @@ public class SqlQueryBuilderPostgreSqlTests
         tableInfo.PropertyColumnNamesUpdateDict = tableInfo.PropertyColumnNamesDict;
         return tableInfo;
     }
+
+    [Fact]
+    public void RestructureForBatchWithoutJoinToOtherTablesTest()
+    {
+        string sql =
+            @"UPDATE i SET ""Description"" = @Description, ""Price"" = @Price FROM ""Item"" AS i WHERE i.""ItemId"" <= 1";
+
+        string expected =
+            @"UPDATE ""Item"" AS i SET ""Description"" = @Description, ""Price"" = @Price WHERE i.""ItemId"" <= 1";
+
+        var batchUpdate = new SqlQueryBuilderPostgreSql().RestructureForBatch(sql);
+
+        Assert.Equal(expected, batchUpdate);
+    }
+
+    [Fact]
+    public void RestructureForBatchWithJoinToOtherTablesTest()
+    {
+        string sql =
+            @"UPDATE i SET ""Description"" = @Description, ""Price"" = @Price FROM ""Item"" AS i INNER JOIN ""User"" AS u ON i.""UserId"" = u.""Id"" WHERE i.""ItemId"" <= 1";
+
+        string expected =
+            @"UPDATE ""Item"" AS i SET ""Description"" = @Description, ""Price"" = @Price FROM ""User"" AS u WHERE i.""ItemId"" <= 1 AND i.""UserId"" = u.""Id"" ";
+
+        var batchUpdate = new SqlQueryBuilderPostgreSql().RestructureForBatch(sql);
+
+        Assert.Equal(expected, batchUpdate);
+    }
 }

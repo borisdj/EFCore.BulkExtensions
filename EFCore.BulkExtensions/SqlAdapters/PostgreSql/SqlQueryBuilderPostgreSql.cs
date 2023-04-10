@@ -308,15 +308,18 @@ public class SqlQueryBuilderPostgreSql : SqlAdapters.QueryBuilderExtensions
             //FROM
             // UPDATE i SET "Description" = @Description, "Price\" = @Price FROM "Item" AS i WHERE i."ItemId" <= 1
             //TO
-            // UPDATE "Item" AS i SET "Description" = 'Update N', "Price" = 1.5 FROM "Item" WHERE i."ItemId" <= 1
+            // UPDATE "Item" AS i SET "Description" = 'Update N', "Price" = 1.5 WHERE i."ItemId" <= 1
             //WOULD ALSO WORK
-            // UPDATE "Item" SET "Description" = 'Update N', "Price" = 1.5 FROM "Item" WHERE "ItemId" <= 1
+            // UPDATE "Item" SET "Description" = 'Update N', "Price" = 1.5 WHERE "ItemId" <= 1
 
             string tableAS = sql.Substring(sql.IndexOf("FROM") + 4, sql.IndexOf($"AS {firstLetterOfTable}") - sql.IndexOf("FROM"));
             
             if (!sql.Contains("JOIN"))
             {
                 sql = sql.Replace($"AS {firstLetterOfTable}", "");
+                //According to postgreDoc sql-update: "Do not repeat the target table as a from_item unless you intend a self-join"
+                string fromClause = sql.Substring(sql.IndexOf("FROM"), sql.IndexOf("WHERE") - sql.IndexOf("FROM"));
+                sql = sql.Replace(fromClause, "");
             }
             else
             {
