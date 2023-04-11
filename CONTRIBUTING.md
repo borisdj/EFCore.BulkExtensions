@@ -3,10 +3,6 @@
 👍 First off, thanks for taking the time to contribute! 👍<br>
 Working together we can make a better tool for everyone.
 
-## Code of Conduct
-
-This project and everyone participating in it is governed by the [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code.
-
 ### Where do I go from here?
 
 If you've noticed a bug or have an idea about new feature you can open a issue.

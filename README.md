@@ -18,7 +18,6 @@ OpenSource needs funding, so even for free usage if you can please consider maki
 
 ## Contributing
 Please read [CONTRIBUTING](CONTRIBUTING.md) for details on code of conduct, and the process for submitting pull requests.<br>
-When opening issues write detailed explanation of the problem or feature with reproducible example.
 
 ## Description
 Supported databases:<br>

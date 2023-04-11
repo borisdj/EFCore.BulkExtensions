@@ -283,6 +283,22 @@ public class SqlQueryBuilderPostgreSql : SqlAdapters.QueryBuilderExtensions
     }
 
     /// <summary>
+    /// Creates UniqueConstrainName
+    /// </summary>
+    /// <param name="tableInfo"></param>
+    public static string GetUniqueConstrainName(TableInfo tableInfo)
+    {
+        var tableName = tableInfo.TableName;
+
+        var uniqueColumnNames = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList();
+        var uniqueColumnNamesDash = string.Join("_", uniqueColumnNames);
+        var schemaDash = tableInfo.Schema == null ? "" : $"{tableInfo.Schema}_";
+        var uniqueConstrainName = $"tempUniqueIndex_{schemaDash}{tableName}_{uniqueColumnNamesDash}";
+
+        return uniqueConstrainName;
+    }
+
+    /// <summary>
     /// Restructures a sql query for batch commands
     /// </summary>
     /// <param name="sql"></param>
