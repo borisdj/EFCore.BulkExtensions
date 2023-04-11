@@ -1097,7 +1097,7 @@ public class TableInfo
         bool hasIdentity = OutputPropertyColumnNamesDict.Any(a => a.Value == IdentityColumnName) ||
                            (tableInfo.HasSinglePrimaryKey && tableInfo.DefaultValueProperties.Contains(tableInfo.PrimaryKeysPropertyColumnNameDict.FirstOrDefault().Key));
         int totalNumber = entities.Count;
-        if (BulkConfig.SetOutputIdentity && (hasIdentity || BulkConfig.DoNotUpdateIfTimeStampChanged))
+        if (BulkConfig.SetOutputIdentity && (hasIdentity || tableInfo.TimeStampColumnName == null))
         {
             var databaseType = SqlAdaptersMapping.GetDatabaseType();
             string sqlQuery = databaseType == DbServerType.SQLServer ? SqlQueryBuilder.SelectFromOutputTable(this) : SqlAdaptersMapping.DbServer!.QueryBuilder.SelectFromOutputTable(this);
