@@ -51,6 +51,20 @@ public class SqlQueryBuilderPostgreSqlTests
             expected = expected.Replace(" LIMIT 1", "");
         Assert.Equal(expected, actual);
     }
+
+    [Fact]
+    public void MergeTableUpdateOnlyTest()
+    {
+        TableInfo tableInfo = GetTestTableInfo();
+        tableInfo.IdentityColumnName = "ItemId";
+        string actual = SqlQueryBuilderPostgreSql.MergeTable<Item>(tableInfo, OperationType.Update);
+
+        string expected = @"UPDATE ""dbo"".""Item"" SET ""Name"" = ""dbo"".""ItemTemp1234"".""Name"" " +
+                          @"FROM ""dbo"".""ItemTemp1234"" " +
+                          @"WHERE ""dbo"".""Item"".""ItemId"" = ""dbo"".""ItemTemp1234"".""ItemId"";";
+        
+        Assert.Equal(expected, actual);
+    }
     
     private TableInfo GetTestTableInfo(Func<string, string, string>? onConflictUpdateWhereSql = null)
     {
