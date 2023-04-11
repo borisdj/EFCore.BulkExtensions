@@ -24,14 +24,14 @@ internal static class GenericsHelpers
                 continue;
             }
             var name = field.Name;
-            var temp = field.GetValue(value);
-            object? defaultValue = null;
-
             if (!tableInfo.PropertyColumnNamesDict.ContainsKey(name)) // skip non-EF properties
             {
                 continue;
             }
-
+            
+            var temp = field.GetValue(value);
+            object? defaultValue = null;
+            
             //bypass instance creation if incoming type is an interface or class does not have parameterless constructor
             var hasParameterlessConstructor = type.GetConstructor(Type.EmptyTypes) != null;
             if (!type.IsInterface && hasParameterlessConstructor)

@@ -201,8 +201,6 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
     /// <inheritdoc/>
     protected async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken) where T : class
     {
-        var entityPropertyWithDefaultValue = entities.GetPropertiesWithDefaultValue(type, tableInfo);
-
         if (tableInfo.BulkConfig.CustomSourceTableName == null)
         {
             tableInfo.InsertToTempTable = true;
