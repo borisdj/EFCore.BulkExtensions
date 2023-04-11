@@ -3,6 +3,12 @@
 👍 First off, thanks for taking the time to contribute! 👍<br>
 Working together we can make a better tool for everyone.
 
+## Code of Conduct
+
+This project and everyone participating in it is governed by the [Code of Conduct](CODE_OF_CONDUCT.md).
+By participating, you are expected to uphold this code.
+By making a PullRequest Contributor assigns the copyright to the project owner.
+
 ### Where do I go from here?
 
 If you've noticed a bug or have an idea about new feature you can open a issue.

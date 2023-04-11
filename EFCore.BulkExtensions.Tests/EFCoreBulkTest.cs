@@ -3,8 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Caching.Memory;
-using Npgsql;
-using NpgsqlTypes;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -225,7 +223,6 @@ public class EFCoreBulkTest
     //    SET GLOBAL local_infile = true;
     // -- otherwise exception: "Loading local data is disabled; this must be enabled on both the client and server sides"
     // -- For client side connection string is already set with: "AllowLoadLocalInfile=true"
-    //    https://stackoverflow.com/questions/59993844/error-loading-local-data-is-disabled-this-must-be-enabled-on-both-the-client
     public void InsertTestMySQL(DbServerType dbServer)
     {
         ContextUtil.DbServer = dbServer;
@@ -313,7 +310,7 @@ public class EFCoreBulkTest
         entities5.Add(new Item { ItemId = 16, Name = "Name 16", Description = "info 16" }); // when BulkSaveChanges with Upsert 'ItemId' has to be set(EX.My1), and with Insert only it skips one number, Id becomes 17 instead of 16
         context.AddRange(entities5);
         context.BulkSaveChanges();
-        Assert.Equal(16, entities5[1].ItemId);
+        Assert.Equal(16, entities5[1].ItemId); // TODO Check Id is 2 instead of 16
         Assert.Equal("info 16", context.Items.Where(a => a.Name == "Name 16").AsNoTracking().FirstOrDefault()?.Description);
 
         //EX.My1: "The property 'Item.ItemId' has a temporary value while attempting to change the entity's state to 'Unchanged'.

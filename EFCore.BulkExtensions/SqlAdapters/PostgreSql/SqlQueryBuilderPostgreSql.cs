@@ -231,12 +231,12 @@ public class SqlQueryBuilderPostgreSql : SqlAdapters.QueryBuilderExtensions
         var schemaFormated = tableInfo.Schema == null ? "" : $@"""{tableInfo.Schema}"".";
         var fullTableNameFormated = $@"{schemaFormated}""{tableName}""";
 
-        var uniqueColumnNames = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList();
-        var uniqueColumnNamesDash = string.Join("_", uniqueColumnNames);
-        var uniqueColumnNamesFormated = @"""" + string.Join(@""", """, uniqueColumnNames) + @"""";
-        var schemaDash = tableInfo.Schema == null ? "" : $"{tableInfo.Schema}_";
+        var uniqueConstrainName = GetUniqueConstrainName(tableInfo);
 
-        var q = $@"CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS ""tempUniqueIndex_{schemaDash}{tableName}_{uniqueColumnNamesDash}"" " +
+        var uniqueColumnNames = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList();
+        var uniqueColumnNamesFormated = @"""" + string.Join(@""", """, uniqueColumnNames) + @"""";
+
+        var q = $@"CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS ""{uniqueConstrainName}"" " +
                 $@"ON {fullTableNameFormated} ({uniqueColumnNamesFormated})";
         return q;
     }
@@ -251,10 +251,7 @@ public class SqlQueryBuilderPostgreSql : SqlAdapters.QueryBuilderExtensions
         var schemaFormated = tableInfo.Schema == null ? "" : $@"""{tableInfo.Schema}"".";
         var fullTableNameFormated = $@"{schemaFormated}""{tableName}""";
 
-        var uniqueColumnNames = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList();
-        var uniqueColumnNamesDash = string.Join("_", uniqueColumnNames);
-        var schemaDash = tableInfo.Schema == null ? "" : $"{tableInfo.Schema}_";
-        var uniqueConstrainName = $"tempUniqueIndex_{schemaDash}{tableName}_{uniqueColumnNamesDash}";
+        var uniqueConstrainName = GetUniqueConstrainName(tableInfo);
 
         var q = $@"ALTER TABLE {fullTableNameFormated} " +
                 $@"ADD CONSTRAINT ""{uniqueConstrainName}"" " +
@@ -272,10 +269,7 @@ public class SqlQueryBuilderPostgreSql : SqlAdapters.QueryBuilderExtensions
         var schemaFormated = tableInfo.Schema == null ? "" : $@"""{tableInfo.Schema}"".";
         var fullTableNameFormated = $@"{schemaFormated}""{tableName}""";
 
-        var uniqueColumnNames = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList();
-        var uniqueColumnNamesDash = string.Join("_", uniqueColumnNames);
-        var schemaDash = tableInfo.Schema == null ? "" : $"{tableInfo.Schema}_";
-        var uniqueConstrainName = $"tempUniqueIndex_{schemaDash}{tableName}_{uniqueColumnNamesDash}";
+        var uniqueConstrainName = GetUniqueConstrainName(tableInfo);
 
         var q = $@"ALTER TABLE {fullTableNameFormated} " +
                 $@"DROP CONSTRAINT ""{uniqueConstrainName}"";";
