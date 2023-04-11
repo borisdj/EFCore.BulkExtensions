@@ -377,11 +377,11 @@ public class SqliteOperationsAdapter : ISqlOperationsAdapter
 
             if (propertyEntityType != null)
             {
-                string? columnName = propertyEntityType.Name;
+                string? propertyName = propertyEntityType.Name;
                 var propertyType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
 
                 //SqliteType(CpropertyType.Name): Text(String, Decimal, DateTime); Integer(Int16, Int32, Int64) Real(Float, Double) Blob(Guid)
-                var parameter = new SqliteParameter($"@{columnName}", propertyType); // ,sqliteType // ,null //()
+                var parameter = new SqliteParameter($"@{propertyName}", propertyType); // ,sqliteType // ,null //()
                 command.Parameters.Add(parameter);
             }
         }
