@@ -182,11 +182,9 @@ public class SqlQueryBuilderMySql : QueryBuilderExtensions
         var schemaFormated = tableInfo.Schema == null ? "" : $@"`{tableInfo.Schema}`.";
         var fullTableNameFormated = $@"{schemaFormated}`{tableName}`";
 
-        var uniqueColumnNames = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList();
-        var uniqueColumnNamesDash = string.Join("_", uniqueColumnNames);
-        var schemaDash = tableInfo.Schema == null ? "" : $"{tableInfo.Schema}_";
-        var uniqueConstrainName = $"tempUniqueIndex_{Md5Hash($"{schemaDash}{tableName}_{uniqueColumnNamesDash}")}";
+        var uniqueConstrainName = GetUniqueConstrainName(tableInfo);
 
+        var uniqueColumnNames = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList();
         var uniqueColumnNamesComma = string.Join(",", uniqueColumnNames); // TODO When Column is string without defined max length, it should be UNIQUE (`Name`(255)); otherwise exception: BLOB/TEXT column 'Name' used in key specification without a key length'
         uniqueColumnNamesComma = "`" + uniqueColumnNamesComma;
         uniqueColumnNamesComma = uniqueColumnNamesComma.Replace(",", "`, `");
@@ -209,10 +207,7 @@ public class SqlQueryBuilderMySql : QueryBuilderExtensions
         var schemaFormated = tableInfo.Schema == null ? "" : $@"`{tableInfo.Schema}`.";
         var fullTableNameFormated = $@"{schemaFormated}`{tableName}`";
 
-        var uniqueColumnNames = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList();
-        var uniqueColumnNamesDash = string.Join("_", uniqueColumnNames);
-        var schemaDash = tableInfo.Schema == null ? "" : $"{tableInfo.Schema}_";
-        var uniqueConstrainName = $"tempUniqueIndex_{Md5Hash($"{schemaDash}{tableName}_{uniqueColumnNamesDash}")}";
+        var uniqueConstrainName = GetUniqueConstrainName(tableInfo);
 
         var q = $@"ALTER TABLE {fullTableNameFormated} " +
                 $@"DROP INDEX `{uniqueConstrainName}`;";
@@ -227,16 +222,34 @@ public class SqlQueryBuilderMySql : QueryBuilderExtensions
     {
         var tableName = tableInfo.TableName;
 
-        var uniqueColumnNames = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList();
-        var uniqueColumnNamesDash = string.Join("_", uniqueColumnNames);
-        var schemaDash = tableInfo.Schema == null ? "" : $"{tableInfo.Schema}_";
-        var uniqueConstrainName = $"tempUniqueIndex_{Md5Hash($"{schemaDash}{tableName}_{uniqueColumnNamesDash}")}";
+        var uniqueConstrainName = GetUniqueConstrainName(tableInfo);
 
         var q = $@"SELECT DISTINCT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE " +
                 $@"CONSTRAINT_TYPE = 'UNIQUE' AND CONSTRAINT_NAME = '{uniqueConstrainName}';";
         return q;
     }
 
+    /// <summary>
+    /// Creates UniqueConstrainName
+    /// </summary>
+    /// <param name="tableInfo"></param>
+    public static string GetUniqueConstrainName(TableInfo tableInfo)
+    {
+        var tableName = tableInfo.TableName;
+
+        var uniqueColumnNames = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList();
+        var uniqueColumnNamesDash = string.Join("_", uniqueColumnNames);
+        var schemaDash = tableInfo.Schema == null ? "" : $"{tableInfo.Schema}_";
+
+        string uniqueConstrainPrefix = "tempUniqueIndex_"; // 16 char length
+        string uniqueConstrainNameText = $"{schemaDash}{tableName}_{uniqueColumnNamesDash}";
+        if (uniqueConstrainNameText.Length > 64 - (uniqueConstrainPrefix.Length)) // effectively 48 max
+        {
+            uniqueConstrainNameText = Md5Hash(uniqueConstrainNameText);
+        }
+        string uniqueConstrainName = uniqueConstrainPrefix + uniqueConstrainNameText;
+        return uniqueConstrainName;
+    }
 
     /// <summary>
     /// Restructures a sql query for batch commands
