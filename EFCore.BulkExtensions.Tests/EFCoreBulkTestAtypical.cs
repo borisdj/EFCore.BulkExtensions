@@ -478,7 +478,7 @@ public class EFCoreBulkTestAtypical
                 entities,
                 new BulkConfig
                 {
-                    UpdateByProperties = new List<string> { nameof(Item.Description) }
+                    UpdateByProperties = new List<string> { nameof(ChangeLog.Description) }
                 }
             );
             Assert.Equal(2, entities[1].ChangeLogId);

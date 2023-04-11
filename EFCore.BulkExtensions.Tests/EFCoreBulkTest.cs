@@ -221,6 +221,11 @@ public class EFCoreBulkTest
     
     [Theory]
     [InlineData(DbServerType.MySQL)]
+    // -- Before first run following command should be executed on mysql server:
+    //    SET GLOBAL local_infile = true;
+    // -- otherwise exception: "Loading local data is disabled; this must be enabled on both the client and server sides"
+    // -- For client side connection string is already set with: "AllowLoadLocalInfile=true"
+    //    https://stackoverflow.com/questions/59993844/error-loading-local-data-is-disabled-this-must-be-enabled-on-both-the-client
     public void InsertTestMySQL(DbServerType dbServer)
     {
         ContextUtil.DbServer = dbServer;
