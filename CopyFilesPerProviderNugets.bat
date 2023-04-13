@@ -1,4 +1,4 @@
-:: Bat procedures that copies Source files from main project to each per provider project, skippes main .csproj file and other provjder adapters
+:: Bat procedures that copies Source files from main project to each per provider project, skippes main .csproj file and other provider adapters
 :: When used lines for linking files via Include/Remove should first be removed from .csproject per provider
 
 robocopy "EFCore.BulkExtensions" "EFCore.BulkExtensions.MySql " /E /XF "*.csproj" /XD "bin" "obj" "SqlAdapters"
