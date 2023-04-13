@@ -90,7 +90,7 @@ public class MySqlAdapter : ISqlOperationsAdapter
     public async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType,
         Action<decimal>? progress, CancellationToken cancellationToken) where T : class
     {
-        await  MergeAsync(context, type, entities, tableInfo, operationType, progress, isAsync: true, CancellationToken.None).ConfigureAwait(false);
+        await MergeAsync(context, type, entities, tableInfo, operationType, progress, isAsync: true, CancellationToken.None).ConfigureAwait(false);
     }
 
     /// <inheritdoc/>

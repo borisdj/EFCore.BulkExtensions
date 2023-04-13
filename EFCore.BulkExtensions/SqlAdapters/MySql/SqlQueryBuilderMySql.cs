@@ -20,6 +20,7 @@ public class SqlQueryBuilderMySql : QueryBuilderExtensions
     /// <param name="useTempDb"></param>
     public static string CreateTableCopy(string existingTableName, string newTableName, bool useTempDb)
     {
+        useTempDb = false;
         string keywordTemp = useTempDb ? "TEMPORARY " : "";
         var query = $"CREATE {keywordTemp}TABLE {newTableName} " +
                 $"SELECT * FROM {existingTableName} " +
@@ -35,6 +36,7 @@ public class SqlQueryBuilderMySql : QueryBuilderExtensions
     /// <returns></returns>
     public static string DropTable(string tableName, bool isTempTable)
     {
+        isTempTable = false;
         string keywordTemp = isTempTable ? "TEMPORARY " : "";
         var query = $"DROP {keywordTemp}TABLE IF EXISTS {tableName}";
         query = query.Replace("[", "").Replace("]", "");
@@ -113,22 +115,19 @@ public class SqlQueryBuilderMySql : QueryBuilderExtensions
                              $"WHERE {firstPrimaryKey} >= LAST_INSERT_ID() " +
                              $"AND {firstPrimaryKey} < LAST_INSERT_ID() + row_count(); ";
                 }
-
-                if (operationType == OperationType.Update)
+                else if (operationType == OperationType.Update)
                 {
                     query += $"INSERT INTO {tableInfo.FullTempOutputTableName} " +
                              $"SELECT * FROM {tableInfo.FullTempTableName} ";
                 }
-
-                if (operationType == OperationType.InsertOrUpdate)
+                /* elseif (operationType == OperationType.InsertOrUpdate)
                 {
                     query += $"INSERT INTO {tableInfo.FullTempOutputTableName} " +
                              $"SELECT A.* FROM {tableInfo.FullTempTableName} A " +
                              $"LEFT OUTER JOIN {tableInfo.FullTempOutputTableName} B " +
                              $" ON A.{firstPrimaryKey} = B.{firstPrimaryKey} " +
                              $"WHERE  B.{firstPrimaryKey} IS NULL; ";
-                }
-
+                }*/
             }
         }
 
