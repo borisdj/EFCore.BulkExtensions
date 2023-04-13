@@ -75,6 +75,8 @@ public class TableInfo
     public string? TimeStampPropertyName { get; set; }
     public string? TimeStampColumnName { get; set; }
 
+    public string? TextValueFirstPK { get; set; }
+
     protected IList<object>? EntitiesSortedReference { get; set; } // Operation Merge writes In Output table first Existing that were Updated then for new that were Inserted so this makes sure order is same in list when need to set Output
 
     public StoreObjectIdentifier ObjectIdentifier { get; set; }
@@ -591,6 +593,16 @@ public class TableInfo
                 }
             }
         }
+
+        if (PrimaryKeysPropertyColumnNameDict.Count == 1)
+        {
+            string pkName = PrimaryKeysPropertyColumnNameDict.Values.First();
+            if (entities != null && entities.Count > 0)
+            {
+                object? instance = entities.First();
+                TextValueFirstPK = FastPropertyDict[pkName].Get(instance ?? "")?.ToString();
+            }
+        }
     }
 
 
@@ -805,7 +817,7 @@ public class TableInfo
 
     internal void UpdateReadEntities<T>(IList<T> entities, IList<T> existingEntities, DbContext context)
     {
-        List<string> propertyNames = PropertyColumnNamesDict.Keys.ToList();
+        List<string> propertyNames = OutputPropertyColumnNamesDict.Keys.ToList();
         if (HasOwnedTypes)
         {
             foreach (string ownedTypeName in OwnedTypesDict.Keys)

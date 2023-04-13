@@ -65,6 +65,7 @@ public class SqlQueryBuilderPostgreSql : SqlAdapters.QueryBuilderExtensions
         }
 
         string q;
+        bool appendReturning = false;
         if (operationType == OperationType.Read)
         {
             var readByColumns = SqlQueryBuilder.GetCommaSeparatedColumns(tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList()); //, tableInfo.FullTableName, tableInfo.FullTempTableName
@@ -83,6 +84,10 @@ public class SqlQueryBuilderPostgreSql : SqlAdapters.QueryBuilderExtensions
                 $"USING {tableInfo.FullTempTableName} " +
                 $@"WHERE {deleteByColumns}";
         }
+        // With the segment bellow PG-Test on line:
+        //   context.BulkUpdate(entities3, configUpdateBy);
+        // throws:
+        //   "System.InvalidOperationException : The required column 'ItemId' was not present in the results of a 'FromSql' operation."
         else if (operationType == OperationType.Update)
         {
             var columnsListEquals = GetColumnList(tableInfo, OperationType.Insert);
@@ -92,13 +97,22 @@ public class SqlQueryBuilderPostgreSql : SqlAdapters.QueryBuilderExtensions
                 prefixTable: tableInfo.FullTableName, equalsTable: tableInfo.FullTempTableName).Replace("[", @"""").Replace("]", @"""");
             var equalsColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsToUpdate,
                 equalsTable: tableInfo.FullTempTableName).Replace("[", @"""").Replace("]", @"""");
+
             q = $"UPDATE {tableInfo.FullTableName} SET {equalsColumns} " +
                 $"FROM {tableInfo.FullTempTableName} " +
                 $"WHERE {updateByColumns}";
+
+            appendReturning = true;
         }
         else
         {
-            var commaSeparatedColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsList).Replace("[", @"""").Replace("]", @"""");
+            var columnsListInsert = columnsList;
+            var textValueFirstPK = tableInfo.TextValueFirstPK;
+            if (textValueFirstPK != null && (textValueFirstPK == "0" || textValueFirstPK.ToString() == Guid.Empty.ToString() || textValueFirstPK.ToString() == ""))
+            {
+                columnsListInsert = columnsList.Where(tableInfo.PropertyColumnNamesUpdateDict.ContainsValue).ToList();
+            }
+            var commaSeparatedColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsListInsert).Replace("[", @"""").Replace("]", @"""");
 
             var updateByColumns = SqlQueryBuilder.GetCommaSeparatedColumns(tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList()).Replace("[", @"""").Replace("]", @"""");
 
@@ -120,13 +134,14 @@ public class SqlQueryBuilderPostgreSql : SqlAdapters.QueryBuilderExtensions
             {
                 q += $" WHERE {tableInfo.BulkConfig.OnConflictUpdateWhereSql(tableInfo.FullTableName.Replace("[", @"""").Replace("]", @""""), "EXCLUDED")}";
             }
+            appendReturning = true;
+        }
 
-            if (tableInfo.CreatedOutputTable)
-            {
-                var allColumnsList = tableInfo.PropertyColumnNamesDict.Values.ToList();
-                string commaSeparatedColumnsNames = SqlQueryBuilder.GetCommaSeparatedColumns(allColumnsList).Replace("[", @"""").Replace("]", @"""");
-                q += $" RETURNING {commaSeparatedColumnsNames}";
-            }
+        if (appendReturning == true && tableInfo.CreatedOutputTable)
+        {
+            var allColumnsList = tableInfo.OutputPropertyColumnNamesDict.Values.ToList();
+            string commaSeparatedColumnsNames = SqlQueryBuilder.GetCommaSeparatedColumns(allColumnsList, tableInfo.FullTableName).Replace("[", @"""").Replace("]", @"""");
+            q += $" RETURNING {commaSeparatedColumnsNames}";
         }
 
         q = q.Replace("[", @"""").Replace("]", @"""");

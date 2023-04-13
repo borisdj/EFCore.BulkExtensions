@@ -49,15 +49,17 @@ public class EFCoreBulkTest
         ContextUtil.DbServer = dbServer;
 
         using var context = new TestContext(ContextUtil.GetOptions());
-
+        
         context.Database.ExecuteSqlRaw($@"DELETE FROM ""{nameof(Item)}""");
         context.Database.ExecuteSqlRaw($@"ALTER SEQUENCE ""{nameof(Item)}_{nameof(Item.ItemId)}_seq"" RESTART WITH 1");
+
+        context.Database.ExecuteSqlRaw($@"DELETE FROM ""{nameof(ItemHistory)}""");
 
         context.Database.ExecuteSqlRaw($@"DELETE FROM ""{nameof(Box)}""");
         context.Database.ExecuteSqlRaw($@"ALTER SEQUENCE ""{nameof(Box)}_{nameof(Box.BoxId)}_seq"" RESTART WITH 1");
 
         context.Database.ExecuteSqlRaw($@"DELETE FROM ""{nameof(UserRole)}""");
-
+        
         var currentTime = DateTime.UtcNow; // default DateTime type: "timestamp with time zone"; DateTime.Now goes with: "timestamp without time zone"
 
         var entities = new List<Item>();
@@ -74,13 +76,13 @@ public class EFCoreBulkTest
             };
             entities.Add(entity);
         }
-
+        
         var entities2 = new List<Item>();
-        for (int i = 2; i <= 3; i++)
+        for (int i = 3; i <= 4; i++)
         {
             var entity = new Item
             {
-                ItemId = i,
+                //ItemId = i,
                 Name = "Name " + i,
                 Description = "UPDATE " + i,
                 Quantity = i,
@@ -91,7 +93,7 @@ public class EFCoreBulkTest
         }
 
         var entities3 = new List<Item>();
-        for (int i = 3; i <= 4; i++)
+        for (int i = 4; i <= 4; i++)
         {
             var entity = new Item
             {
@@ -104,7 +106,7 @@ public class EFCoreBulkTest
             };
             entities3.Add(entity);
         }
-
+        
         var entities56 = new List<Item>();
         for (int i = 5; i <= 6; i++)
         {
@@ -119,7 +121,7 @@ public class EFCoreBulkTest
             };
             entities56.Add(entity);
         }
-
+        
         var entities78 = new List<Item>();
         for (int i = 7; i <= 8; i++)
         {
@@ -142,34 +144,40 @@ public class EFCoreBulkTest
         Assert.Equal("info 2", context.Items.Where(a => a.Name == "Name 2").AsNoTracking().FirstOrDefault()?.Description);
 
         // UPDATE
-        context.BulkInsertOrUpdate(entities2, new BulkConfig() { NotifyAfter = 1 }, (a) => WriteProgress(a));
-
-        Assert.Equal("UPDATE 2", context.Items.Where(a => a.Name == "Name 2").AsNoTracking().FirstOrDefault()?.Description);
+        var config = new BulkConfig
+        {
+            UpdateByProperties = new List<string> { nameof(Item.Name) },
+            NotifyAfter = 1
+        };
+        context.BulkInsertOrUpdate(entities2, config, (a) => WriteProgress(a));
+        
         Assert.Equal("UPDATE 3", context.Items.Where(a => a.Name == "Name 3").AsNoTracking().FirstOrDefault()?.Description);
+        Assert.Equal("UPDATE 4", context.Items.Where(a => a.Name == "Name 4").AsNoTracking().FirstOrDefault()?.Description);
 
-        var configUpdateBy = new BulkConfig { UpdateByProperties = new List<string> { nameof(Item.Name) } };
-
-        configUpdateBy.SetOutputIdentity = true;
+        var configUpdateBy = new BulkConfig {
+            SetOutputIdentity = true,
+            UpdateByProperties = new List<string> { nameof(Item.Name) },
+            PropertiesToInclude = new List<string> { nameof(Item.Name), nameof(Item.Description) }, // "Name" in list not necessary since is in UpdateBy
+        };
         context.BulkUpdate(entities3, configUpdateBy);
 
-        Assert.Equal(3, entities3[0].ItemId); // to test Output
-        Assert.Equal(4, entities3[1].ItemId);
+        Assert.Equal(4, entities3[0].ItemId); // to test Output
 
-        Assert.Equal("CHANGE 3", context.Items.Where(a => a.Name == "Name 3").AsNoTracking().FirstOrDefault()?.Description);
+        Assert.Equal("UPDATE 3", context.Items.Where(a => a.Name == "Name 3").AsNoTracking().FirstOrDefault()?.Description);
         Assert.Equal("CHANGE 4", context.Items.Where(a => a.Name == "Name 4").AsNoTracking().FirstOrDefault()?.Description);
-
+        
         // Test Multiple KEYS
         var userRoles = new List<UserRole> { new UserRole { Description = "Info" } };
         context.BulkInsertOrUpdate(userRoles);
 
         // DELETE
-        context.BulkDelete(new List<Item>() { entities2[1] }, configUpdateBy);
+        context.BulkDelete(new List<Item>() { entities2[0] }, configUpdateBy);
 
         // READ
         var secondEntity = new List<Item>() { new Item { Name = entities[1].Name } };
         context.BulkRead(secondEntity, configUpdateBy);
         Assert.Equal(2, secondEntity.FirstOrDefault()?.ItemId);
-        Assert.Equal("UPDATE 2", secondEntity.FirstOrDefault()?.Description);
+        Assert.Equal("info 2", secondEntity.FirstOrDefault()?.Description);
 
         // SAVE CHANGES
         context.AddRange(entities56);
@@ -185,9 +193,11 @@ public class EFCoreBulkTest
         };
         context.BulkInsertOrUpdate(entities78, bulkConfig);
 
+        context.BulkInsert(new List<ItemHistory> { new ItemHistory { ItemHistoryId = Guid.NewGuid(), Remark = "Rx", ItemId = 1 } });
+
         // BATCH
         var query = context.Items.AsQueryable().Where(a => a.ItemId <= 1);
-        query.BatchUpdate(new Item { Description = "UPDATE N", Price = 1.5m }/*, updateColumns*/);
+        query.BatchUpdate(new Item { Description = "UPDATE N", Price = 1.5m }); //, updateColumns);
 
         var queryJoin = context.ItemHistories.Where(p => p.Item.Description == "UPDATE 2");
         queryJoin.BatchUpdate(new ItemHistory { Remark = "Rx", });
