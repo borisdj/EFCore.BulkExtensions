@@ -84,10 +84,6 @@ public class SqlQueryBuilderPostgreSql : SqlAdapters.QueryBuilderExtensions
                 $"USING {tableInfo.FullTempTableName} " +
                 $@"WHERE {deleteByColumns}";
         }
-        // With the segment bellow PG-Test on line:
-        //   context.BulkUpdate(entities3, configUpdateBy);
-        // throws:
-        //   "System.InvalidOperationException : The required column 'ItemId' was not present in the results of a 'FromSql' operation."
         else if (operationType == OperationType.Update)
         {
             var columnsListEquals = GetColumnList(tableInfo, OperationType.Insert);
@@ -110,6 +106,7 @@ public class SqlQueryBuilderPostgreSql : SqlAdapters.QueryBuilderExtensions
             var textValueFirstPK = tableInfo.TextValueFirstPK;
             if (textValueFirstPK != null && (textValueFirstPK == "0" || textValueFirstPK.ToString() == Guid.Empty.ToString() || textValueFirstPK.ToString() == ""))
             {
+                //  PKs can be all set or all empty in which case DB generates it, can not have it combined in one list when using InsetOrUpdate  
                 columnsListInsert = columnsList.Where(tableInfo.PropertyColumnNamesUpdateDict.ContainsValue).ToList();
             }
             var commaSeparatedColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsListInsert).Replace("[", @"""").Replace("]", @"""");
