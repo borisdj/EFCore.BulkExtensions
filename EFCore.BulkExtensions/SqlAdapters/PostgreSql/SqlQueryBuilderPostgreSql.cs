@@ -134,7 +134,7 @@ public class SqlQueryBuilderPostgreSql : SqlAdapters.QueryBuilderExtensions
             appendReturning = true;
         }
 
-        if (appendReturning == true && tableInfo.CreatedOutputTable)
+        if (appendReturning == true && tableInfo.CreateOutputTable)
         {
             var allColumnsList = tableInfo.OutputPropertyColumnNamesDict.Values.ToList();
             string commaSeparatedColumnsNames = SqlQueryBuilder.GetCommaSeparatedColumns(allColumnsList, tableInfo.FullTableName).Replace("[", @"""").Replace("]", @"""");

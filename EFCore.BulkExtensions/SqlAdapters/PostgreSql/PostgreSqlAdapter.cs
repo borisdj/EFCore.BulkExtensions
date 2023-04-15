@@ -201,33 +201,35 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
     /// <inheritdoc/>
     protected async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken) where T : class
     {
-        if (tableInfo.BulkConfig.CustomSourceTableName == null)
-        {
-            tableInfo.InsertToTempTable = true;
-
-            var sqlCreateTableCopy = SqlQueryBuilderPostgreSql.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, false); //  tableInfo.BulkConfig.UseTempDB
-            if (isAsync)
-            {
-                await context.Database.ExecuteSqlRawAsync(sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
-            }
-            else
-            {
-                context.Database.ExecuteSqlRaw(sqlCreateTableCopy);
-            }
-        }
-
-        bool hasUniqueConstrain = await CheckHasExplicitUniqueConstrainAsync(context, tableInfo, isAsync,  cancellationToken).ConfigureAwait(false);
-        if (hasUniqueConstrain == false)
-        {
-            if (tableInfo.EntityPKPropertyColumnNameDict == tableInfo.PrimaryKeysPropertyColumnNameDict)
-            {
-                hasUniqueConstrain = true; // ExplicitUniqueConstrain not required for PK
-            }
-        }
-        bool doDropUniqueConstrain = false;
-
+        bool tempTableCreated = false;
+        bool uniqueConstrainCreated = false;
         try
         {
+            if (tableInfo.BulkConfig.CustomSourceTableName == null)
+            {
+                tableInfo.InsertToTempTable = true;
+
+                var sqlCreateTableCopy = SqlQueryBuilderPostgreSql.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, false);
+                if (isAsync)
+                {
+                    await context.Database.ExecuteSqlRawAsync(sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    context.Database.ExecuteSqlRaw(sqlCreateTableCopy);
+                }
+                tempTableCreated = true;
+            }
+
+            bool hasUniqueConstrain = await CheckHasExplicitUniqueConstrainAsync(context, tableInfo, isAsync, cancellationToken).ConfigureAwait(false);
+            if (hasUniqueConstrain == false)
+            {
+                if (tableInfo.EntityPKPropertyColumnNameDict == tableInfo.PrimaryKeysPropertyColumnNameDict)
+                {
+                    hasUniqueConstrain = true; // ExplicitUniqueConstrain not required for PK
+                }
+            }
+
             if (tableInfo.BulkConfig.CustomSourceTableName == null)
             {
                 if (isAsync)
@@ -254,7 +256,7 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
                     context.Database.ExecuteSqlRaw(createUniqueIndex);
                     context.Database.ExecuteSqlRaw(createUniqueConstrain);
                 }
-                doDropUniqueConstrain = true;
+                uniqueConstrainCreated = true;
             }
 
             var sqlMergeTable = SqlQueryBuilderPostgreSql.MergeTable<T>(tableInfo, operationType);
@@ -280,13 +282,12 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
         {
             try
             {
-                if (doDropUniqueConstrain)
+                if (uniqueConstrainCreated)
                 {
                     string dropUniqueConstrain = SqlQueryBuilderPostgreSql.DropUniqueConstrain(tableInfo);
                     if (isAsync)
                     {
-                        await context.Database.ExecuteSqlRawAsync(dropUniqueConstrain, cancellationToken)
-                            .ConfigureAwait(false);
+                        await context.Database.ExecuteSqlRawAsync(dropUniqueConstrain, cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {
@@ -296,13 +297,12 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
 
                 if (!tableInfo.BulkConfig.UseTempDB)
                 {
-                    if (tableInfo.BulkConfig.CustomSourceTableName == null)
+                    if (tempTableCreated)
                     {
                         var sqlDropTable = SqlQueryBuilderPostgreSql.DropTable(tableInfo.FullTempTableName);
                         if (isAsync)
                         {
-                            await context.Database.ExecuteSqlRawAsync(sqlDropTable, cancellationToken)
-                                .ConfigureAwait(false);
+                            await context.Database.ExecuteSqlRawAsync(sqlDropTable, cancellationToken).ConfigureAwait(false);
                         }
                         else
                         {

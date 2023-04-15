@@ -74,7 +74,7 @@ public class MySqlAdapter : ISqlOperationsAdapter
                 context.Database.CloseConnection();
             }
         }
-        if (!tableInfo.CreatedOutputTable)
+        if (!tableInfo.CreateOutputTable)
         {
             tableInfo.CheckToSetIdentityForPreserveOrder(tableInfo, entities, reset: true);
         }
@@ -98,82 +98,89 @@ public class MySqlAdapter : ISqlOperationsAdapter
         OperationType operationType, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken)
         where T : class
     {
-        //Because of using temp table in case of update, we need to access created temp table in Insert method.
-        var hasExistingTransaction = context.Database.CurrentTransaction != null;
-        var transaction = context.Database.CurrentTransaction ?? (isAsync ? await context.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false) : context.Database.BeginTransaction());
-        
-        if (tableInfo.BulkConfig.CustomSourceTableName == null)
-        {
-            tableInfo.InsertToTempTable = true;
-
-            var sqlCreateTableCopy = SqlQueryBuilderMySql.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo.InsertToTempTable);
-            if (isAsync)
-            {
-                await context.Database.ExecuteSqlRawAsync(sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
-            }
-            else
-            {
-                context.Database.ExecuteSqlRaw(sqlCreateTableCopy);
-            }
-        }
-
-        bool doDropUniqueConstrain = false;
-        bool hasUniqueConstrain = false;
-        if (string.Join("_", tableInfo.EntityPKPropertyColumnNameDict.Keys.ToList()) == string.Join("_", tableInfo.PrimaryKeysPropertyColumnNameDict.Keys.ToList()))
-        {
-            hasUniqueConstrain = true; // ExplicitUniqueConstrain not required for PK
-        }
-        if (!hasUniqueConstrain)
-        {
-        // TODO 
-        //hasUniqueConstrain = await CheckHasExplicitUniqueConstrainAsync(context, connection, tableInfo, isAsync, cancellationToken);
-        // throws "The transaction associated with this command is not the connection’s active transaction";
-        // https://mysqlconnector.net/troubleshooting/transaction-usage/
-        }
-        if (!hasUniqueConstrain)
-        {
-            string createUniqueConstrain = SqlQueryBuilderMySql.CreateUniqueConstrain(tableInfo);
-            if (isAsync)
-            {
-                await context.Database.ExecuteSqlRawAsync(createUniqueConstrain, cancellationToken).ConfigureAwait(false);
-            }
-            else
-            {
-                context.Database.ExecuteSqlRaw(createUniqueConstrain);
-            }
-            doDropUniqueConstrain = true;
-        }
-
-        if (tableInfo.CreatedOutputTable)
-        {
-            tableInfo.InsertToTempTable = true;
-            var sqlCreateOutputTableCopy = SqlQueryBuilderMySql.CreateTableCopy(tableInfo.FullTableName,
-                tableInfo.FullTempOutputTableName, tableInfo.InsertToTempTable);
-            if (isAsync)
-            {
-                await context.Database.ExecuteSqlRawAsync(sqlCreateOutputTableCopy, cancellationToken)
-                    .ConfigureAwait(false);
-            }
-            else
-            {
-                context.Database.ExecuteSqlRaw(sqlCreateOutputTableCopy);
-            }
-        }
-
-        if (tableInfo.BulkConfig.CustomSourceTableName == null)
-        {
-            if (isAsync)
-            {
-                await InsertAsync(context, type, entities, tableInfo, progress, cancellationToken).ConfigureAwait(false);
-            }
-            else
-            {
-                Insert(context, type, entities, tableInfo, progress);
-            }
-        }
-
+        bool tempTableCreated = false;
+        bool outputTableCreated = false;
+        bool uniqueConstrainCreated = false;
+        bool hasExistingTransaction = false;
+        var transaction = context.Database.CurrentTransaction;
         try
         {
+            //Because of using temp table in case of update, we need to access created temp table in Insert method.
+            hasExistingTransaction = context.Database.CurrentTransaction != null;
+            transaction ??= isAsync ? await context.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false)
+                                    : context.Database.BeginTransaction();
+
+            if (tableInfo.BulkConfig.CustomSourceTableName == null)
+            {
+                tableInfo.InsertToTempTable = true;
+
+                var sqlCreateTableCopy = SqlQueryBuilderMySql.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo.InsertToTempTable);
+                if (isAsync)
+                {
+                    await context.Database.ExecuteSqlRawAsync(sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    context.Database.ExecuteSqlRaw(sqlCreateTableCopy);
+                }
+                tempTableCreated = true;
+            }
+
+            bool hasUniqueConstrain = false;
+            if (string.Join("_", tableInfo.EntityPKPropertyColumnNameDict.Keys.ToList()) == string.Join("_", tableInfo.PrimaryKeysPropertyColumnNameDict.Keys.ToList()))
+            {
+                hasUniqueConstrain = true; // ExplicitUniqueConstrain not required for PK
+            }
+            //if (!hasUniqueConstrain)
+            //{
+                // TODO 
+                //hasUniqueConstrain = await CheckHasExplicitUniqueConstrainAsync(context, connection, tableInfo, isAsync, cancellationToken);
+                // throws "The transaction associated with this command is not the connection’s active transaction";
+                // https://mysqlconnector.net/troubleshooting/transaction-usage/
+            //}
+            if (!hasUniqueConstrain)
+            {
+                string createUniqueConstrain = SqlQueryBuilderMySql.CreateUniqueConstrain(tableInfo);
+                if (isAsync)
+                {
+                    await context.Database.ExecuteSqlRawAsync(createUniqueConstrain, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    context.Database.ExecuteSqlRaw(createUniqueConstrain);
+                }
+                uniqueConstrainCreated = true;
+            }
+
+            if (tableInfo.CreateOutputTable)
+            {
+                tableInfo.InsertToTempTable = true;
+                var sqlCreateOutputTableCopy = SqlQueryBuilderMySql.CreateTableCopy(tableInfo.FullTableName,
+                    tableInfo.FullTempOutputTableName, tableInfo.InsertToTempTable);
+                if (isAsync)
+                {
+                    await context.Database.ExecuteSqlRawAsync(sqlCreateOutputTableCopy, cancellationToken)
+                        .ConfigureAwait(false);
+                }
+                else
+                {
+                    context.Database.ExecuteSqlRaw(sqlCreateOutputTableCopy);
+                }
+                outputTableCreated = true;
+            }
+
+            if (tableInfo.BulkConfig.CustomSourceTableName == null)
+            {
+                if (isAsync)
+                {
+                    await InsertAsync(context, type, entities, tableInfo, progress, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    Insert(context, type, entities, tableInfo, progress);
+                }
+            }
+
             var sqlMergeTable = SqlQueryBuilderMySql.MergeTable<T>(tableInfo, operationType);
             if (isAsync)
             {
@@ -183,7 +190,7 @@ public class MySqlAdapter : ISqlOperationsAdapter
             {
                 context.Database.ExecuteSqlRaw(sqlMergeTable);
             }
-            if (tableInfo.CreatedOutputTable)
+            if (tableInfo.CreateOutputTable)
             {
                 if (isAsync)
                 {
@@ -208,7 +215,7 @@ public class MySqlAdapter : ISqlOperationsAdapter
         }
         finally
         {
-            if (doDropUniqueConstrain)
+            if (uniqueConstrainCreated)
             {
                 string dropUniqueConstrain = SqlQueryBuilderMySql.DropUniqueConstrain(tableInfo);
                 if (isAsync)
@@ -224,7 +231,7 @@ public class MySqlAdapter : ISqlOperationsAdapter
 
             if (!tableInfo.BulkConfig.UseTempDB)
             {
-                if (tableInfo.CreatedOutputTable)
+                if (outputTableCreated)
                 {
                     var sqlDropOutputTable = SqlQueryBuilderMySql.DropTable(tableInfo.FullTempOutputTableName, tableInfo.InsertToTempTable);
                     if (isAsync)
@@ -237,7 +244,7 @@ public class MySqlAdapter : ISqlOperationsAdapter
                     }
 
                 }
-                if (tableInfo.BulkConfig.CustomSourceTableName == null)
+                if (tempTableCreated)
                 {
                     var sqlDropTable = SqlQueryBuilderMySql.DropTable(tableInfo.FullTempTableName, tableInfo.InsertToTempTable);
                     if (isAsync)
@@ -249,7 +256,7 @@ public class MySqlAdapter : ISqlOperationsAdapter
                         context.Database.ExecuteSqlRaw(sqlDropTable);
                     }
                 }
-                if (hasExistingTransaction == false && !tableInfo.BulkConfig.IncludeGraph)
+                if (hasExistingTransaction == false && !tableInfo.BulkConfig.IncludeGraph && transaction != null)
                 {
                     if (isAsync)
                     {

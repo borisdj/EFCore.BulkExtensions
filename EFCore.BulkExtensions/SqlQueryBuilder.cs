@@ -376,7 +376,7 @@ public abstract class SqlQueryBuilder
         {
             q += " WHEN MATCHED THEN DELETE";
         }
-        if (tableInfo.CreatedOutputTable)
+        if (tableInfo.CreateOutputTable)
         {
             string commaSeparatedColumnsNames;
             if (operationType == OperationType.InsertOrUpdateOrDelete || operationType == OperationType.Delete)

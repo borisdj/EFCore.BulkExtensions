@@ -106,7 +106,7 @@ public class SqlQueryBuilderMySql : QueryBuilderExtensions
                     $"SELECT {commaSeparatedColumns} FROM {tableInfo.FullTempTableName} AS EXCLUDED " +
                     "ON DUPLICATE KEY UPDATE " +
                     $"{equalsColumns}; ";
-            if (tableInfo.CreatedOutputTable)
+            if (tableInfo.CreateOutputTable)
             {
                 if (operationType == OperationType.Insert || operationType == OperationType.InsertOrUpdate)
                 {

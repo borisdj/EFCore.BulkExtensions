@@ -197,8 +197,9 @@ public class SqliteOperationsAdapter : ISqlOperationsAdapter
         SqliteConnection connection = isAsync ? await OpenAndGetSqliteConnectionAsync(context, cancellationToken).ConfigureAwait(false)
                                                     : OpenAndGetSqliteConnection(context);
         bool doExplicitCommit = false;
+        bool tempTableCreated = false;
         SqliteTransaction? transaction = null;
-
+        SqliteCommand? command = null;
         try
         {
             if (context.Database.CurrentTransaction == null)
@@ -210,7 +211,7 @@ public class SqliteOperationsAdapter : ISqlOperationsAdapter
             transaction = doExplicitCommit ? connection.BeginTransaction()
                                            : (SqliteTransaction?)context.Database.CurrentTransaction?.GetUnderlyingTransaction(tableInfo.BulkConfig);
 
-            SqliteCommand command = connection.CreateCommand();
+            command = connection.CreateCommand();
             command.Transaction = transaction;
 
             // CREATE
@@ -223,6 +224,7 @@ public class SqliteOperationsAdapter : ISqlOperationsAdapter
             {
                 command.ExecuteNonQuery();
             }
+            tempTableCreated = true;
 
             tableInfo.BulkConfig.OperationType = OperationType.Insert;
             tableInfo.InsertToTempTable = true;
@@ -253,27 +255,26 @@ public class SqliteOperationsAdapter : ISqlOperationsAdapter
             {
                 tableInfo.UpdateReadEntities(entities, existingEntities, context);
             }
-
-            // DROP
-            command.CommandText = SqlQueryBuilderSqlite.DropTable(tableInfo.FullTempTableName);
-            if (isAsync)
+        }
+        finally
+        {
+            if (tempTableCreated && command != null)
             {
-                await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-            }
-            else
-            {
-                command.ExecuteNonQuery();
+                command.CommandText = SqlQueryBuilderSqlite.DropTable(tableInfo.FullTempTableName);
+                if (isAsync)
+                {
+                    await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    command.ExecuteNonQuery();
+                }
             }
 
             if (doExplicitCommit)
             {
                 transaction?.Commit();
-            }
-        }
-        finally
-        {
-            if (doExplicitCommit)
-            {
+
                 if (isAsync)
                 {
                     if (transaction is not null)
@@ -358,10 +359,11 @@ public class SqliteOperationsAdapter : ISqlOperationsAdapter
         var entityPropertiesDict = entityType?.GetProperties().Where(a => tableInfo.PropertyColumnNamesDict.ContainsKey(a.Name)).ToDictionary(a => a.Name, a => a);
         var properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
-        var entityShadowFkPropertiesDict = entityType?.GetProperties().Where(a => a.IsShadowProperty() &&
-                                                                   a.IsForeignKey() &&
-                                                                   a.GetContainingForeignKeys().FirstOrDefault()?.DependentToPrincipal?.Name != null)
-                                                             .ToDictionary(x => x.GetContainingForeignKeys()?.First()?.DependentToPrincipal?.Name ?? string.Empty, a => a);
+        var entityShadowFkPropertiesDict = entityType?.GetProperties().Where(
+            a => a.IsShadowProperty() &&
+                 a.IsForeignKey() &&
+                 a.GetContainingForeignKeys().FirstOrDefault()?.DependentToPrincipal?.Name != null)
+           .ToDictionary(x => x.GetContainingForeignKeys()?.First()?.DependentToPrincipal?.Name ?? string.Empty, a => a);
 
         foreach (var property in properties)
         {

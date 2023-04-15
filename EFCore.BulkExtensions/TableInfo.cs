@@ -40,7 +40,7 @@ public class TableInfo
     public string FullTempTableName => $"{TempSchemaFormated}[{TempDBPrefix}{TempTableName}]";
     public string FullTempOutputTableName => $"{SchemaFormated}[{TempDBPrefix}{TempTableName}Output]";
 
-    public bool CreatedOutputTable => BulkConfig.SetOutputIdentity || BulkConfig.CalculateStats;
+    public bool CreateOutputTable => BulkConfig.SetOutputIdentity || BulkConfig.CalculateStats;
 
     public bool InsertToTempTable { get; set; }
     public string? IdentityColumnName { get; set; }
@@ -596,7 +596,7 @@ public class TableInfo
 
         if (PrimaryKeysPropertyColumnNameDict.Count == 1)
         {
-            string pkName = PrimaryKeysPropertyColumnNameDict.Values.First();
+            string pkName = PrimaryKeysPropertyColumnNameDict.Keys.First();
             if (entities != null && entities.Count > 0)
             {
                 object? instance = entities.First();
