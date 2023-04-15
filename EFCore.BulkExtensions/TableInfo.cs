@@ -163,7 +163,11 @@ public class TableInfo
         bool isSqlite = providerName?.EndsWith(DbServerType.SQLite.ToString().ToLower()) ?? false;
         bool isMySql = providerName?.EndsWith(DbServerType.MySQL.ToString().ToLower()) ?? false;
 
-        string? defaultSchema = isSqlServer ? "dbo" : null;
+        string? defaultSchema = null;
+        if (isSqlServer)
+            defaultSchema = "dbo";
+        if (isNpgsql)
+            defaultSchema = "public";
 
         string? customSchema = null;
         string? customTableName = null;
