@@ -22,11 +22,14 @@ public abstract class SqlQueryBuilder
     public static string CreateTableCopy(string existingTableName, string newTableName, TableInfo tableInfo, bool isOutputTable = false)
     {
         // TODO: (optionaly) if CalculateStats = True but SetOutputIdentity = False then Columns could be ommited from Create and from MergeOutput
-        List<string> columnsNames = (isOutputTable ? tableInfo.OutputPropertyColumnNamesDict : tableInfo.PropertyColumnNamesDict).Values.ToList();
+        List<string> columnsNames = (isOutputTable ? tableInfo.OutputPropertyColumnNamesDict
+                                                   : tableInfo.PropertyColumnNamesDict
+                                                   ).Values.ToList();
         if (tableInfo.TimeStampColumnName != null)
         {
             columnsNames.Remove(tableInfo.TimeStampColumnName);
         }
+
         string statsColumns = (tableInfo.BulkConfig.CalculateStats && isOutputTable) ? ",[IsUpdate] = CAST(0 AS bit),[IsDelete] = CAST(0 AS bit)" : "";
 
         var q = $"SELECT TOP 0 {GetCommaSeparatedColumns(columnsNames, "T")} " + statsColumns +
@@ -55,7 +58,8 @@ public abstract class SqlQueryBuilder
         return q;
     }
 
-    // Not used for TableCopy since order of columns is not the same as of original table, that is required for the MERGE (instead after creation, columns are Altered to Nullable)
+    // Not used for TableCopy since order of columns is not the same as of original table, that is required for the MERGE
+    // (instead after creation, columns are Altered to Nullable)
     /// <summary>
     /// Generates SQL query to create table
     /// </summary>
@@ -66,7 +70,9 @@ public abstract class SqlQueryBuilder
     /// <exception cref="InvalidOperationException"></exception>
     public static string CreateTable(string newTableName, TableInfo tableInfo, bool isOutputTable = false)
     {
-        List<string> columnsNames = (isOutputTable ? tableInfo.OutputPropertyColumnNamesDict : tableInfo.PropertyColumnNamesDict).Values.ToList();
+        List<string> columnsNames = (isOutputTable ? tableInfo.OutputPropertyColumnNamesDict
+                                                   : tableInfo.PropertyColumnNamesDict
+                                                   ).Values.ToList();
         if (tableInfo.TimeStampColumnName != null)
         {
             columnsNames.Remove(tableInfo.TimeStampColumnName);
@@ -110,7 +116,9 @@ public abstract class SqlQueryBuilder
     public static string SelectFromOutputTable(TableInfo tableInfo)
     {
         List<string> columnsNames = tableInfo.OutputPropertyColumnNamesDict.Values.ToList();
-        var q = $"SELECT {GetCommaSeparatedColumns(columnsNames)} FROM {tableInfo.FullTempOutputTableName} WHERE [{tableInfo.PrimaryKeysPropertyColumnNameDict.Select(x => x.Value).FirstOrDefault()}] IS NOT NULL";
+        var q = $"SELECT {GetCommaSeparatedColumns(columnsNames)} " +
+                $"FROM {tableInfo.FullTempOutputTableName} " +
+                $"WHERE [{tableInfo.PrimaryKeysPropertyColumnNameDict.Select(x => x.Value).FirstOrDefault()}] IS NOT NULL";
         return q;
     }
 
@@ -212,7 +220,8 @@ public abstract class SqlQueryBuilder
         List<string> columnsNames = tableInfo.PropertyColumnNamesDict.Values.ToList();
         List<string> selectByPropertyNames = tableInfo.PropertyColumnNamesDict.Where(a => tableInfo.PrimaryKeysPropertyColumnNameDict.ContainsKey(a.Key)).Select(a => a.Value).ToList();
 
-        var q = $"SELECT {GetCommaSeparatedColumns(columnsNames, "S")} FROM {sourceTable} AS S " +
+        var q = $"SELECT {GetCommaSeparatedColumns(columnsNames, "S")} " +
+                $"FROM {sourceTable} AS S " +
                 $"JOIN {joinTable} AS J " +
                 $"ON {GetANDSeparatedColumns(selectByPropertyNames, "S", "J", tableInfo.UpdateByPropertiesAreNullable)}";
         return q;
@@ -241,7 +250,8 @@ public abstract class SqlQueryBuilder
     /// <param name="entityPropertyWithDefaultValue"></param>
     /// <returns></returns>
     /// <exception cref="InvalidBulkConfigException"></exception>
-    public static (string sql, IEnumerable<object> parameters) MergeTable<T>(DbContext? context, TableInfo tableInfo, OperationType operationType, IEnumerable<string>? entityPropertyWithDefaultValue = default) where T : class
+    public static (string sql, IEnumerable<object> parameters) MergeTable<T>(DbContext? context, TableInfo tableInfo, OperationType operationType,
+                                                                             IEnumerable<string>? entityPropertyWithDefaultValue = default) where T : class
     {
         List<object> parameters = new();
         string targetTable = tableInfo.FullTableName;
@@ -266,16 +276,16 @@ public abstract class SqlQueryBuilder
             insertColumnsNames = insertColumnsNames.Where(a => !defaults.Contains(a)).ToList();
         }
 
-        string isUpdateStatsValue = (tableInfo.BulkConfig.CalculateStats)
-            ? ",(CASE $action WHEN 'UPDATE' THEN 1 Else 0 END),(CASE $action WHEN 'DELETE' THEN 1 Else 0 END)"
-            : string.Empty;
+        string isUpdateStatsValue = "";
+        if (tableInfo.BulkConfig.CalculateStats)
+            isUpdateStatsValue = ",(CASE $action WHEN 'UPDATE' THEN 1 Else 0 END),(CASE $action WHEN 'DELETE' THEN 1 Else 0 END)";
 
         if (tableInfo.BulkConfig.PreserveInsertOrder)
         {
-            int numberOfEntities = tableInfo.BulkConfig.CustomSourceTableName == null
-                ? tableInfo.NumberOfEntities
-                : int.MaxValue;
-            var orderBy = (primaryKeys.Count == 0) ? string.Empty : $"ORDER BY {GetCommaSeparatedColumns(primaryKeys)}";
+            int numberOfEntities = tableInfo.BulkConfig.CustomSourceTableName == null ? tableInfo.NumberOfEntities
+                                                                                      : int.MaxValue;
+            var orderBy = (primaryKeys.Count == 0) ? string.Empty
+                                                   : $"ORDER BY {GetCommaSeparatedColumns(primaryKeys)}";
             sourceTable = $"(SELECT TOP {numberOfEntities} * FROM {sourceTable} {orderBy})";
         }
 
@@ -289,12 +299,11 @@ public abstract class SqlQueryBuilder
         if (operationType == OperationType.Insert || operationType == OperationType.InsertOrUpdate || operationType == OperationType.InsertOrUpdateOrDelete)
         {
             q += $" WHEN NOT MATCHED BY TARGET " +
-                 $"THEN INSERT ({GetCommaSeparatedColumns(insertColumnsNames)})" +
-                 $" VALUES ({GetCommaSeparatedColumns(insertColumnsNames, "S")})";
+                 $"THEN INSERT ({GetCommaSeparatedColumns(insertColumnsNames)}) " +
+                 $"VALUES ({GetCommaSeparatedColumns(insertColumnsNames, "S")})";
         }
 
         q = q.Replace("INSERT () VALUES ()", "INSERT DEFAULT VALUES"); // case when table has only one column that is Identity
-
 
         if (operationType == OperationType.Update || operationType == OperationType.InsertOrUpdate || operationType == OperationType.InsertOrUpdateOrDelete)
         {
@@ -458,7 +467,8 @@ public abstract class SqlQueryBuilder
     /// <param name="equalsTable"></param>
     /// <param name="propertColumnsNamesDict"></param>
     /// <returns></returns>
-    public static string GetCommaSeparatedColumns(List<string> columnsNames, string? prefixTable = null, string? equalsTable = null, Dictionary<string, string>? propertColumnsNamesDict = null)
+    public static string GetCommaSeparatedColumns(List<string> columnsNames, string? prefixTable = null, string? equalsTable = null,
+                                                  Dictionary<string, string>? propertColumnsNamesDict = null)
     {
         prefixTable += (prefixTable != null && prefixTable != "@") ? "." : "";
         equalsTable += (equalsTable != null && equalsTable != "@") ? "." : "";
@@ -507,7 +517,8 @@ public abstract class SqlQueryBuilder
     /// <param name="updateByPropertiesAreNullable"></param>
     /// <param name="propertColumnsNamesDict"></param>
     /// <returns></returns>
-    public static string GetANDSeparatedColumns(List<string> columnsNames, string? prefixTable = null, string? equalsTable = null, bool updateByPropertiesAreNullable = false, Dictionary<string, string>? propertColumnsNamesDict = null)
+    public static string GetANDSeparatedColumns(List<string> columnsNames, string? prefixTable = null, string? equalsTable = null, bool updateByPropertiesAreNullable = false,
+                                                Dictionary<string, string>? propertColumnsNamesDict = null)
     {
         string commaSeparatedColumns = GetCommaSeparatedColumns(columnsNames, prefixTable, equalsTable, propertColumnsNamesDict);
 
