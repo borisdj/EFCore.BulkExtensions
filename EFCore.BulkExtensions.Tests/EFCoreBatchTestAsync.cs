@@ -14,9 +14,9 @@ public class EFCoreBatchTestAsync
     protected static int EntitiesNumber => 1000;
 
     [Theory]
-    [InlineData(DbServerType.SQLServer)]
-    [InlineData(DbServerType.SQLite)]
-    public async Task BatchTestAsync(DbServerType dbServer)
+    [InlineData(DatabaseType.SqlServer)]
+    [InlineData(DatabaseType.Sqlite)]
+    public async Task BatchTestAsync(DatabaseType dbServer)
     {
         ContextUtil.DbServer = dbServer;
 
@@ -25,7 +25,7 @@ public class EFCoreBatchTestAsync
         await RunBatchUpdateAsync(dbServer);
 
         int deletedEntities = 1;
-        if (dbServer == DbServerType.SQLServer)
+        if (dbServer == DatabaseType.SqlServer)
         {
             deletedEntities = await RunTopBatchDeleteAsync();
         }
@@ -46,7 +46,7 @@ public class EFCoreBatchTestAsync
         Assert.StartsWith("name ", lastItem.Name);
         Assert.EndsWith(" Concatenated", lastItem.Name);
 
-        if (dbServer == DbServerType.SQLServer)
+        if (dbServer == DatabaseType.SqlServer)
         {
             Assert.EndsWith(" TOP(1)", firstItem.Name);
         }
@@ -58,7 +58,7 @@ public class EFCoreBatchTestAsync
         var dbCommandInterceptor = new TestDbCommandInterceptor();
         var interceptors = new[] { dbCommandInterceptor };
 
-        using var testContext = new TestContext(ContextUtil.GetOptions<TestContext>(DbServerType.SQLServer, interceptors));
+        using var testContext = new TestContext(ContextUtil.GetOptions<TestContext>(DatabaseType.SqlServer, interceptors));
 
         string oldPhoneNumber = "7756789999";
         string newPhoneNumber = "3606789999";
@@ -87,7 +87,7 @@ WHERE [p].[PhoneNumber] = @__oldPhoneNumber_0";
         Assert.Equal(expectedSql.Replace("\r\n", "\n"), executedCommand.Sql.Replace("\r\n", "\n"));
     }
 
-    internal async Task RunDeleteAllAsync(DbServerType dbServer)
+    internal async Task RunDeleteAllAsync(DatabaseType dbServer)
     {
         using var context = new TestContext(ContextUtil.GetOptions());
         await context.Items.AddAsync(new Item { }); // used for initial add so that after RESEED it starts from 1, not 0
@@ -99,8 +99,8 @@ WHERE [p].[PhoneNumber] = @__oldPhoneNumber_0";
         // RESET AutoIncrement
         string deleteTableSql = dbServer switch
         {
-            DbServerType.SQLServer => $"DBCC CHECKIDENT('[dbo].[{nameof(Item)}]', RESEED, 0);",
-            DbServerType.SQLite => $"DELETE FROM sqlite_sequence WHERE name = '{nameof(Item)}';",
+            DatabaseType.SqlServer => $"DBCC CHECKIDENT('[dbo].[{nameof(Item)}]', RESEED, 0);",
+            DatabaseType.Sqlite => $"DELETE FROM sqlite_sequence WHERE name = '{nameof(Item)}';",
             _ => throw new ArgumentException($"Unknown database type: '{dbServer}'.", nameof(dbServer)),
         };
         context.Database.ExecuteSqlRaw(deleteTableSql);
@@ -128,7 +128,7 @@ WHERE [p].[PhoneNumber] = @__oldPhoneNumber_0";
         await context.SaveChangesAsync();
     }
 
-    private static async Task RunBatchUpdateAsync(DbServerType dbServer)
+    private static async Task RunBatchUpdateAsync(DatabaseType dbServer)
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -137,11 +137,11 @@ WHERE [p].[PhoneNumber] = @__oldPhoneNumber_0";
         decimal price = 0;
 
         var query = context.Items.AsQueryable();
-        if (dbServer == DbServerType.SQLServer)
+        if (dbServer == DatabaseType.SqlServer)
         {
             query = query.Where(a => a.ItemId <= 500 && a.Price >= price);
         }
-        if (dbServer == DbServerType.SQLite)
+        if (dbServer == DatabaseType.Sqlite)
         {
             query = query.Where(a => a.ItemId <= 500); // Sqlite currently does Not support multiple conditions
         }
@@ -150,7 +150,7 @@ WHERE [p].[PhoneNumber] = @__oldPhoneNumber_0";
 
         await query.BatchUpdateAsync(a => new Item { Name = a.Name + " Concatenated", Quantity = a.Quantity + 100, Price = null }); // example of BatchUpdate value Increment/Decrement
 
-        if (dbServer == DbServerType.SQLServer) // Sqlite currently does Not support Take(): LIMIT
+        if (dbServer == DatabaseType.SqlServer) // Sqlite currently does Not support Take(): LIMIT
         {
             query = context.Items.Where(a => a.ItemId <= 500 && a.Price == null);
             await query.Take(1).BatchUpdateAsync(a => new Item { Name = a.Name + " TOP(1)", Quantity = a.Quantity + 100 }); // example of BatchUpdate with TOP(1)
@@ -164,7 +164,7 @@ WHERE [p].[PhoneNumber] = @__oldPhoneNumber_0";
                                         .BatchUpdateAsync(a => new Item() { TimeUpdated = DateTime.Now })
                                         .ConfigureAwait(false);
 
-        if (dbServer == DbServerType.SQLServer) // Sqlite Not supported
+        if (dbServer == DatabaseType.SqlServer) // Sqlite Not supported
         {
             var newValue = 5;
             await context.Parents.Where(parent => parent.ParentId == 1)

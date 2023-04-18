@@ -10,9 +10,9 @@ namespace EFCore.BulkExtensions.Tests.ValueConverters;
 public class ValueConverterTests: IDisposable
 {
     [Theory]
-    [InlineData(DbServerType.SQLServer)]
-    [InlineData(DbServerType.SQLite)]
-    public void BulkInsertOrUpdate_EntityUsingBuiltInEnumToStringConverter_SavesToDatabase(DbServerType dbServer)
+    [InlineData(DatabaseType.SqlServer)]
+    [InlineData(DatabaseType.Sqlite)]
+    public void BulkInsertOrUpdate_EntityUsingBuiltInEnumToStringConverter_SavesToDatabase(DatabaseType dbServer)
     {
         ContextUtil.DbServer = dbServer;
 
@@ -36,9 +36,9 @@ public class ValueConverterTests: IDisposable
     }
 
     [Theory]
-    [InlineData(DbServerType.SQLServer)]
-    [InlineData(DbServerType.SQLite)]
-    public void BatchUpdate_EntityUsingBuiltInEnumToStringConverter_UpdatesDatabaseWithEnumStringValue(DbServerType dbServer)
+    [InlineData(DatabaseType.SqlServer)]
+    [InlineData(DatabaseType.Sqlite)]
+    public void BatchUpdate_EntityUsingBuiltInEnumToStringConverter_UpdatesDatabaseWithEnumStringValue(DatabaseType dbServer)
     {
         ContextUtil.DbServer = dbServer;
 
@@ -68,9 +68,9 @@ public class ValueConverterTests: IDisposable
     }
 
     [Theory]
-    [InlineData(DbServerType.SQLServer)]
-    [InlineData(DbServerType.SQLite)]
-    public void BatchDelete_UsingWhereExpressionWithValueConverter_Deletes(DbServerType dbServer)
+    [InlineData(DatabaseType.SqlServer)]
+    [InlineData(DatabaseType.Sqlite)]
+    public void BatchDelete_UsingWhereExpressionWithValueConverter_Deletes(DatabaseType dbServer)
     {
         ContextUtil.DbServer = dbServer;
 

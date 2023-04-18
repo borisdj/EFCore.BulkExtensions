@@ -1,5 +1,4 @@
-﻿using EFCore.BulkExtensions.SqlAdapters;
-using Microsoft.EntityFrameworkCore.Infrastructure;
+﻿using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using System.Data.Common;
 
@@ -8,9 +7,9 @@ namespace EFCore.BulkExtensions.SqlAdapters.SqlServer;
 /// <inheritdoc/>
 public class SqlServerDbServer : IDbServer
 {
-    DbServerType IDbServer.Type => DbServerType.SQLServer;
+    DatabaseType IDbServer.Type => DatabaseType.SqlServer;
 
-    SqlOperationsServerAdapter _adapter = new ();
+    SqlServerAdapter _adapter = new ();
     ISqlOperationsAdapter IDbServer.Adapter => _adapter;
 
     SqlServerDialect _dialect = new();
@@ -22,7 +21,7 @@ public class SqlServerDbServer : IDbServer
     /// <inheritdoc/>
     public DbTransaction? DbTransaction { get; set; }
 
-    SqlAdapters.QueryBuilderExtensions _queryBuilder = new SqlQueryBuilderSqlServer();
+    SqlAdapters.QueryBuilderExtensions _queryBuilder = new SqlServerQueryBuilder();
     /// <inheritdoc/>
     public QueryBuilderExtensions QueryBuilder => _queryBuilder;
 

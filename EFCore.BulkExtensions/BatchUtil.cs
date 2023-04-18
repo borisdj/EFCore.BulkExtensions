@@ -45,7 +45,7 @@ public static class BatchUtil
         var databaseType = SqlAdaptersMapping.GetDatabaseType();
 
         string resultQuery;
-        if (databaseType == DbServerType.SQLServer)
+        if (databaseType == DatabaseType.SqlServer)
         {
             tableAlias = $"[{tableAlias}]";
             int outerQueryOrderByIndex = -1;
@@ -94,7 +94,7 @@ public static class BatchUtil
             resultQuery = $"{leadingComments}DELETE {topStatement}{tableAlias}{sql}";
         }
 
-        if (databaseType == DbServerType.PostgreSQL)
+        if (databaseType == DatabaseType.PostgreSql)
         {
             resultQuery = SqlAdaptersMapping.DbServer!.QueryBuilder.RestructureForBatch(resultQuery, isDelete: true);
 
@@ -146,7 +146,7 @@ public static class BatchUtil
         }
 
         var databaseType = SqlAdaptersMapping.GetDatabaseType();
-        if (databaseType == DbServerType.PostgreSQL)
+        if (databaseType == DatabaseType.PostgreSql)
         {
             resultQuery = SqlAdaptersMapping.DbServer!.QueryBuilder.RestructureForBatch(resultQuery);
 
@@ -189,7 +189,7 @@ public static class BatchUtil
         CreateUpdateBody(createUpdateBodyData, expression.Body);
 
         var sqlParameters = ReloadSqlParameters(context, createUpdateBodyData.SqlParameters); // Sqlite requires SqliteParameters
-        var sqlColumns = (createUpdateBodyData.DatabaseType == DbServerType.SQLServer) 
+        var sqlColumns = (createUpdateBodyData.DatabaseType == DatabaseType.SqlServer) 
             ? createUpdateBodyData.UpdateColumnsSql
             : createUpdateBodyData.UpdateColumnsSql.Replace($"[{tableAlias}].", "");
 
@@ -206,7 +206,7 @@ public static class BatchUtil
         }
 
         var databaseType = SqlAdaptersMapping.GetDatabaseType();
-        if (databaseType == DbServerType.PostgreSQL)
+        if (databaseType == DatabaseType.PostgreSql)
         {
             resultQuery = SqlAdaptersMapping.DbServer!.QueryBuilder.RestructureForBatch(resultQuery);
 

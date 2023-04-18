@@ -1,5 +1,4 @@
-﻿using EFCore.BulkExtensions.SqlAdapters;
-using Microsoft.Data.Sqlite;
+﻿using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using System;
@@ -10,9 +9,9 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace EFCore.BulkExtensions.SqlAdapters.SQLite;
+namespace EFCore.BulkExtensions.SqlAdapters.Sqlite;
 /// <inheritdoc/>
-public class SqliteOperationsAdapter : ISqlOperationsAdapter
+public class SqliteAdapter : ISqlOperationsAdapter
 {
     /// <inheritdoc/>
     #region Methods
@@ -152,7 +151,7 @@ public class SqliteOperationsAdapter : ISqlOperationsAdapter
 
             if (operationType == OperationType.Insert && tableInfo.BulkConfig.SetOutputIdentity && tableInfo.IdentityColumnName != null) // For Sqlite Identity can be set by Db only with pure Insert method
             {
-                command.CommandText = SqlQueryBuilderSqlite.SelectLastInsertRowId();
+                command.CommandText = SqliteQueryBuilder.SelectLastInsertRowId();
 
                 object? lastRowIdScalar = isAsync ? await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false)
                                                        : command.ExecuteScalar();
@@ -215,7 +214,7 @@ public class SqliteOperationsAdapter : ISqlOperationsAdapter
             command.Transaction = transaction;
 
             // CREATE
-            command.CommandText = SqlQueryBuilderSqlite.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName);
+            command.CommandText = SqliteQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName);
             if (isAsync)
             {
                 await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
@@ -260,7 +259,7 @@ public class SqliteOperationsAdapter : ISqlOperationsAdapter
         {
             if (tempTableCreated && command != null)
             {
-                command.CommandText = SqlQueryBuilderSqlite.DropTable(tableInfo.FullTempTableName);
+                command.CommandText = SqliteQueryBuilder.DropTable(tableInfo.FullTempTableName);
                 if (isAsync)
                 {
                     await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
@@ -334,19 +333,19 @@ public class SqliteOperationsAdapter : ISqlOperationsAdapter
         switch (operationType)
         {
             case OperationType.Insert:
-                command.CommandText = SqlQueryBuilderSqlite.InsertIntoTable(tableInfo, OperationType.Insert);
+                command.CommandText = SqliteQueryBuilder.InsertIntoTable(tableInfo, OperationType.Insert);
                 break;
             case OperationType.InsertOrUpdate:
-                command.CommandText = SqlQueryBuilderSqlite.InsertIntoTable(tableInfo, OperationType.InsertOrUpdate);
+                command.CommandText = SqliteQueryBuilder.InsertIntoTable(tableInfo, OperationType.InsertOrUpdate);
                 break;
             case OperationType.InsertOrUpdateOrDelete:
                 throw new NotSupportedException("'BulkInsertOrUpdateDelete' not supported for Sqlite. Sqlite has only UPSERT statement (analog for MERGE WHEN MATCHED) but no functionality for: 'WHEN NOT MATCHED BY SOURCE THEN DELETE'." +
                                                 " Another way to achieve this is to BulkRead existing data from DB, split list into sublists and call separately Bulk methods for Insert, Update, Delete.");
             case OperationType.Update:
-                command.CommandText = SqlQueryBuilderSqlite.UpdateSetTable(tableInfo);
+                command.CommandText = SqliteQueryBuilder.UpdateSetTable(tableInfo);
                 break;
             case OperationType.Delete:
-                command.CommandText = SqlQueryBuilderSqlite.DeleteFromTable(tableInfo);
+                command.CommandText = SqliteQueryBuilder.DeleteFromTable(tableInfo);
                 break;
         }
 

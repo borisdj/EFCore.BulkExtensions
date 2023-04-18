@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 namespace EFCore.BulkExtensions.SqlAdapters.SqlServer;
 
 /// <inheritdoc/>
-public class SqlOperationsServerAdapter: ISqlOperationsAdapter
+public class SqlServerAdapter: ISqlOperationsAdapter
 {
     /// <inheritdoc/>
     #region Methods
@@ -482,7 +482,7 @@ public class SqlOperationsServerAdapter: ISqlOperationsAdapter
         var ownedEntitiesMappedProperties = new HashSet<string>();
 
         var databaseType = SqlAdaptersMapping.GetDatabaseType();
-        var isSqlServer = databaseType == DbServerType.SQLServer;
+        var isSqlServer = databaseType == DatabaseType.SqlServer;
         var sqlServerBytesWriter = new SqlServerBytesWriter();
 
         var objectIdentifier = tableInfo.ObjectIdentifier;

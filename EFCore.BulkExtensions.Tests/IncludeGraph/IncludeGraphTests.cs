@@ -79,9 +79,9 @@ public class IncludeGraphTests : IDisposable
     };
 
     [Theory]
-    [InlineData(DbServerType.SQLServer)]
+    [InlineData(DatabaseType.SqlServer)]
     //[InlineData(DbServer.Sqlite)]
-    public async Task BulkInsertOrUpdate_EntityWithNestedObjectGraph_SavesGraphToDatabase(DbServerType dbServer)
+    public async Task BulkInsertOrUpdate_EntityWithNestedObjectGraph_SavesGraphToDatabase(DatabaseType dbServer)
     {
         ContextUtil.DbServer = dbServer;
 

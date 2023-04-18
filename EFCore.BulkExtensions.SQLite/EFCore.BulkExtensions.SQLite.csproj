@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-    <Title>EFCore.BulkExtensions.SQLite</Title>
+    <Title>EFCore.BulkExtensions.Sqlite</Title>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <Version>7.0.3</Version>
     <Nullable>enable</Nullable>

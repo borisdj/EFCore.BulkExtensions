@@ -11,7 +11,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.BulkExtensions.MySql
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.BulkExtensions.PostgreSql", "EFCore.BulkExtensions.PostgreSql\EFCore.BulkExtensions.PostgreSql.csproj", "{5C539532-9885-4E10-B1F3-4AD04EC54904}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.BulkExtensions.SQLite", "EFCore.BulkExtensions.SQLite\EFCore.BulkExtensions.SQLite.csproj", "{2A416BCF-642B-4BAF-94FE-5C165E63860C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.BulkExtensions.Sqlite", "EFCore.BulkExtensions.Sqlite\EFCore.BulkExtensions.Sqlite.csproj", "{2A416BCF-642B-4BAF-94FE-5C165E63860C}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.BulkExtensions", "EFCore.BulkExtensions\EFCore.BulkExtensions.csproj", "{6796CE3B-B8AA-4F6E-ADAE-DDA86CF79882}"
 EndProject

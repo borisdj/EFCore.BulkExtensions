@@ -197,11 +197,11 @@ public class TestContext : DbContext
 public static class ContextUtil
 {
     static IDbServer? _dbServerMapping;
-    static DbServerType _dbServerValue;
+    static DatabaseType _dbServerValue;
 
     // TODO: Pass DbService through all the GetOptions methods as a parameter and eliminate this property so the automated tests
     // are thread safe
-    public static DbServerType DbServer
+    public static DatabaseType DbServer
     {
         get => _dbServerValue;
         set
@@ -209,10 +209,10 @@ public static class ContextUtil
             _dbServerValue = value;
             _dbServerMapping = value switch
             {
-                DbServerType.SQLServer => new SqlAdapters.SqlServer.SqlServerDbServer(),
-                DbServerType.SQLite => new SqlAdapters.SQLite.SqlLiteDbServer(),
-                DbServerType.PostgreSQL => new SqlAdapters.PostgreSql.PostgreSqlDbServer(),
-                DbServerType.MySQL => new SqlAdapters.MySql.MySqlDbServer(),
+                DatabaseType.SqlServer => new SqlAdapters.SqlServer.SqlServerDbServer(),
+                DatabaseType.Sqlite => new SqlAdapters.Sqlite.SqliteDbServer(),
+                DatabaseType.PostgreSql => new SqlAdapters.PostgreSql.PostgreSqlDbServer(),
+                DatabaseType.MySql => new SqlAdapters.MySql.MySqlDbServer(),
                 _ => throw new NotImplementedException(),
             };
         }
@@ -225,12 +225,12 @@ public static class ContextUtil
         where TDbContext : DbContext
         => GetOptions<TDbContext>(ContextUtil.DbServer, dbInterceptors, databaseName);
 
-    public static DbContextOptions GetOptions<TDbContext>(DbServerType dbServerType, IEnumerable<IInterceptor>? dbInterceptors = null, string databaseName = nameof(EFCoreBulkTest))
+    public static DbContextOptions GetOptions<TDbContext>(DatabaseType dbServerType, IEnumerable<IInterceptor>? dbInterceptors = null, string databaseName = nameof(EFCoreBulkTest))
         where TDbContext : DbContext
     {
         var optionsBuilder = new DbContextOptionsBuilder<TDbContext>();
 
-        if (dbServerType == DbServerType.SQLServer)
+        if (dbServerType == DatabaseType.SqlServer)
         {
             var connectionString = GetSqlServerConnectionString(databaseName);
 
@@ -244,7 +244,7 @@ public static class ContextUtil
                 conf.UseHierarchyId();
             });
         }
-        else if (dbServerType == DbServerType.SQLite)
+        else if (dbServerType == DatabaseType.Sqlite)
         {
             string connectionString = GetSqliteConnectionString(databaseName);
             optionsBuilder.UseSqlite(connectionString);
@@ -254,12 +254,12 @@ public static class ContextUtil
             //string connectionString = (new SqliteConnectionStringBuilder { DataSource = $"{databaseName}Lite.db" }).ToString();
             //optionsBuilder.UseSqlite(new SqliteConnection(connectionString));
         }
-        else if (DbServer == DbServerType.PostgreSQL)
+        else if (DbServer == DatabaseType.PostgreSql)
         {
             string connectionString = GetPostgreSqlConnectionString(databaseName);
             optionsBuilder.UseNpgsql(connectionString);
         }
-        else if (DbServer == DbServerType.MySQL)
+        else if (DbServer == DatabaseType.MySql)
         {
             string connectionString = GetMySqlConnectionString(databaseName);
             optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));

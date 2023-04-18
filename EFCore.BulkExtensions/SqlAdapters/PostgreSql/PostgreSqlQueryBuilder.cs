@@ -8,7 +8,7 @@ namespace EFCore.BulkExtensions.SqlAdapters.PostgreSql;
 /// <summary>
 /// Contains a list of methods to generate SQL queries required by EFCore
 /// </summary>
-public class SqlQueryBuilderPostgreSql : SqlAdapters.QueryBuilderExtensions
+public class PostgreSqlQueryBuilder : QueryBuilderExtensions
 {
     /// <summary>
     /// Generates SQL query to create table copy
@@ -124,7 +124,7 @@ public class SqlQueryBuilderPostgreSql : SqlAdapters.QueryBuilderExtensions
                 $"(SELECT {commaSeparatedColumns} FROM {tableInfo.FullTempTableName}) " + subqueryText +
                 $"ON CONFLICT ({updateByColumns}) " +
                 (applySubqueryLimit
-                 ? "DO NOTHING"
+                 ? $"DO NOTHING"
                  : $"DO UPDATE SET {equalsColumns}");
 
             if (tableInfo.BulkConfig.OnConflictUpdateWhereSql != null)

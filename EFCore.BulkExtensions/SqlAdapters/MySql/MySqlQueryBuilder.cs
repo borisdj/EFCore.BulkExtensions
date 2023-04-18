@@ -10,7 +10,7 @@ namespace EFCore.BulkExtensions.SqlAdapters.MySql;
 /// <summary>
 ///  Contains a list of methods to generate SQL queries required by EFCore
 /// </summary>
-public class SqlQueryBuilderMySql : QueryBuilderExtensions
+public class MySqlQueryBuilder : QueryBuilderExtensions
 {
     /// <summary>
     /// Generates SQL query to create table copy
@@ -25,7 +25,7 @@ public class SqlQueryBuilderMySql : QueryBuilderExtensions
 
         var query = $"CREATE {keywordTemp}TABLE {newTableName} " +
                     $"SELECT * FROM {existingTableName} " +
-                     "LIMIT 0;";
+                    $"LIMIT 0;";
         query = query.Replace("[", "").Replace("]", "");
         return query;
     }
@@ -92,7 +92,7 @@ public class SqlQueryBuilderMySql : QueryBuilderExtensions
         var firstPrimaryKey = tableInfo.PrimaryKeysPropertyColumnNameDict.FirstOrDefault().Key;
         if (operationType == OperationType.Delete)
         {
-            query =  "DELETE A " +
+            query = $"DELETE A " +
                     $"FROM {tableInfo.FullTableName} AS A " +
                     $"INNER JOIN {tableInfo.FullTempTableName} B on A.{firstPrimaryKey} = B.{firstPrimaryKey}; ";
         }
@@ -105,7 +105,7 @@ public class SqlQueryBuilderMySql : QueryBuilderExtensions
 
             query = $"INSERT INTO {tableInfo.FullTableName} ({commaSeparatedColumns}) " +
                     $"SELECT {commaSeparatedColumns} FROM {tableInfo.FullTempTableName} AS EXCLUDED " +
-                     "ON DUPLICATE KEY UPDATE " +
+                    $"ON DUPLICATE KEY UPDATE " +
                     $"{equalsColumns}; ";
             if (tableInfo.CreateOutputTable)
             {

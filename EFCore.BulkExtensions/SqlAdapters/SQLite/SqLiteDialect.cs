@@ -1,5 +1,4 @@
-﻿using EFCore.BulkExtensions.SqlAdapters;
-using Microsoft.Data.Sqlite;
+﻿using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Data;
@@ -7,7 +6,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text.RegularExpressions;
 
-namespace EFCore.BulkExtensions.SqlAdapters.SQLite;
+namespace EFCore.BulkExtensions.SqlAdapters.Sqlite;
 
 /// <inheritdoc/>
 public class SqliteDialect : IQueryBuilderSpecialization
@@ -32,7 +31,7 @@ public class SqliteDialect : IQueryBuilderSpecialization
     }
 
     /// <inheritdoc/>
-    public (string, string) GetBatchSqlReformatTableAliasAndTopStatement(string sqlQuery, DbServerType databaseType)
+    public (string, string) GetBatchSqlReformatTableAliasAndTopStatement(string sqlQuery, DatabaseType databaseType)
     {
         return (string.Empty, string.Empty);
     }

@@ -113,7 +113,7 @@ public class MySqlAdapter : ISqlOperationsAdapter
             {
                 tableInfo.InsertToTempTable = true;
 
-                var sqlCreateTableCopy = SqlQueryBuilderMySql.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo.InsertToTempTable);
+                var sqlCreateTableCopy = MySqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo.InsertToTempTable);
                 if (isAsync)
                 {
                     await context.Database.ExecuteSqlRawAsync(sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
@@ -140,7 +140,7 @@ public class MySqlAdapter : ISqlOperationsAdapter
 
             if (!hasUniqueConstrain)
             {
-                string createUniqueConstrain = SqlQueryBuilderMySql.CreateUniqueConstrain(tableInfo);
+                string createUniqueConstrain = MySqlQueryBuilder.CreateUniqueConstrain(tableInfo);
                 if (isAsync)
                 {
                     await context.Database.ExecuteSqlRawAsync(createUniqueConstrain, cancellationToken).ConfigureAwait(false);
@@ -155,7 +155,7 @@ public class MySqlAdapter : ISqlOperationsAdapter
             if (tableInfo.CreateOutputTable)
             {
                 tableInfo.InsertToTempTable = true;
-                var sqlCreateOutputTableCopy = SqlQueryBuilderMySql.CreateTableCopy(tableInfo.FullTableName,
+                var sqlCreateOutputTableCopy = MySqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName,
                     tableInfo.FullTempOutputTableName, tableInfo.InsertToTempTable);
                 if (isAsync)
                 {
@@ -180,7 +180,7 @@ public class MySqlAdapter : ISqlOperationsAdapter
                 }
             }
 
-            var sqlMergeTable = SqlQueryBuilderMySql.MergeTable<T>(tableInfo, operationType);
+            var sqlMergeTable = MySqlQueryBuilder.MergeTable<T>(tableInfo, operationType);
             if (isAsync)
             {
                 await context.Database.ExecuteSqlRawAsync(sqlMergeTable, cancellationToken).ConfigureAwait(false);
@@ -216,7 +216,7 @@ public class MySqlAdapter : ISqlOperationsAdapter
         {
             if (uniqueConstrainCreated)
             {
-                string dropUniqueConstrain = SqlQueryBuilderMySql.DropUniqueConstrain(tableInfo);
+                string dropUniqueConstrain = MySqlQueryBuilder.DropUniqueConstrain(tableInfo);
                 if (isAsync)
                 {
                     await context.Database.ExecuteSqlRawAsync(dropUniqueConstrain, cancellationToken)
@@ -232,7 +232,7 @@ public class MySqlAdapter : ISqlOperationsAdapter
             {
                 if (outputTableCreated)
                 {
-                    var sqlDropOutputTable = SqlQueryBuilderMySql.DropTable(tableInfo.FullTempOutputTableName, tableInfo.InsertToTempTable);
+                    var sqlDropOutputTable = MySqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName, tableInfo.InsertToTempTable);
                     if (isAsync)
                     {
                         await context.Database.ExecuteSqlRawAsync(sqlDropOutputTable, cancellationToken).ConfigureAwait(false);
@@ -245,7 +245,7 @@ public class MySqlAdapter : ISqlOperationsAdapter
                 }
                 if (tempTableCreated)
                 {
-                    var sqlDropTable = SqlQueryBuilderMySql.DropTable(tableInfo.FullTempTableName, tableInfo.InsertToTempTable);
+                    var sqlDropTable = MySqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.InsertToTempTable);
                     if (isAsync)
                     {
                         await context.Database.ExecuteSqlRawAsync(sqlDropTable, cancellationToken).ConfigureAwait(false);
@@ -321,7 +321,7 @@ public class MySqlAdapter : ISqlOperationsAdapter
     internal static async Task<(bool, bool)> CheckHasExplicitUniqueConstrainAsync(DbContext context, TableInfo tableInfo, 
         bool isAsync, CancellationToken cancellationToken)
     {
-        string countUniqueConstrain = SqlQueryBuilderMySql.HasUniqueConstrain(tableInfo);
+        string countUniqueConstrain = MySqlQueryBuilder.HasUniqueConstrain(tableInfo);
 
         (DbConnection connection, bool connectionOpenedInternally) = await OpenAndGetMySqlConnectionAsync(context, isAsync, cancellationToken).ConfigureAwait(false);
 
@@ -424,7 +424,7 @@ public class MySqlAdapter : ISqlOperationsAdapter
         var ownedEntitiesMappedProperties = new HashSet<string>();
 
         var databaseType = SqlAdaptersMapping.GetDatabaseType();
-        var isMySql = databaseType == DbServerType.MySQL;
+        var isMySql = databaseType == DatabaseType.MySql;
         
         var objectIdentifier = tableInfo.ObjectIdentifier;
         type = tableInfo.HasAbstractList ? entities[0]!.GetType() : type;
