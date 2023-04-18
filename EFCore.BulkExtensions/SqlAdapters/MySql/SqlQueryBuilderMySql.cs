@@ -1,9 +1,9 @@
-﻿using System;
+﻿using Microsoft.Data.SqlClient;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using Microsoft.Data.SqlClient;
 
 namespace EFCore.BulkExtensions.SqlAdapters.MySql;
 
@@ -22,9 +22,10 @@ public class SqlQueryBuilderMySql : QueryBuilderExtensions
     {
         useTempDb = false;
         string keywordTemp = useTempDb ? "TEMPORARY " : "";
+
         var query = $"CREATE {keywordTemp}TABLE {newTableName} " +
-                $"SELECT * FROM {existingTableName} " +
-                "LIMIT 0;";
+                    $"SELECT * FROM {existingTableName} " +
+                     "LIMIT 0;";
         query = query.Replace("[", "").Replace("]", "");
         return query;
     }
@@ -91,7 +92,7 @@ public class SqlQueryBuilderMySql : QueryBuilderExtensions
         var firstPrimaryKey = tableInfo.PrimaryKeysPropertyColumnNameDict.FirstOrDefault().Key;
         if (operationType == OperationType.Delete)
         {
-            query = "delete A " +
+            query =  "DELETE A " +
                     $"FROM {tableInfo.FullTableName} AS A " +
                     $"INNER JOIN {tableInfo.FullTempTableName} B on A.{firstPrimaryKey} = B.{firstPrimaryKey}; ";
         }
@@ -104,7 +105,7 @@ public class SqlQueryBuilderMySql : QueryBuilderExtensions
 
             query = $"INSERT INTO {tableInfo.FullTableName} ({commaSeparatedColumns}) " +
                     $"SELECT {commaSeparatedColumns} FROM {tableInfo.FullTempTableName} AS EXCLUDED " +
-                    "ON DUPLICATE KEY UPDATE " +
+                     "ON DUPLICATE KEY UPDATE " +
                     $"{equalsColumns}; ";
             if (tableInfo.CreateOutputTable)
             {

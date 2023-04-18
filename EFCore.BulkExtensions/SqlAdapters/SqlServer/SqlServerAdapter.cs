@@ -1,5 +1,4 @@
 ﻿using EFCore.BulkExtensions.Helpers;
-using EFCore.BulkExtensions.SqlAdapters;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -28,14 +27,16 @@ public class SqlOperationsServerAdapter: ISqlOperationsAdapter
     }
 
     /// <inheritdoc/>
-    public async Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress, CancellationToken cancellationToken)
+    public async Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress, 
+        CancellationToken cancellationToken)
     {
         await InsertAsync(context, type, entities, tableInfo, progress, isAsync: true, cancellationToken).ConfigureAwait(false);
     }
     // Public Async and NonAsync are merged into single operation flow with protected method using arg: bool isAsync (keeps code DRY)
     // https://docs.microsoft.com/en-us/archive/msdn-magazine/2015/july/async-programming-brownfield-async-development#the-flag-argument-hack
     /// <inheritdoc/>
-    protected static async Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken)
+    protected static async Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress, 
+        bool isAsync, CancellationToken cancellationToken)
     {
         tableInfo.CheckToSetIdentityForPreserveOrder(tableInfo, entities);
         if (isAsync)
@@ -72,7 +73,7 @@ public class SqlOperationsServerAdapter: ISqlOperationsAdapter
                 if (ex.Message.Contains(BulkExceptionMessage.ColumnMappingNotMatch))
                 {
                     bool tableExist = isAsync ? await TableInfo.CheckTableExistAsync(context, tableInfo, isAsync: true, cancellationToken).ConfigureAwait(false)
-                                                    : TableInfo.CheckTableExistAsync(context, tableInfo, isAsync: false, cancellationToken).GetAwaiter().GetResult();
+                                                    : TableInfo.CheckTableExistAsync(context, tableInfo, isAsync: false, CancellationToken.None).GetAwaiter().GetResult();
 
                     if (!tableExist)
                     {
@@ -412,7 +413,7 @@ public class SqlOperationsServerAdapter: ISqlOperationsAdapter
         return sqlBulkCopy;
     }
     /// <summary>
-    /// Supports <see cref="Microsoft.Data.SqlClient.SqlBulkCopy"/>
+    /// Supports <see cref="SqlBulkCopy"/>
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="sqlBulkCopy"></param>
@@ -420,7 +421,7 @@ public class SqlOperationsServerAdapter: ISqlOperationsAdapter
     /// <param name="entities"></param>
     /// <param name="setColumnMapping"></param>
     /// <param name="progress"></param>
-    private static void SetSqlBulkCopyConfig<T>(Microsoft.Data.SqlClient.SqlBulkCopy sqlBulkCopy, TableInfo tableInfo, IList<T> entities, bool setColumnMapping, Action<decimal>? progress)
+    private static void SetSqlBulkCopyConfig<T>(SqlBulkCopy sqlBulkCopy, TableInfo tableInfo, IList<T> entities, bool setColumnMapping, Action<decimal>? progress)
     {
         sqlBulkCopy.DestinationTableName = tableInfo.InsertToTempTable ? tableInfo.FullTempTableName : tableInfo.FullTableName;
         sqlBulkCopy.BatchSize = tableInfo.BulkConfig.BatchSize;

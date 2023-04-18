@@ -1,4 +1,8 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+using MySqlConnector;
+using NetTopologySuite.Geometries;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
@@ -7,10 +11,6 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
-using MySqlConnector;
-using NetTopologySuite.Geometries;
 
 namespace EFCore.BulkExtensions.SqlAdapters.MySql;
 
@@ -29,12 +29,12 @@ public class MySqlAdapter : ISqlOperationsAdapter
     public async Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress,
         CancellationToken cancellationToken)
     {
-        await InsertAsync(context, type, entities, tableInfo, progress, isAsync: false, CancellationToken.None).ConfigureAwait(false);
+        await InsertAsync(context, type, entities, tableInfo, progress, isAsync: true, CancellationToken.None).ConfigureAwait(false);
     }
 
     /// <inheritdoc/>
-    protected static async Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo,
-        Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken)
+    protected static async Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress, 
+        bool isAsync, CancellationToken cancellationToken)
     {
         tableInfo.CheckToSetIdentityForPreserveOrder(tableInfo, entities);
         if (isAsync)
@@ -80,23 +80,22 @@ public class MySqlAdapter : ISqlOperationsAdapter
         }
     }
     /// <inheritdoc/>
-    public void Merge<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType,
-        Action<decimal>? progress) where T : class
+    public void Merge<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress) 
+        where T : class
     {
         MergeAsync(context, type, entities, tableInfo, operationType, progress, isAsync: false, CancellationToken.None).GetAwaiter().GetResult();
     }
 
     /// <inheritdoc/>
-    public async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType,
-        Action<decimal>? progress, CancellationToken cancellationToken) where T : class
+    public async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress, 
+        CancellationToken cancellationToken) where T : class
     {
         await MergeAsync(context, type, entities, tableInfo, operationType, progress, isAsync: true, CancellationToken.None).ConfigureAwait(false);
     }
 
     /// <inheritdoc/>
-    protected async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo,
-        OperationType operationType, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken)
-        where T : class
+    protected async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress, 
+        bool isAsync, CancellationToken cancellationToken) where T : class
     {
         bool tempTableCreated = false;
         bool outputTableCreated = false;
@@ -127,17 +126,18 @@ public class MySqlAdapter : ISqlOperationsAdapter
             }
 
             bool hasUniqueConstrain = false;
-            if (string.Join("_", tableInfo.EntityPKPropertyColumnNameDict.Keys.ToList()) == string.Join("_", tableInfo.PrimaryKeysPropertyColumnNameDict.Keys.ToList()))
+            string joinedEntityPK = string.Join("_", tableInfo.EntityPKPropertyColumnNameDict.Keys.ToList());
+            string joinedPrimaryKeys = string.Join("_", tableInfo.PrimaryKeysPropertyColumnNameDict.Keys.ToList());
+            if (joinedEntityPK == joinedPrimaryKeys)
             {
-                hasUniqueConstrain = true; // ExplicitUniqueConstrain not required for PK
+                hasUniqueConstrain = true; // Explicit Constrain not required for PK
             }
-            //if (!hasUniqueConstrain)
-            //{
-                // TODO 
-                //hasUniqueConstrain = await CheckHasExplicitUniqueConstrainAsync(context, connection, tableInfo, isAsync, cancellationToken);
-                // throws "The transaction associated with this command is not the connection’s active transaction";
-                // https://mysqlconnector.net/troubleshooting/transaction-usage/
-            //}
+            else
+            {
+                (hasUniqueConstrain, bool connectionOpenedInternally) = 
+                    await CheckHasExplicitUniqueConstrainAsync(context, tableInfo, isAsync, cancellationToken).ConfigureAwait(false);
+            }
+
             if (!hasUniqueConstrain)
             {
                 string createUniqueConstrain = SqlQueryBuilderMySql.CreateUniqueConstrain(tableInfo);
@@ -159,8 +159,7 @@ public class MySqlAdapter : ISqlOperationsAdapter
                     tableInfo.FullTempOutputTableName, tableInfo.InsertToTempTable);
                 if (isAsync)
                 {
-                    await context.Database.ExecuteSqlRawAsync(sqlCreateOutputTableCopy, cancellationToken)
-                        .ConfigureAwait(false);
+                    await context.Database.ExecuteSqlRawAsync(sqlCreateOutputTableCopy, cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
@@ -299,29 +298,65 @@ public class MySqlAdapter : ISqlOperationsAdapter
     #endregion
     #region Connection
 
-    internal static async Task<(MySqlConnection, bool)> OpenAndGetMySqlConnectionAsync(DbContext context, CancellationToken cancellationToken)
+    internal static async Task<(DbConnection, bool)> OpenAndGetMySqlConnectionAsync(DbContext context, 
+        bool isAsync, CancellationToken cancellationToken)
     {
-        bool closeConnectionInternally = false;
-        var mySqlConnection = (MySqlConnection)context.Database.GetDbConnection();
-        if (mySqlConnection.State != ConnectionState.Open)
+        bool oonnectionOpenedInternally = false;
+        var connection = context.Database.GetDbConnection();
+        if (connection.State != ConnectionState.Open)
         {
-            await mySqlConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
-            closeConnectionInternally = true;
+            if (isAsync)
+            {
+                await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                connection.Open();
+            }
+            oonnectionOpenedInternally = true;
         }
-        return (mySqlConnection, closeConnectionInternally);
+        return (connection, oonnectionOpenedInternally);
     }
 
-    internal static (MySqlConnection, bool) OpenAndGetMySqlConnection(DbContext context)
+    internal static async Task<(bool, bool)> CheckHasExplicitUniqueConstrainAsync(DbContext context, TableInfo tableInfo, 
+        bool isAsync, CancellationToken cancellationToken)
     {
-        bool closeConnectionInternally = false;
-        var myConnection = (MySqlConnection)context.Database.GetDbConnection();
-        if (myConnection.State != ConnectionState.Open)
+        string countUniqueConstrain = SqlQueryBuilderMySql.HasUniqueConstrain(tableInfo);
+
+        (DbConnection connection, bool connectionOpenedInternally) = await OpenAndGetMySqlConnectionAsync(context, isAsync, cancellationToken).ConfigureAwait(false);
+
+        bool hasUniqueConstrain = false;
+        using (var command = connection.CreateCommand())
         {
-            myConnection.Open();
-            closeConnectionInternally = true;
+            command.CommandText = countUniqueConstrain;
+            command.Transaction = context.Database.CurrentTransaction?.GetDbTransaction();
+
+            if (isAsync)
+            {
+                using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+                if (reader.HasRows)
+                {
+                    while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+                    {
+                        hasUniqueConstrain = (long)reader[0] == 1;
+                    }
+                }
+            }
+            else
+            {
+                using var reader = command.ExecuteReader();
+                if (reader.HasRows)
+                {
+                    while (reader.Read())
+                    {
+                        hasUniqueConstrain = (long)reader[0] == 1;
+                    }
+                }
+            }
         }
-        return (myConnection, closeConnectionInternally);
+        return (hasUniqueConstrain, connectionOpenedInternally);
     }
+
     #endregion
     #region Connection
     private static MySqlBulkCopy GetMySqlBulkCopy(MySqlConnection mySqlConnection, IDbContextTransaction? transaction, BulkConfig config)
@@ -338,8 +373,12 @@ public class MySqlAdapter : ISqlOperationsAdapter
     /// <param name="tableInfo"></param>
     private static void SetMySqlBulkCopyConfig(MySqlBulkCopy mySqlBulkCopy, TableInfo tableInfo)
     {
-        mySqlBulkCopy.DestinationTableName = tableInfo.InsertToTempTable ? tableInfo.FullTempTableName : tableInfo.FullTableName;
-        mySqlBulkCopy.DestinationTableName = mySqlBulkCopy.DestinationTableName.Replace("[", "").Replace("]", "");
+        string destinationTable = tableInfo.InsertToTempTable ? tableInfo.FullTempTableName
+                                                              : tableInfo.FullTableName;
+        destinationTable = destinationTable.Replace("[", "")
+                                           .Replace("]", "");
+        mySqlBulkCopy.DestinationTableName = destinationTable;
+
         mySqlBulkCopy.NotifyAfter = tableInfo.BulkConfig.NotifyAfter ?? tableInfo.BulkConfig.BatchSize;
         mySqlBulkCopy.BulkCopyTimeout = tableInfo.BulkConfig.BulkCopyTimeout ?? mySqlBulkCopy.BulkCopyTimeout;
     }
@@ -391,19 +430,22 @@ public class MySqlAdapter : ISqlOperationsAdapter
         type = tableInfo.HasAbstractList ? entities[0]!.GetType() : type;
         var entityType = context.Model.FindEntityType(type) ?? throw new ArgumentException($"Unable to determine entity type from given type - {type.Name}");
         var entityTypeProperties = entityType.GetProperties();
+
         var entityPropertiesDict = entityTypeProperties.Where(a => tableInfo.PropertyColumnNamesDict.ContainsKey(a.Name) ||
                                                                    (tableInfo.BulkConfig.OperationType != OperationType.Read && a.Name == tableInfo.TimeStampPropertyName))
                                                        .ToDictionary(a => a.Name, a => a);
-        var entityNavigationOwnedDict = entityType.GetNavigations().Where(a => a.TargetEntityType.IsOwned()).ToDictionary(a => a.Name, a => a);
+
+        var entityNavigationOwnedDict = entityType.GetNavigations().Where(a => a.TargetEntityType.IsOwned())
+                                                                   .ToDictionary(a => a.Name, a => a);
+
         var entityShadowFkPropertiesDict = entityTypeProperties.Where(a => a.IsShadowProperty() &&
                                                                            a.IsForeignKey() &&
                                                                            a.GetContainingForeignKeys().FirstOrDefault()?.DependentToPrincipal?.Name != null)
-                                                                     .ToDictionary(x => x.GetContainingForeignKeys()?.First()?.DependentToPrincipal?.Name ?? string.Empty, a => a);
+                                                               .ToDictionary(x => x.GetContainingForeignKeys()?.First()?.DependentToPrincipal?.Name ?? string.Empty, a => a);
 
-        var entityShadowFkPropertyColumnNamesDict = entityShadowFkPropertiesDict
-            .ToDictionary(a => a.Key, a => a.Value.GetColumnName(objectIdentifier));
-        var shadowPropertyColumnNamesDict = entityPropertiesDict
-            .Where(a => a.Value.IsShadowProperty()).ToDictionary(a => a.Key, a => a.Value.GetColumnName(objectIdentifier));
+        var entityShadowFkPropertyColumnNamesDict = entityShadowFkPropertiesDict.ToDictionary(a => a.Key, a => a.Value.GetColumnName(objectIdentifier));
+        var shadowPropertyColumnNamesDict = entityPropertiesDict.Where(a => a.Value.IsShadowProperty())
+                                                                .ToDictionary(a => a.Key, a => a.Value.GetColumnName(objectIdentifier));
 
         var properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         var discriminatorColumn = GetDiscriminatorColumn(tableInfo);
@@ -420,7 +462,8 @@ public class MySqlAdapter : ISqlOperationsAdapter
                 string columnName = propertyEntityType.GetColumnName(objectIdentifier) ?? string.Empty;
 
                 var isConvertible = tableInfo.ConvertibleColumnConverterDict.ContainsKey(columnName);
-                var propertyType = isConvertible ? tableInfo.ConvertibleColumnConverterDict[columnName].ProviderClrType : property.PropertyType;
+                var propertyType = isConvertible ? tableInfo.ConvertibleColumnConverterDict[columnName].ProviderClrType
+                                                 : property.PropertyType;
 
                 var underlyingType = Nullable.GetUnderlyingType(propertyType);
                 if (underlyingType != null)
@@ -459,7 +502,8 @@ public class MySqlAdapter : ISqlOperationsAdapter
                 var columnName = entityProperty.GetColumnName(objectIdentifier);
 
                 var isConvertible = tableInfo.ConvertibleColumnConverterDict.ContainsKey(columnName ?? string.Empty);
-                var propertyType = isConvertible ? tableInfo.ConvertibleColumnConverterDict[columnName ?? string.Empty].ProviderClrType : entityProperty.ClrType;
+                var propertyType = isConvertible ? tableInfo.ConvertibleColumnConverterDict[columnName ?? string.Empty].ProviderClrType
+                                                 : entityProperty.ClrType;
 
                 var underlyingType = Nullable.GetUnderlyingType(propertyType);
                 if (underlyingType != null)
@@ -598,12 +642,11 @@ public class MySqlAdapter : ISqlOperationsAdapter
                     : null;
 
                 var hasDefaultVauleOnInsert = tableInfo.BulkConfig.OperationType == OperationType.Insert
-                    && !tableInfo.BulkConfig.SetOutputIdentity
-                    && tableInfo.DefaultValueProperties.Contains(property.Name);
+                                           && !tableInfo.BulkConfig.SetOutputIdentity
+                                           && tableInfo.DefaultValueProperties.Contains(property.Name);
 
-                if (tableInfo.BulkConfig.DateTime2PrecisionForceRound
-                    && isMySql
-                    && tableInfo.DateTime2PropertiesPrecisionLessThen7Dict.ContainsKey(property.Name))
+                if (isMySql && tableInfo.BulkConfig.DateTime2PrecisionForceRound
+                            && tableInfo.DateTime2PropertiesPrecisionLessThen7Dict.ContainsKey(property.Name))
                 {
                     DateTime? dateTimePropertyValue = (DateTime?)propertyValue;
 
@@ -651,9 +694,8 @@ public class MySqlAdapter : ISqlOperationsAdapter
                         continue; // BulkRead
                     };
 
-                    columnsDict[columnName] = propertyValue == null
-                        ? null
-                        : foreignKeyShadowProperty.FindFirstPrincipal()?.PropertyInfo?.GetValue(propertyValue); // TODO Check if can be optimized
+                    columnsDict[columnName] = propertyValue != null ? foreignKeyShadowProperty.FindFirstPrincipal()?.PropertyInfo?.GetValue(propertyValue) // TODO Try to optimize
+                                                                    : propertyValue;
                 }
                 else if (entityNavigationOwnedDict.ContainsKey(property.Name) && !tableInfo.LoadOnlyPKColumn)
                 {
