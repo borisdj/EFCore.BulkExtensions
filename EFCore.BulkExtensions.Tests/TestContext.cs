@@ -89,7 +89,6 @@ public class TestContext : DbContext
 
         modelBuilder.Entity<Info>(e => { e.Property(p => p.ConvertedTime).HasConversion((value) => value.AddDays(1), (value) => value.AddDays(-1)); });
 
-
         modelBuilder.Entity<UserRole>().HasKey(a => new { a.UserId, a.RoleId });
 
         modelBuilder.Entity<Info>(e => { e.Property(p => p.ConvertedTime).HasConversion((value) => value.AddDays(1), (value) => value.AddDays(-1)); });

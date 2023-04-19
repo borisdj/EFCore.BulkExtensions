@@ -77,12 +77,12 @@ public class PostgreSqlQueryBuilder : QueryBuilderExtensions
         else if (operationType == OperationType.Delete)
         {
             var deleteByColumns = SqlQueryBuilder.GetCommaSeparatedColumns(tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList(), tableInfo.FullTableName, tableInfo.FullTempTableName);
-            deleteByColumns = deleteByColumns.Replace(",", " AND");
-            deleteByColumns = deleteByColumns.Replace("[", @"""").Replace("]", @"""");
+            deleteByColumns = deleteByColumns.Replace(",", " AND")
+                                             .Replace("[", @"""").Replace("]", @"""");
 
             q = $"DELETE FROM {tableInfo.FullTableName} " +
                 $"USING {tableInfo.FullTempTableName} " +
-                $@"WHERE {deleteByColumns}";
+                $"WHERE {deleteByColumns}";
         }
         else if (operationType == OperationType.Update)
         {
