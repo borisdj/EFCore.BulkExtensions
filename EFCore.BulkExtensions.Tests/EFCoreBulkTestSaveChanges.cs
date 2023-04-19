@@ -15,7 +15,7 @@ public class EFCoreBulkTestSaveChanges
     [InlineData(DatabaseType.Sqlite)]
     public void SaveChangesTest(DatabaseType dbServer)
     {
-        ContextUtil.DbServer = dbServer;
+        ContextUtil.DatabaseType = dbServer;
 
         new EFCoreBatchTest().RunDeleteAll(dbServer);
         using (var context = new TestContext(ContextUtil.GetOptions()))
@@ -32,7 +32,7 @@ public class EFCoreBulkTestSaveChanges
     [InlineData(DatabaseType.Sqlite)]
     public async Task SaveChangesTestAsync(DatabaseType dbServer)
     {
-        ContextUtil.DbServer = dbServer;
+        ContextUtil.DatabaseType = dbServer;
 
         await new EFCoreBatchTestAsync().RunDeleteAllAsync(dbServer);
         using (var context = new TestContext(ContextUtil.GetOptions()))

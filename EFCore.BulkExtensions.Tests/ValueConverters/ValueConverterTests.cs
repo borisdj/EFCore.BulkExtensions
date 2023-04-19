@@ -14,7 +14,7 @@ public class ValueConverterTests: IDisposable
     [InlineData(DatabaseType.Sqlite)]
     public void BulkInsertOrUpdate_EntityUsingBuiltInEnumToStringConverter_SavesToDatabase(DatabaseType dbServer)
     {
-        ContextUtil.DbServer = dbServer;
+        ContextUtil.DatabaseType = dbServer;
 
         using var db = new VcDbContext(ContextUtil.GetOptions<VcDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_ValueConverters"));
 
@@ -40,7 +40,7 @@ public class ValueConverterTests: IDisposable
     [InlineData(DatabaseType.Sqlite)]
     public void BatchUpdate_EntityUsingBuiltInEnumToStringConverter_UpdatesDatabaseWithEnumStringValue(DatabaseType dbServer)
     {
-        ContextUtil.DbServer = dbServer;
+        ContextUtil.DatabaseType = dbServer;
 
         using var db = new VcDbContext(ContextUtil.GetOptions<VcDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_ValueConverters"));
 
@@ -72,7 +72,7 @@ public class ValueConverterTests: IDisposable
     [InlineData(DatabaseType.Sqlite)]
     public void BatchDelete_UsingWhereExpressionWithValueConverter_Deletes(DatabaseType dbServer)
     {
-        ContextUtil.DbServer = dbServer;
+        ContextUtil.DatabaseType = dbServer;
 
         using var db = new VcDbContext(ContextUtil.GetOptions<VcDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_ValueConverters"));
 

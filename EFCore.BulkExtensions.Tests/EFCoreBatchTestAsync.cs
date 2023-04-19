@@ -18,7 +18,7 @@ public class EFCoreBatchTestAsync
     [InlineData(DatabaseType.Sqlite)]
     public async Task BatchTestAsync(DatabaseType dbServer)
     {
-        ContextUtil.DbServer = dbServer;
+        ContextUtil.DatabaseType = dbServer;
 
         await RunDeleteAllAsync(dbServer);
         await RunInsertAsync();

@@ -83,7 +83,7 @@ public class IncludeGraphTests : IDisposable
     //[InlineData(DbServer.Sqlite)]
     public async Task BulkInsertOrUpdate_EntityWithNestedObjectGraph_SavesGraphToDatabase(DatabaseType dbServer)
     {
-        ContextUtil.DbServer = dbServer;
+        ContextUtil.DatabaseType = dbServer;
 
         using var db = new GraphDbContext(ContextUtil.GetOptions<GraphDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_Graph"));
         await db.Database.EnsureCreatedAsync();

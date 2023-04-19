@@ -76,7 +76,7 @@ public class Issue547 : IDisposable
     [InlineData(DatabaseType.SqlServer)]
     public async Task Test(DatabaseType dbServer)
     {
-        ContextUtil.DbServer = dbServer;
+        ContextUtil.DatabaseType = dbServer;
 
         using var db = new Issue547DbContext(ContextUtil.GetOptions<Issue547DbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_Issue547"));
         await db.Database.EnsureCreatedAsync();

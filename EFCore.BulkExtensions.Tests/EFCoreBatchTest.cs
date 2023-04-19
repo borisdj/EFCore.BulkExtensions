@@ -17,7 +17,7 @@ public class EFCoreBatchTest
     [InlineData(DatabaseType.SqlServer)]
     public void BatchConverterTest(DatabaseType dbServer)
     {
-        ContextUtil.DbServer = dbServer;
+        ContextUtil.DatabaseType = dbServer;
 
         using var context = new TestContext(ContextUtil.GetOptions());
         context.Truncate<Info>();
@@ -39,7 +39,7 @@ public class EFCoreBatchTest
     [InlineData(DatabaseType.Sqlite)]
     public void BatchTest(DatabaseType dbServer)
     {
-        ContextUtil.DbServer = dbServer;
+        ContextUtil.DatabaseType = dbServer;
 
         RunDeleteAll(dbServer);
         RunInsert();

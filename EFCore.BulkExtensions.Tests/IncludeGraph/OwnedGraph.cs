@@ -65,7 +65,7 @@ public class OwnedGraph : IDisposable
     public async Task Test(DatabaseType dbServer)
     {
         //ARRANGE
-        ContextUtil.DbServer = dbServer;
+        ContextUtil.DatabaseType = dbServer;
 
         using var db = new OwnedGraphContext(ContextUtil.GetOptions<OwnedGraphContext>(databaseName: $"{nameof(EFCoreBulkTest)}_OwnedGraph"));
         await db.Database.EnsureCreatedAsync();

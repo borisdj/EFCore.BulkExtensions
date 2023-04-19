@@ -24,34 +24,34 @@ public class EFCoreBulkTestAsync
     [InlineData(DatabaseType.SqlServer, true)]
     [InlineData(DatabaseType.Sqlite, true)]
     //[InlineData(DatabaseType.SqlServer, false)] // for speed comparison with Regular EF CUD operations
-    public async Task OperationsTestAsync(DatabaseType dbServer, bool isBulk)
+    public async Task OperationsTestAsync(DatabaseType databaseType, bool isBulk)
     {
-        ContextUtil.DbServer = dbServer;
+        ContextUtil.DatabaseType = databaseType;
 
         //await DeletePreviousDatabaseAsync().ConfigureAwait(false);
-        await new EFCoreBatchTestAsync().RunDeleteAllAsync(dbServer);
+        await new EFCoreBatchTestAsync().RunDeleteAllAsync(databaseType);
 
         // Test can be run individually by commenting others and running each separately in order one after another
         await RunInsertAsync(isBulk);
-        await RunInsertOrUpdateAsync(isBulk, dbServer);
-        await RunUpdateAsync(isBulk, dbServer);
+        await RunInsertOrUpdateAsync(isBulk, databaseType);
+        await RunUpdateAsync(isBulk, databaseType);
 
         await RunReadAsync();
 
-        if (dbServer == DatabaseType.SqlServer)
+        if (databaseType == DatabaseType.SqlServer)
         {
             await RunInsertOrUpdateOrDeleteAsync(isBulk); // Not supported for Sqlite (has only UPSERT), instead use BulkRead, then split list into sublists and call separately Bulk methods for Insert, Update, Delete.
         }
-        //await RunDeleteAsync(isBulk, dbServer);
+        //await RunDeleteAsync(isBulk, databaseType);
     }
 
     [Theory]
     [InlineData(DatabaseType.SqlServer)]
     //[InlineData(DbServer.Sqlite)] // has to be run separately as single test, otherwise throws (SQLite Error 1: 'table "#MyTempTable1" already exists'.)
-    public async Task SideEffectsTestAsync(DatabaseType dbServer)
+    public async Task SideEffectsTestAsync(DatabaseType databaseType)
     {
-        await BulkOperationShouldNotCloseOpenConnectionAsync(dbServer, context => context.BulkInsertAsync(new[] { new Item() }), "1");
-        await BulkOperationShouldNotCloseOpenConnectionAsync(dbServer, context => context.BulkUpdateAsync(new[] { new Item() }), "2");
+        await BulkOperationShouldNotCloseOpenConnectionAsync(databaseType, context => context.BulkInsertAsync(new[] { new Item() }), "1");
+        await BulkOperationShouldNotCloseOpenConnectionAsync(databaseType, context => context.BulkUpdateAsync(new[] { new Item() }), "2");
     }
 
     private static async Task DeletePreviousDatabaseAsync()
@@ -65,9 +65,9 @@ public class EFCoreBulkTestAsync
         Debug.WriteLine(percentage);
     }
 
-    private static async Task BulkOperationShouldNotCloseOpenConnectionAsync(DatabaseType dbServer, Func<TestContext, Task> bulkOperation, string tableSufix)
+    private static async Task BulkOperationShouldNotCloseOpenConnectionAsync(DatabaseType databaseType, Func<TestContext, Task> bulkOperation, string tableSufix)
     {
-        ContextUtil.DbServer = dbServer;
+        ContextUtil.DatabaseType = databaseType;
         using var context = new TestContext(ContextUtil.GetOptions());
 
         var sqlHelper = context.GetService<ISqlGenerationHelper>();
@@ -80,11 +80,11 @@ public class EFCoreBulkTestAsync
             var tableName = sqlHelper.DelimitIdentifier("#MyTempTable" + tableSufix);
             var createTableSql = $" TABLE {tableName} ({columnName} INTEGER);";
 
-            createTableSql = dbServer switch
+            createTableSql = databaseType switch
             {
                 DatabaseType.Sqlite => $"CREATE TEMPORARY {createTableSql}",
                 DatabaseType.SqlServer => $"CREATE {createTableSql}",
-                _ => throw new ArgumentException($"Unknown database type: '{dbServer}'.", nameof(dbServer)),
+                _ => throw new ArgumentException($"Unknown database type: '{databaseType}'.", nameof(databaseType)),
             };
             await context.Database.ExecuteSqlRawAsync(createTableSql);
 
@@ -135,7 +135,7 @@ public class EFCoreBulkTestAsync
 
         if (isBulk)
         {
-            if (ContextUtil.DbServer == DatabaseType.SqlServer)
+            if (ContextUtil.DatabaseType == DatabaseType.SqlServer)
             {
                 using var transaction = await context.Database.BeginTransactionAsync();
                 var bulkConfig = new BulkConfig
@@ -163,7 +163,7 @@ public class EFCoreBulkTestAsync
 
                 await transaction.CommitAsync();
             }
-            else if (ContextUtil.DbServer == DatabaseType.Sqlite)
+            else if (ContextUtil.DatabaseType == DatabaseType.Sqlite)
             {
                 using var transaction = await context.Database.BeginTransactionAsync();
 
@@ -201,7 +201,7 @@ public class EFCoreBulkTestAsync
         Assert.Equal("name " + (EntitiesNumber - 1), lastEntity?.Name);
     }
 
-    private static async Task RunInsertOrUpdateAsync(bool isBulk, DatabaseType dbServer)
+    private static async Task RunInsertOrUpdateAsync(bool isBulk, DatabaseType databaseType)
     {
         using var context = new TestContext(ContextUtil.GetOptions());
         var entities = new List<Item>();
@@ -223,7 +223,7 @@ public class EFCoreBulkTestAsync
         {
             var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
             await context.BulkInsertOrUpdateAsync(entities, bulkConfig);
-            if (dbServer == DatabaseType.SqlServer)
+            if (databaseType == DatabaseType.SqlServer)
             {
                 Assert.Equal(1, bulkConfig.StatsInfo?.StatsNumberInserted);
                 Assert.Equal(EntitiesNumber / 2 - 1, bulkConfig.StatsInfo?.StatsNumberUpdated);
@@ -307,7 +307,7 @@ public class EFCoreBulkTestAsync
         Assert.True(list[1].Quantity == 0);
     }
 
-    private static async Task RunUpdateAsync(bool isBulk, DatabaseType dbServer)
+    private static async Task RunUpdateAsync(bool isBulk, DatabaseType databaseType)
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -322,7 +322,7 @@ public class EFCoreBulkTestAsync
         {
             var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
             await context.BulkUpdateAsync(entities, bulkConfig);
-            if (dbServer == DatabaseType.SqlServer)
+            if (databaseType == DatabaseType.SqlServer)
             {
                 Assert.Equal(0, bulkConfig.StatsInfo?.StatsNumberInserted);
                 Assert.Equal(EntitiesNumber, bulkConfig.StatsInfo?.StatsNumberUpdated);
@@ -363,7 +363,7 @@ public class EFCoreBulkTestAsync
         Assert.Equal(0, entities[3].ItemId);
     }
 
-    private async Task RunDeleteAsync(bool isBulk, DatabaseType dbServer)
+    private async Task RunDeleteAsync(bool isBulk, DatabaseType databaseType)
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -373,7 +373,7 @@ public class EFCoreBulkTestAsync
         {
             var bulkConfig = new BulkConfig() { CalculateStats = true };
             await context.BulkDeleteAsync(entities, bulkConfig);
-            if (dbServer == DatabaseType.SqlServer)
+            if (databaseType == DatabaseType.SqlServer)
             {
                 Assert.Equal(0, bulkConfig.StatsInfo?.StatsNumberInserted);
                 Assert.Equal(0, bulkConfig.StatsInfo?.StatsNumberUpdated);
@@ -394,11 +394,11 @@ public class EFCoreBulkTestAsync
         Assert.Null(lastEntity);
 
         // RESET AutoIncrement
-        string deleteTableSql = dbServer switch
+        string deleteTableSql = databaseType switch
         {
             DatabaseType.SqlServer => $"DBCC CHECKIDENT('[dbo].[{nameof(Item)}]', RESEED, 0);",
             DatabaseType.Sqlite => $"DELETE FROM sqlite_sequence WHERE name = '{nameof(Item)}';",
-            _ => throw new ArgumentException($"Unknown database type: '{dbServer}'.", nameof(dbServer)),
+            _ => throw new ArgumentException($"Unknown database type: '{databaseType}'.", nameof(databaseType)),
         };
         await context.Database.ExecuteSqlRawAsync(deleteTableSql).ConfigureAwait(false);
     }

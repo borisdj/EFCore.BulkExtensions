@@ -197,16 +197,16 @@ public class TestContext : DbContext
 public static class ContextUtil
 {
     static IDbServer? _dbServerMapping;
-    static DatabaseType _dbServerValue;
+    static DatabaseType _databaseType;
 
     // TODO: Pass DbService through all the GetOptions methods as a parameter and eliminate this property so the automated tests
     // are thread safe
-    public static DatabaseType DbServer
+    public static DatabaseType DatabaseType
     {
-        get => _dbServerValue;
+        get => _databaseType;
         set
         {
-            _dbServerValue = value;
+            _databaseType = value;
             _dbServerMapping = value switch
             {
                 DatabaseType.SqlServer => new SqlAdapters.SqlServer.SqlServerDbServer(),
@@ -223,7 +223,7 @@ public static class ContextUtil
 
     public static DbContextOptions GetOptions<TDbContext>(IEnumerable<IInterceptor>? dbInterceptors = null, string databaseName = nameof(EFCoreBulkTest))
         where TDbContext : DbContext
-        => GetOptions<TDbContext>(ContextUtil.DbServer, dbInterceptors, databaseName);
+        => GetOptions<TDbContext>(ContextUtil.DatabaseType, dbInterceptors, databaseName);
 
     public static DbContextOptions GetOptions<TDbContext>(DatabaseType dbServerType, IEnumerable<IInterceptor>? dbInterceptors = null, string databaseName = nameof(EFCoreBulkTest))
         where TDbContext : DbContext
@@ -254,12 +254,12 @@ public static class ContextUtil
             //string connectionString = (new SqliteConnectionStringBuilder { DataSource = $"{databaseName}Lite.db" }).ToString();
             //optionsBuilder.UseSqlite(new SqliteConnection(connectionString));
         }
-        else if (DbServer == DatabaseType.PostgreSql)
+        else if (DatabaseType == DatabaseType.PostgreSql)
         {
             string connectionString = GetPostgreSqlConnectionString(databaseName);
             optionsBuilder.UseNpgsql(connectionString);
         }
-        else if (DbServer == DatabaseType.MySql)
+        else if (DatabaseType == DatabaseType.MySql)
         {
             string connectionString = GetMySqlConnectionString(databaseName);
             optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
