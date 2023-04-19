@@ -26,7 +26,7 @@ public class MySqlQueryBuilder : QueryBuilderExtensions
         var query = $"CREATE {keywordTemp}TABLE {newTableName} " +
                     $"SELECT * FROM {existingTableName} " +
                     $"LIMIT 0;";
-        query = query.Replace("[", "").Replace("]", "");
+        query = query.Replace("[", "`").Replace("]", "`");
         return query;
     }
     /// <summary>
@@ -40,7 +40,7 @@ public class MySqlQueryBuilder : QueryBuilderExtensions
         isTempTable = false;
         string keywordTemp = isTempTable ? "TEMPORARY " : "";
         var query = $"DROP {keywordTemp}TABLE IF EXISTS {tableName}";
-        query = query.Replace("[", "").Replace("]", "");
+        query = query.Replace("[", "`").Replace("]", "`");
         return query;
     }
     /// <summary>
@@ -98,10 +98,10 @@ public class MySqlQueryBuilder : QueryBuilderExtensions
         }
         else
         {
-            var commaSeparatedColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsList).Replace("[", "").Replace("]", "");
+            var commaSeparatedColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsList).Replace("[", "`").Replace("]", "`");
             var columnsListEquals = GetColumnList(tableInfo, OperationType.Insert);
             var columnsToUpdate = columnsListEquals.Where(c => tableInfo.PropertyColumnNamesUpdateDict.ContainsValue(c)).ToList();
-            var equalsColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsToUpdate, equalsTable: "EXCLUDED").Replace("[", "").Replace("]", "");
+            var equalsColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsToUpdate, equalsTable: "EXCLUDED").Replace("[", "`").Replace("]", "`");
 
             query = $"INSERT INTO {tableInfo.FullTableName} ({commaSeparatedColumns}) " +
                     $"SELECT {commaSeparatedColumns} FROM {tableInfo.FullTempTableName} AS EXCLUDED " +
@@ -132,7 +132,7 @@ public class MySqlQueryBuilder : QueryBuilderExtensions
             }
         }
 
-        query = query.Replace("[", "").Replace("]", "");
+        query = query.Replace("[", "`").Replace("]", "`");
 
         Dictionary<string, string>? sourceDestinationMappings = tableInfo.BulkConfig.CustomSourceDestinationMappingColumns;
         if (tableInfo.BulkConfig.CustomSourceTableName != null && sourceDestinationMappings != null && sourceDestinationMappings.Count > 0)
@@ -168,7 +168,7 @@ public class MySqlQueryBuilder : QueryBuilderExtensions
     {
         List<string> columnsNames = tableInfo.OutputPropertyColumnNamesDict.Values.ToList();
         var query = $"SELECT {SqlQueryBuilder.GetCommaSeparatedColumns(columnsNames)} FROM {tableInfo.FullTempOutputTableName} WHERE [{tableInfo.PrimaryKeysPropertyColumnNameDict.Select(x => x.Value).FirstOrDefault()}] IS NOT NULL";
-        query = query.Replace("[", "").Replace("]", "");
+        query = query.Replace("[", "`").Replace("]", "`");
         return query;
     }
 
