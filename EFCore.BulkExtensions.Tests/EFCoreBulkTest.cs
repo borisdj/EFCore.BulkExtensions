@@ -48,7 +48,7 @@ public class EFCoreBulkTest
             Source = new TimeRecordSource
             {
                 Name = "Abcd",
-                Type = TimeRecordSourceType.Operator // requires Converter explicitly configured in OnModelCreating
+                Type = TimeRecordSourceType.Operator // for PG required Converter explicitly configured in OnModelCreating
             },
         };
 
