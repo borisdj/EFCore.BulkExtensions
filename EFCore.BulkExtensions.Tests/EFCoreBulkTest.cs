@@ -28,6 +28,7 @@ public class EFCoreBulkTest
 
         using var context = new TestContext(ContextUtil.GetOptions());
         context.Database.ExecuteSqlRaw($@"DELETE FROM ""{nameof(Wall)}""");
+        context.Database.ExecuteSqlRaw($@"DELETE FROM ""{nameof(TimeRecord)}""");
 
         var newWall = new Wall()
         {
@@ -37,9 +38,21 @@ public class EFCoreBulkTest
         // INSERT
         context.BulkInsert(new List<Wall>() { newWall });
 
-         var addedWall = context.Walls.AsNoTracking().First(x => x.Id == newWall.Id);
+        var addedWall = context.Walls.AsNoTracking().First(x => x.Id == newWall.Id);
          
-         Assert.True(addedWall.WallTypeValue == newWall.WallTypeValue);
+        Assert.True(addedWall.WallTypeValue == newWall.WallTypeValue);
+
+
+        var timeRecord = new TimeRecord()
+        {
+            Source = new TimeRecordSource
+            {
+                Name = "Abcd",
+                Type = TimeRecordSourceType.Operator // requires Converter explicitly configured in OnModelCreating
+            },
+        };
+
+        context.BulkInsert(new List<TimeRecord> { timeRecord });
     }
 
     [Theory]

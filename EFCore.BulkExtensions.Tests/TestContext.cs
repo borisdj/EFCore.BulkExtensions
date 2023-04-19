@@ -5,12 +5,13 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Microsoft.Extensions.Configuration;
 using NetTopologySuite.Geometries;
+using NetTopologySuite.Index.HPRtree;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Diagnostics;
 using System.Linq;
-using System.Net.WebSockets;
 using System.Text.Json;
 
 namespace EFCore.BulkExtensions.Tests;
@@ -71,6 +72,8 @@ public class TestContext : DbContext
     public DbSet<PrivateKey> PrivateKeys { get; set; } = null!;
     public DbSet<Wall> Walls { get; set; } = null!;
 
+    public DbSet<TimeRecord> TimeRecords { get; set; } = null!;
+
     public TestContext(DbContextOptions options) : base(options)
     {
         Database.EnsureCreated();
@@ -86,6 +89,9 @@ public class TestContext : DbContext
     {
         modelBuilder.RemovePluralizingTableNameConvention();
 
+        modelBuilder.Entity<Info>(e => { e.Property(p => p.ConvertedTime).HasConversion((value) => value.AddDays(1), (value) => value.AddDays(-1)); });
+
+
         modelBuilder.Entity<UserRole>().HasKey(a => new { a.UserId, a.RoleId });
 
         modelBuilder.Entity<Info>(e => { e.Property(p => p.ConvertedTime).HasConversion((value) => value.AddDays(1), (value) => value.AddDays(-1)); });
@@ -95,7 +101,10 @@ public class TestContext : DbContext
         modelBuilder.Entity<Wall>().HasKey(x => x.Id);
         modelBuilder.Entity<Wall>().Property(x => x.Id).ValueGeneratedNever();
         modelBuilder.Entity<Wall>().Property(x => x.WallTypeValue).HasConversion(new EnumToStringConverter<WallType>());
-        
+
+        modelBuilder.Entity<TimeRecord>().OwnsOne(a => a.Source,
+            b => b.Property(p => p.Type).HasConversion(new EnumToNumberConverter<TimeRecordSourceType, int>()));
+
         modelBuilder.Entity<Info>(e => { e.Property("LogData"); });
         modelBuilder.Entity<Info>(e => { e.Property("TimeCreated"); });
         modelBuilder.Entity<Info>(e => { e.Property("Remark"); });
@@ -436,6 +445,32 @@ public enum WallType
 {
     Brick,
     Clay
+}
+
+public class TimeRecord
+{
+    public TimeRecord()
+    {
+        Source = new TimeRecordSource();
+    }
+    public int TimeRecordId { get; set; }
+
+    public TimeRecordSource Source { get; set; }
+}
+
+[Owned]
+public class TimeRecordSource
+{
+    public TimeRecordSourceType Type { get; set; }
+    public string? Name { get; set; } = null;
+    public string? Id { get; set; } = null;
+}
+
+public enum TimeRecordSourceType
+{
+    Unknown = 0,
+    Device,
+    Operator,
 }
 
 public class Student : Person
