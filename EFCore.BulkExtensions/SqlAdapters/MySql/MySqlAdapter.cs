@@ -357,8 +357,6 @@ public class MySqlAdapter : ISqlOperationsAdapter
         return (hasUniqueConstrain, connectionOpenedInternally);
     }
 
-    #endregion
-    #region Connection
     private static MySqlBulkCopy GetMySqlBulkCopy(MySqlConnection mySqlConnection, IDbContextTransaction? transaction, BulkConfig config)
     {
         var mySqlTransaction = transaction == null ? null : (MySqlTransaction)transaction.GetUnderlyingTransaction(config);

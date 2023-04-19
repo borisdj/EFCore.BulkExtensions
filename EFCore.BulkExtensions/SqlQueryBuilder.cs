@@ -321,8 +321,8 @@ public abstract class SqlQueryBuilder
                      (!tableInfo.BulkConfig.DoNotUpdateIfTimeStampChanged || tableInfo.TimeStampColumnName == null ? string.Empty :
                       $" AND S.[{tableInfo.TimeStampColumnName}] = T.[{tableInfo.TimeStampColumnName}]"
                      ) +
-                     (tableInfo.BulkConfig.OnConflictUpdateWhereSql != null ? $" AND {tableInfo.BulkConfig.OnConflictUpdateWhereSql("T", "S")}" : string.Empty )
-                     + $" THEN UPDATE SET {GetCommaSeparatedColumns(updateColumnNames, "T", "S")}";
+                     (tableInfo.BulkConfig.OnConflictUpdateWhereSql != null ? $" AND {tableInfo.BulkConfig.OnConflictUpdateWhereSql("T", "S")}" : string.Empty ) +
+                     $" THEN UPDATE SET {GetCommaSeparatedColumns(updateColumnNames, "T", "S")}";
             }
         }
 
@@ -335,10 +335,9 @@ public abstract class SqlQueryBuilder
                 {
                     throw new ArgumentNullException(nameof(context));
                 }
-                var querable = context.Set<T>()
-                    .IgnoreQueryFilters()
-                    .IgnoreAutoIncludes()
-                    .Where((Expression<Func<T, bool>>)tableInfo.BulkConfig.SynchronizeFilter);
+                var querable = context.Set<T>().IgnoreQueryFilters().IgnoreAutoIncludes()
+                                               .Where((Expression<Func<T, bool>>)tableInfo.BulkConfig.SynchronizeFilter);
+
                 var (Sql, TableAlias, TableAliasSufixAs, TopStatement, LeadingComments, InnerParameters) = BatchUtil.GetBatchSql(querable, context, false);
                 var whereClause = $"{Environment.NewLine}WHERE ";
                 int wherePos = Sql.IndexOf(whereClause, StringComparison.OrdinalIgnoreCase);

@@ -120,8 +120,8 @@ public class TableInfo
         if (tableInfo.BulkConfig.UseTempDB == true && !isExplicitTransaction && (operationType != OperationType.Insert || tableInfo.BulkConfig.SetOutputIdentity))
         {
             throw new InvalidOperationException("When 'UseTempDB' is set then BulkOperation has to be inside Transaction. " +
-                                                "Otherwise destination table gets dropped too early because transaction ends before operation is finished."); // throws: 'Cannot access destination table'
-        }
+                                                "Otherwise destination table gets dropped too early because transaction ends before operation is finished.");
+        }                                       // throws: 'Cannot access destination table'
 
         var isDeleteOperation = operationType == OperationType.Delete;
         tableInfo.LoadData(context, type, entities, isDeleteOperation);
@@ -1218,13 +1218,12 @@ public class TableInfo
         var parameter = Expression.Parameter(typeof(DbContext), "ctx");
         var expression = Expression.Call(parameter, "Set", new Type[] { entityType });
         expression = Expression.Call(typeof(RelationalQueryableExtensions), "FromSqlRaw", new Type[] { entityType }, expression, Expression.Constant(sqlQuery), Expression.Constant(Array.Empty<object>()));
-        if (BulkConfig.TrackingEntities) // If Else can not be replaced with Ternary operator for Expression
-        {
-        }
-        else
+        
+        if (!BulkConfig.TrackingEntities) // If Else can not be replaced with Ternary operator for Expression
         {
             expression = Expression.Call(typeof(EntityFrameworkQueryableExtensions), "AsNoTracking", new Type[] { entityType }, expression);
         }
+
         if (BulkConfig.IgnoreGlobalQueryFilters)
         {
             expression = Expression.Call(typeof(EntityFrameworkQueryableExtensions), "IgnoreQueryFilters", new Type[] { entityType }, expression);
