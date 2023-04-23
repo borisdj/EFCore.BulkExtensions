@@ -12,6 +12,7 @@ public class EFCoreBulkTestSaveChanges
 {
     [Theory]
     [InlineData(DatabaseType.SqlServer)]
+    [InlineData(DatabaseType.PostgreSql)]
     [InlineData(DatabaseType.Sqlite)]
     public void SaveChangesTest(DatabaseType dbServer)
     {
@@ -23,31 +24,36 @@ public class EFCoreBulkTestSaveChanges
             context.ItemHistories.BatchDelete();
         }
 
-        RunSaveChangesOnInsert();
-        RunSaveChangesOnInsertAndUpdate();
+        RunSaveChangesOnInsert(dbServer);
+        RunSaveChangesOnInsertAndUpdate(dbServer);
     }
 
     [Theory]
     [InlineData(DatabaseType.SqlServer)]
+    [InlineData(DatabaseType.PostgreSql)]
     [InlineData(DatabaseType.Sqlite)]
     public async Task SaveChangesTestAsync(DatabaseType dbServer)
     {
         ContextUtil.DatabaseType = dbServer;
 
-        await new EFCoreBatchTestAsync().RunDeleteAllAsync(dbServer);
+        //await new EFCoreBatchTestAsync().RunDeleteAllAsync(dbServer);
         using (var context = new TestContext(ContextUtil.GetOptions()))
         {
             await context.ItemHistories.BatchDeleteAsync();
+
+            context.Database.ExecuteSqlRaw($@"DELETE FROM ""{nameof(Item)}""");
+            context.Database.ExecuteSqlRaw($@"ALTER SEQUENCE ""{nameof(Item)}_{nameof(Item.ItemId)}_seq"" RESTART WITH 1");
         }
 
-        await RunSaveChangesOnInsertAsync();
-        await RunSaveChangesOnInsertAndUpdateAsync();
+        await RunSaveChangesOnInsertAsync(dbServer);
+        await RunSaveChangesOnInsertAndUpdateAsync(dbServer);
     }
 
-    private static List<Item> GetNewEntities(int count, string NameSufix)
+    private static List<Item> GetNewEntities(DatabaseType dbServer, int count, string NameSufix)
     {
         var newEntities = new List<Item>();
-        var dateTimeNow = DateTime.Now;
+        var dateTimeNow = dbServer == DatabaseType.PostgreSql ? DateTime.UtcNow : DateTime.Now;
+
         for (int i = 1; i <= count; i += 1) // Insert 4000 new ones
         {
             newEntities.Add(new Item
@@ -78,14 +84,18 @@ public class EFCoreBulkTestSaveChanges
         return newEntities;
     }
 
-    private static void RunSaveChangesOnInsert()
+    private static void RunSaveChangesOnInsert(DatabaseType dbServer)
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
-        var newEntities = GetNewEntities(5000, "");
+        var newEntities = GetNewEntities(dbServer, 5000, "");
+
+        using var transaction = context.Database.BeginTransaction();
 
         context.Items.AddRange(newEntities);
         context.BulkSaveChanges();
+
+        transaction.Commit();
 
         // Validate Test
         int entitiesCount = context.Items.Count();
@@ -95,11 +105,11 @@ public class EFCoreBulkTestSaveChanges
         Assert.Equal("Name 1", firstEntity?.Name);
     }
 
-    private static async Task RunSaveChangesOnInsertAsync()
+    private static async Task RunSaveChangesOnInsertAsync(DatabaseType dbServer)
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
-        var newEntities = GetNewEntities(5000, "");
+        var newEntities = GetNewEntities(dbServer, 5000, "");
 
         await context.Items.AddRangeAsync(newEntities);
         await context.BulkSaveChangesAsync();
@@ -112,7 +122,7 @@ public class EFCoreBulkTestSaveChanges
         Assert.Equal("Name 1", firstEntity?.Name);
     }
 
-    private static void RunSaveChangesOnInsertAndUpdate()
+    private static void RunSaveChangesOnInsertAndUpdate(DatabaseType dbServer)
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -124,7 +134,7 @@ public class EFCoreBulkTestSaveChanges
             existingEntity.ItemHistories.First().Remark += " UPD";
         }
 
-        var newEntities = GetNewEntities(4000, "NEW ");
+        var newEntities = GetNewEntities(dbServer, 4000, "NEW ");
 
         context.Items.AddRange(newEntities);
         context.BulkSaveChanges();
@@ -137,7 +147,7 @@ public class EFCoreBulkTestSaveChanges
         Assert.EndsWith(" UPDATED", firstEntity?.Description);
     }
 
-    private static async Task RunSaveChangesOnInsertAndUpdateAsync()
+    private static async Task RunSaveChangesOnInsertAndUpdateAsync(DatabaseType dbServer)
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -149,7 +159,7 @@ public class EFCoreBulkTestSaveChanges
             existingEntity.ItemHistories.First().Remark += " UPD";
         }
 
-        var newEntities = GetNewEntities(4000, "NEW ");
+        var newEntities = GetNewEntities(dbServer, 4000, "NEW ");
 
         await context.Items.AddRangeAsync(newEntities);
         await context.BulkSaveChangesAsync();
