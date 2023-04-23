@@ -851,8 +851,8 @@ public class TableInfo
             string uniqueProperyValues = GetUniquePropertyValues(entity!, selectByPropertyNames, FastPropertyDict);
 
             existingEntitiesDict.TryGetValue(uniqueProperyValues, out T? existingEntity);
-            bool isPostgreSQL = context.Database.ProviderName?.EndsWith(DatabaseType.PostgreSql.ToString(), StringComparison.InvariantCultureIgnoreCase) ?? false;
-            if (existingEntity == null && isPostgreSQL && i < existingEntities.Count)
+            bool isPostgreSql = context.Database.ProviderName?.EndsWith(DatabaseType.PostgreSql.ToString(), StringComparison.InvariantCultureIgnoreCase) ?? false;
+            if (existingEntity == null && isPostgreSql && i < existingEntities.Count && entities.Count == existingEntities.Count) // && entities.Count == existingEntities.Count conf fix for READ DO change
             {
                 existingEntity = existingEntities[i]; // TODO check if BinaryImport with COPY on Postgres preserves order
             }
