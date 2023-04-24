@@ -30,17 +30,26 @@ public class EFCoreBulkTest
         context.Database.ExecuteSqlRaw($@"DELETE FROM ""{nameof(Wall)}""");
         context.Database.ExecuteSqlRaw($@"DELETE FROM ""{nameof(TimeRecord)}""");
 
-        var newWall = new Wall()
+        var walls = new List<Wall>();
+        for (int i = 1; i <= 10; i++)
         {
-            Id = 1,
-            WallTypeValue = WallType.Brick
-        };
-        // INSERT
-        context.BulkInsert(new List<Wall>() { newWall });
+            walls.Add(new Wall
+            {
+                Id = i,
+                WallTypeValue = WallType.Brick,
+                WallCategory = WallCategory.High,
+            });
+        }
 
-        var addedWall = context.Walls.AsNoTracking().First(x => x.Id == newWall.Id);
+        context.Walls.AddRange(walls);
+        context.SaveChanges();
+
+        // INSERT
+        //context.BulkInsert(walls);
+
+        var addedWall = context.Walls.AsNoTracking().First(x => x.Id == walls[0].Id);
          
-        Assert.True(addedWall.WallTypeValue == newWall.WallTypeValue);
+        Assert.True(addedWall.WallTypeValue == walls[0].WallTypeValue);
 
 
         var timeRecord = new TimeRecord()

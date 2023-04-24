@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using NetTopologySuite.Geometries;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
@@ -98,6 +99,7 @@ public class TestContext : DbContext
         modelBuilder.Entity<Wall>().HasKey(x => x.Id);
         modelBuilder.Entity<Wall>().Property(x => x.Id).ValueGeneratedNever();
         modelBuilder.Entity<Wall>().Property(x => x.WallTypeValue).HasConversion(new EnumToStringConverter<WallType>());
+        modelBuilder.Entity<Wall>().Property(x => x.WallCategory).HasConversion(new EnumToStringConverter<WallCategory>());
 
         modelBuilder.Entity<TimeRecord>().OwnsOne(a => a.Source,
             b => b.Property(p => p.Type).HasConversion(new EnumToNumberConverter<TimeRecordSourceType, int>()));
@@ -436,12 +438,23 @@ public class Wall
 {
     public long Id { get; set; }
     public WallType WallTypeValue { get; set; } = WallType.Clay;
+
+    public WallCategory WallCategory { get; set; }
 }
 
 public enum WallType
 {
     Brick,
     Clay
+}
+
+public enum WallCategory
+{
+    [Description("LowC")]
+    Low,
+
+    [Description("HighC")]
+    High
 }
 
 public class TimeRecord
