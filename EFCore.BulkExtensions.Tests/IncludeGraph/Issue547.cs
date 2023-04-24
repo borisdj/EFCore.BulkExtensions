@@ -73,8 +73,8 @@ public class Issue547DbContext : DbContext
 public class Issue547 : IDisposable
 {
     [Theory]
-    [InlineData(DatabaseType.SqlServer)]
-    public async Task Test(DatabaseType dbServer)
+    [InlineData(SqlType.SqlServer)]
+    public async Task Test(SqlType dbServer)
     {
         ContextUtil.DatabaseType = dbServer;
 

@@ -7,7 +7,7 @@ namespace EFCore.BulkExtensions.SqlAdapters.MySql;
 /// <inheritdoc/>
 public class MySqlDbServer : IDbServer
 {
-    DatabaseType IDbServer.Type => DatabaseType.MySql;
+    SqlType IDbServer.Type => SqlType.MySql;
 
     MySqlAdapter _adapter = new ();
     ISqlOperationsAdapter IDbServer.Adapter => _adapter;

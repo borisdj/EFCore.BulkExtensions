@@ -422,7 +422,7 @@ public class MySqlAdapter : ISqlOperationsAdapter
         var ownedEntitiesMappedProperties = new HashSet<string>();
 
         var databaseType = SqlAdaptersMapping.GetDatabaseType();
-        var isMySql = databaseType == DatabaseType.MySql;
+        var isMySql = databaseType == SqlType.MySql;
         
         var objectIdentifier = tableInfo.ObjectIdentifier;
         type = tableInfo.HasAbstractList ? entities[0]!.GetType() : type;

@@ -14,8 +14,8 @@ public class EFCoreBatchTest
     protected static int EntitiesNumber => 1000;
 
     [Theory]
-    [InlineData(DatabaseType.SqlServer)]
-    public void BatchConverterTest(DatabaseType dbServer)
+    [InlineData(SqlType.SqlServer)]
+    public void BatchConverterTest(SqlType dbServer)
     {
         ContextUtil.DatabaseType = dbServer;
 
@@ -35,9 +35,9 @@ public class EFCoreBatchTest
     }
 
     [Theory]
-    [InlineData(DatabaseType.SqlServer)]
-    [InlineData(DatabaseType.Sqlite)]
-    public void BatchTest(DatabaseType dbServer)
+    [InlineData(SqlType.SqlServer)]
+    [InlineData(SqlType.Sqlite)]
+    public void BatchTest(SqlType dbServer)
     {
         ContextUtil.DatabaseType = dbServer;
 
@@ -46,7 +46,7 @@ public class EFCoreBatchTest
         RunBatchUpdate(dbServer);
 
         int deletedEntities = 1;
-        if (dbServer == DatabaseType.SqlServer)
+        if (dbServer == SqlType.SqlServer)
         {
             RunBatchUpdate_UsingNavigationPropertiesThatTranslateToAnInnerQuery();
             deletedEntities = RunTopBatchDelete();
@@ -76,18 +76,18 @@ public class EFCoreBatchTest
             Assert.StartsWith("name ", lastItem.Name);
             Assert.EndsWith(" Concatenated", lastItem.Name);
 
-            if (dbServer == DatabaseType.SqlServer)
+            if (dbServer == SqlType.SqlServer)
             {
                 Assert.EndsWith(" TOP(1)", firstItem.Name);
             }
         }
 
-        if (dbServer == DatabaseType.SqlServer)
+        if (dbServer == SqlType.SqlServer)
         {
             RunUdttBatch();
         }
 
-        if (dbServer == DatabaseType.SqlServer)
+        if (dbServer == SqlType.SqlServer)
         {
             // Removing ORDER BY and CTE's are not implemented for SQLite.
             RunOrderByDeletes();
@@ -95,7 +95,7 @@ public class EFCoreBatchTest
         }
     }
 
-    internal void RunDeleteAll(DatabaseType dbServer)
+    internal void RunDeleteAll(SqlType dbServer)
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -108,15 +108,15 @@ public class EFCoreBatchTest
         // RESET AutoIncrement
         string deleteTableSql = dbServer switch
         {
-            DatabaseType.SqlServer => $"DBCC CHECKIDENT('[dbo].[{nameof(Item)}]', RESEED, 0);",
-            DatabaseType.Sqlite => $"DELETE FROM sqlite_sequence WHERE name = '{nameof(Item)}';",
-            DatabaseType.PostgreSql => $@"ALTER SEQUENCE ""{nameof(Item)}_{nameof(Item.ItemId)}_seq"" RESTART WITH 1;",
+            SqlType.SqlServer => $"DBCC CHECKIDENT('[dbo].[{nameof(Item)}]', RESEED, 0);",
+            SqlType.Sqlite => $"DELETE FROM sqlite_sequence WHERE name = '{nameof(Item)}';",
+            SqlType.PostgreSql => $@"ALTER SEQUENCE ""{nameof(Item)}_{nameof(Item.ItemId)}_seq"" RESTART WITH 1;",
             _ => throw new ArgumentException($"Unknown database type: '{dbServer}'.", nameof(dbServer)),
         };
         context.Database.ExecuteSqlRaw(deleteTableSql);
     }
 
-    private static void RunBatchUpdate(DatabaseType dbServer)
+    private static void RunBatchUpdate(SqlType dbServer)
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -125,11 +125,11 @@ public class EFCoreBatchTest
         decimal price = 0;
 
         var query = context.Items.AsQueryable();
-        if (dbServer == DatabaseType.SqlServer)
+        if (dbServer == SqlType.SqlServer)
         {
             query = query.Where(a => a.ItemId <= 500 && a.Price >= price);//.OrderBy(n => n.ItemId).Take(500);
         }
-        if (dbServer == DatabaseType.Sqlite)
+        if (dbServer == SqlType.Sqlite)
         {
             query = query.Where(a => a.ItemId <= 500 && a.Price != null && a.Quantity >= 0);
 
@@ -148,7 +148,7 @@ public class EFCoreBatchTest
         var suffix = " Concatenated";
         query.BatchUpdate(a => new Item { Name = a.Name + suffix, Quantity = a.Quantity + incrementStep }); // example of BatchUpdate Increment/Decrement value in variable
 
-        if (dbServer == DatabaseType.SqlServer) // Sqlite currently does Not support Take(): LIMIT
+        if (dbServer == SqlType.SqlServer) // Sqlite currently does Not support Take(): LIMIT
         {
             query.Take(1).BatchUpdate(a => new Item { Name = a.Name + " TOP(1)", Quantity = a.Quantity + incrementStep }); // example of BatchUpdate with TOP(1)
         }

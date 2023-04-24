@@ -40,7 +40,7 @@ public interface IQueryBuilderSpecialization
     /// </summary>
     /// <param name="sqlQuery"></param>
     /// <param name="databaseType"></param>
-    (string, string) GetBatchSqlReformatTableAliasAndTopStatement(string sqlQuery, DatabaseType databaseType);
+    (string, string) GetBatchSqlReformatTableAliasAndTopStatement(string sqlQuery, SqlType databaseType);
 
     /// <summary>
     /// Returns the SQL extract table alias data

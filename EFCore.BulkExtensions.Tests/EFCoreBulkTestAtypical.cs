@@ -14,15 +14,16 @@ public class EFCoreBulkTestAtypical
     protected static int EntitiesNumber => 1000;
 
     [Theory]
-    [InlineData(DatabaseType.SqlServer)]
-    [InlineData(DatabaseType.Sqlite)]
-    private void DefaultValuesTest(DatabaseType databaseType)
+    [InlineData(SqlType.SqlServer)]
+    [InlineData(SqlType.PostgreSql)]
+    [InlineData(SqlType.Sqlite)]
+    private void DefaultValuesTest(SqlType sqlType)
     {
-        ContextUtil.DatabaseType = databaseType;
+        ContextUtil.DatabaseType = sqlType;
         using var context = new TestContext(ContextUtil.GetOptions());
         context.Truncate<Document>();
         context.Documents.BatchDelete();
-        bool isSqlite = databaseType == DatabaseType.Sqlite;
+        bool isSqlite = sqlType == SqlType.Sqlite;
 
         var entities = new List<Document>() 
         {
@@ -48,10 +49,10 @@ public class EFCoreBulkTestAtypical
     }
 
     [Theory]
-    [InlineData(DatabaseType.SqlServer)]
-    private void TemporalTableTest(DatabaseType databaseType)
+    [InlineData(SqlType.SqlServer)]
+    private void TemporalTableTest(SqlType sqlType)
     {
-        ContextUtil.DatabaseType = databaseType;
+        ContextUtil.DatabaseType = sqlType;
         using var context = new TestContext(ContextUtil.GetOptions());
         //context.Truncate<Document>(); // Can not be used because table is Temporal, so BatchDelete used instead
         context.Storages.BatchDelete();
@@ -72,10 +73,10 @@ public class EFCoreBulkTestAtypical
     }
 
     [Theory]
-    [InlineData(DatabaseType.SqlServer)]
-    private void RunDefaultPKInsertWithGraph(DatabaseType databaseType)
+    [InlineData(SqlType.SqlServer)]
+    private void RunDefaultPKInsertWithGraph(SqlType sqlType)
     {
-        ContextUtil.DatabaseType = databaseType;
+        ContextUtil.DatabaseType = sqlType;
         using var context = new TestContext(ContextUtil.GetOptions());
         var department = new Department
         {
@@ -92,11 +93,11 @@ public class EFCoreBulkTestAtypical
     }
 
     [Theory]
-    [InlineData(DatabaseType.SqlServer)]
-    public void UpsertOrderTest(DatabaseType databaseType)
+    [InlineData(SqlType.SqlServer)]
+    public void UpsertOrderTest(SqlType sqlType)
     {
-        ContextUtil.DatabaseType = databaseType;
-        new EFCoreBatchTest().RunDeleteAll(databaseType);
+        ContextUtil.DatabaseType = sqlType;
+        new EFCoreBatchTest().RunDeleteAll(sqlType);
 
         using var context = new TestContext(ContextUtil.GetOptions());
         context.Items.Add(new Item { Name = "name 1", Description = "info 1" });
@@ -127,14 +128,14 @@ public class EFCoreBulkTestAtypical
     }
 
     [Theory]
-    [InlineData(DatabaseType.SqlServer)]
-    [InlineData(DatabaseType.Sqlite)] // Does NOT have Computed Columns
-    private void ComputedAndDefaultValuesTest(DatabaseType databaseType)
+    [InlineData(SqlType.SqlServer)]
+    [InlineData(SqlType.Sqlite)] // Does NOT have Computed Columns
+    private void ComputedAndDefaultValuesTest(SqlType sqlType)
     {
-        ContextUtil.DatabaseType = databaseType;
+        ContextUtil.DatabaseType = sqlType;
         using var context = new TestContext(ContextUtil.GetOptions());
         context.Truncate<Document>();
-        bool isSqlite = databaseType == DatabaseType.Sqlite;
+        bool isSqlite = sqlType == SqlType.Sqlite;
 
         var entities = new List<Document>();
         for (int i = 1; i <= EntitiesNumber; i++)
@@ -185,11 +186,11 @@ public class EFCoreBulkTestAtypical
     }
 
     [Theory]
-    [InlineData(DatabaseType.SqlServer)]
-    [InlineData(DatabaseType.Sqlite)] // Does NOT have Computed Columns
-    private void ParameterlessConstructorTest(DatabaseType databaseType)
+    [InlineData(SqlType.SqlServer)]
+    [InlineData(SqlType.Sqlite)] // Does NOT have Computed Columns
+    private void ParameterlessConstructorTest(SqlType sqlType)
     {
-        ContextUtil.DatabaseType = databaseType;
+        ContextUtil.DatabaseType = sqlType;
         using var context = new TestContext(ContextUtil.GetOptions());
         context.Truncate<Letter>();
 
@@ -211,11 +212,11 @@ public class EFCoreBulkTestAtypical
     }
 
     [Theory]
-    [InlineData(DatabaseType.SqlServer)]
+    [InlineData(SqlType.SqlServer)]
     //[InlineData(DbServer.Sqlite)] // No TimeStamp column type but can be set with DefaultValueSql: "CURRENT_TIMESTAMP" as it is in OnModelCreating() method.
-    private void TimeStampTest(DatabaseType databaseType)
+    private void TimeStampTest(SqlType sqlType)
     {
-        ContextUtil.DatabaseType = databaseType;
+        ContextUtil.DatabaseType = sqlType;
         using var context = new TestContext(ContextUtil.GetOptions());
 
         context.Truncate<File>();
@@ -283,11 +284,11 @@ public class EFCoreBulkTestAtypical
     }
 
     [Theory]
-    [InlineData(DatabaseType.SqlServer)]
-    [InlineData(DatabaseType.Sqlite)]
-    private void CompositeKeyTest(DatabaseType databaseType)
+    [InlineData(SqlType.SqlServer)]
+    [InlineData(SqlType.Sqlite)]
+    private void CompositeKeyTest(SqlType sqlType)
     {
-        ContextUtil.DatabaseType = databaseType;
+        ContextUtil.DatabaseType = sqlType;
         using var context = new TestContext(ContextUtil.GetOptions());
 
         context.Truncate<UserRole>();
@@ -326,11 +327,11 @@ public class EFCoreBulkTestAtypical
     }
 
     [Theory]
-    [InlineData(DatabaseType.SqlServer)]
-    [InlineData(DatabaseType.Sqlite)]
-    private void DiscriminatorShadowTest(DatabaseType databaseType)
+    [InlineData(SqlType.SqlServer)]
+    [InlineData(SqlType.Sqlite)]
+    private void DiscriminatorShadowTest(SqlType sqlType)
     {
-        ContextUtil.DatabaseType = databaseType;
+        ContextUtil.DatabaseType = sqlType;
         using var context = new TestContext(ContextUtil.GetOptions());
 
         context.BulkDelete(context.Students.ToList());
@@ -371,11 +372,11 @@ public class EFCoreBulkTestAtypical
     }
 
     [Theory]
-    [InlineData(DatabaseType.SqlServer)]
-    [InlineData(DatabaseType.Sqlite)]
-    private void ValueConversionTest(DatabaseType databaseType)
+    [InlineData(SqlType.SqlServer)]
+    [InlineData(SqlType.Sqlite)]
+    private void ValueConversionTest(SqlType sqlType)
     {
-        ContextUtil.DatabaseType = databaseType;
+        ContextUtil.DatabaseType = sqlType;
         using var context = new TestContext(ContextUtil.GetOptions());
 
         context.BulkDelete(context.Infos.ToList());
@@ -395,7 +396,7 @@ public class EFCoreBulkTestAtypical
         }
         context.BulkInsert(entitiesToInsert);
 
-        if (databaseType == DatabaseType.SqlServer)
+        if (sqlType == SqlType.SqlServer)
         {
             var entities = context.Infos.ToList();
             var entity = entities.First();
@@ -421,20 +422,20 @@ public class EFCoreBulkTestAtypical
     }
 
     [Theory]
-    [InlineData(DatabaseType.SqlServer)]
-    [InlineData(DatabaseType.Sqlite)]
-    [InlineData(DatabaseType.PostgreSql)]
-    private void OwnedTypesTest(DatabaseType databaseType)
+    [InlineData(SqlType.SqlServer)]
+    [InlineData(SqlType.Sqlite)]
+    [InlineData(SqlType.PostgreSql)]
+    private void OwnedTypesTest(SqlType sqlType)
     {
-        ContextUtil.DatabaseType = databaseType;
+        ContextUtil.DatabaseType = sqlType;
         using var context = new TestContext(ContextUtil.GetOptions());
 
-        if (databaseType == DatabaseType.SqlServer)
+        if (sqlType == SqlType.SqlServer)
         {
             context.Truncate<ChangeLog>();
             context.Database.ExecuteSqlRaw("TRUNCATE TABLE [" + nameof(ChangeLog) + "]");
         }
-        else if (databaseType == DatabaseType.PostgreSql)
+        else if (sqlType == SqlType.PostgreSql)
         {
             context.Truncate<ChangeLog>();
         }
@@ -472,7 +473,7 @@ public class EFCoreBulkTestAtypical
         }
         context.BulkInsert(entities);
 
-        if (databaseType == DatabaseType.SqlServer || databaseType == DatabaseType.PostgreSql)
+        if (sqlType == SqlType.SqlServer || sqlType == SqlType.PostgreSql)
         {
             context.BulkRead(
                 entities,
@@ -488,7 +489,7 @@ public class EFCoreBulkTestAtypical
         entities[0].Description += " UPD";
         entities[0].Audit.InfoType = InfoType.InfoTypeB;
         context.BulkUpdate(entities);
-        if (databaseType == DatabaseType.SqlServer || databaseType == DatabaseType.PostgreSql)
+        if (sqlType == SqlType.SqlServer || sqlType == SqlType.PostgreSql)
         {
             context.BulkRead(entities);
         }
@@ -497,18 +498,18 @@ public class EFCoreBulkTestAtypical
     }
 
     [Theory]
-    [InlineData(DatabaseType.SqlServer)]
-    private void OwnedTypeSpatialDataTest(DatabaseType databaseType)
+    [InlineData(SqlType.SqlServer)]
+    private void OwnedTypeSpatialDataTest(SqlType sqlType)
     {
-        ContextUtil.DatabaseType = databaseType;
+        ContextUtil.DatabaseType = sqlType;
         using var context = new TestContext(ContextUtil.GetOptions());
 
-        if (databaseType == DatabaseType.SqlServer)
+        if (sqlType == SqlType.SqlServer)
         {
             context.Truncate<Tracker>();
             context.Database.ExecuteSqlRaw("TRUNCATE TABLE [" + nameof(Tracker) + "]");
         }
-        else if (databaseType == DatabaseType.PostgreSql)
+        else if (sqlType == SqlType.PostgreSql)
         {
             context.Truncate<ChangeLog>();
         }
@@ -533,7 +534,7 @@ public class EFCoreBulkTestAtypical
         }
         context.BulkInsert(entities);
 
-        if (databaseType == DatabaseType.SqlServer || databaseType == DatabaseType.PostgreSql)
+        if (sqlType == SqlType.SqlServer || sqlType == SqlType.PostgreSql)
         {
             context.BulkRead(
                 entities,
@@ -549,7 +550,7 @@ public class EFCoreBulkTestAtypical
         entities[0].Description += " UPD";
         entities[0].Location.Location = new Point(1, 1) { SRID = 4326 };
         context.BulkUpdate(entities);
-        if (databaseType == DatabaseType.SqlServer || databaseType == DatabaseType.PostgreSql)
+        if (sqlType == SqlType.SqlServer || sqlType == SqlType.PostgreSql)
         {
             context.BulkRead(entities);
         }
@@ -558,14 +559,14 @@ public class EFCoreBulkTestAtypical
     }
 
     [Theory]
-    [InlineData(DatabaseType.SqlServer)]
+    [InlineData(SqlType.SqlServer)]
     //[InlineData(DbServer.Sqlite)] Not supported
-    private void ShadowFKPropertiesTest(DatabaseType databaseType) // with Foreign Key as Shadow Property
+    private void ShadowFKPropertiesTest(SqlType sqlType) // with Foreign Key as Shadow Property
     {
-        ContextUtil.DatabaseType = databaseType;
+        ContextUtil.DatabaseType = sqlType;
         using var context = new TestContext(ContextUtil.GetOptions());
 
-        if (databaseType == DatabaseType.SqlServer)
+        if (sqlType == SqlType.SqlServer)
         {
             context.Truncate<ItemLink>();
             context.Database.ExecuteSqlRaw("TRUNCATE TABLE [" + nameof(ItemLink) + "]");
@@ -610,7 +611,7 @@ public class EFCoreBulkTestAtypical
         }
         context.BulkInsert(entities);
 
-        if (databaseType == DatabaseType.SqlServer)
+        if (sqlType == SqlType.SqlServer)
         {
             List<ItemLink> links = context.ItemLinks.ToList();
             Assert.True(links.Count > 0, "ItemLink row count");
@@ -624,13 +625,13 @@ public class EFCoreBulkTestAtypical
     }
 
     [Theory]
-    [InlineData(DatabaseType.SqlServer)]
-    private void UpsertWithOutputSortTest(DatabaseType databaseType)
+    [InlineData(SqlType.SqlServer)]
+    private void UpsertWithOutputSortTest(SqlType sqlType)
     {
-        ContextUtil.DatabaseType = databaseType;
+        ContextUtil.DatabaseType = sqlType;
         using var context = new TestContext(ContextUtil.GetOptions());
 
-        new EFCoreBatchTest().RunDeleteAll(databaseType);
+        new EFCoreBatchTest().RunDeleteAll(sqlType);
 
         var entitiesInitial = new List<Item>();
         for (int i = 1; i <= 10; ++i)
@@ -661,11 +662,11 @@ public class EFCoreBulkTestAtypical
     }
 
     [Theory]
-    [InlineData(DatabaseType.SqlServer)]
-    [InlineData(DatabaseType.Sqlite)]
-    private void NoPrimaryKeyTest(DatabaseType databaseType)
+    [InlineData(SqlType.SqlServer)]
+    [InlineData(SqlType.Sqlite)]
+    private void NoPrimaryKeyTest(SqlType sqlType)
     {
-        ContextUtil.DatabaseType = databaseType;
+        ContextUtil.DatabaseType = sqlType;
         using var context = new TestContext(ContextUtil.GetOptions());
 
         var list = context.Moduls.ToList();
@@ -699,11 +700,11 @@ public class EFCoreBulkTestAtypical
     }
 
     [Theory]
-    [InlineData(DatabaseType.SqlServer)]
-    [InlineData(DatabaseType.Sqlite)]
-    private void NonEntityChildTest(DatabaseType databaseType)
+    [InlineData(SqlType.SqlServer)]
+    [InlineData(SqlType.Sqlite)]
+    private void NonEntityChildTest(SqlType sqlType)
     {
-        ContextUtil.DatabaseType = databaseType;
+        ContextUtil.DatabaseType = sqlType;
 
         using var context = new TestContext(ContextUtil.GetOptions());
         var list = context.Animals.ToList();
@@ -724,7 +725,7 @@ public class EFCoreBulkTestAtypical
     [Fact]
     private void GeometryColumnTest()
     {
-        ContextUtil.DatabaseType = DatabaseType.SqlServer;
+        ContextUtil.DatabaseType = SqlType.SqlServer;
         using var context = new TestContext(ContextUtil.GetOptions());
 
         context.BulkDelete(context.Addresses.ToList());
@@ -743,7 +744,7 @@ public class EFCoreBulkTestAtypical
     [Fact]
     private void GeographyAndGeometryArePersistedCorrectlyTest()
     {
-        ContextUtil.DatabaseType = DatabaseType.SqlServer;
+        ContextUtil.DatabaseType = SqlType.SqlServer;
         using (var context = new TestContext(ContextUtil.GetOptions()))
         {
             context.BulkDelete(context.Addresses.ToList());
@@ -780,7 +781,7 @@ public class EFCoreBulkTestAtypical
     [Fact]
     private void HierarchyIdColumnTest()
     {
-        ContextUtil.DatabaseType = DatabaseType.SqlServer;
+        ContextUtil.DatabaseType = SqlType.SqlServer;
         using (var context = new TestContext(ContextUtil.GetOptions()))
         {
             context.BulkDelete(context.Categories.ToList());
@@ -804,7 +805,7 @@ public class EFCoreBulkTestAtypical
     [Fact]
     private void HierarchyIdIsPersistedCorrectlySimpleTest()
     {
-        ContextUtil.DatabaseType = DatabaseType.SqlServer;
+        ContextUtil.DatabaseType = SqlType.SqlServer;
         using (var context = new TestContext(ContextUtil.GetOptions()))
         {
             context.BulkDelete(context.Categories.ToList());
@@ -835,7 +836,7 @@ public class EFCoreBulkTestAtypical
     [Fact]
     private void HierarchyIdIsPersistedCorrectlyLargerHierarchyTest()
     {
-        ContextUtil.DatabaseType = DatabaseType.SqlServer;
+        ContextUtil.DatabaseType = SqlType.SqlServer;
         using (var context = new TestContext(ContextUtil.GetOptions()))
         {
             context.BulkDelete(context.Categories.ToList());
@@ -864,11 +865,11 @@ public class EFCoreBulkTestAtypical
     }
 
     [Theory]
-    [InlineData(DatabaseType.SqlServer)]
-    [InlineData(DatabaseType.PostgreSql)]
-    private void DestinationAndSourceTableNameTest(DatabaseType databaseType)
+    [InlineData(SqlType.SqlServer)]
+    [InlineData(SqlType.PostgreSql)]
+    private void DestinationAndSourceTableNameTest(SqlType sqlType)
     {
-        ContextUtil.DatabaseType = databaseType;
+        ContextUtil.DatabaseType = sqlType;
         using var context = new TestContext(ContextUtil.GetOptions());
 
         context.Truncate<Entry>();
@@ -922,7 +923,7 @@ public class EFCoreBulkTestAtypical
     [Fact]
     private void TablePerTypeInsertTest()
     {
-        ContextUtil.DatabaseType = DatabaseType.SqlServer;
+        ContextUtil.DatabaseType = SqlType.SqlServer;
         using var context = new TestContext(ContextUtil.GetOptions());
 
         context.LogPersonReports.Add(new LogPersonReport { }); // used for initial add so that after RESEED it starts from 1, not 0
@@ -984,7 +985,7 @@ public class EFCoreBulkTestAtypical
     [Fact]
     private void TableWithSpecialRowVersion()
     {
-        ContextUtil.DatabaseType = DatabaseType.SqlServer;
+        ContextUtil.DatabaseType = SqlType.SqlServer;
         using var context = new TestContext(ContextUtil.GetOptions());
         context.AtypicalRowVersionEntities.BatchDelete();
         context.AtypicalRowVersionConverterEntities.BatchDelete();
@@ -1017,7 +1018,7 @@ public class EFCoreBulkTestAtypical
     [Fact]
     private void CustomPrecisionDateTimeTest()
     {
-        ContextUtil.DatabaseType = DatabaseType.SqlServer;
+        ContextUtil.DatabaseType = SqlType.SqlServer;
         using var context = new TestContext(ContextUtil.GetOptions());
 
         context.BulkDelete(context.Events.ToList());
@@ -1065,7 +1066,7 @@ public class EFCoreBulkTestAtypical
     [Fact]
     private void ByteArrayPKBulkReadTest()
     {
-        ContextUtil.DatabaseType = DatabaseType.Sqlite;
+        ContextUtil.DatabaseType = SqlType.Sqlite;
         using var context = new TestContext(ContextUtil.GetOptions());
 
         var list = context.Archives.ToList();
@@ -1097,11 +1098,11 @@ public class EFCoreBulkTestAtypical
     }
     
     [Theory]
-    [InlineData(DatabaseType.SqlServer)]
-    [InlineData(DatabaseType.Sqlite)]
-    private void PrivateKeyTest(DatabaseType databaseType)
+    [InlineData(SqlType.SqlServer)]
+    [InlineData(SqlType.Sqlite)]
+    private void PrivateKeyTest(SqlType sqlType)
     {
-        ContextUtil.DatabaseType = databaseType;
+        ContextUtil.DatabaseType = sqlType;
         using (var context = new TestContext(ContextUtil.GetOptions()))
         {
             context.BulkDelete(context.PrivateKeys.ToList());
@@ -1126,11 +1127,11 @@ public class EFCoreBulkTestAtypical
     }
 
     [Theory]
-    [InlineData(DatabaseType.SqlServer)]
-    [InlineData(DatabaseType.Sqlite)]
-    private void ReplaceReadEntitiesTest(DatabaseType databaseType)
+    [InlineData(SqlType.SqlServer)]
+    [InlineData(SqlType.Sqlite)]
+    private void ReplaceReadEntitiesTest(SqlType sqlType)
     {
-        ContextUtil.DatabaseType = databaseType;
+        ContextUtil.DatabaseType = sqlType;
         using var context = new TestContext(ContextUtil.GetOptions());
 
         context.BulkDelete(context.Items.ToList());

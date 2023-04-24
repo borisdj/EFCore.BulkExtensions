@@ -11,10 +11,10 @@ namespace EFCore.BulkExtensions.Tests;
 public class EFCoreBulkTestSaveChanges
 {
     [Theory]
-    [InlineData(DatabaseType.SqlServer)]
-    [InlineData(DatabaseType.PostgreSql)]
-    [InlineData(DatabaseType.Sqlite)]
-    public void SaveChangesTest(DatabaseType dbServer)
+    [InlineData(SqlType.SqlServer)]
+    [InlineData(SqlType.PostgreSql)]
+    [InlineData(SqlType.Sqlite)]
+    public void SaveChangesTest(SqlType dbServer)
     {
         ContextUtil.DatabaseType = dbServer;
 
@@ -29,10 +29,10 @@ public class EFCoreBulkTestSaveChanges
     }
 
     [Theory]
-    [InlineData(DatabaseType.SqlServer)]
-    [InlineData(DatabaseType.PostgreSql)]
-    [InlineData(DatabaseType.Sqlite)]
-    public async Task SaveChangesTestAsync(DatabaseType dbServer)
+    [InlineData(SqlType.SqlServer)]
+    [InlineData(SqlType.PostgreSql)]
+    [InlineData(SqlType.Sqlite)]
+    public async Task SaveChangesTestAsync(SqlType dbServer)
     {
         ContextUtil.DatabaseType = dbServer;
 
@@ -49,10 +49,10 @@ public class EFCoreBulkTestSaveChanges
         await RunSaveChangesOnInsertAndUpdateAsync(dbServer);
     }
 
-    private static List<Item> GetNewEntities(DatabaseType dbServer, int count, string NameSufix)
+    private static List<Item> GetNewEntities(SqlType dbServer, int count, string NameSufix)
     {
         var newEntities = new List<Item>();
-        var dateTimeNow = dbServer == DatabaseType.PostgreSql ? DateTime.UtcNow : DateTime.Now;
+        var dateTimeNow = dbServer == SqlType.PostgreSql ? DateTime.UtcNow : DateTime.Now;
 
         for (int i = 1; i <= count; i += 1) // Insert 4000 new ones
         {
@@ -84,7 +84,7 @@ public class EFCoreBulkTestSaveChanges
         return newEntities;
     }
 
-    private static void RunSaveChangesOnInsert(DatabaseType dbServer)
+    private static void RunSaveChangesOnInsert(SqlType dbServer)
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -105,7 +105,7 @@ public class EFCoreBulkTestSaveChanges
         Assert.Equal("Name 1", firstEntity?.Name);
     }
 
-    private static async Task RunSaveChangesOnInsertAsync(DatabaseType dbServer)
+    private static async Task RunSaveChangesOnInsertAsync(SqlType dbServer)
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -122,7 +122,7 @@ public class EFCoreBulkTestSaveChanges
         Assert.Equal("Name 1", firstEntity?.Name);
     }
 
-    private static void RunSaveChangesOnInsertAndUpdate(DatabaseType dbServer)
+    private static void RunSaveChangesOnInsertAndUpdate(SqlType dbServer)
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -147,7 +147,7 @@ public class EFCoreBulkTestSaveChanges
         Assert.EndsWith(" UPDATED", firstEntity?.Description);
     }
 
-    private static async Task RunSaveChangesOnInsertAndUpdateAsync(DatabaseType dbServer)
+    private static async Task RunSaveChangesOnInsertAndUpdateAsync(SqlType dbServer)
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 

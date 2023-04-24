@@ -31,7 +31,7 @@ public class SqliteDialect : IQueryBuilderSpecialization
     }
 
     /// <inheritdoc/>
-    public (string, string) GetBatchSqlReformatTableAliasAndTopStatement(string sqlQuery, DatabaseType databaseType)
+    public (string, string) GetBatchSqlReformatTableAliasAndTopStatement(string sqlQuery, SqlType databaseType)
     {
         return (string.Empty, string.Empty);
     }

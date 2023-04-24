@@ -7,7 +7,7 @@ namespace EFCore.BulkExtensions.SqlAdapters.SqlServer;
 /// <inheritdoc/>
 public class SqlServerDbServer : IDbServer
 {
-    DatabaseType IDbServer.Type => DatabaseType.SqlServer;
+    SqlType IDbServer.Type => SqlType.SqlServer;
 
     SqlServerAdapter _adapter = new ();
     ISqlOperationsAdapter IDbServer.Adapter => _adapter;

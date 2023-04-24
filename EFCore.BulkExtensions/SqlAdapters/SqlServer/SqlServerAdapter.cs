@@ -482,7 +482,7 @@ public class SqlServerAdapter: ISqlOperationsAdapter
         var ownedEntitiesMappedProperties = new HashSet<string>();
 
         var databaseType = SqlAdaptersMapping.GetDatabaseType();
-        var isSqlServer = databaseType == DatabaseType.SqlServer;
+        var isSqlServer = databaseType == SqlType.SqlServer;
         var sqlServerBytesWriter = new SqlServerBytesWriter();
 
         var objectIdentifier = tableInfo.ObjectIdentifier;

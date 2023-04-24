@@ -11,7 +11,7 @@ public interface IDbServer
     /// <summary>
     /// Returns the Database type
     /// </summary>
-    DatabaseType Type { get; }
+    SqlType Type { get; }
 
     /// <summary>
     /// Returns a Operation Server Adapter for DbServer

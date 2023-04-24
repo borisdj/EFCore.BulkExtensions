@@ -21,10 +21,10 @@ public class EFCoreBulkTest
     private static readonly Func<TestContext, IEnumerable<Item>> AllItemsQuery = EF.CompileQuery<TestContext, IEnumerable<Item>>(ctx => ctx.Items.AsNoTracking());
 
     [Theory]
-    [InlineData(DatabaseType.PostgreSql)]
-    public void InsertEnumStringValue(DatabaseType databaseType)
+    [InlineData(SqlType.PostgreSql)]
+    public void InsertEnumStringValue(SqlType sqlType)
     {
-        ContextUtil.DatabaseType = databaseType;
+        ContextUtil.DatabaseType = sqlType;
 
         using var context = new TestContext(ContextUtil.GetOptions());
         context.Database.ExecuteSqlRaw($@"DELETE FROM ""{nameof(Wall)}""");
@@ -65,10 +65,10 @@ public class EFCoreBulkTest
     }
 
     [Theory]
-    [InlineData(DatabaseType.PostgreSql)]
-    public void InsertTestPostgreSql(DatabaseType databaseType)
+    [InlineData(SqlType.PostgreSql)]
+    public void InsertTestPostgreSql(SqlType sqlType)
     {
-        ContextUtil.DatabaseType = databaseType;
+        ContextUtil.DatabaseType = sqlType;
 
         using var context = new TestContext(ContextUtil.GetOptions());
         
@@ -250,14 +250,14 @@ public class EFCoreBulkTest
     }
     
     [Theory]
-    [InlineData(DatabaseType.MySql)]
+    [InlineData(SqlType.MySql)]
     // -- Before first run following command should be executed on mysql server:
     //    SET GLOBAL local_infile = true;
     // -- otherwise exception: "Loading local data is disabled; this must be enabled on both the client and server sides"
     // -- For client side connection string is already set with: "AllowLoadLocalInfile=true"
-    public void InsertTestMySql(DatabaseType databaseType)
+    public void InsertTestMySql(SqlType sqlType)
     {
-        ContextUtil.DatabaseType = databaseType;
+        ContextUtil.DatabaseType = sqlType;
 
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -347,43 +347,43 @@ public class EFCoreBulkTest
     }
     
     [Theory]
-    [InlineData(DatabaseType.SqlServer, true)]
-    [InlineData(DatabaseType.Sqlite, true)]
+    [InlineData(SqlType.SqlServer, true)]
+    [InlineData(SqlType.Sqlite, true)]
     //[InlineData(DbServer.SqlServer, false)] // for speed comparison with Regular EF CUD operations
-    public void OperationsTest(DatabaseType databaseType, bool isBulk)
+    public void OperationsTest(SqlType sqlType, bool isBulk)
     {
-        ContextUtil.DatabaseType = databaseType;
+        ContextUtil.DatabaseType = sqlType;
 
         //DeletePreviousDatabase();
-        new EFCoreBatchTest().RunDeleteAll(databaseType);
+        new EFCoreBatchTest().RunDeleteAll(sqlType);
 
         RunInsert(isBulk);
-        RunInsertOrUpdate(isBulk, databaseType);
-        RunUpdate(isBulk, databaseType);
+        RunInsertOrUpdate(isBulk, sqlType);
+        RunUpdate(isBulk, sqlType);
 
         RunRead();
 
-        if (databaseType == DatabaseType.SqlServer)
+        if (sqlType == SqlType.SqlServer)
         {
             RunInsertOrUpdateOrDelete(isBulk); // Not supported for Sqlite (has only UPSERT), instead use BulkRead, then split list into sublists and call separately Bulk methods for Insert, Update, Delete.
         }
-        RunDelete(isBulk, databaseType);
+        RunDelete(isBulk, sqlType);
 
         //CheckQueryCache();
     }
 
     [Theory]
-    [InlineData(DatabaseType.SqlServer)]
-    [InlineData(DatabaseType.Sqlite)]
-    public void SideEffectsTest(DatabaseType databaseType)
+    [InlineData(SqlType.SqlServer)]
+    [InlineData(SqlType.Sqlite)]
+    public void SideEffectsTest(SqlType sqlType)
     {
-        BulkOperationShouldNotCloseOpenConnection(databaseType, context => context.BulkInsert(new[] { new Item() }));
-        BulkOperationShouldNotCloseOpenConnection(databaseType, context => context.BulkUpdate(new[] { new Item() }));
+        BulkOperationShouldNotCloseOpenConnection(sqlType, context => context.BulkInsert(new[] { new Item() }));
+        BulkOperationShouldNotCloseOpenConnection(sqlType, context => context.BulkUpdate(new[] { new Item() }));
     }
 
-    private static void BulkOperationShouldNotCloseOpenConnection(DatabaseType databaseType, Action<TestContext> bulkOperation)
+    private static void BulkOperationShouldNotCloseOpenConnection(SqlType sqlType, Action<TestContext> bulkOperation)
     {
-        ContextUtil.DatabaseType = databaseType;
+        ContextUtil.DatabaseType = sqlType;
         using var context = new TestContext(ContextUtil.GetOptions());
 
         var sqlHelper = context.GetService<ISqlGenerationHelper>();
@@ -396,11 +396,11 @@ public class EFCoreBulkTest
             var tableName = sqlHelper.DelimitIdentifier("#MyTempTable");
             var createTableSql = $" TABLE {tableName} ({columnName} INTEGER);";
 
-            createTableSql = databaseType switch
+            createTableSql = sqlType switch
             {
-                DatabaseType.Sqlite => $"CREATE TEMPORARY {createTableSql}",
-                DatabaseType.SqlServer => $"CREATE {createTableSql}",
-                _ => throw new ArgumentException($"Unknown database type: '{databaseType}'.", nameof(databaseType)),
+                SqlType.Sqlite => $"CREATE TEMPORARY {createTableSql}",
+                SqlType.SqlServer => $"CREATE {createTableSql}",
+                _ => throw new ArgumentException($"Unknown database type: '{sqlType}'.", nameof(sqlType)),
             };
 
             context.Database.ExecuteSqlRaw(createTableSql);
@@ -478,7 +478,7 @@ public class EFCoreBulkTest
         if (isBulk)
         {
             context.BulkInsertOrUpdate(categores);
-            if (ContextUtil.DatabaseType == DatabaseType.SqlServer)
+            if (ContextUtil.DatabaseType == SqlType.SqlServer)
             {
                 using var transaction = context.Database.BeginTransaction();
                 var bulkConfig = new BulkConfig
@@ -506,7 +506,7 @@ public class EFCoreBulkTest
 
                 transaction.Commit();
             }
-            else if (ContextUtil.DatabaseType == DatabaseType.Sqlite)
+            else if (ContextUtil.DatabaseType == SqlType.Sqlite)
             {
                 using var transaction = context.Database.BeginTransaction();
                 var bulkConfig = new BulkConfig() { SetOutputIdentity = true };
@@ -541,7 +541,7 @@ public class EFCoreBulkTest
         Assert.Equal("name " + (EntitiesNumber - 1), lastEntity?.Name);
     }
 
-    private static void RunInsertOrUpdate(bool isBulk, DatabaseType databaseType)
+    private static void RunInsertOrUpdate(bool isBulk, SqlType sqlType)
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -563,7 +563,7 @@ public class EFCoreBulkTest
         {
             var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
             context.BulkInsertOrUpdate(entities, bulkConfig, (a) => WriteProgress(a));
-            if (databaseType == DatabaseType.SqlServer)
+            if (sqlType == SqlType.SqlServer)
             {
                 Assert.Equal(1, bulkConfig.StatsInfo?.StatsNumberInserted);
                 Assert.Equal(EntitiesNumber / 2 - 1, bulkConfig.StatsInfo?.StatsNumberUpdated);
@@ -647,7 +647,7 @@ public class EFCoreBulkTest
         Assert.True(list[1].Quantity == 0);
     }
 
-    private static void RunUpdate(bool isBulk, DatabaseType databaseType)
+    private static void RunUpdate(bool isBulk, SqlType sqlType)
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -663,11 +663,11 @@ public class EFCoreBulkTest
             var bulkConfig = new BulkConfig
             {
                 PropertiesToInclude = new List<string> { nameof(Item.Description) },
-                UpdateByProperties = databaseType == DatabaseType.SqlServer ? new List<string> { nameof(Item.Name) } : null,
+                UpdateByProperties = sqlType == SqlType.SqlServer ? new List<string> { nameof(Item.Name) } : null,
                 CalculateStats = true
             };
             context.BulkUpdate(entities, bulkConfig);
-            if (databaseType == DatabaseType.SqlServer)
+            if (sqlType == SqlType.SqlServer)
             {
                 Assert.Equal(0, bulkConfig.StatsInfo?.StatsNumberInserted);
                 Assert.Equal(EntitiesNumber, bulkConfig.StatsInfo?.StatsNumberUpdated);
@@ -717,7 +717,7 @@ public class EFCoreBulkTest
         Assert.Equal(0, entities[3].ItemId);
     }
 
-    private void RunDelete(bool isBulk, DatabaseType databaseType)
+    private void RunDelete(bool isBulk, SqlType sqlType)
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -727,7 +727,7 @@ public class EFCoreBulkTest
         {
             var bulkConfig = new BulkConfig() { CalculateStats = true };
             context.BulkDelete(entities, bulkConfig);
-            if (databaseType == DatabaseType.SqlServer)
+            if (sqlType == SqlType.SqlServer)
             {
                 Assert.Equal(0, bulkConfig.StatsInfo?.StatsNumberInserted);
                 Assert.Equal(0, bulkConfig.StatsInfo?.StatsNumberUpdated);
@@ -748,11 +748,11 @@ public class EFCoreBulkTest
         Assert.Null(lastEntity);
 
         // RESET AutoIncrement
-        string deleteTableSql = databaseType switch
+        string deleteTableSql = sqlType switch
         {
-            DatabaseType.SqlServer => $"DBCC CHECKIDENT('[dbo].[{nameof(Item)}]', RESEED, 0);",
-            DatabaseType.Sqlite => $"DELETE FROM sqlite_sequence WHERE name = '{nameof(Item)}';",
-            _ => throw new ArgumentException($"Unknown database type: '{databaseType}'.", nameof(databaseType)),
+            SqlType.SqlServer => $"DBCC CHECKIDENT('[dbo].[{nameof(Item)}]', RESEED, 0);",
+            SqlType.Sqlite => $"DELETE FROM sqlite_sequence WHERE name = '{nameof(Item)}';",
+            _ => throw new ArgumentException($"Unknown database type: '{sqlType}'.", nameof(sqlType)),
         };
         context.Database.ExecuteSqlRaw(deleteTableSql);
     }

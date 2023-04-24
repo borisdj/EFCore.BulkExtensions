@@ -5,7 +5,7 @@ namespace EFCore.BulkExtensions.SqlAdapters;
 /// <summary>
 /// A list of database servers supported by EFCore.BulkExtensions
 /// </summary>
-public enum DatabaseType
+public enum SqlType
 {
     /// <summary>
     /// Indicates database is Microsoft's SQL Server
@@ -33,7 +33,7 @@ public static class SqlAdaptersMapping
 {
     public static string? ProviderName { get; set; }
 
-    public static DatabaseType DatabaseType { get; set; }
+    public static SqlType DatabaseType { get; set; }
 
     private static IDbServer? _dbServer { get; set; }
 
@@ -52,19 +52,19 @@ public static class SqlAdaptersMapping
 
             var ignoreCase = StringComparison.InvariantCultureIgnoreCase;
 
-            DatabaseType databaseType = DatabaseType.SqlServer;                                  // ProviderName: Microsoft.EntityFrameworkCore.SqlServer
+            SqlType databaseType = SqlType.SqlServer;                                  // ProviderName: Microsoft.EntityFrameworkCore.SqlServer
 
-            if (ProviderName?.EndsWith(DatabaseType.PostgreSql.ToString(), ignoreCase) ?? false) // ProviderName: Npgsql.EntityFrameworkCore.PostgreSQL
+            if (ProviderName?.EndsWith(SqlType.PostgreSql.ToString(), ignoreCase) ?? false) // ProviderName: Npgsql.EntityFrameworkCore.PostgreSQL
             {
-                databaseType = DatabaseType.PostgreSql;
+                databaseType = SqlType.PostgreSql;
             }
-            else if (ProviderName?.EndsWith(DatabaseType.MySql.ToString(), ignoreCase) ?? false) // ProviderName: Pomelo.EntityFrameworkCore.MySql
+            else if (ProviderName?.EndsWith(SqlType.MySql.ToString(), ignoreCase) ?? false) // ProviderName: Pomelo.EntityFrameworkCore.MySql
             {
-                databaseType = DatabaseType.MySql;
+                databaseType = SqlType.MySql;
             }
-            else if(ProviderName?.EndsWith(DatabaseType.Sqlite.ToString(), ignoreCase) ?? false) // ProviderName: Microsoft.EntityFrameworkCore.Sqlite
+            else if(ProviderName?.EndsWith(SqlType.Sqlite.ToString(), ignoreCase) ?? false) // ProviderName: Microsoft.EntityFrameworkCore.Sqlite
             {
-                databaseType = DatabaseType.Sqlite;
+                databaseType = SqlType.Sqlite;
             }
 
             if (_dbServer == null || _dbServer.Type != databaseType)
@@ -72,19 +72,19 @@ public static class SqlAdaptersMapping
                 string namespaceSqlAdaptersTEXT = "EFCore.BulkExtensions.SqlAdapters";
                 Type? dbServerType = null;
 
-                if (databaseType == DatabaseType.SqlServer)
+                if (databaseType == SqlType.SqlServer)
                 {
                     dbServerType = Type.GetType(namespaceSqlAdaptersTEXT + ".SqlServer.SqlServerDbServer");
                 }
-                else if (databaseType == DatabaseType.PostgreSql)
+                else if (databaseType == SqlType.PostgreSql)
                 {
                     dbServerType = Type.GetType(namespaceSqlAdaptersTEXT + ".PostgreSql.PostgreSqlDbServer");
                 }
-                else if (databaseType == DatabaseType.MySql)
+                else if (databaseType == SqlType.MySql)
                 {
                     dbServerType = Type.GetType(namespaceSqlAdaptersTEXT + ".MySql.MySqlDbServer");
                 }
-                else if (databaseType == DatabaseType.Sqlite)
+                else if (databaseType == SqlType.Sqlite)
                 {
                     dbServerType = Type.GetType(namespaceSqlAdaptersTEXT + ".Sqlite.SqliteDbServer");
                 }
@@ -120,7 +120,7 @@ public static class SqlAdaptersMapping
     /// Returns the Database type
     /// </summary>
     /// <returns></returns>
-    public static DatabaseType GetDatabaseType()
+    public static SqlType GetDatabaseType()
     {
         return DbServer!.Type;
     }

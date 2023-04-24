@@ -7,7 +7,7 @@ namespace EFCore.BulkExtensions.SqlAdapters.PostgreSql;
 /// <inheritdoc/>
 public class PostgreSqlDbServer : IDbServer
 {
-    DatabaseType IDbServer.Type => DatabaseType.PostgreSql;
+    SqlType IDbServer.Type => SqlType.PostgreSql;
 
     PostgreSqlAdapter _adapter = new ();
     ISqlOperationsAdapter IDbServer.Adapter => _adapter;

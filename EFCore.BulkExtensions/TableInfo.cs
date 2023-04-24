@@ -158,10 +158,10 @@ public class TableInfo
 
         //var relationalData = entityType.Relational(); relationalData.Schema relationalData.TableName // DEPRECATED in Core3.0
         string? providerName = context.Database.ProviderName?.ToLower();
-        bool isSqlServer = providerName?.EndsWith(DatabaseType.SqlServer.ToString().ToLower()) ?? false;
-        bool isNpgsql = providerName?.EndsWith(DatabaseType.PostgreSql.ToString().ToLower()) ?? false;
-        bool isSqlite = providerName?.EndsWith(DatabaseType.Sqlite.ToString().ToLower()) ?? false;
-        bool isMySql = providerName?.EndsWith(DatabaseType.MySql.ToString().ToLower()) ?? false;
+        bool isSqlServer = providerName?.EndsWith(SqlType.SqlServer.ToString().ToLower()) ?? false;
+        bool isNpgsql = providerName?.EndsWith(SqlType.PostgreSql.ToString().ToLower()) ?? false;
+        bool isSqlite = providerName?.EndsWith(SqlType.Sqlite.ToString().ToLower()) ?? false;
+        bool isMySql = providerName?.EndsWith(SqlType.MySql.ToString().ToLower()) ?? false;
 
         string? defaultSchema = null;
         if (isSqlServer)
@@ -851,7 +851,7 @@ public class TableInfo
             string uniqueProperyValues = GetUniquePropertyValues(entity!, selectByPropertyNames, FastPropertyDict);
 
             existingEntitiesDict.TryGetValue(uniqueProperyValues, out T? existingEntity);
-            bool isPostgreSql = context.Database.ProviderName?.EndsWith(DatabaseType.PostgreSql.ToString(), StringComparison.InvariantCultureIgnoreCase) ?? false;
+            bool isPostgreSql = context.Database.ProviderName?.EndsWith(SqlType.PostgreSql.ToString(), StringComparison.InvariantCultureIgnoreCase) ?? false;
             if (existingEntity == null && isPostgreSql && i < existingEntities.Count && entities.Count == existingEntities.Count) // && entities.Count == existingEntities.Count conf fix for READ DO change
             {
                 existingEntity = existingEntities[i]; // TODO check if BinaryImport with COPY on Postgres preserves order
@@ -1116,7 +1116,7 @@ public class TableInfo
         if (BulkConfig.SetOutputIdentity && (hasIdentity || tableInfo.TimeStampColumnName == null))
         {
             var databaseType = SqlAdaptersMapping.GetDatabaseType();
-            string sqlQuery = databaseType == DatabaseType.SqlServer ? SqlQueryBuilder.SelectFromOutputTable(this) : SqlAdaptersMapping.DbServer!.QueryBuilder.SelectFromOutputTable(this);
+            string sqlQuery = databaseType == SqlType.SqlServer ? SqlQueryBuilder.SelectFromOutputTable(this) : SqlAdaptersMapping.DbServer!.QueryBuilder.SelectFromOutputTable(this);
             //var entitiesWithOutputIdentity = await QueryOutputTableAsync<T>(context, sqlQuery).ToListAsync(cancellationToken).ConfigureAwait(false); // TempFIX
             var entitiesWithOutputIdentity = QueryOutputTable(context, type, sqlQuery).Cast<object>().ToList();
             //var entitiesWithOutputIdentity = (typeof(T) == type) ? QueryOutputTable<object>(context, sqlQuery).ToList() : QueryOutputTable(context, type, sqlQuery).Cast<object>().ToList();
