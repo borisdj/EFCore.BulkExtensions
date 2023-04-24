@@ -13,7 +13,7 @@ public enum SqlType
     SqlServer,
 
     /// <summary>
-    /// Indicates database is SQLLite
+    /// Indicates database is SQLite
     /// </summary>
     Sqlite,
 
