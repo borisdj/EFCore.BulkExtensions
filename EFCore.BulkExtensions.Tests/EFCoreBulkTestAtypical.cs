@@ -23,29 +23,30 @@ public class EFCoreBulkTestAtypical
         using var context = new TestContext(ContextUtil.GetOptions());
         context.Truncate<Document>();
         context.Documents.BatchDelete();
-        bool isSqlite = sqlType == SqlType.Sqlite;
 
-        var entities = new List<Document>() 
+        SeqGuid.Create(sqlType);
+
+        var entities = new List<Document>();
+        for (int i = 1; i <= 5; i++)
         {
-            new Document { DocumentId = Guid.Parse("15E5936C-8021-45F4-A055-2BE89B065D9E"), Content = "Info " + 1 },
-            new Document { DocumentId = Guid.Parse("00C69E47-A08F-49E0-97A6-56C62C9BB47E"), Content = "Info " + 2 },
-            new Document { DocumentId = Guid.Parse("22CF94AE-20D3-49DE-83FA-90E79DD94706"), Content = "Info " + 3 },
-            new Document { DocumentId = Guid.Parse("B3A2F9A5-4222-47C3-BEEA-BF50771665D3"), Content = "Info " + 4 },
-            new Document { DocumentId = Guid.Parse("12AF6361-95BC-44F3-A487-C91C440018D8"), Content = "Info " + 5 },
+            entities.Add(new Document { 
+                DocumentId = SeqGuid.Create(sqlType), 
+                Content = "Info " + i });
         };
-        var firstDocumentUp = entities.FirstOrDefault();
         context.BulkInsertOrUpdate(entities, bulkConfig => bulkConfig.SetOutputIdentity = true); // example of setting BulkConfig with Action argument
 
         var firstDocument = context.Documents.AsNoTracking().OrderBy(x => x.Content).FirstOrDefault();
 
-        var countDb = context.Documents.Count();
-        var countEntities = entities.Count;
-
         // TEST
 
-        Assert.Equal(countDb, countEntities);
+        Assert.Equal(entities.Count, context.Documents.Count());
 
-        Assert.Equal(firstDocument?.DocumentId, firstDocumentUp?.DocumentId);
+        Assert.Equal(entities[0].DocumentId, firstDocument?.DocumentId);
+
+        if (sqlType == SqlType.SqlServer)
+        {
+            Assert.Equal(6, firstDocument?.ContentLength);
+        }
     }
 
     [Theory]
