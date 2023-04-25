@@ -61,7 +61,7 @@ context.BulkSaveChanges();                    context.BulkSaveChangesAsync();   
 ```
 
 **-SQLite** requires package: [*SQLitePCLRaw.bundle_e_sqlite3*](https://docs.microsoft.com/en-us/dotnet/standard/data/sqlite/custom-versions?tabs=netcore-cli) with call to `SQLitePCL.Batteries.Init()`<br>
-**-MySql** when want to run Test on it for the first time execute sql command: `SET GLOBAL local_infile = true;`
+**-MySQL** when want to run Test on it for the first time execute sql command: `SET GLOBAL local_infile = true;`
 
 **Batch** Extensions are made on *IQueryable* DbSet and can be used as in the following code segment.<br>
 They are done as pure sql and no check is done whether some are prior loaded in memory and are being Tracked.<br>
@@ -131,7 +131,7 @@ It makes Update when PK(PrimaryKey) is matched, otherwise does Insert.<br>
 Those in Db that are not found in the list will be deleted.<br>
 Partial Sync can be done on table subset using expression set on config with method:<br>
 `bulkConfig.SetSynchronizeFilter<Item>(a => a.Quantity > 0);`<br>
-Not supported for SQLite(Lite has only UPSERT statement) nor currently for PostgreSQL. Way to achieve there sync functionality is to Select or BulkRead existing data from DB, split list into sublists and call separately Bulk methods for BulkInsertOrUpdate and Delete.
+Not supported for SQLite (Lite has only UPSERT statement) nor currently for PostgreSQL. Way to achieve there sync functionality is to Select or BulkRead existing data from DB, split list into sublists and call separately Bulk methods for BulkInsertOrUpdate and Delete.
 
 **BulkRead** (SELECT and JOIN done in Sql)<br>
 Useful when need to Select from big List based on Unique Prop./Columns specified in config `UpdateByProperties`<br>
@@ -221,7 +221,7 @@ Insertion order is implemented with [TOP](https://docs.microsoft.com/en-us/sql/t
 This config should remain true when *SetOutputIdentity* is set to true on Entity containing NotMapped Property. [issues/76](https://github.com/borisdj/EFCore.BulkExtensions/issues/76)<br>
 When using **SetOutputIdentity** Id values will be updated to new ones from database.<br>
 With BulkInsertOrUpdate on SQLServer for those that will be updated it has to match with Id column, or other unique column(s) if using UpdateByProperties in which case  [orderBy is done with those props](https://github.com/borisdj/EFCore.BulkExtensions/issues/806) instead of ID, due to how Sql MERGE works. To preserve insert order by Id in this case alternative would be first to use BulkRead and find which records already exist, then split the list into 2 lists entitiesForUpdate and entitiesForInsert without configuring UpdateByProps).<br>
-Also for Sqlite combination of BulkInsertOrUpdate and IdentityId automatic set will not work properly since it does [not have full MERGE](https://github.com/borisdj/EFCore.BulkExtensions/issues/556) capabilities like SqlServer. Instead list can be split into 2 lists, and call separately BulkInsert and BulkUpdate.<br>
+Also for SQLite combination of BulkInsertOrUpdate and IdentityId automatic set will not work properly since it does [not have full MERGE](https://github.com/borisdj/EFCore.BulkExtensions/issues/556) capabilities like SqlServer. Instead list can be split into 2 lists, and call separately BulkInsert and BulkUpdate.<br>
   
 **SetOutputIdentity** is useful when BulkInsert is done to multiple related tables, that have Identity column.<br>
 After Insert is done to first table, we need Id-s (if using Option 1) that were generated in Db because they are FK(ForeignKey) in second table.<br>
