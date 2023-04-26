@@ -1033,7 +1033,7 @@ public class TableInfo
             {
                 if (identifierPropertyName != null)
                 {
-                    var customPK = tableInfo.PrimaryKeysPropertyColumnNameDict.Values;
+                    var customPK = tableInfo.PrimaryKeysPropertyColumnNameDict.Keys;
                     if (!(customPK.Count == 1 && customPK.First() == identifierPropertyName) &&
                         (tableInfo.BulkConfig.OperationType == OperationType.Update ||
                          tableInfo.BulkConfig.OperationType == OperationType.InsertOrUpdate ||
