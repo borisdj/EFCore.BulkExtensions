@@ -13,7 +13,7 @@ public class SqlQueryBuilderPostgreSqlTests
     {
         TableInfo tableInfo = GetTestTableInfo();
         tableInfo.IdentityColumnName = "ItemId";
-        string actual = SqlQueryBuilderPostgreSql.MergeTable<Item>(tableInfo, OperationType.InsertOrUpdate);
+        string actual = PostgreSqlQueryBuilder.MergeTable<Item>(tableInfo, OperationType.InsertOrUpdate);
 
         string expected = @"INSERT INTO ""dbo"".""Item"" (""ItemId"", ""Name"") " +
                           @"(SELECT ""ItemId"", ""Name"" FROM ""dbo"".""ItemTemp1234"") " +
@@ -26,7 +26,7 @@ public class SqlQueryBuilderPostgreSqlTests
     {
         TableInfo tableInfo = GetTestTableInfo((existing, inserted) => $"{inserted}.ItemTimestamp > {existing}.ItemTimestamp");
         tableInfo.IdentityColumnName = "ItemId";
-        string actual = SqlQueryBuilderPostgreSql.MergeTable<Item>(tableInfo, OperationType.InsertOrUpdate);
+        string actual = PostgreSqlQueryBuilder.MergeTable<Item>(tableInfo, OperationType.InsertOrUpdate);
 
         string expected = @"INSERT INTO ""dbo"".""Item"" (""ItemId"", ""Name"") " +
                           @"(SELECT ""ItemId"", ""Name"" FROM ""dbo"".""ItemTemp1234"") " +
@@ -41,7 +41,7 @@ public class SqlQueryBuilderPostgreSqlTests
         TableInfo tableInfo = GetTestTableInfo();
         tableInfo.IdentityColumnName = "ItemId";
         tableInfo.PropertyColumnNamesUpdateDict = new();
-        string actual = SqlQueryBuilderPostgreSql.MergeTable<Item>(tableInfo, OperationType.InsertOrUpdate);
+        string actual = PostgreSqlQueryBuilder.MergeTable<Item>(tableInfo, OperationType.InsertOrUpdate);
 
         string expected = @"INSERT INTO ""dbo"".""Item"" (""ItemId"", ""Name"") " +
                           @"(SELECT ""ItemId"", ""Name"" FROM ""dbo"".""ItemTemp1234"") LIMIT 1 " +
@@ -49,6 +49,20 @@ public class SqlQueryBuilderPostgreSqlTests
 
         if (!actual.Contains("LIMIT 1"))
             expected = expected.Replace(" LIMIT 1", "");
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void MergeTableUpdateOnlyTest()
+    {
+        TableInfo tableInfo = GetTestTableInfo();
+        tableInfo.IdentityColumnName = "ItemId";
+        string actual = PostgreSqlQueryBuilder.MergeTable<Item>(tableInfo, OperationType.Update);
+
+        string expected = @"UPDATE ""dbo"".""Item"" SET ""Name"" = ""dbo"".""ItemTemp1234"".""Name"" " +
+                          @"FROM ""dbo"".""ItemTemp1234"" " +
+                          @"WHERE ""dbo"".""Item"".""ItemId"" = ""dbo"".""ItemTemp1234"".""ItemId"";";
+        
         Assert.Equal(expected, actual);
     }
     
@@ -76,5 +90,33 @@ public class SqlQueryBuilderPostgreSqlTests
         //update all columns (default)
         tableInfo.PropertyColumnNamesUpdateDict = tableInfo.PropertyColumnNamesDict;
         return tableInfo;
+    }
+
+    [Fact]
+    public void RestructureForBatchWithoutJoinToOtherTablesTest()
+    {
+        string sql =
+            @"UPDATE i SET ""Description"" = @Description, ""Price"" = @Price FROM ""Item"" AS i WHERE i.""ItemId"" <= 1";
+
+        string expected =
+            @"UPDATE ""Item"" AS i SET ""Description"" = @Description, ""Price"" = @Price WHERE i.""ItemId"" <= 1";
+
+        var batchUpdate = new PostgreSqlQueryBuilder().RestructureForBatch(sql);
+
+        Assert.Equal(expected, batchUpdate);
+    }
+
+    [Fact]
+    public void RestructureForBatchWithJoinToOtherTablesTest()
+    {
+        string sql =
+            @"UPDATE i SET ""Description"" = @Description, ""Price"" = @Price FROM ""Item"" AS i INNER JOIN ""User"" AS u ON i.""UserId"" = u.""Id"" WHERE i.""ItemId"" <= 1";
+
+        string expected =
+            @"UPDATE ""Item"" AS i SET ""Description"" = @Description, ""Price"" = @Price FROM ""User"" AS u WHERE i.""ItemId"" <= 1 AND i.""UserId"" = u.""Id"" ";
+
+        var batchUpdate = new PostgreSqlQueryBuilder().RestructureForBatch(sql);
+
+        Assert.Equal(expected, batchUpdate);
     }
 }

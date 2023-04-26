@@ -14,10 +14,10 @@ public class EFCoreBatchTest
     protected static int EntitiesNumber => 1000;
 
     [Theory]
-    [InlineData(DbServerType.SQLServer)]
-    public void BatchConverterTest(DbServerType dbServer)
+    [InlineData(SqlType.SqlServer)]
+    public void BatchConverterTest(SqlType dbServer)
     {
-        ContextUtil.DbServer = dbServer;
+        ContextUtil.DatabaseType = dbServer;
 
         using var context = new TestContext(ContextUtil.GetOptions());
         context.Truncate<Info>();
@@ -35,18 +35,18 @@ public class EFCoreBatchTest
     }
 
     [Theory]
-    [InlineData(DbServerType.SQLServer)]
-    [InlineData(DbServerType.SQLite)]
-    public void BatchTest(DbServerType dbServer)
+    [InlineData(SqlType.SqlServer)]
+    [InlineData(SqlType.Sqlite)]
+    public void BatchTest(SqlType dbServer)
     {
-        ContextUtil.DbServer = dbServer;
+        ContextUtil.DatabaseType = dbServer;
 
         RunDeleteAll(dbServer);
         RunInsert();
         RunBatchUpdate(dbServer);
 
         int deletedEntities = 1;
-        if (dbServer == DbServerType.SQLServer)
+        if (dbServer == SqlType.SqlServer)
         {
             RunBatchUpdate_UsingNavigationPropertiesThatTranslateToAnInnerQuery();
             deletedEntities = RunTopBatchDelete();
@@ -76,18 +76,18 @@ public class EFCoreBatchTest
             Assert.StartsWith("name ", lastItem.Name);
             Assert.EndsWith(" Concatenated", lastItem.Name);
 
-            if (dbServer == DbServerType.SQLServer)
+            if (dbServer == SqlType.SqlServer)
             {
                 Assert.EndsWith(" TOP(1)", firstItem.Name);
             }
         }
 
-        if (dbServer == DbServerType.SQLServer)
+        if (dbServer == SqlType.SqlServer)
         {
             RunUdttBatch();
         }
 
-        if (dbServer == DbServerType.SQLServer)
+        if (dbServer == SqlType.SqlServer)
         {
             // Removing ORDER BY and CTE's are not implemented for SQLite.
             RunOrderByDeletes();
@@ -95,7 +95,7 @@ public class EFCoreBatchTest
         }
     }
 
-    internal void RunDeleteAll(DbServerType dbServer)
+    internal void RunDeleteAll(SqlType dbServer)
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -108,15 +108,15 @@ public class EFCoreBatchTest
         // RESET AutoIncrement
         string deleteTableSql = dbServer switch
         {
-            DbServerType.SQLServer => $"DBCC CHECKIDENT('[dbo].[{nameof(Item)}]', RESEED, 0);",
-            DbServerType.SQLite => $"DELETE FROM sqlite_sequence WHERE name = '{nameof(Item)}';",
-            DbServerType.PostgreSQL => $@"ALTER SEQUENCE ""{nameof(Item)}_{nameof(Item.ItemId)}_seq"" RESTART WITH 1;",
+            SqlType.SqlServer => $"DBCC CHECKIDENT('[dbo].[{nameof(Item)}]', RESEED, 0);",
+            SqlType.Sqlite => $"DELETE FROM sqlite_sequence WHERE name = '{nameof(Item)}';",
+            SqlType.PostgreSql => $@"ALTER SEQUENCE ""{nameof(Item)}_{nameof(Item.ItemId)}_seq"" RESTART WITH 1;",
             _ => throw new ArgumentException($"Unknown database type: '{dbServer}'.", nameof(dbServer)),
         };
         context.Database.ExecuteSqlRaw(deleteTableSql);
     }
 
-    private static void RunBatchUpdate(DbServerType dbServer)
+    private static void RunBatchUpdate(SqlType dbServer)
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -125,11 +125,11 @@ public class EFCoreBatchTest
         decimal price = 0;
 
         var query = context.Items.AsQueryable();
-        if (dbServer == DbServerType.SQLServer)
+        if (dbServer == SqlType.SqlServer)
         {
             query = query.Where(a => a.ItemId <= 500 && a.Price >= price);//.OrderBy(n => n.ItemId).Take(500);
         }
-        if (dbServer == DbServerType.SQLite)
+        if (dbServer == SqlType.Sqlite)
         {
             query = query.Where(a => a.ItemId <= 500 && a.Price != null && a.Quantity >= 0);
 
@@ -148,7 +148,7 @@ public class EFCoreBatchTest
         var suffix = " Concatenated";
         query.BatchUpdate(a => new Item { Name = a.Name + suffix, Quantity = a.Quantity + incrementStep }); // example of BatchUpdate Increment/Decrement value in variable
 
-        if (dbServer == DbServerType.SQLServer) // Sqlite currently does Not support Take(): LIMIT
+        if (dbServer == SqlType.SqlServer) // Sqlite currently does Not support Take(): LIMIT
         {
             query.Take(1).BatchUpdate(a => new Item { Name = a.Name + " TOP(1)", Quantity = a.Quantity + incrementStep }); // example of BatchUpdate with TOP(1)
         }
@@ -191,6 +191,7 @@ public class EFCoreBatchTest
             .BatchUpdate(parent => new Parent { Description = parent.Details.Notes ?? "Fallback" });
 
         var actualSqlExecuted = testDbCommandInterceptor.ExecutedNonQueryCommands?.LastOrDefault()?.Sql;
+        actualSqlExecuted = actualSqlExecuted?.Replace("\r\n", "\n");
         var expectedSql =
 @"UPDATE p SET  [p].[Description] = (
     SELECT COALESCE([p1].[Notes], N'Fallback')
@@ -198,23 +199,24 @@ public class EFCoreBatchTest
     WHERE [p1].[ParentId] = [p].[ParentId]) 
 FROM [Parent] AS [p]
 LEFT JOIN [ParentDetail] AS [p0] ON [p].[ParentId] = [p0].[ParentId]
-WHERE ([p].[ParentId] < 5) AND (([p0].[Notes] IS NOT NULL) AND NOT ([p0].[Notes] LIKE N''))";
-
-        Assert.Equal(expectedSql.Replace("\r\n", "\n"), actualSqlExecuted?.Replace("\r\n", "\n"));
+WHERE [p].[ParentId] < 5 AND ([p0].[Notes] IS NOT NULL) AND NOT ([p0].[Notes] LIKE N'')";
+        expectedSql = expectedSql.Replace("\r\n", "\n");
+        Assert.Equal(expectedSql, actualSqlExecuted);
 
         context.Parents.Where(parent => parent.ParentId == 1)
             .BatchUpdate(parent => new Parent { Value = parent.Children.Where(child => child.IsEnabled).Sum(child => child.Value) });
 
         actualSqlExecuted = testDbCommandInterceptor.ExecutedNonQueryCommands?.LastOrDefault()?.Sql;
+        actualSqlExecuted = actualSqlExecuted?.Replace("\r\n", "\n");
         expectedSql =
 @"UPDATE p SET  [p].[Value] = (
     SELECT COALESCE(SUM([c].[Value]), 0.0)
     FROM [Child] AS [c]
-    WHERE ([p].[ParentId] = [c].[ParentId]) AND ([c].[IsEnabled] = CAST(1 AS bit))) 
+    WHERE [p].[ParentId] = [c].[ParentId] AND [c].[IsEnabled] = CAST(1 AS bit)) 
 FROM [Parent] AS [p]
 WHERE [p].[ParentId] = 1";
-
-        Assert.Equal(expectedSql.Replace("\r\n", "\n"), actualSqlExecuted?.Replace("\r\n", "\n"));
+        expectedSql = expectedSql.Replace("\r\n", "\n");
+        Assert.Equal(expectedSql, actualSqlExecuted);
 
         var newValue = 5;
 
@@ -226,15 +228,16 @@ WHERE [p].[ParentId] = 1";
             });
 
         actualSqlExecuted = testDbCommandInterceptor.ExecutedNonQueryCommands?.LastOrDefault()?.Sql;
+        actualSqlExecuted = actualSqlExecuted?.Replace("\r\n", "\n");
         expectedSql =
 @"UPDATE p SET  [p].[Description] = (CONVERT(varchar(100), (
     SELECT COALESCE(SUM([c].[Value]), 0.0)
     FROM [Child] AS [c]
-    WHERE ([p].[ParentId] = [c].[ParentId]) AND (([c].[IsEnabled] = CAST(1 AS bit)) AND ([c].[Value] = @__p_0))))) , [p].[Value] = @param_1 
+    WHERE [p].[ParentId] = [c].[ParentId] AND [c].[IsEnabled] = CAST(1 AS bit) AND [c].[Value] = @__p_0))) , [p].[Value] = @param_1 
 FROM [Parent] AS [p]
 WHERE [p].[ParentId] = 1";
-
-        Assert.Equal(expectedSql.Replace("\r\n", "\n"), actualSqlExecuted?.Replace("\r\n", "\n"));
+        expectedSql = expectedSql.Replace("\r\n", "\n");
+        Assert.Equal(expectedSql, actualSqlExecuted);
     }
 
     private static void RunInsert()

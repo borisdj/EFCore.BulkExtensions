@@ -1,17 +1,12 @@
 ﻿using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Text.RegularExpressions;
 
 namespace EFCore.BulkExtensions.SqlAdapters.SqlServer;
 
 /// <summary>
 /// Contains a compilation of SQL queries used in EFCore.
 /// </summary>
-public class SqlQueryBuilderSqlServer : SqlAdapters.QueryBuilderExtensions
+public class SqlServerQueryBuilder : QueryBuilderExtensions
 {
     /// <inheritdoc/>
     public override object CreateParameter(SqlParameter sqlParameter)
@@ -34,7 +29,7 @@ public class SqlQueryBuilderSqlServer : SqlAdapters.QueryBuilderExtensions
     /// <inheritdoc/>
     public override string SelectFromOutputTable(TableInfo tableInfo)
     {
-        return EFCore.BulkExtensions.SqlQueryBuilder.SelectFromOutputTable(tableInfo);
+        return SqlQueryBuilder.SelectFromOutputTable(tableInfo);
     }
 
     /// <inheritdoc/>

@@ -1,5 +1,4 @@
 ﻿using EFCore.BulkExtensions.Helpers;
-using EFCore.BulkExtensions.SqlAdapters;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -17,7 +16,7 @@ using System.Threading.Tasks;
 namespace EFCore.BulkExtensions.SqlAdapters.SqlServer;
 
 /// <inheritdoc/>
-public class SqlOperationsServerAdapter: ISqlOperationsAdapter
+public class SqlServerAdapter: ISqlOperationsAdapter
 {
     /// <inheritdoc/>
     #region Methods
@@ -28,14 +27,16 @@ public class SqlOperationsServerAdapter: ISqlOperationsAdapter
     }
 
     /// <inheritdoc/>
-    public async Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress, CancellationToken cancellationToken)
+    public async Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress, 
+        CancellationToken cancellationToken)
     {
         await InsertAsync(context, type, entities, tableInfo, progress, isAsync: true, cancellationToken).ConfigureAwait(false);
     }
     // Public Async and NonAsync are merged into single operation flow with protected method using arg: bool isAsync (keeps code DRY)
     // https://docs.microsoft.com/en-us/archive/msdn-magazine/2015/july/async-programming-brownfield-async-development#the-flag-argument-hack
     /// <inheritdoc/>
-    protected static async Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken)
+    protected static async Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress, 
+        bool isAsync, CancellationToken cancellationToken)
     {
         tableInfo.CheckToSetIdentityForPreserveOrder(tableInfo, entities);
         if (isAsync)
@@ -72,7 +73,7 @@ public class SqlOperationsServerAdapter: ISqlOperationsAdapter
                 if (ex.Message.Contains(BulkExceptionMessage.ColumnMappingNotMatch))
                 {
                     bool tableExist = isAsync ? await TableInfo.CheckTableExistAsync(context, tableInfo, isAsync: true, cancellationToken).ConfigureAwait(false)
-                                                    : TableInfo.CheckTableExistAsync(context, tableInfo, isAsync: false, cancellationToken).GetAwaiter().GetResult();
+                                                    : TableInfo.CheckTableExistAsync(context, tableInfo, isAsync: false, CancellationToken.None).GetAwaiter().GetResult();
 
                     if (!tableExist)
                     {
@@ -105,7 +106,7 @@ public class SqlOperationsServerAdapter: ISqlOperationsAdapter
                 context.Database.CloseConnection();
             }
         }
-        if (!tableInfo.CreatedOutputTable)
+        if (!tableInfo.CreateOutputTable)
         {
             tableInfo.CheckToSetIdentityForPreserveOrder(tableInfo, entities, reset: true);
         }
@@ -126,96 +127,42 @@ public class SqlOperationsServerAdapter: ISqlOperationsAdapter
     /// <inheritdoc/>
     protected async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken) where T : class
     {
-        var entityPropertyWithDefaultValue = entities.GetPropertiesWithDefaultValue(type, tableInfo);
-
-        if (tableInfo.BulkConfig.CustomSourceTableName == null)
-        {
-            tableInfo.InsertToTempTable = true;
-
-            var dropTempTableIfExists = tableInfo.BulkConfig.UseTempDB;
-
-            if (dropTempTableIfExists)
-            {
-                var sqlDropTable = SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
-                if (isAsync)
-                {
-                    await context.Database.ExecuteSqlRawAsync(sqlDropTable, cancellationToken).ConfigureAwait(false);
-                }
-                else
-                {
-                    context.Database.ExecuteSqlRaw(sqlDropTable);
-                }
-            }
-
-            var sqlCreateTableCopy = SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo);
-            if (isAsync)
-            {
-                await context.Database.ExecuteSqlRawAsync(sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
-            }
-            else
-            {
-                context.Database.ExecuteSqlRaw(sqlCreateTableCopy);
-            }
-
-            if (tableInfo.TimeStampColumnName != null)
-            {
-                var sqlAddColumn = SqlQueryBuilder.AddColumn(tableInfo.FullTempTableName, tableInfo.TimeStampColumnName, TableInfo.TimeStampOutColumnType);
-                if (isAsync)
-                {
-                    await context.Database.ExecuteSqlRawAsync(sqlAddColumn, cancellationToken).ConfigureAwait(false);
-                }
-                else
-                {
-                    context.Database.ExecuteSqlRaw(sqlAddColumn);
-                }
-            }
-        }
-
-        if (tableInfo.CreatedOutputTable)
-        {
-            var sqlCreateOutputTableCopy = SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempOutputTableName, tableInfo, true);
-            if (isAsync)
-            {
-                await context.Database.ExecuteSqlRawAsync(sqlCreateOutputTableCopy, cancellationToken).ConfigureAwait(false);
-            }
-            else
-            {
-                context.Database.ExecuteSqlRaw(sqlCreateOutputTableCopy);
-            }
-
-            if (tableInfo.TimeStampColumnName != null)
-            {
-                var sqlAddColumn = SqlQueryBuilder.AddColumn(tableInfo.FullTempOutputTableName, tableInfo.TimeStampColumnName, TableInfo.TimeStampOutColumnType);
-                if (isAsync)
-                {
-                    await context.Database.ExecuteSqlRawAsync(sqlAddColumn, cancellationToken).ConfigureAwait(false);
-                }
-                else
-                {
-                    context.Database.ExecuteSqlRaw(sqlAddColumn);
-                }
-            }
-
-            if (operationType == OperationType.InsertOrUpdateOrDelete)
-            {
-                // Output returns all changes including Deleted rows with all NULL values, so if TempOutput.Id col not Nullable it breaks
-                var sqlAlterTableColumnsToNullable = SqlQueryBuilder.AlterTableColumnsToNullable(tableInfo.FullTempOutputTableName, tableInfo);
-                if (isAsync)
-                {
-                    await context.Database.ExecuteSqlRawAsync(sqlAlterTableColumnsToNullable, cancellationToken).ConfigureAwait(false);
-                }
-                else
-                {
-                    context.Database.ExecuteSqlRaw(sqlAlterTableColumnsToNullable);
-                }
-            }
-        }
-
+        bool tempTableCreated = false;
+        bool outputTableCreated = false;
+        bool identityInsertIsSet = false;
         bool keepIdentity = tableInfo.BulkConfig.SqlBulkCopyOptions.HasFlag(SqlBulkCopyOptions.KeepIdentity);
         try
         {
+            var entityPropertyWithDefaultValue = entities.GetPropertiesWithDefaultValue(type, tableInfo);
+
             if (tableInfo.BulkConfig.CustomSourceTableName == null)
             {
+                tableInfo.InsertToTempTable = true;
+
+                var sqlCreateTableCopy = SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo);
+                if (isAsync)
+                {
+                    await context.Database.ExecuteSqlRawAsync(sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    context.Database.ExecuteSqlRaw(sqlCreateTableCopy);
+                }
+                tempTableCreated = true;
+
+                if (tableInfo.TimeStampColumnName != null)
+                {
+                    var sqlAddColumn = SqlQueryBuilder.AddColumn(tableInfo.FullTempTableName, tableInfo.TimeStampColumnName, TableInfo.TimeStampOutColumnType);
+                    if (isAsync)
+                    {
+                        await context.Database.ExecuteSqlRawAsync(sqlAddColumn, cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        context.Database.ExecuteSqlRaw(sqlAddColumn);
+                    }
+                }
+
                 if (isAsync)
                 {
                     await InsertAsync(context, type, entities, tableInfo, progress, cancellationToken).ConfigureAwait(false);
@@ -223,6 +170,47 @@ public class SqlOperationsServerAdapter: ISqlOperationsAdapter
                 else
                 {
                     Insert(context, type, entities, tableInfo, progress);
+                }
+            }
+
+            if (tableInfo.CreateOutputTable)
+            {
+                var sqlCreateOutputTableCopy = SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempOutputTableName, tableInfo, true);
+                if (isAsync)
+                {
+                    await context.Database.ExecuteSqlRawAsync(sqlCreateOutputTableCopy, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    context.Database.ExecuteSqlRaw(sqlCreateOutputTableCopy);
+                }
+                outputTableCreated = true;
+
+                if (tableInfo.TimeStampColumnName != null)
+                {
+                    var sqlAddColumn = SqlQueryBuilder.AddColumn(tableInfo.FullTempOutputTableName, tableInfo.TimeStampColumnName, TableInfo.TimeStampOutColumnType);
+                    if (isAsync)
+                    {
+                        await context.Database.ExecuteSqlRawAsync(sqlAddColumn, cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        context.Database.ExecuteSqlRaw(sqlAddColumn);
+                    }
+                }
+
+                if (operationType == OperationType.InsertOrUpdateOrDelete)
+                {
+                    // Output returns all changes including Deleted rows with all NULL values, so if TempOutput.Id col not Nullable it breaks
+                    var sqlAlterTableColumnsToNullable = SqlQueryBuilder.AlterTableColumnsToNullable(tableInfo.FullTempOutputTableName, tableInfo);
+                    if (isAsync)
+                    {
+                        await context.Database.ExecuteSqlRawAsync(sqlAlterTableColumnsToNullable, cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        context.Database.ExecuteSqlRaw(sqlAlterTableColumnsToNullable);
+                    }
                 }
             }
 
@@ -239,6 +227,7 @@ public class SqlOperationsServerAdapter: ISqlOperationsAdapter
                     context.Database.OpenConnection();
                     context.Database.ExecuteSqlRaw(sqlSetIdentityInsertTrue);
                 }
+                identityInsertIsSet = true;
             }
 
             var (sql, parameters) = SqlQueryBuilder.MergeTable<T>(context, tableInfo, operationType, entityPropertyWithDefaultValue);
@@ -251,7 +240,7 @@ public class SqlOperationsServerAdapter: ISqlOperationsAdapter
                 context.Database.ExecuteSqlRaw(sql, parameters);
             }
 
-            if (tableInfo.CreatedOutputTable)
+            if (tableInfo.CreateOutputTable)
             {
                 if (isAsync)
                 {
@@ -265,9 +254,9 @@ public class SqlOperationsServerAdapter: ISqlOperationsAdapter
         }
         finally
         {
-            if (!tableInfo.BulkConfig.UseTempDB)
+            if (!tableInfo.BulkConfig.UseTempDB) // When UseTempDB is set temp tables are automaticaly dropped by Db
             {
-                if (tableInfo.CreatedOutputTable)
+                if (outputTableCreated)
                 {
                     var sqlDropOutputTable = SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName, tableInfo.BulkConfig.UseTempDB);
                     if (isAsync)
@@ -278,9 +267,8 @@ public class SqlOperationsServerAdapter: ISqlOperationsAdapter
                     {
                         context.Database.ExecuteSqlRaw(sqlDropOutputTable);
                     }
-
                 }
-                if (tableInfo.BulkConfig.CustomSourceTableName == null)
+                if (tempTableCreated) // otherwise following lines execute the drop
                 {
                     var sqlDropTable = SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
                     if (isAsync)
@@ -294,7 +282,7 @@ public class SqlOperationsServerAdapter: ISqlOperationsAdapter
                 }
             }
 
-            if (keepIdentity && tableInfo.HasIdentity)
+            if (identityInsertIsSet)
             {
                 var sqlSetIdentityInsertFalse = SqlQueryBuilder.SetIdentityInsert(tableInfo.FullTableName, false);
                 if (isAsync)
@@ -325,20 +313,22 @@ public class SqlOperationsServerAdapter: ISqlOperationsAdapter
     /// <inheritdoc/>
     protected async Task ReadAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken) where T : class
     {
-        Dictionary<string, string> previousPropertyColumnNamesDict = tableInfo.ConfigureBulkReadTableInfo();
-
-        var sqlCreateTableCopy = SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo);
-        if (isAsync)
-        {
-            await context.Database.ExecuteSqlRawAsync(sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
-        }
-        else
-        {
-            context.Database.ExecuteSqlRaw(sqlCreateTableCopy);
-        }
-
+        bool tempTableCreated = false;
         try
         {
+            Dictionary<string, string> previousPropertyColumnNamesDict = tableInfo.ConfigureBulkReadTableInfo();
+
+            var sqlCreateTableCopy = SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo);
+            if (isAsync)
+            {
+                await context.Database.ExecuteSqlRawAsync(sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                context.Database.ExecuteSqlRaw(sqlCreateTableCopy);
+            }
+            tempTableCreated = true;
+
             if (isAsync)
             {
                 await InsertAsync(context, type, entities, tableInfo, progress, cancellationToken).ConfigureAwait(false);
@@ -379,14 +369,17 @@ public class SqlOperationsServerAdapter: ISqlOperationsAdapter
         {
             if (!tableInfo.BulkConfig.UseTempDB)
             {
-                var sqlDropTable = SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
-                if (isAsync)
+                if (tempTableCreated)
                 {
-                    await context.Database.ExecuteSqlRawAsync(sqlDropTable, cancellationToken).ConfigureAwait(false);
-                }
-                else
-                {
-                    context.Database.ExecuteSqlRaw(sqlDropTable);
+                    var sqlDropTable = SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
+                    if (isAsync)
+                    {
+                        await context.Database.ExecuteSqlRawAsync(sqlDropTable, cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        context.Database.ExecuteSqlRaw(sqlDropTable);
+                    }
                 }
             }
         }
@@ -420,7 +413,7 @@ public class SqlOperationsServerAdapter: ISqlOperationsAdapter
         return sqlBulkCopy;
     }
     /// <summary>
-    /// Supports <see cref="Microsoft.Data.SqlClient.SqlBulkCopy"/>
+    /// Supports <see cref="SqlBulkCopy"/>
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="sqlBulkCopy"></param>
@@ -428,7 +421,7 @@ public class SqlOperationsServerAdapter: ISqlOperationsAdapter
     /// <param name="entities"></param>
     /// <param name="setColumnMapping"></param>
     /// <param name="progress"></param>
-    private static void SetSqlBulkCopyConfig<T>(Microsoft.Data.SqlClient.SqlBulkCopy sqlBulkCopy, TableInfo tableInfo, IList<T> entities, bool setColumnMapping, Action<decimal>? progress)
+    private static void SetSqlBulkCopyConfig<T>(SqlBulkCopy sqlBulkCopy, TableInfo tableInfo, IList<T> entities, bool setColumnMapping, Action<decimal>? progress)
     {
         sqlBulkCopy.DestinationTableName = tableInfo.InsertToTempTable ? tableInfo.FullTempTableName : tableInfo.FullTableName;
         sqlBulkCopy.BatchSize = tableInfo.BulkConfig.BatchSize;
@@ -489,7 +482,7 @@ public class SqlOperationsServerAdapter: ISqlOperationsAdapter
         var ownedEntitiesMappedProperties = new HashSet<string>();
 
         var databaseType = SqlAdaptersMapping.GetDatabaseType();
-        var isSqlServer = databaseType == DbServerType.SQLServer;
+        var isSqlServer = databaseType == SqlType.SqlServer;
         var sqlServerBytesWriter = new SqlServerBytesWriter();
 
         var objectIdentifier = tableInfo.ObjectIdentifier;
@@ -515,7 +508,7 @@ public class SqlOperationsServerAdapter: ISqlOperationsAdapter
 
         foreach (var property in properties)
         {
-            var hasDefaultVauleOnInsert = tableInfo.BulkConfig.OperationType == OperationType.Insert
+            var hasDefaultValueOnInsert = tableInfo.BulkConfig.OperationType == OperationType.Insert
                 && !tableInfo.BulkConfig.SetOutputIdentity
                 && tableInfo.DefaultValueProperties.Contains(property.Name);
 
@@ -547,7 +540,10 @@ public class SqlOperationsServerAdapter: ISqlOperationsAdapter
                     propertyType = typeof(byte[]);
                 }
 
-                if (!columnsDict.ContainsKey(property.Name) && !hasDefaultVauleOnInsert)
+                // when TimeStamp has default value on Property (issue 958, test TimeStamp example with multiple DBs, second being Sqlite that does not have internal TS)
+                var omitTimeStamp = property.Name == tableInfo.TimeStampPropertyName && tableInfo.BulkConfig.DoNotUpdateIfTimeStampChanged == false;
+
+                if (!columnsDict.ContainsKey(property.Name) && !hasDefaultValueOnInsert && !omitTimeStamp)
                 {
                     dataTable.Columns.Add(columnName, propertyType);
                     columnsDict.Add(property.Name, null);
@@ -582,7 +578,7 @@ public class SqlOperationsServerAdapter: ISqlOperationsAdapter
                     propertyType = typeof(byte[]);
                 }
 
-                if (columnName is not null && !(columnsDict.ContainsKey(columnName)) && !hasDefaultVauleOnInsert)
+                if (columnName is not null && !(columnsDict.ContainsKey(columnName)) && !hasDefaultValueOnInsert)
                 {
                     dataTable.Columns.Add(columnName, propertyType);
                     columnsDict.Add(columnName, null);
@@ -771,7 +767,9 @@ public class SqlOperationsServerAdapter: ISqlOperationsAdapter
                     propertyValue = memStream.ToArray();
                 }
 
-                if (entityPropertiesDict.ContainsKey(property.Name) && !hasDefaultVauleOnInsert)
+                var omitTimeStamp = property.Name == tableInfo.TimeStampPropertyName && tableInfo.BulkConfig.DoNotUpdateIfTimeStampChanged == false;
+
+                if (entityPropertiesDict.ContainsKey(property.Name) && !hasDefaultVauleOnInsert && !omitTimeStamp)
                 {
                     columnsDict[property.Name] = propertyValue;
                 }
@@ -860,7 +858,12 @@ public class SqlOperationsServerAdapter: ISqlOperationsAdapter
         if (!tableInfo.BulkConfig.EnableShadowProperties && tableInfo.ShadowProperties.Count > 0)
         {
             var stringColumns = tableInfo.ColumnNamesTypesDict.Where(a => a.Value.Contains("char")).Select(a => a.Key).ToList();
-            discriminatorColumn = tableInfo.ShadowProperties.Where(a => stringColumns.Contains(a)).ElementAt(0);
+            var shadowProps = tableInfo.ShadowProperties.Where(a => stringColumns.Contains(a));
+
+            if (shadowProps is not null && shadowProps.Any())
+            {
+                discriminatorColumn = shadowProps.ElementAt(0);
+            }
         }
         return discriminatorColumn;
     }

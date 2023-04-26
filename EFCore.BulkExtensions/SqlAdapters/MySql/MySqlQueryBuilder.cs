@@ -1,14 +1,16 @@
-﻿using System;
+﻿using Microsoft.Data.SqlClient;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.Data.SqlClient;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace EFCore.BulkExtensions.SqlAdapters.MySql;
 
 /// <summary>
 ///  Contains a list of methods to generate SQL queries required by EFCore
 /// </summary>
-public class SqlQueryBuilderMySql : QueryBuilderExtensions
+public class MySqlQueryBuilder : QueryBuilderExtensions
 {
     /// <summary>
     /// Generates SQL query to create table copy
@@ -18,11 +20,13 @@ public class SqlQueryBuilderMySql : QueryBuilderExtensions
     /// <param name="useTempDb"></param>
     public static string CreateTableCopy(string existingTableName, string newTableName, bool useTempDb)
     {
-        string keywordTemp = useTempDb ? "TEMPORARY " : ""; 
+        useTempDb = false;
+        string keywordTemp = useTempDb ? "TEMPORARY " : "";
+
         var query = $"CREATE {keywordTemp}TABLE {newTableName} " +
-                $"SELECT * FROM {existingTableName} " +
-                "LIMIT 0;";
-        query = query.Replace("[", "").Replace("]", "");
+                    $"SELECT * FROM {existingTableName} " +
+                    $"LIMIT 0;";
+        query = query.Replace("[", "`").Replace("]", "`");
         return query;
     }
     /// <summary>
@@ -33,9 +37,10 @@ public class SqlQueryBuilderMySql : QueryBuilderExtensions
     /// <returns></returns>
     public static string DropTable(string tableName, bool isTempTable)
     {
+        isTempTable = false;
         string keywordTemp = isTempTable ? "TEMPORARY " : "";
         var query = $"DROP {keywordTemp}TABLE IF EXISTS {tableName}";
-        query = query.Replace("[", "").Replace("]", "");
+        query = query.Replace("[", "`").Replace("]", "`");
         return query;
     }
     /// <summary>
@@ -85,24 +90,24 @@ public class SqlQueryBuilderMySql : QueryBuilderExtensions
 
         string query;
         var firstPrimaryKey = tableInfo.PrimaryKeysPropertyColumnNameDict.FirstOrDefault().Key;
-        if(operationType == OperationType.Delete)
+        if (operationType == OperationType.Delete)
         {
-            query = "delete A " +
+            query = $"DELETE A " +
                     $"FROM {tableInfo.FullTableName} AS A " +
                     $"INNER JOIN {tableInfo.FullTempTableName} B on A.{firstPrimaryKey} = B.{firstPrimaryKey}; ";
         }
         else
         {
-            var commaSeparatedColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsList).Replace("[", "").Replace("]", "");
+            var commaSeparatedColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsList).Replace("[", "`").Replace("]", "`");
             var columnsListEquals = GetColumnList(tableInfo, OperationType.Insert);
             var columnsToUpdate = columnsListEquals.Where(c => tableInfo.PropertyColumnNamesUpdateDict.ContainsValue(c)).ToList();
-            var equalsColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsToUpdate, equalsTable: "EXCLUDED").Replace("[", "").Replace("]", "");
-        
+            var equalsColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsToUpdate, equalsTable: "EXCLUDED").Replace("[", "`").Replace("]", "`");
+
             query = $"INSERT INTO {tableInfo.FullTableName} ({commaSeparatedColumns}) " +
                     $"SELECT {commaSeparatedColumns} FROM {tableInfo.FullTempTableName} AS EXCLUDED " +
-                    "ON DUPLICATE KEY UPDATE " +
+                    $"ON DUPLICATE KEY UPDATE " +
                     $"{equalsColumns}; ";
-            if (tableInfo.CreatedOutputTable)
+            if (tableInfo.CreateOutputTable)
             {
                 if (operationType == OperationType.Insert || operationType == OperationType.InsertOrUpdate)
                 {
@@ -111,26 +116,23 @@ public class SqlQueryBuilderMySql : QueryBuilderExtensions
                              $"WHERE {firstPrimaryKey} >= LAST_INSERT_ID() " +
                              $"AND {firstPrimaryKey} < LAST_INSERT_ID() + row_count(); ";
                 }
-
-                if (operationType == OperationType.Update)
+                else if (operationType == OperationType.Update)
                 {
                     query += $"INSERT INTO {tableInfo.FullTempOutputTableName} " +
                              $"SELECT * FROM {tableInfo.FullTempTableName} ";
                 }
-
-                if (operationType == OperationType.InsertOrUpdate)
+                /* elseif (operationType == OperationType.InsertOrUpdate)
                 {
                     query += $"INSERT INTO {tableInfo.FullTempOutputTableName} " +
                              $"SELECT A.* FROM {tableInfo.FullTempTableName} A " +
                              $"LEFT OUTER JOIN {tableInfo.FullTempOutputTableName} B " +
                              $" ON A.{firstPrimaryKey} = B.{firstPrimaryKey} " +
                              $"WHERE  B.{firstPrimaryKey} IS NULL; ";
-                }
-            
+                }*/
             }
         }
-        
-        query = query.Replace("[", "").Replace("]", "");
+
+        query = query.Replace("[", "`").Replace("]", "`");
 
         Dictionary<string, string>? sourceDestinationMappings = tableInfo.BulkConfig.CustomSourceDestinationMappingColumns;
         if (tableInfo.BulkConfig.CustomSourceTableName != null && sourceDestinationMappings != null && sourceDestinationMappings.Count > 0)
@@ -166,7 +168,7 @@ public class SqlQueryBuilderMySql : QueryBuilderExtensions
     {
         List<string> columnsNames = tableInfo.OutputPropertyColumnNamesDict.Values.ToList();
         var query = $"SELECT {SqlQueryBuilder.GetCommaSeparatedColumns(columnsNames)} FROM {tableInfo.FullTempOutputTableName} WHERE [{tableInfo.PrimaryKeysPropertyColumnNameDict.Select(x => x.Value).FirstOrDefault()}] IS NOT NULL";
-        query = query.Replace("[", "").Replace("]", "");
+        query = query.Replace("[", "`").Replace("]", "`");
         return query;
     }
 
@@ -180,11 +182,9 @@ public class SqlQueryBuilderMySql : QueryBuilderExtensions
         var schemaFormated = tableInfo.Schema == null ? "" : $@"`{tableInfo.Schema}`.";
         var fullTableNameFormated = $@"{schemaFormated}`{tableName}`";
 
-        var uniqueColumnNames = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList();
-        var uniqueColumnNamesDash = string.Join("_", uniqueColumnNames);
-        var schemaDash = tableInfo.Schema == null ? "" : $"{tableInfo.Schema}_";
-        var uniqueConstrainName = $"tempUniqueIndex_{schemaDash}{tableName}_{uniqueColumnNamesDash}";
+        var uniqueConstrainName = GetUniqueConstrainName(tableInfo);
 
+        var uniqueColumnNames = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList();
         var uniqueColumnNamesComma = string.Join(",", uniqueColumnNames); // TODO When Column is string without defined max length, it should be UNIQUE (`Name`(255)); otherwise exception: BLOB/TEXT column 'Name' used in key specification without a key length'
         uniqueColumnNamesComma = "`" + uniqueColumnNamesComma;
         uniqueColumnNamesComma = uniqueColumnNamesComma.Replace(",", "`, `");
@@ -207,10 +207,7 @@ public class SqlQueryBuilderMySql : QueryBuilderExtensions
         var schemaFormated = tableInfo.Schema == null ? "" : $@"`{tableInfo.Schema}`.";
         var fullTableNameFormated = $@"{schemaFormated}`{tableName}`";
 
-        var uniqueColumnNames = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList();
-        var uniqueColumnNamesDash = string.Join("_", uniqueColumnNames);
-        var schemaDash = tableInfo.Schema == null ? "" : $"{tableInfo.Schema}_";
-        var uniqueConstrainName = $"tempUniqueIndex_{schemaDash}{tableName}_{uniqueColumnNamesDash}";
+        var uniqueConstrainName = GetUniqueConstrainName(tableInfo);
 
         var q = $@"ALTER TABLE {fullTableNameFormated} " +
                 $@"DROP INDEX `{uniqueConstrainName}`;";
@@ -225,16 +222,34 @@ public class SqlQueryBuilderMySql : QueryBuilderExtensions
     {
         var tableName = tableInfo.TableName;
 
-        var uniqueColumnNames = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList();
-        var uniqueColumnNamesDash = string.Join("_", uniqueColumnNames);
-        var schemaDash = tableInfo.Schema == null ? "" : $"{tableInfo.Schema}_";
-        var uniqueConstrainName = $"tempUniqueIndex_{schemaDash}{tableName}_{uniqueColumnNamesDash}";
+        var uniqueConstrainName = GetUniqueConstrainName(tableInfo);
 
         var q = $@"SELECT DISTINCT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE " +
                 $@"CONSTRAINT_TYPE = 'UNIQUE' AND CONSTRAINT_NAME = '{uniqueConstrainName}';";
         return q;
     }
 
+    /// <summary>
+    /// Creates UniqueConstrainName
+    /// </summary>
+    /// <param name="tableInfo"></param>
+    public static string GetUniqueConstrainName(TableInfo tableInfo)
+    {
+        var tableName = tableInfo.TableName;
+
+        var uniqueColumnNames = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList();
+        var uniqueColumnNamesDash = string.Join("_", uniqueColumnNames);
+        var schemaDash = tableInfo.Schema == null ? "" : $"{tableInfo.Schema}_";
+
+        string uniqueConstrainPrefix = "tempUniqueIndex_"; // 16 char length
+        string uniqueConstrainNameText = $"{schemaDash}{tableName}_{uniqueColumnNamesDash}";
+        if (uniqueConstrainNameText.Length > 64 - (uniqueConstrainPrefix.Length)) // effectively 48 max
+        {
+            uniqueConstrainNameText = Md5Hash(uniqueConstrainNameText);
+        }
+        string uniqueConstrainName = uniqueConstrainPrefix + uniqueConstrainNameText;
+        return uniqueConstrainName;
+    }
 
     /// <summary>
     /// Restructures a sql query for batch commands
@@ -266,5 +281,12 @@ public class SqlQueryBuilderMySql : QueryBuilderExtensions
     public override void SetDbTypeParam(object npgsqlParameter, object dbType)
     {
         throw new NotImplementedException();
+    }
+
+    private static string Md5Hash(string value)
+    {
+        using var md5 = MD5.Create();
+        var buffer = Encoding.UTF8.GetBytes(value);
+        return BitConverter.ToString(md5.ComputeHash(buffer)).Replace("-", string.Empty);
     }
 }

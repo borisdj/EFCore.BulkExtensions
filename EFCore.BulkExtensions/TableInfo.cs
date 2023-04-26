@@ -40,7 +40,7 @@ public class TableInfo
     public string FullTempTableName => $"{TempSchemaFormated}[{TempDBPrefix}{TempTableName}]";
     public string FullTempOutputTableName => $"{SchemaFormated}[{TempDBPrefix}{TempTableName}Output]";
 
-    public bool CreatedOutputTable => BulkConfig.SetOutputIdentity || BulkConfig.CalculateStats;
+    public bool CreateOutputTable => BulkConfig.SetOutputIdentity || BulkConfig.CalculateStats;
 
     public bool InsertToTempTable { get; set; }
     public string? IdentityColumnName { get; set; }
@@ -74,6 +74,8 @@ public class TableInfo
     public static string TimeStampOutColumnType => "varbinary(8)";
     public string? TimeStampPropertyName { get; set; }
     public string? TimeStampColumnName { get; set; }
+
+    public string? TextValueFirstPK { get; set; }
 
     protected IList<object>? EntitiesSortedReference { get; set; } // Operation Merge writes In Output table first Existing that were Updated then for new that were Inserted so this makes sure order is same in list when need to set Output
 
@@ -118,8 +120,8 @@ public class TableInfo
         if (tableInfo.BulkConfig.UseTempDB == true && !isExplicitTransaction && (operationType != OperationType.Insert || tableInfo.BulkConfig.SetOutputIdentity))
         {
             throw new InvalidOperationException("When 'UseTempDB' is set then BulkOperation has to be inside Transaction. " +
-                                                "Otherwise destination table gets dropped too early because transaction ends before operation is finished."); // throws: 'Cannot access destination table'
-        }
+                                                "Otherwise destination table gets dropped too early because transaction ends before operation is finished.");
+        }                                       // throws: 'Cannot access destination table'
 
         var isDeleteOperation = operationType == OperationType.Delete;
         tableInfo.LoadData(context, type, entities, isDeleteOperation);
@@ -156,12 +158,16 @@ public class TableInfo
 
         //var relationalData = entityType.Relational(); relationalData.Schema relationalData.TableName // DEPRECATED in Core3.0
         string? providerName = context.Database.ProviderName?.ToLower();
-        bool isSqlServer = providerName?.EndsWith(DbServerType.SQLServer.ToString().ToLower()) ?? false;
-        bool isNpgsql = providerName?.EndsWith(DbServerType.PostgreSQL.ToString().ToLower()) ?? false;
-        bool isSqlite = providerName?.EndsWith(DbServerType.SQLite.ToString().ToLower()) ?? false;
-        bool isMySql = providerName?.EndsWith(DbServerType.MySQL.ToString().ToLower()) ?? false;
+        bool isSqlServer = providerName?.EndsWith(SqlType.SqlServer.ToString().ToLower()) ?? false;
+        bool isNpgsql = providerName?.EndsWith(SqlType.PostgreSql.ToString().ToLower()) ?? false;
+        bool isSqlite = providerName?.EndsWith(SqlType.Sqlite.ToString().ToLower()) ?? false;
+        bool isMySql = providerName?.EndsWith(SqlType.MySql.ToString().ToLower()) ?? false;
 
-        string? defaultSchema = isSqlServer ? "dbo" : null;
+        string? defaultSchema = null;
+        if (isSqlServer)
+            defaultSchema = "dbo";
+        if (isNpgsql)
+            defaultSchema = "public";
 
         string? customSchema = null;
         string? customTableName = null;
@@ -193,7 +199,7 @@ public class TableInfo
             BulkConfig.UseTempDB = false;
         }
 
-        TempSchema = sourceSchema ?? Schema;
+        TempSchema = sourceSchema ?? (isNpgsql && BulkConfig.UseTempDB ? null : Schema);
         TempTableSufix = sourceTableName != null ? "" : "Temp";
         if (BulkConfig.UniqueTableNameTempDb)
         {
@@ -591,6 +597,16 @@ public class TableInfo
                 }
             }
         }
+
+        if (PrimaryKeysPropertyColumnNameDict.Count == 1)
+        {
+            string pkName = PrimaryKeysPropertyColumnNameDict.Keys.First();
+            if (entities != null && entities.Count > 0)
+            {
+                object? instance = entities.First();
+                TextValueFirstPK = FastPropertyDict[pkName].Get(instance ?? "")?.ToString();
+            }
+        }
     }
 
 
@@ -805,7 +821,7 @@ public class TableInfo
 
     internal void UpdateReadEntities<T>(IList<T> entities, IList<T> existingEntities, DbContext context)
     {
-        List<string> propertyNames = PropertyColumnNamesDict.Keys.ToList();
+        List<string> propertyNames = OutputPropertyColumnNamesDict.Keys.ToList();
         if (HasOwnedTypes)
         {
             foreach (string ownedTypeName in OwnedTypesDict.Keys)
@@ -835,8 +851,8 @@ public class TableInfo
             string uniqueProperyValues = GetUniquePropertyValues(entity!, selectByPropertyNames, FastPropertyDict);
 
             existingEntitiesDict.TryGetValue(uniqueProperyValues, out T? existingEntity);
-            bool isPostgreSQL = context.Database.ProviderName?.EndsWith(DbServerType.PostgreSQL.ToString()) ?? false;
-            if (existingEntity == null && isPostgreSQL && i < existingEntities.Count)
+            bool isPostgreSql = context.Database.ProviderName?.EndsWith(SqlType.PostgreSql.ToString(), StringComparison.InvariantCultureIgnoreCase) ?? false;
+            if (existingEntity == null && isPostgreSql && i < existingEntities.Count && entities.Count == existingEntities.Count) // && entities.Count == existingEntities.Count conf fix for READ. TODO change (issue 1027)
             {
                 existingEntity = existingEntities[i]; // TODO check if BinaryImport with COPY on Postgres preserves order
             }
@@ -853,7 +869,6 @@ public class TableInfo
                     {
                        //TODO: Shadow FK property update
                     }
-                    
                 }
             }
         }
@@ -1018,7 +1033,7 @@ public class TableInfo
             {
                 if (identifierPropertyName != null)
                 {
-                    var customPK = tableInfo.PrimaryKeysPropertyColumnNameDict.Values;
+                    var customPK = tableInfo.PrimaryKeysPropertyColumnNameDict.Keys;
                     if (!(customPK.Count == 1 && customPK.First() == identifierPropertyName) &&
                         (tableInfo.BulkConfig.OperationType == OperationType.Update ||
                          tableInfo.BulkConfig.OperationType == OperationType.InsertOrUpdate ||
@@ -1097,10 +1112,10 @@ public class TableInfo
         bool hasIdentity = OutputPropertyColumnNamesDict.Any(a => a.Value == IdentityColumnName) ||
                            (tableInfo.HasSinglePrimaryKey && tableInfo.DefaultValueProperties.Contains(tableInfo.PrimaryKeysPropertyColumnNameDict.FirstOrDefault().Key));
         int totalNumber = entities.Count;
-        if (BulkConfig.SetOutputIdentity && hasIdentity)
+        if (BulkConfig.SetOutputIdentity && (hasIdentity || tableInfo.TimeStampColumnName == null))
         {
             var databaseType = SqlAdaptersMapping.GetDatabaseType();
-            string sqlQuery = databaseType == DbServerType.SQLServer ? SqlQueryBuilder.SelectFromOutputTable(this) : SqlAdaptersMapping.DbServer!.QueryBuilder.SelectFromOutputTable(this);
+            string sqlQuery = databaseType == SqlType.SqlServer ? SqlQueryBuilder.SelectFromOutputTable(this) : SqlAdaptersMapping.DbServer!.QueryBuilder.SelectFromOutputTable(this);
             //var entitiesWithOutputIdentity = await QueryOutputTableAsync<T>(context, sqlQuery).ToListAsync(cancellationToken).ConfigureAwait(false); // TempFIX
             var entitiesWithOutputIdentity = QueryOutputTable(context, type, sqlQuery).Cast<object>().ToList();
             //var entitiesWithOutputIdentity = (typeof(T) == type) ? QueryOutputTable<object>(context, sqlQuery).ToList() : QueryOutputTable(context, type, sqlQuery).Cast<object>().ToList();
@@ -1202,12 +1217,15 @@ public class TableInfo
         var parameter = Expression.Parameter(typeof(DbContext), "ctx");
         var expression = Expression.Call(parameter, "Set", new Type[] { entityType });
         expression = Expression.Call(typeof(RelationalQueryableExtensions), "FromSqlRaw", new Type[] { entityType }, expression, Expression.Constant(sqlQuery), Expression.Constant(Array.Empty<object>()));
-        if (BulkConfig.TrackingEntities) // If Else can not be replaced with Ternary operator for Expression
-        {
-        }
-        else
+        
+        if (!BulkConfig.TrackingEntities) // If Else can not be replaced with Ternary operator for Expression
         {
             expression = Expression.Call(typeof(EntityFrameworkQueryableExtensions), "AsNoTracking", new Type[] { entityType }, expression);
+        }
+
+        if (BulkConfig.IgnoreGlobalQueryFilters)
+        {
+            expression = Expression.Call(typeof(EntityFrameworkQueryableExtensions), "IgnoreQueryFilters", new Type[] { entityType }, expression);
         }
         expression = ordered ? OrderBy(entityType, expression, PrimaryKeysPropertyColumnNameDict.Select(a => a.Key).ToList()) : expression;
         return Expression.Lambda<Func<DbContext, IEnumerable>>(expression, parameter);

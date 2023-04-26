@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using EFCore.BulkExtensions.SqlAdapters.SQLite;
+using EFCore.BulkExtensions.SqlAdapters.Sqlite;
 using Xunit;
 
 namespace EFCore.BulkExtensions.Tests;
@@ -13,7 +13,7 @@ public class SqlQueryBuilderSqliteTests
     {
         TableInfo tableInfo = GetTestTableInfo();
         tableInfo.IdentityColumnName = "ItemId";
-        string actual = SqlQueryBuilderSqlite.InsertIntoTable(tableInfo, OperationType.InsertOrUpdate);
+        string actual = SqliteQueryBuilder.InsertIntoTable(tableInfo, OperationType.InsertOrUpdate);
 
         string expected = @"INSERT INTO [Item] ([ItemId], [Name]) " +
                           @"VALUES (@ItemId, @Name) " +
@@ -28,7 +28,7 @@ public class SqlQueryBuilderSqliteTests
     {
         TableInfo tableInfo = GetTestTableInfo((existing, inserted) => $"{inserted}.ItemTimestamp > {existing}.ItemTimestamp");
         tableInfo.IdentityColumnName = "ItemId";
-        string actual = SqlQueryBuilderSqlite.InsertIntoTable(tableInfo, OperationType.InsertOrUpdate);
+        string actual = SqliteQueryBuilder.InsertIntoTable(tableInfo, OperationType.InsertOrUpdate);
 
         string expected = @"INSERT INTO [Item] ([ItemId], [Name]) " +
                           @"VALUES (@ItemId, @Name) " +

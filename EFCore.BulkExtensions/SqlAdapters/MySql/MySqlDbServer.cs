@@ -1,6 +1,4 @@
-﻿using EFCore.BulkExtensions.SqlAdapters;
-using EFCore.BulkExtensions.SqlAdapters.MySql;
-using Microsoft.EntityFrameworkCore.Infrastructure;
+﻿using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using System.Data.Common;
 
@@ -9,7 +7,7 @@ namespace EFCore.BulkExtensions.SqlAdapters.MySql;
 /// <inheritdoc/>
 public class MySqlDbServer : IDbServer
 {
-    DbServerType IDbServer.Type => DbServerType.MySQL;
+    SqlType IDbServer.Type => SqlType.MySql;
 
     MySqlAdapter _adapter = new ();
     ISqlOperationsAdapter IDbServer.Adapter => _adapter;
@@ -17,7 +15,7 @@ public class MySqlDbServer : IDbServer
     MySqlDialect _dialect = new();
     IQueryBuilderSpecialization IDbServer.Dialect => _dialect;
 
-    SqlAdapters.QueryBuilderExtensions _queryBuilder = new SqlQueryBuilderMySql();
+    SqlAdapters.QueryBuilderExtensions _queryBuilder = new MySqlQueryBuilder();
     /// <inheritdoc/>
     public QueryBuilderExtensions QueryBuilder => _queryBuilder;
 

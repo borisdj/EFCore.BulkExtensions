@@ -29,7 +29,9 @@ public static class IQueryableExtensions
 
         string cannotGetText = "Cannot get";
 
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
         var enumerator = query.Provider.Execute<IEnumerable>(query.Expression).GetEnumerator();
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
         var queryContext = enumerator.Private<RelationalQueryContext>(relationalQueryContextText) ?? throw new InvalidOperationException($"{cannotGetText} {relationalQueryContextText}");
         var parameterValues = queryContext.ParameterValues;
 

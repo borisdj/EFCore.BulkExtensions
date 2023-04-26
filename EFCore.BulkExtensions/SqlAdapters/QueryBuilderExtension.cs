@@ -1,13 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq.Expressions;
-using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Metadata;
+﻿using Microsoft.Data.SqlClient;
+using System;
 
 namespace EFCore.BulkExtensions.SqlAdapters;
-
 
 /// <summary>
 /// Contains a list of methods to generate Adpaters and helpers instances

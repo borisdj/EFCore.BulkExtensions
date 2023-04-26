@@ -45,7 +45,7 @@ public static class BatchUtil
         var databaseType = SqlAdaptersMapping.GetDatabaseType();
 
         string resultQuery;
-        if (databaseType == DbServerType.SQLServer)
+        if (databaseType == SqlType.SqlServer)
         {
             tableAlias = $"[{tableAlias}]";
             int outerQueryOrderByIndex = -1;
@@ -94,7 +94,7 @@ public static class BatchUtil
             resultQuery = $"{leadingComments}DELETE {topStatement}{tableAlias}{sql}";
         }
 
-        if (databaseType == DbServerType.PostgreSQL)
+        if (databaseType == SqlType.PostgreSql)
         {
             resultQuery = SqlAdaptersMapping.DbServer!.QueryBuilder.RestructureForBatch(resultQuery, isDelete: true);
 
@@ -146,7 +146,7 @@ public static class BatchUtil
         }
 
         var databaseType = SqlAdaptersMapping.GetDatabaseType();
-        if (databaseType == DbServerType.PostgreSQL)
+        if (databaseType == SqlType.PostgreSql)
         {
             resultQuery = SqlAdaptersMapping.DbServer!.QueryBuilder.RestructureForBatch(resultQuery);
 
@@ -189,7 +189,7 @@ public static class BatchUtil
         CreateUpdateBody(createUpdateBodyData, expression.Body);
 
         var sqlParameters = ReloadSqlParameters(context, createUpdateBodyData.SqlParameters); // Sqlite requires SqliteParameters
-        var sqlColumns = (createUpdateBodyData.DatabaseType == DbServerType.SQLServer) 
+        var sqlColumns = (createUpdateBodyData.DatabaseType == SqlType.SqlServer) 
             ? createUpdateBodyData.UpdateColumnsSql
             : createUpdateBodyData.UpdateColumnsSql.Replace($"[{tableAlias}].", "");
 
@@ -206,7 +206,7 @@ public static class BatchUtil
         }
 
         var databaseType = SqlAdaptersMapping.GetDatabaseType();
-        if (databaseType == DbServerType.PostgreSQL)
+        if (databaseType == SqlType.PostgreSql)
         {
             resultQuery = SqlAdaptersMapping.DbServer!.QueryBuilder.RestructureForBatch(resultQuery);
 
@@ -534,7 +534,15 @@ public static class BatchUtil
     {
 #pragma warning disable EF1001 // Internal EF Core API usage.
         const BindingFlags bindingFlags = BindingFlags.NonPublic | BindingFlags.Instance;
-        var queryCompiler = typeof(EntityQueryProvider).GetField("_queryCompiler", bindingFlags)?.GetValue(query.Provider);
+
+        var provider = query.Provider;
+        if (provider is not EntityQueryProvider) // handling wrapped instances for cases like the DelegateDecompiler
+        {
+            var providerProp = query.Provider.GetType().GetProperties(bindingFlags).FirstOrDefault(x => x.PropertyType == typeof(IQueryProvider));
+            provider = providerProp?.GetValue(query.Provider) as IQueryProvider ?? throw new NotSupportedException($"Could not an EntityQueryProvider either directly or from a wrapped instance");
+        }
+        var queryCompiler = typeof(EntityQueryProvider).GetField("_queryCompiler", bindingFlags)?.GetValue(provider);
+
         var queryContextFactory = queryCompiler?.GetType().GetField("_queryContextFactory", bindingFlags)?.GetValue(queryCompiler);
 
         var dependencies = typeof(RelationalQueryContextFactory).GetProperty("Dependencies", bindingFlags)?.GetValue(queryContextFactory);
@@ -640,7 +648,7 @@ public static class BatchUtil
     public static readonly Regex TableAliasPattern = new(@"(?:FROM|JOIN)\s+(\[\S+\]) AS (\[\S+\])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     /// <summary>
-    /// Attempt to create a DbParameter using the <see cref="Microsoft.EntityFrameworkCore.Storage.RelationalTypeMapping.CreateParameter(DbCommand, string, object, bool?)"/>
+    /// Attempt to create a DbParameter using the 'RelationalTypeMapping.CreateParameter(DbCommand, string, object, bool?)'
     /// call for the specified column name.
     /// </summary>
     public static DbParameter? TryCreateRelationalMappingParameter(string? columnName, string parameterName, object? value, TableInfo? tableInfo)

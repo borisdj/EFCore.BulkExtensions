@@ -1,17 +1,15 @@
-﻿using EFCore.BulkExtensions.SqlAdapters;
-using EFCore.BulkExtensions.SqlAdapters.SQLite;
-using Microsoft.EntityFrameworkCore.Infrastructure;
+﻿using Microsoft.EntityFrameworkCore.Infrastructure;
 using System;
 using System.Data.Common;
 
-namespace EFCore.BulkExtensions.SqlAdapters.SQLite;
+namespace EFCore.BulkExtensions.SqlAdapters.Sqlite;
 
 /// <inheritdoc/>
-public class SqlLiteDbServer : IDbServer
+public class SqliteDbServer : IDbServer
 {
-    DbServerType IDbServer.Type => DbServerType.SQLite;
+    SqlType IDbServer.Type => SqlType.Sqlite;
 
-    SqliteOperationsAdapter _adapter = new ();
+    SqliteAdapter _adapter = new ();
     ISqlOperationsAdapter IDbServer.Adapter => _adapter;
 
     SqliteDialect _dialect = new();
@@ -23,7 +21,7 @@ public class SqlLiteDbServer : IDbServer
     /// <inheritdoc/>
     public DbTransaction? DbTransaction { get; set; }
 
-    SqlAdapters.QueryBuilderExtensions _queryBuilder = new SqlQueryBuilderSqlite();
+    SqlAdapters.QueryBuilderExtensions _queryBuilder = new SqliteQueryBuilder();
     /// <inheritdoc/>
     public QueryBuilderExtensions QueryBuilder => _queryBuilder;
 

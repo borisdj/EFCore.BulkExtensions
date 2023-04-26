@@ -1,7 +1,6 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Linq.Expressions;
-using Microsoft.EntityFrameworkCore;
 
 namespace EFCore.BulkExtensions.SqlAdapters;
 
@@ -41,7 +40,7 @@ public interface IQueryBuilderSpecialization
     /// </summary>
     /// <param name="sqlQuery"></param>
     /// <param name="databaseType"></param>
-    (string, string) GetBatchSqlReformatTableAliasAndTopStatement(string sqlQuery, DbServerType databaseType);
+    (string, string) GetBatchSqlReformatTableAliasAndTopStatement(string sqlQuery, SqlType databaseType);
 
     /// <summary>
     /// Returns the SQL extract table alias data

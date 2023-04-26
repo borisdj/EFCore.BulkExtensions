@@ -1,7 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 namespace EFCore.BulkExtensions.Helpers;
 
@@ -24,20 +24,23 @@ internal static class GenericsHelpers
                 continue;
             }
             var name = field.Name;
-            var temp = field.GetValue(value);
-            object? defaultValue = null;
-
             if (!tableInfo.PropertyColumnNamesDict.ContainsKey(name)) // skip non-EF properties
             {
                 continue;
             }
-
+            
+            var temp = field.GetValue(value);
+            object? defaultValue = null;
+            
             //bypass instance creation if incoming type is an interface or class does not have parameterless constructor
             var hasParameterlessConstructor = type.GetConstructor(Type.EmptyTypes) != null;
             if (!type.IsInterface && hasParameterlessConstructor)
                 defaultValue = field.GetValue(Activator.CreateInstance(type, true));
 
             if (temp == defaultValue)
+                result.Add(name);
+            else if (temp != null && defaultValue != null &&
+                    temp.ToString() == "0" && defaultValue.ToString() == "0") // situation for int/long prop with HasSequence (test DefaultValues: Document)
                 result.Add(name);
 
             if (temp is Guid guid && guid == Guid.Empty)

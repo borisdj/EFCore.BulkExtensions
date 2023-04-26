@@ -1,5 +1,4 @@
-﻿using EFCore.BulkExtensions.SqlAdapters;
-using Microsoft.EntityFrameworkCore.Infrastructure;
+﻿using Microsoft.EntityFrameworkCore.Infrastructure;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata.Internal;
 using System.Data.Common;
 
@@ -8,7 +7,7 @@ namespace EFCore.BulkExtensions.SqlAdapters.PostgreSql;
 /// <inheritdoc/>
 public class PostgreSqlDbServer : IDbServer
 {
-    DbServerType IDbServer.Type => DbServerType.PostgreSQL;
+    SqlType IDbServer.Type => SqlType.PostgreSql;
 
     PostgreSqlAdapter _adapter = new ();
     ISqlOperationsAdapter IDbServer.Adapter => _adapter;
@@ -22,7 +21,7 @@ public class PostgreSqlDbServer : IDbServer
     /// <inheritdoc/>
     public DbTransaction? DbTransaction { get; set; }
 
-    SqlAdapters.QueryBuilderExtensions _queryBuilder = new SqlQueryBuilderPostgreSql();
+    SqlAdapters.QueryBuilderExtensions _queryBuilder = new PostgreSqlQueryBuilder();
     /// <inheritdoc/>
     public QueryBuilderExtensions QueryBuilder => _queryBuilder;
 

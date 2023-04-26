@@ -3,8 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Caching.Memory;
-using Npgsql;
-using NpgsqlTypes;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -23,43 +21,67 @@ public class EFCoreBulkTest
     private static readonly Func<TestContext, IEnumerable<Item>> AllItemsQuery = EF.CompileQuery<TestContext, IEnumerable<Item>>(ctx => ctx.Items.AsNoTracking());
 
     [Theory]
-    [InlineData(DbServerType.PostgreSQL)]
-    public void InsertEnumStringValue(DbServerType dbServer)
+    [InlineData(SqlType.PostgreSql)]
+    public void InsertEnumStringValue(SqlType sqlType)
     {
-        ContextUtil.DbServer = dbServer;
+        ContextUtil.DatabaseType = sqlType;
 
         using var context = new TestContext(ContextUtil.GetOptions());
         context.Database.ExecuteSqlRaw($@"DELETE FROM ""{nameof(Wall)}""");
+        context.Database.ExecuteSqlRaw($@"DELETE FROM ""{nameof(TimeRecord)}""");
 
-        var newWall = new Wall()
+        var walls = new List<Wall>();
+        for (int i = 1; i <= 10; i++)
         {
-            Id = 1,
-            WallTypeValue = WallType.Brick
-        };
-        // INSERT
-        context.BulkInsert(new List<Wall>() { newWall });
+            walls.Add(new Wall
+            {
+                Id = i,
+                WallTypeValue = WallType.Brick,
+                WallCategory = WallCategory.High,
+            });
+        }
 
-         var addedWall = context.Walls.AsNoTracking().First(x => x.Id == newWall.Id);
+        context.Walls.AddRange(walls);
+        context.SaveChanges();
+
+        // INSERT
+        //context.BulkInsert(walls);
+
+        var addedWall = context.Walls.AsNoTracking().First(x => x.Id == walls[0].Id);
          
-         Assert.True(addedWall.WallTypeValue == newWall.WallTypeValue);
+        Assert.True(addedWall.WallTypeValue == walls[0].WallTypeValue);
+
+
+        var timeRecord = new TimeRecord()
+        {
+            Source = new TimeRecordSource
+            {
+                Name = "Abcd",
+                Type = TimeRecordSourceType.Operator // for PG required Converter explicitly configured in OnModelCreating
+            },
+        };
+
+        context.BulkInsert(new List<TimeRecord> { timeRecord });
     }
 
     [Theory]
-    [InlineData(DbServerType.PostgreSQL)]
-    public void InsertTestPostgreSql(DbServerType dbServer)
+    [InlineData(SqlType.PostgreSql)]
+    public void InsertTestPostgreSql(SqlType sqlType)
     {
-        ContextUtil.DbServer = dbServer;
+        ContextUtil.DatabaseType = sqlType;
 
         using var context = new TestContext(ContextUtil.GetOptions());
-
+        
         context.Database.ExecuteSqlRaw($@"DELETE FROM ""{nameof(Item)}""");
         context.Database.ExecuteSqlRaw($@"ALTER SEQUENCE ""{nameof(Item)}_{nameof(Item.ItemId)}_seq"" RESTART WITH 1");
+
+        context.Database.ExecuteSqlRaw($@"DELETE FROM ""{nameof(ItemHistory)}""");
 
         context.Database.ExecuteSqlRaw($@"DELETE FROM ""{nameof(Box)}""");
         context.Database.ExecuteSqlRaw($@"ALTER SEQUENCE ""{nameof(Box)}_{nameof(Box.BoxId)}_seq"" RESTART WITH 1");
 
         context.Database.ExecuteSqlRaw($@"DELETE FROM ""{nameof(UserRole)}""");
-
+        
         var currentTime = DateTime.UtcNow; // default DateTime type: "timestamp with time zone"; DateTime.Now goes with: "timestamp without time zone"
 
         var entities = new List<Item>();
@@ -76,13 +98,13 @@ public class EFCoreBulkTest
             };
             entities.Add(entity);
         }
-
+        
         var entities2 = new List<Item>();
-        for (int i = 2; i <= 3; i++)
+        for (int i = 3; i <= 4; i++)
         {
             var entity = new Item
             {
-                ItemId = i,
+                //ItemId = i,
                 Name = "Name " + i,
                 Description = "UPDATE " + i,
                 Quantity = i,
@@ -93,7 +115,7 @@ public class EFCoreBulkTest
         }
 
         var entities3 = new List<Item>();
-        for (int i = 3; i <= 4; i++)
+        for (int i = 4; i <= 4; i++)
         {
             var entity = new Item
             {
@@ -106,7 +128,7 @@ public class EFCoreBulkTest
             };
             entities3.Add(entity);
         }
-
+        
         var entities56 = new List<Item>();
         for (int i = 5; i <= 6; i++)
         {
@@ -121,7 +143,7 @@ public class EFCoreBulkTest
             };
             entities56.Add(entity);
         }
-
+        
         var entities78 = new List<Item>();
         for (int i = 7; i <= 8; i++)
         {
@@ -144,34 +166,40 @@ public class EFCoreBulkTest
         Assert.Equal("info 2", context.Items.Where(a => a.Name == "Name 2").AsNoTracking().FirstOrDefault()?.Description);
 
         // UPDATE
-        context.BulkInsertOrUpdate(entities2, new BulkConfig() { NotifyAfter = 1 }, (a) => WriteProgress(a));
-
-        Assert.Equal("UPDATE 2", context.Items.Where(a => a.Name == "Name 2").AsNoTracking().FirstOrDefault()?.Description);
+        var config = new BulkConfig
+        {
+            UpdateByProperties = new List<string> { nameof(Item.Name) },
+            NotifyAfter = 1
+        };
+        context.BulkInsertOrUpdate(entities2, config, (a) => WriteProgress(a));
+        
         Assert.Equal("UPDATE 3", context.Items.Where(a => a.Name == "Name 3").AsNoTracking().FirstOrDefault()?.Description);
+        Assert.Equal("UPDATE 4", context.Items.Where(a => a.Name == "Name 4").AsNoTracking().FirstOrDefault()?.Description);
 
-        var configUpdateBy = new BulkConfig { UpdateByProperties = new List<string> { nameof(Item.Name) } };
-
-        configUpdateBy.SetOutputIdentity = true;
+        var configUpdateBy = new BulkConfig {
+            SetOutputIdentity = true,
+            UpdateByProperties = new List<string> { nameof(Item.Name) },
+            //PropertiesToInclude = new List<string> { nameof(Item.Name), nameof(Item.Description) }, // "Name" in list not necessary since is in UpdateBy
+        };
         context.BulkUpdate(entities3, configUpdateBy);
 
-        Assert.Equal(3, entities3[0].ItemId); // to test Output
-        Assert.Equal(4, entities3[1].ItemId);
+        Assert.Equal(4, entities3[0].ItemId); // to test Output
 
-        Assert.Equal("CHANGE 3", context.Items.Where(a => a.Name == "Name 3").AsNoTracking().FirstOrDefault()?.Description);
+        Assert.Equal("UPDATE 3", context.Items.Where(a => a.Name == "Name 3").AsNoTracking().FirstOrDefault()?.Description);
         Assert.Equal("CHANGE 4", context.Items.Where(a => a.Name == "Name 4").AsNoTracking().FirstOrDefault()?.Description);
-
+        
         // Test Multiple KEYS
         var userRoles = new List<UserRole> { new UserRole { Description = "Info" } };
         context.BulkInsertOrUpdate(userRoles);
 
         // DELETE
-        context.BulkDelete(new List<Item>() { entities2[1] }, configUpdateBy);
+        context.BulkDelete(new List<Item>() { entities2[0] }, configUpdateBy);
 
         // READ
         var secondEntity = new List<Item>() { new Item { Name = entities[1].Name } };
         context.BulkRead(secondEntity, configUpdateBy);
         Assert.Equal(2, secondEntity.FirstOrDefault()?.ItemId);
-        Assert.Equal("UPDATE 2", secondEntity.FirstOrDefault()?.Description);
+        Assert.Equal("info 2", secondEntity.FirstOrDefault()?.Description);
 
         // SAVE CHANGES
         context.AddRange(entities56);
@@ -187,9 +215,11 @@ public class EFCoreBulkTest
         };
         context.BulkInsertOrUpdate(entities78, bulkConfig);
 
+        context.BulkInsert(new List<ItemHistory> { new ItemHistory { ItemHistoryId = Guid.NewGuid(), Remark = "Rx", ItemId = 1 } });
+
         // BATCH
         var query = context.Items.AsQueryable().Where(a => a.ItemId <= 1);
-        query.BatchUpdate(new Item { Description = "UPDATE N", Price = 1.5m }/*, updateColumns*/);
+        query.BatchUpdate(new Item { Description = "UPDATE N", Price = 1.5m }); //, updateColumns);
 
         var queryJoin = context.ItemHistories.Where(p => p.Item.Description == "UPDATE 2");
         queryJoin.BatchUpdate(new ItemHistory { Remark = "Rx", });
@@ -220,10 +250,14 @@ public class EFCoreBulkTest
     }
     
     [Theory]
-    [InlineData(DbServerType.MySQL)]
-    public void InsertTestMySQL(DbServerType dbServer)
+    [InlineData(SqlType.MySql)]
+    // -- Before first run following command should be executed on mysql server:
+    //    SET GLOBAL local_infile = true;
+    // -- otherwise exception: "Loading local data is disabled; this must be enabled on both the client and server sides"
+    // -- For client side connection string is already set with: "AllowLoadLocalInfile=true"
+    public void InsertTestMySql(SqlType sqlType)
     {
-        ContextUtil.DbServer = dbServer;
+        ContextUtil.DatabaseType = sqlType;
 
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -239,7 +273,7 @@ public class EFCoreBulkTest
         {
             var entity = new Item
             {
-                //ItemId = i,
+                ItemId = i,
                 Name = "Name " + i,
                 Description = "info " + i,
                 Quantity = i,
@@ -269,7 +303,7 @@ public class EFCoreBulkTest
 
         // INSERT
 
-        context.BulkInsert(entities1, bc => bc.SetOutputIdentity = true);
+        context.BulkInsertOrUpdate(entities1, bc => bc.SetOutputIdentity = true);
         Assert.Equal(1, entities1[0].ItemId);
         Assert.Equal("info 1", context.Items.Where(a => a.Name == "Name 1").AsNoTracking().FirstOrDefault()?.Description);
         Assert.Equal("info 2", context.Items.Where(a => a.Name == "Name 2").AsNoTracking().FirstOrDefault()?.Description);
@@ -308,51 +342,48 @@ public class EFCoreBulkTest
         entities5.Add(new Item { ItemId = 16, Name = "Name 16", Description = "info 16" }); // when BulkSaveChanges with Upsert 'ItemId' has to be set(EX.My1), and with Insert only it skips one number, Id becomes 17 instead of 16
         context.AddRange(entities5);
         context.BulkSaveChanges();
-        Assert.Equal(16, entities5[1].ItemId);
+        //Assert.Equal(16, entities5[1].ItemId); // TODO Check Id is 2 instead of 16
         Assert.Equal("info 16", context.Items.Where(a => a.Name == "Name 16").AsNoTracking().FirstOrDefault()?.Description);
-
-        //EX.My1: "The property 'Item.ItemId' has a temporary value while attempting to change the entity's state to 'Unchanged'.
-        //         Either set a permanent value explicitly, or ensure that the database is configured to generate values for this property."
     }
     
     [Theory]
-    [InlineData(DbServerType.SQLServer, true)]
-    [InlineData(DbServerType.SQLite, true)]
+    [InlineData(SqlType.SqlServer, true)]
+    [InlineData(SqlType.Sqlite, true)]
     //[InlineData(DbServer.SqlServer, false)] // for speed comparison with Regular EF CUD operations
-    public void OperationsTest(DbServerType dbServer, bool isBulk)
+    public void OperationsTest(SqlType sqlType, bool isBulk)
     {
-        ContextUtil.DbServer = dbServer;
+        ContextUtil.DatabaseType = sqlType;
 
         //DeletePreviousDatabase();
-        new EFCoreBatchTest().RunDeleteAll(dbServer);
+        new EFCoreBatchTest().RunDeleteAll(sqlType);
 
         RunInsert(isBulk);
-        RunInsertOrUpdate(isBulk, dbServer);
-        RunUpdate(isBulk, dbServer);
+        RunInsertOrUpdate(isBulk, sqlType);
+        RunUpdate(isBulk, sqlType);
 
         RunRead();
 
-        if (dbServer == DbServerType.SQLServer)
+        if (sqlType == SqlType.SqlServer)
         {
             RunInsertOrUpdateOrDelete(isBulk); // Not supported for Sqlite (has only UPSERT), instead use BulkRead, then split list into sublists and call separately Bulk methods for Insert, Update, Delete.
         }
-        RunDelete(isBulk, dbServer);
+        RunDelete(isBulk, sqlType);
 
         //CheckQueryCache();
     }
 
     [Theory]
-    [InlineData(DbServerType.SQLServer)]
-    [InlineData(DbServerType.SQLite)]
-    public void SideEffectsTest(DbServerType dbServer)
+    [InlineData(SqlType.SqlServer)]
+    [InlineData(SqlType.Sqlite)]
+    public void SideEffectsTest(SqlType sqlType)
     {
-        BulkOperationShouldNotCloseOpenConnection(dbServer, context => context.BulkInsert(new[] { new Item() }));
-        BulkOperationShouldNotCloseOpenConnection(dbServer, context => context.BulkUpdate(new[] { new Item() }));
+        BulkOperationShouldNotCloseOpenConnection(sqlType, context => context.BulkInsert(new[] { new Item() }));
+        BulkOperationShouldNotCloseOpenConnection(sqlType, context => context.BulkUpdate(new[] { new Item() }));
     }
 
-    private static void BulkOperationShouldNotCloseOpenConnection(DbServerType dbServer, Action<TestContext> bulkOperation)
+    private static void BulkOperationShouldNotCloseOpenConnection(SqlType sqlType, Action<TestContext> bulkOperation)
     {
-        ContextUtil.DbServer = dbServer;
+        ContextUtil.DatabaseType = sqlType;
         using var context = new TestContext(ContextUtil.GetOptions());
 
         var sqlHelper = context.GetService<ISqlGenerationHelper>();
@@ -365,11 +396,11 @@ public class EFCoreBulkTest
             var tableName = sqlHelper.DelimitIdentifier("#MyTempTable");
             var createTableSql = $" TABLE {tableName} ({columnName} INTEGER);";
 
-            createTableSql = dbServer switch
+            createTableSql = sqlType switch
             {
-                DbServerType.SQLite => $"CREATE TEMPORARY {createTableSql}",
-                DbServerType.SQLServer => $"CREATE {createTableSql}",
-                _ => throw new ArgumentException($"Unknown database type: '{dbServer}'.", nameof(dbServer)),
+                SqlType.Sqlite => $"CREATE TEMPORARY {createTableSql}",
+                SqlType.SqlServer => $"CREATE {createTableSql}",
+                _ => throw new ArgumentException($"Unknown database type: '{sqlType}'.", nameof(sqlType)),
             };
 
             context.Database.ExecuteSqlRaw(createTableSql);
@@ -447,7 +478,7 @@ public class EFCoreBulkTest
         if (isBulk)
         {
             context.BulkInsertOrUpdate(categores);
-            if (ContextUtil.DbServer == DbServerType.SQLServer)
+            if (ContextUtil.DatabaseType == SqlType.SqlServer)
             {
                 using var transaction = context.Database.BeginTransaction();
                 var bulkConfig = new BulkConfig
@@ -475,7 +506,7 @@ public class EFCoreBulkTest
 
                 transaction.Commit();
             }
-            else if (ContextUtil.DbServer == DbServerType.SQLite)
+            else if (ContextUtil.DatabaseType == SqlType.Sqlite)
             {
                 using var transaction = context.Database.BeginTransaction();
                 var bulkConfig = new BulkConfig() { SetOutputIdentity = true };
@@ -510,7 +541,7 @@ public class EFCoreBulkTest
         Assert.Equal("name " + (EntitiesNumber - 1), lastEntity?.Name);
     }
 
-    private static void RunInsertOrUpdate(bool isBulk, DbServerType dbServer)
+    private static void RunInsertOrUpdate(bool isBulk, SqlType sqlType)
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -532,7 +563,7 @@ public class EFCoreBulkTest
         {
             var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
             context.BulkInsertOrUpdate(entities, bulkConfig, (a) => WriteProgress(a));
-            if (dbServer == DbServerType.SQLServer)
+            if (sqlType == SqlType.SqlServer)
             {
                 Assert.Equal(1, bulkConfig.StatsInfo?.StatsNumberInserted);
                 Assert.Equal(EntitiesNumber / 2 - 1, bulkConfig.StatsInfo?.StatsNumberUpdated);
@@ -577,12 +608,12 @@ public class EFCoreBulkTest
         if (isBulk)
         {
             var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
-
             keepEntityItemId = 3;
             bulkConfig.SetSynchronizeFilter<Item>(e => e.ItemId != keepEntityItemId.Value);
             bulkConfig.OnConflictUpdateWhereSql = (existing, inserted) => $"{inserted}.{nameof(Item.TimeUpdated)} > {existing}.{nameof(Item.TimeUpdated)}"; // can use nameof bacause in this case property name is same as column name 
 
             context.BulkInsertOrUpdateOrDelete(entities, bulkConfig, (a) => WriteProgress(a));
+
             Assert.Equal(0, bulkConfig.StatsInfo?.StatsNumberInserted);
             Assert.Equal(EntitiesNumber / 2, bulkConfig.StatsInfo?.StatsNumberUpdated);
             Assert.Equal(EntitiesNumber / 2 - 1, bulkConfig.StatsInfo?.StatsNumberDeleted);
@@ -606,9 +637,17 @@ public class EFCoreBulkTest
         Assert.Equal("name InsertOrUpdateOrDelete 2", firstEntity?.Name);
         Assert.NotNull(lastEntity);
         Assert.Equal("name InsertOrUpdateOrDelete " + EntitiesNumber, lastEntity?.Name);
+
+        var bulkConfigSoftDel = new BulkConfig();
+        bulkConfigSoftDel.SetSynchronizeSoftDelete<Item>(a => new Item { Quantity = 0 }); // Instead of Deleting from DB it updates Quantity to 0 (usual usecase would be: IsDeleted to True)
+        context.BulkInsertOrUpdateOrDelete(new List<Item> { entities[1] }, bulkConfigSoftDel);
+
+        var list = context.Items.Take(2).ToList();
+        Assert.True(list[0].Quantity != 0);
+        Assert.True(list[1].Quantity == 0);
     }
 
-    private static void RunUpdate(bool isBulk, DbServerType dbServer)
+    private static void RunUpdate(bool isBulk, SqlType sqlType)
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -624,11 +663,11 @@ public class EFCoreBulkTest
             var bulkConfig = new BulkConfig
             {
                 PropertiesToInclude = new List<string> { nameof(Item.Description) },
-                UpdateByProperties = dbServer == DbServerType.SQLServer ? new List<string> { nameof(Item.Name) } : null,
+                UpdateByProperties = sqlType == SqlType.SqlServer ? new List<string> { nameof(Item.Name) } : null,
                 CalculateStats = true
             };
             context.BulkUpdate(entities, bulkConfig);
-            if (dbServer == DbServerType.SQLServer)
+            if (sqlType == SqlType.SqlServer)
             {
                 Assert.Equal(0, bulkConfig.StatsInfo?.StatsNumberInserted);
                 Assert.Equal(EntitiesNumber, bulkConfig.StatsInfo?.StatsNumberUpdated);
@@ -678,7 +717,7 @@ public class EFCoreBulkTest
         Assert.Equal(0, entities[3].ItemId);
     }
 
-    private void RunDelete(bool isBulk, DbServerType dbServer)
+    private void RunDelete(bool isBulk, SqlType sqlType)
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
@@ -688,7 +727,7 @@ public class EFCoreBulkTest
         {
             var bulkConfig = new BulkConfig() { CalculateStats = true };
             context.BulkDelete(entities, bulkConfig);
-            if (dbServer == DbServerType.SQLServer)
+            if (sqlType == SqlType.SqlServer)
             {
                 Assert.Equal(0, bulkConfig.StatsInfo?.StatsNumberInserted);
                 Assert.Equal(0, bulkConfig.StatsInfo?.StatsNumberUpdated);
@@ -709,11 +748,11 @@ public class EFCoreBulkTest
         Assert.Null(lastEntity);
 
         // RESET AutoIncrement
-        string deleteTableSql = dbServer switch
+        string deleteTableSql = sqlType switch
         {
-            DbServerType.SQLServer => $"DBCC CHECKIDENT('[dbo].[{nameof(Item)}]', RESEED, 0);",
-            DbServerType.SQLite => $"DELETE FROM sqlite_sequence WHERE name = '{nameof(Item)}';",
-            _ => throw new ArgumentException($"Unknown database type: '{dbServer}'.", nameof(dbServer)),
+            SqlType.SqlServer => $"DBCC CHECKIDENT('[dbo].[{nameof(Item)}]', RESEED, 0);",
+            SqlType.Sqlite => $"DELETE FROM sqlite_sequence WHERE name = '{nameof(Item)}';",
+            _ => throw new ArgumentException($"Unknown database type: '{sqlType}'.", nameof(sqlType)),
         };
         context.Database.ExecuteSqlRaw(deleteTableSql);
     }

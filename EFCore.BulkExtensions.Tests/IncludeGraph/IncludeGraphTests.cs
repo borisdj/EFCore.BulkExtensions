@@ -79,11 +79,11 @@ public class IncludeGraphTests : IDisposable
     };
 
     [Theory]
-    [InlineData(DbServerType.SQLServer)]
+    [InlineData(SqlType.SqlServer)]
     //[InlineData(DbServer.Sqlite)]
-    public async Task BulkInsertOrUpdate_EntityWithNestedObjectGraph_SavesGraphToDatabase(DbServerType dbServer)
+    public async Task BulkInsertOrUpdate_EntityWithNestedObjectGraph_SavesGraphToDatabase(SqlType dbServer)
     {
-        ContextUtil.DbServer = dbServer;
+        ContextUtil.DatabaseType = dbServer;
 
         using var db = new GraphDbContext(ContextUtil.GetOptions<GraphDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_Graph"));
         await db.Database.EnsureCreatedAsync();
@@ -129,7 +129,6 @@ public class IncludeGraphTests : IDisposable
     {
         yield return WorkOrder1;
         yield return WorkOrder2;
-
     }
 
     public void Dispose()

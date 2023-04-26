@@ -7,10 +7,10 @@ using Microsoft.Extensions.Configuration;
 using NetTopologySuite.Geometries;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
-using System.Net.WebSockets;
 using System.Text.Json;
 
 namespace EFCore.BulkExtensions.Tests;
@@ -71,6 +71,8 @@ public class TestContext : DbContext
     public DbSet<PrivateKey> PrivateKeys { get; set; } = null!;
     public DbSet<Wall> Walls { get; set; } = null!;
 
+    public DbSet<TimeRecord> TimeRecords { get; set; } = null!;
+
     public TestContext(DbContextOptions options) : base(options)
     {
         Database.EnsureCreated();
@@ -86,19 +88,25 @@ public class TestContext : DbContext
     {
         modelBuilder.RemovePluralizingTableNameConvention();
 
+        modelBuilder.Entity<Info>(e => { e.Property(p => p.ConvertedTime).HasConversion((value) => value.AddDays(1), (value) => value.AddDays(-1)); });
+
         modelBuilder.Entity<UserRole>().HasKey(a => new { a.UserId, a.RoleId });
 
         modelBuilder.Entity<Info>(e => { e.Property(p => p.ConvertedTime).HasConversion((value) => value.AddDays(1), (value) => value.AddDays(-1)); });
         modelBuilder.Entity<Info>().Property(p => p.InfoType).HasConversion(new EnumToStringConverter<InfoType>());
         modelBuilder.Entity<Info>().Property(p => p.DateTimeOff).HasConversion(new DateTimeOffsetToBinaryConverter());
 
-        modelBuilder.Entity<Wall>().HasKey(x => x.Id);
-        modelBuilder.Entity<Wall>().Property(x => x.Id).ValueGeneratedNever();
-        modelBuilder.Entity<Wall>().Property(x => x.WallTypeValue).HasConversion(new EnumToStringConverter<WallType>());
-        
         modelBuilder.Entity<Info>(e => { e.Property("LogData"); });
         modelBuilder.Entity<Info>(e => { e.Property("TimeCreated"); });
         modelBuilder.Entity<Info>(e => { e.Property("Remark"); });
+
+        modelBuilder.Entity<Wall>().HasKey(x => x.Id);
+        modelBuilder.Entity<Wall>().Property(x => x.Id).ValueGeneratedNever();
+        modelBuilder.Entity<Wall>().Property(x => x.WallTypeValue).HasConversion(new EnumToStringConverter<WallType>());
+        modelBuilder.Entity<Wall>().Property(x => x.WallCategory).HasConversion(new EnumToStringConverter<WallCategory>());
+
+        modelBuilder.Entity<TimeRecord>().OwnsOne(a => a.Source,
+            b => b.Property(p => p.Type).HasConversion(new EnumToNumberConverter<TimeRecordSourceType, int>()));
 
         modelBuilder.Entity<ChangeLog>().OwnsOne(a => a.Audit,
             b => b.Property(p => p.InfoType).HasConversion(new EnumToStringConverter<InfoType>()));
@@ -106,9 +114,13 @@ public class TestContext : DbContext
         modelBuilder.Entity<Person>().HasIndex(a => a.Name)
             .IsUnique(); // In SQLite UpdateByColumn(nonPK) requires it has UniqueIndex
 
-
         modelBuilder.Entity<Document>().Property(p => p.IsActive).HasDefaultValue(true);
         modelBuilder.Entity<Document>().Property(p => p.Tag).HasDefaultValue("DefaultData");
+        if (Database.IsSqlServer())
+        {
+            modelBuilder.HasSequence<long>("OrderNumber").StartsAt(80000000);
+            modelBuilder.Entity<Document>().Property(o => o.OrderNumber).HasDefaultValueSql<long>("NEXT VALUE FOR OrderNumber");
+        }
 
         modelBuilder.Entity<Log>().ToTable(nameof(Log));
         modelBuilder.Entity<LogPersonReport>().ToTable(nameof(LogPersonReport));
@@ -197,22 +209,22 @@ public class TestContext : DbContext
 public static class ContextUtil
 {
     static IDbServer? _dbServerMapping;
-    static DbServerType _dbServerValue;
+    static SqlType _databaseType;
 
     // TODO: Pass DbService through all the GetOptions methods as a parameter and eliminate this property so the automated tests
     // are thread safe
-    public static DbServerType DbServer
+    public static SqlType DatabaseType
     {
-        get => _dbServerValue;
+        get => _databaseType;
         set
         {
-            _dbServerValue = value;
+            _databaseType = value;
             _dbServerMapping = value switch
             {
-                DbServerType.SQLServer => new SqlAdapters.SqlServer.SqlServerDbServer(),
-                DbServerType.SQLite => new SqlAdapters.SQLite.SqlLiteDbServer(),
-                DbServerType.PostgreSQL => new SqlAdapters.PostgreSql.PostgreSqlDbServer(),
-                DbServerType.MySQL => new SqlAdapters.MySql.MySqlDbServer(),
+                SqlType.SqlServer => new SqlAdapters.SqlServer.SqlServerDbServer(),
+                SqlType.Sqlite => new SqlAdapters.Sqlite.SqliteDbServer(),
+                SqlType.PostgreSql => new SqlAdapters.PostgreSql.PostgreSqlDbServer(),
+                SqlType.MySql => new SqlAdapters.MySql.MySqlDbServer(),
                 _ => throw new NotImplementedException(),
             };
         }
@@ -223,14 +235,14 @@ public static class ContextUtil
 
     public static DbContextOptions GetOptions<TDbContext>(IEnumerable<IInterceptor>? dbInterceptors = null, string databaseName = nameof(EFCoreBulkTest))
         where TDbContext : DbContext
-        => GetOptions<TDbContext>(ContextUtil.DbServer, dbInterceptors, databaseName);
+        => GetOptions<TDbContext>(ContextUtil.DatabaseType, dbInterceptors, databaseName);
 
-    public static DbContextOptions GetOptions<TDbContext>(DbServerType dbServerType, IEnumerable<IInterceptor>? dbInterceptors = null, string databaseName = nameof(EFCoreBulkTest))
+    public static DbContextOptions GetOptions<TDbContext>(SqlType dbServerType, IEnumerable<IInterceptor>? dbInterceptors = null, string databaseName = nameof(EFCoreBulkTest))
         where TDbContext : DbContext
     {
         var optionsBuilder = new DbContextOptionsBuilder<TDbContext>();
 
-        if (dbServerType == DbServerType.SQLServer)
+        if (dbServerType == SqlType.SqlServer)
         {
             var connectionString = GetSqlServerConnectionString(databaseName);
 
@@ -244,7 +256,7 @@ public static class ContextUtil
                 conf.UseHierarchyId();
             });
         }
-        else if (dbServerType == DbServerType.SQLite)
+        else if (dbServerType == SqlType.Sqlite)
         {
             string connectionString = GetSqliteConnectionString(databaseName);
             optionsBuilder.UseSqlite(connectionString);
@@ -254,12 +266,12 @@ public static class ContextUtil
             //string connectionString = (new SqliteConnectionStringBuilder { DataSource = $"{databaseName}Lite.db" }).ToString();
             //optionsBuilder.UseSqlite(new SqliteConnection(connectionString));
         }
-        else if (DbServer == DbServerType.PostgreSQL)
+        else if (DatabaseType == SqlType.PostgreSql)
         {
             string connectionString = GetPostgreSqlConnectionString(databaseName);
             optionsBuilder.UseNpgsql(connectionString);
         }
-        else if (DbServer == DbServerType.MySQL)
+        else if (DatabaseType == SqlType.MySql)
         {
             string connectionString = GetMySqlConnectionString(databaseName);
             optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
@@ -288,22 +300,30 @@ public static class ContextUtil
 
     public static string GetSqlServerConnectionString(string databaseName)
     {
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
         return GetConfiguration().GetConnectionString("SqlServer").Replace("{databaseName}", databaseName);
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
     }
 
     public static string GetSqliteConnectionString(string databaseName)
     {
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
         return GetConfiguration().GetConnectionString("Sqlite").Replace("{databaseName}", databaseName);
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
     }
 
     public static string GetPostgreSqlConnectionString(string databaseName)
     {
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
         return GetConfiguration().GetConnectionString("PostgreSql").Replace("{databaseName}", databaseName);
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
     }
 
     public static string GetMySqlConnectionString(string databaseName)
     {
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
         return GetConfiguration().GetConnectionString("MySql").Replace("{databaseName}", databaseName);
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
     }
 }
 
@@ -422,12 +442,49 @@ public class Wall
 {
     public long Id { get; set; }
     public WallType WallTypeValue { get; set; } = WallType.Clay;
+
+    public WallCategory WallCategory { get; set; }
 }
 
 public enum WallType
 {
     Brick,
     Clay
+}
+
+public enum WallCategory
+{
+    [Description("LowC")]
+    Low,
+
+    [Description("HighC")]
+    High
+}
+
+public class TimeRecord
+{
+    public TimeRecord()
+    {
+        Source = new TimeRecordSource();
+    }
+    public int TimeRecordId { get; set; }
+
+    public TimeRecordSource Source { get; set; }
+}
+
+[Owned]
+public class TimeRecordSource
+{
+    public TimeRecordSourceType Type { get; set; }
+    public string? Name { get; set; } = null;
+    public string? Id { get; set; } = null;
+}
+
+public enum TimeRecordSourceType
+{
+    Unknown = 0,
+    Device,
+    Operator,
 }
 
 public class Student : Person
@@ -497,6 +554,8 @@ public class Document
 
     [DatabaseGenerated(DatabaseGeneratedOption.Computed)] // Computed columns also have to be configured with FluentAPI
     public int ContentLength { get; set; }
+
+    public long OrderNumber { get; private set; }
 }
 
 // For testing parameterless constructor
@@ -543,7 +602,7 @@ public class File
     public byte[]? DataBytes { get; set; }
 
     [Timestamp]
-    public byte[] VersionChange { get; set; } = null!;
+    public byte[] VersionChange { get; set; } = Guid.NewGuid().ToByteArray();
     //public ulong RowVersion { get; set; }
 }
 

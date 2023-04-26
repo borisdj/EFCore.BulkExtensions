@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -32,7 +31,7 @@ internal static class DbContextBulkTransactionGraphUtil
             throw new InvalidBulkConfigException($"{nameof(BulkConfig)}.{nameof(BulkConfig.IncludeGraph)} only supports Insert or Update operations.");
 
         // Sqlite bulk merge adapter does not support multiple objects of the same type with a zero value primary key
-        if (SqlAdaptersMapping.GetDatabaseType() == DbServerType.SQLite)
+        if (SqlAdaptersMapping.GetDatabaseType() == SqlType.Sqlite)
             throw new NotSupportedException("Sqlite is not currently supported due to its BulkInsert implementation.");
 
         bulkConfig.PreserveInsertOrder = true; // Required for SetOutputIdentity ('true' is default but here explicitly assigned again in case it was changed to 'false' in BulkConfing)

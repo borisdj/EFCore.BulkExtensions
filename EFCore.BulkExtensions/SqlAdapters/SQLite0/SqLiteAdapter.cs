@@ -1,5 +1,4 @@
-﻿using EFCore.BulkExtensions.SqlAdapters;
-using Microsoft.Data.Sqlite;
+﻿using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using System;
@@ -10,9 +9,9 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace EFCore.BulkExtensions.SqlAdapters.SQLite;
+namespace EFCore.BulkExtensions.SqlAdapters.Sqlite;
 /// <inheritdoc/>
-public class SqliteOperationsAdapter : ISqlOperationsAdapter
+public class SqliteAdapter : ISqlOperationsAdapter
 {
     /// <inheritdoc/>
     #region Methods
@@ -152,7 +151,7 @@ public class SqliteOperationsAdapter : ISqlOperationsAdapter
 
             if (operationType == OperationType.Insert && tableInfo.BulkConfig.SetOutputIdentity && tableInfo.IdentityColumnName != null) // For Sqlite Identity can be set by Db only with pure Insert method
             {
-                command.CommandText = SqlQueryBuilderSqlite.SelectLastInsertRowId();
+                command.CommandText = SqliteQueryBuilder.SelectLastInsertRowId();
 
                 object? lastRowIdScalar = isAsync ? await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false)
                                                        : command.ExecuteScalar();
@@ -197,8 +196,9 @@ public class SqliteOperationsAdapter : ISqlOperationsAdapter
         SqliteConnection connection = isAsync ? await OpenAndGetSqliteConnectionAsync(context, cancellationToken).ConfigureAwait(false)
                                                     : OpenAndGetSqliteConnection(context);
         bool doExplicitCommit = false;
+        bool tempTableCreated = false;
         SqliteTransaction? transaction = null;
-
+        SqliteCommand? command = null;
         try
         {
             if (context.Database.CurrentTransaction == null)
@@ -210,11 +210,11 @@ public class SqliteOperationsAdapter : ISqlOperationsAdapter
             transaction = doExplicitCommit ? connection.BeginTransaction()
                                            : (SqliteTransaction?)context.Database.CurrentTransaction?.GetUnderlyingTransaction(tableInfo.BulkConfig);
 
-            SqliteCommand command = connection.CreateCommand();
+            command = connection.CreateCommand();
             command.Transaction = transaction;
 
             // CREATE
-            command.CommandText = SqlQueryBuilderSqlite.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName);
+            command.CommandText = SqliteQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName);
             if (isAsync)
             {
                 await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
@@ -223,6 +223,7 @@ public class SqliteOperationsAdapter : ISqlOperationsAdapter
             {
                 command.ExecuteNonQuery();
             }
+            tempTableCreated = true;
 
             tableInfo.BulkConfig.OperationType = OperationType.Insert;
             tableInfo.InsertToTempTable = true;
@@ -253,27 +254,26 @@ public class SqliteOperationsAdapter : ISqlOperationsAdapter
             {
                 tableInfo.UpdateReadEntities(entities, existingEntities, context);
             }
-
-            // DROP
-            command.CommandText = SqlQueryBuilderSqlite.DropTable(tableInfo.FullTempTableName);
-            if (isAsync)
+        }
+        finally
+        {
+            if (tempTableCreated && command != null)
             {
-                await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-            }
-            else
-            {
-                command.ExecuteNonQuery();
+                command.CommandText = SqliteQueryBuilder.DropTable(tableInfo.FullTempTableName);
+                if (isAsync)
+                {
+                    await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    command.ExecuteNonQuery();
+                }
             }
 
             if (doExplicitCommit)
             {
                 transaction?.Commit();
-            }
-        }
-        finally
-        {
-            if (doExplicitCommit)
-            {
+
                 if (isAsync)
                 {
                     if (transaction is not null)
@@ -333,19 +333,19 @@ public class SqliteOperationsAdapter : ISqlOperationsAdapter
         switch (operationType)
         {
             case OperationType.Insert:
-                command.CommandText = SqlQueryBuilderSqlite.InsertIntoTable(tableInfo, OperationType.Insert);
+                command.CommandText = SqliteQueryBuilder.InsertIntoTable(tableInfo, OperationType.Insert);
                 break;
             case OperationType.InsertOrUpdate:
-                command.CommandText = SqlQueryBuilderSqlite.InsertIntoTable(tableInfo, OperationType.InsertOrUpdate);
+                command.CommandText = SqliteQueryBuilder.InsertIntoTable(tableInfo, OperationType.InsertOrUpdate);
                 break;
             case OperationType.InsertOrUpdateOrDelete:
                 throw new NotSupportedException("'BulkInsertOrUpdateDelete' not supported for Sqlite. Sqlite has only UPSERT statement (analog for MERGE WHEN MATCHED) but no functionality for: 'WHEN NOT MATCHED BY SOURCE THEN DELETE'." +
                                                 " Another way to achieve this is to BulkRead existing data from DB, split list into sublists and call separately Bulk methods for Insert, Update, Delete.");
             case OperationType.Update:
-                command.CommandText = SqlQueryBuilderSqlite.UpdateSetTable(tableInfo);
+                command.CommandText = SqliteQueryBuilder.UpdateSetTable(tableInfo);
                 break;
             case OperationType.Delete:
-                command.CommandText = SqlQueryBuilderSqlite.DeleteFromTable(tableInfo);
+                command.CommandText = SqliteQueryBuilder.DeleteFromTable(tableInfo);
                 break;
         }
 
@@ -358,10 +358,11 @@ public class SqliteOperationsAdapter : ISqlOperationsAdapter
         var entityPropertiesDict = entityType?.GetProperties().Where(a => tableInfo.PropertyColumnNamesDict.ContainsKey(a.Name)).ToDictionary(a => a.Name, a => a);
         var properties = type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
-        var entityShadowFkPropertiesDict = entityType?.GetProperties().Where(a => a.IsShadowProperty() &&
-                                                                   a.IsForeignKey() &&
-                                                                   a.GetContainingForeignKeys().FirstOrDefault()?.DependentToPrincipal?.Name != null)
-                                                             .ToDictionary(x => x.GetContainingForeignKeys()?.First()?.DependentToPrincipal?.Name ?? string.Empty, a => a);
+        var entityShadowFkPropertiesDict = entityType?.GetProperties().Where(
+            a => a.IsShadowProperty() &&
+                 a.IsForeignKey() &&
+                 a.GetContainingForeignKeys().FirstOrDefault()?.DependentToPrincipal?.Name != null)
+           .ToDictionary(x => x.GetContainingForeignKeys()?.First()?.DependentToPrincipal?.Name ?? string.Empty, a => a);
 
         foreach (var property in properties)
         {
@@ -377,11 +378,11 @@ public class SqliteOperationsAdapter : ISqlOperationsAdapter
 
             if (propertyEntityType != null)
             {
-                string? columnName = propertyEntityType.GetColumnName(tableInfo.ObjectIdentifier);
+                string? propertyName = propertyEntityType.Name;
                 var propertyType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
 
                 //SqliteType(CpropertyType.Name): Text(String, Decimal, DateTime); Integer(Int16, Int32, Int64) Real(Float, Double) Blob(Guid)
-                var parameter = new SqliteParameter($"@{columnName}", propertyType); // ,sqliteType // ,null //()
+                var parameter = new SqliteParameter($"@{propertyName}", propertyType); // ,sqliteType // ,null //()
                 command.Parameters.Add(parameter);
             }
         }

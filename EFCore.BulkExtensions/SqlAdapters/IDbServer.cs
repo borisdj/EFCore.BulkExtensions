@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Microsoft.EntityFrameworkCore.Infrastructure;
 using System.Data.Common;
-using System.Linq.Expressions;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace EFCore.BulkExtensions.SqlAdapters;
 
@@ -16,7 +11,7 @@ public interface IDbServer
     /// <summary>
     /// Returns the Database type
     /// </summary>
-    DbServerType Type { get; }
+    SqlType Type { get; }
 
     /// <summary>
     /// Returns a Operation Server Adapter for DbServer

@@ -1,47 +1,52 @@
 # EFCore.BulkExtensions
 EntityFrameworkCore extensions: <br>
--Bulk operations **(Insert, Update, Delete, Read, Upsert, Sync, SaveChanges)**<br>
--Batch ops (**Delete, Update**) and **Truncate**.<br>
+-Bulk operations: **Insert, Update, Delete, Read, Upsert, Sync, SaveChanges** (extremely fast)<br>
+-Batch ops: **Delete, Update** - will be Deprecated since EF7 has native Execute-Up/Del; and **Truncate**.<br>
 Library is Lightweight and very Efficient, having all mostly used [CRUD](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete) operation.<br>
 Was selected in top 20 [EF Core Extensions](https://docs.microsoft.com/en-us/ef/core/extensions/) recommended by Microsoft.<br>
-Latest version is using EF Core 6 and targeting .Net 6.<br>
-Supports all 4 mayor databases:<br>
--**SQLServer** (or SqlAzure) under the hood uses [SqlBulkCopy](https://msdn.microsoft.com/en-us/library/system.data.sqlclient.sqlbulkcopy.aspx) for Insert, Update/Delete = BulkInsert + raw Sql [MERGE](https://docs.microsoft.com/en-us/sql/t-sql/statements/merge-transact-sql).<br>
--**PostgreSQL** (9.5+) is using [COPY BINARY](https://www.postgresql.org/docs/9.2/sql-copy.html) combined with [ON CONFLICT](https://www.postgresql.org/docs/10/sql-insert.html#SQL-ON-CONFLICT) for Update (supported from v6+).<br>
--**MySQL** (8+) is using [MySqlBulkCopy](https://mysqlconnector.net/api/mysqlconnector/mysqlbulkcopytype/l) combined with [ON DUPLICATE](https://dev.mysql.com/doc/refman/8.0/en/insert-on-duplicate.html) for Update (Only Bulk ops supported from v6+).<br>
--**SQLite** has no Copy tool, instead library uses plain SQL combined with [UPSERT](https://www.sqlite.org/lang_UPSERT.html).<br>
-Bulk Tests can not have UseInMemoryDb because InMemoryProvider does not support Relational-specific methods.<br>
-Instead Test options are  SqlServer(Developer or Express), LocalDb([if alongside Developer v.](https://stackoverflow.com/questions/42885377/sql-server-2016-developer-version-can-not-connect-to-localdb-mssqllocaldb?noredirect=1&lq=1)), or for other adapters PostgreSQL/MySQL/SQLite.
+Latest version is using EF Core 7.<br>
+Supports all 4 mayor databases: **SQLServer, PostgreSQL, MySQL, SQLite**
 
 ## License
-* BulkExtensions are [licensed](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE.txt) under the [Dual License v 1.0](https://www.codis.tech/efcorebulk/)
+* BulkExtensions are [licensed](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE.txt) under the [**Dual License v1.0**](https://www.codis.tech/efcorebulk/) which you must Buy if do not meet criteria for free usage (license also includes active support).
 
 ## Support
 If you find this project useful you can mark it by leaving a Github **Star** :star:.</br>
-OpenSource needs funding, so if you can please consider making a DONATION:<br>
+OpenSource needs funding, so even for free usage if you can please consider making a DONATION:<br>
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/yellow_img.png)](https://www.buymeacoffee.com/boris.dj) _ or _ 
-[![Button](https://img.shields.io/badge/donate-Bitcoin-orange.svg?logo=bitcoin):zap:](https://borisdj.net/donation/donate-btc.html) (lightning)<br>
-[**ContactForm**](https://docs.google.com/forms/d/e/1FAIpQLSfcUe15zxZS_YI6zZIt-l3L0mpmQRPUsaoxylfgFTfSVu_gmg/viewform) for Development & Consulting.
+[![Button](https://img.shields.io/badge/donate-Bitcoin-orange.svg?logo=bitcoin):zap:](https://borisdj.net/donation/donate-btc.html)<br>
 
 ## Contributing
 Please read [CONTRIBUTING](CONTRIBUTING.md) for details on code of conduct, and the process for submitting pull requests.<br>
-[![Button](https://img.shields.io/npm/l/express.svg)](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE)<br>
+When opening issues do write detailed explanation of the problem or feature with reproducible example.<br>
+
+## Description
+Supported databases:<br>
+-**SQLServer** (or SqlAzure) under the hood uses [SqlBulkCopy](https://msdn.microsoft.com/en-us/library/system.data.sqlclient.sqlbulkcopy.aspx) for Insert, Update/Delete = BulkInsert + raw Sql [MERGE](https://docs.microsoft.com/en-us/sql/t-sql/statements/merge-transact-sql).<br>
+-**PostgreSQL** (9.5+) is using [COPY BINARY](https://www.postgresql.org/docs/9.2/sql-copy.html) combined with [ON CONFLICT](https://www.postgresql.org/docs/10/sql-insert.html#SQL-ON-CONFLICT) for Update.<br>
+-**MySQL** (8+) is using [MySqlBulkCopy](https://mysqlconnector.net/api/mysqlconnector/mysqlbulkcopytype/) combined with [ON DUPLICATE](https://dev.mysql.com/doc/refman/8.0/en/insert-on-duplicate.html) for Update.<br>
+-**SQLite** has no Copy tool, instead library uses plain SQL combined with [UPSERT](https://www.sqlite.org/lang_UPSERT.html).<br>
+Bulk Tests can not have UseInMemoryDb because InMemoryProvider does not support Relational-specific methods.<br>
+Instead Test options are  SqlServer(Developer or Express), LocalDb([if alongside Developer v.](https://stackoverflow.com/questions/42885377/sql-server-2016-developer-version-can-not-connect-to-localdb-mssqllocaldb?noredirect=1&lq=1)), or for other adapters PostgreSQL/MySQL/SQLite.
 
 ## Installation
 <!--[![Button](https://img.shields.io/nuget/v/EFCore.BulkExtensions.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/)-->
 Available on <a href="https://www.nuget.org/packages/EFCore.BulkExtensions/"><img src="https://buildstats.info/nuget/EFCore.BulkExtensions" /></a><br>
 That is main nuget for all Databases, there are also specific ones with single provider for those who need small packages.<br>
+Only single specific can be installed in a project, if need more then use main one with all providers.<br>
 Package manager console command for installation: *Install-Package EFCore.BulkExtensions*<br>
+Specific ones have adapter sufix: MainNuget + *.SqlServer/PostgreSql/MySql/Sqlite*<br>
 Its assembly is [Strong-Named](https://docs.microsoft.com/en-us/dotnet/standard/library-guidance/strong-naming) and [Signed](https://github.com/borisdj/EFCore.BulkExtensions/issues/161) with a key.
 | Nuget | Target          | Used EF v.  | For projects targeting          |
 | ----- | --------------- | ----------- | ------------------------------- |
+| 7.x   | Net 6.0         | EF Core 7.0 | Net 7.0+ or 6.0+                |
 | 6.x   | Net 6.0         | EF Core 6.0 | Net 6.0+                        |
 | 5.x   | NetStandard 2.1 | EF Core 5.0 | Net 5.0+                        |
 | 3.x   | NetStandard 2.0 | EF Core 3.n | NetCore(3.0+) or NetFrm(4.6.1+) [MoreInfo](https://github.com/borisdj/EFCore.BulkExtensions/issues/271#issuecomment-567117488)|
 | 2.x   | NetStandard 2.0 | EF Core 2.n | NetCore(2.0+) or NetFrm(4.6.1+) |
 | 1.x   | NetStandard 1.4 | EF Core 1.0 | NetCore(1.0+)                   |
 
-Prior versions (5 and lower) are no longer actively maintained.
+Supports follows official [.Net lifecycle](https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core), currently v.7 as latest and v.6 as LTS.
 
 ## Usage
 It's pretty simple and straightforward.<br>
@@ -53,10 +58,11 @@ context.BulkInsertOrUpdateOrDelete(entities); context.BulkInsertOrUpdateOrDelete
 context.BulkUpdate(entities);                 context.BulkUpdateAsync(entities);
 context.BulkDelete(entities);                 context.BulkDeleteAsync(entities);
 context.BulkRead(entities);                   context.BulkReadAsync(entities);
-context.BulkSaveChanges();                    context.BulkSaveChangesAsync();                    // >= v6
+context.BulkSaveChanges();                    context.BulkSaveChangesAsync();
 ```
 
 **-SQLite** requires package: [*SQLitePCLRaw.bundle_e_sqlite3*](https://docs.microsoft.com/en-us/dotnet/standard/data/sqlite/custom-versions?tabs=netcore-cli) with call to `SQLitePCL.Batteries.Init()`<br>
+**-MySQL** when want to run Test on it for the first time execute sql command: `SET GLOBAL local_infile = true;`
 
 **Batch** Extensions are made on *IQueryable* DbSet and can be used as in the following code segment.<br>
 They are done as pure sql and no check is done whether some are prior loaded in memory and are being Tracked.<br>
@@ -126,7 +132,7 @@ It makes Update when PK(PrimaryKey) is matched, otherwise does Insert.<br>
 Those in Db that are not found in the list will be deleted.<br>
 Partial Sync can be done on table subset using expression set on config with method:<br>
 `bulkConfig.SetSynchronizeFilter<Item>(a => a.Quantity > 0);`<br>
-Not supported for SQLite(Lite has only UPSERT statement) nor currently for PostgreSQL. Way to achieve there sync functionality is to Select or BulkRead existing data from DB, split list into sublists and call separately Bulk methods for BulkInsertOrUpdate and Delete.
+Not supported for SQLite (Lite has only UPSERT statement) nor currently for PostgreSQL. Way to achieve there sync functionality is to Select or BulkRead existing data from DB, split list into sublists and call separately Bulk methods for BulkInsertOrUpdate and Delete.
 
 **BulkRead** (SELECT and JOIN done in Sql)<br>
 Useful when need to Select from big List based on Unique Prop./Columns specified in config `UpdateByProperties`<br>
@@ -181,11 +187,12 @@ SqlBulkCopyColumnOrderHints: null,            IgnoreGlobalQueryFilters: false,
 OnConflictUpdateWhereSql: null,               ReplaceReadEntities: false,
 ----------------------------------------------------------------------------------------------
 METHOD: SetSynchronizeFilter<T>
+        SetSynchronizeSoftDelete<T>
 ```
 If we want to change defaults, BulkConfig should be added explicitly with one or more bool properties set to true, and/or int props like **BatchSize** to different number.<br> Config also has DelegateFunc for setting *Underlying-Connection/Transaction*, e.g. in UnderlyingTest.<br>
 When doing update we can chose to exclude one or more properties by adding their names into **PropertiesToExclude**, or if we need to update less then half column then **PropertiesToInclude** can be used. Setting both Lists are not allowed.
 
-When using the **BulkInsert_/OrUpdate** methods, you may also specify the **PropertiesToIncludeOnCompare** and **PropertiesToExcludeOnCompare** properties. By adding a column name to the *PropertiesToExcludeOnCompare*, will allow it to be inserted and updated but will not update the row if any of the other columns in that row did not change. For example, if you are importing bulk data and want to keep an internal *CreateDate* or *UpdateDate*, you add those columns to the *PropertiesToExcludeOnCompare*.<br>
+When using the **BulkInsert_/OrUpdate** methods, you may also specify the **PropertiesToIncludeOnCompare** and **PropertiesToExcludeOnCompare** properties (only for SqlServer). By adding a column name to the *PropertiesToExcludeOnCompare*, will allow it to be inserted and updated but will not update the row if any of the other columns in that row did not change. For example, if you are importing bulk data and want to remove from comparison an internal *CreateDate* or *UpdateDate*, you add those columns to the *PropertiesToExcludeOnCompare*.<br>
 Another option that may be used in the same scenario are the **PropertiesToIncludeOnUpdate** and **PropertiesToExcludeOnUpdate** properties. These properties will allow you to specify insert-only columns such as *CreateDate* and *CreatedBy*.
 
 If we want Insert only new and skip existing ones in Db (Insert_if_not_Exist) then use *BulkInsertOrUpdate* with config
@@ -214,8 +221,8 @@ Here single Id value itself doesn't matter, db will change it to next in sequenc
 Insertion order is implemented with [TOP](https://docs.microsoft.com/en-us/sql/t-sql/queries/top-transact-sql) in conjunction with ORDER BY. [stackoverflow:merge-into-insertion-order](https://stackoverflow.com/questions/884187/merge-into-insertion-order).<br>
 This config should remain true when *SetOutputIdentity* is set to true on Entity containing NotMapped Property. [issues/76](https://github.com/borisdj/EFCore.BulkExtensions/issues/76)<br>
 When using **SetOutputIdentity** Id values will be updated to new ones from database.<br>
-With BulkInsertOrUpdate for those that will be updated it has to match with Id column, or other unique column(s) if using UpdateByProperties in which case  [orderBy is done with those props](https://github.com/borisdj/EFCore.BulkExtensions/issues/806) instead of ID.<br>
-For Sqlite combination of BulkInsertOrUpdate and IdentityId automatic set will not work properly since it does [not have full MERGE](https://github.com/borisdj/EFCore.BulkExtensions/issues/556) capabilities like SqlServer. Instead list can be split into 2 lists, and call separately BulkInsert and BulkUpdate.<br>
+With BulkInsertOrUpdate on SQLServer for those that will be updated it has to match with Id column, or other unique column(s) if using UpdateByProperties in which case  [orderBy is done with those props](https://github.com/borisdj/EFCore.BulkExtensions/issues/806) instead of ID, due to how Sql MERGE works. To preserve insert order by Id in this case alternative would be first to use BulkRead and find which records already exist, then split the list into 2 lists entitiesForUpdate and entitiesForInsert without configuring UpdateByProps).<br>
+Also for SQLite combination of BulkInsertOrUpdate and IdentityId automatic set will not work properly since it does [not have full MERGE](https://github.com/borisdj/EFCore.BulkExtensions/issues/556) capabilities like SqlServer. Instead list can be split into 2 lists, and call separately BulkInsert and BulkUpdate.<br>
   
 **SetOutputIdentity** is useful when BulkInsert is done to multiple related tables, that have Identity column.<br>
 After Insert is done to first table, we need Id-s (if using Option 1) that were generated in Db because they are FK(ForeignKey) in second table.<br>
@@ -270,7 +277,7 @@ If used for pure Insert (with Batching) then SetOutputIdentity should also be co
 **EnableShadowProperties** to add (normal) Shadow Property and persist value. Disables automatic discriminator, use manual method.<br>
 **IncludeGraph** when set all entities that have relations with main ones from the list are also merged into theirs tables.<br>
 **OmitClauseExistsExcept** removes the clause from Merge statement, required when having noncomparable types like XML, and useful when need to active triggers even for same data.<br>
-_ Also in some [sql collation](https://github.com/borisdj/EFCore.BulkExtensions/issues/641) small and capital letters are considered  same (case-insensitive) so for BulkUpdate set it false.<br>
+_ Also in some [sql collation](https://github.com/borisdj/EFCore.BulkExtensions/issues/641), small and capital letters are considered  same (case-insensitive) so for BulkUpdate set it false.<br>
 **DoNotUpdateIfTimeStampChanged** if set checks TimeStamp for Concurrency, ones with conflict will [not be updated](https://github.com/borisdj/EFCore.BulkExtensions/issues/469#issuecomment-803662721).<br>
 **SRID** Spatial Reference Identifier - for SQL Server with NetTopologySuite.<br>
 **DateTime2PrecisionForceRound** If dbtype datetime2 has precision less then default 7, example 'datetime2(3)' SqlBulkCopy does Floor instead of Round so when this Property is set then Rounding will be done in memory to make sure inserted values are same as with regular SaveChanges.<br>
@@ -284,9 +291,12 @@ If need to set Identity PK in memory, Not let DB do the autoincrement, then need
 `var bulkConfig = new BulkConfig { SqlBulkCopyOptions = SqlBulkCopyOptions.KeepIdentity };`<br>
 Useful for example when copying from one Db to another.
 
-**SetSynchronizeFilter<T>** A method that receives and sets expresion filter on entities to delete when using BulkInsertOrUpdateOrDelete.<br>
 **OnConflictUpdateWhereSql<T>** To define conditional updates on merges, receives (existingTable, insertedTable).<br>
 --Example: `bc.OnConflictUpdateWhereSql = (ex, in) => $"{in}.TimeUpdated > {ex}.TimeUpdated";`<br>
+**SetSynchronizeFilter<T>** A method that receives and sets expresion filter on entities to delete when using BulkInsertOrUpdateOrDelete. Those that are filterd out will be ignored and not deleted.<br>
+**SetSynchronizeSoftDelete<T>** A method that receives and sets expresion on entities to update property instead od deleting when using BulkInsertOrUpdateOrDelete.<br>
+`bulkConfig.SetSynchronizeSoftDelete<SomeObject>(a => new SomeObject { IsDeleted = true });`<br>
+
 Last optional argument is **Action progress** (Example in *EfOperationTest.cs* *RunInsert()* with *WriteProgress()*).
 ```C#
 context.BulkInsert(entitiesList, null, (a) => WriteProgress(a));
@@ -297,6 +307,8 @@ Additionally BatchUpdate and named Property works with [EnumToString Conversion]
 It can map [OwnedTypes](https://docs.microsoft.com/en-us/ef/core/modeling/owned-entities), also next are links with info how to achieve 
 [NestedOwnedTypes](https://github.com/borisdj/EFCore.BulkExtensions/issues/167#issuecomment-476737959) and 
 [OwnedInSeparateTable](https://github.com/borisdj/EFCore.BulkExtensions/issues/114#issuecomment-803462928).</br>
+On PG when Enum is in OwnedType it needs to have [Converter explicitly](https://github.com/borisdj/EFCore.BulkExtensions/issues/1108) configured in *OnModelCreating*.</br>
+
 Table splitting are somewhat specific but could be configured in way [Set TableSplit](https://github.com/borisdj/EFCore.BulkExtensions/issues/352#issuecomment-803674404).</br>
 With [Computed](https://docs.microsoft.com/en-us/ef/core/modeling/relational/computed-columns) and [Timestamp](https://docs.microsoft.com/en-us/ef/core/modeling/concurrency) Columns it will work in a way that they are automatically excluded from Insert. And when combined with *SetOutputIdentity* they will be Selected.<br>
 [Spatial](https://docs.microsoft.com/en-us/sql/relational-databases/spatial/spatial-data-types-overview?view=sql-server-ver15) types, like Geometry, also supported and if  Entity has one, clause *EXIST ... EXCEPT* is skipped because it's not comparable.<br>
