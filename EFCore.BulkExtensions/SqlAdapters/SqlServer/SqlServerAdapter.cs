@@ -508,7 +508,7 @@ public class SqlServerAdapter: ISqlOperationsAdapter
 
         foreach (var property in properties)
         {
-            var hasDefaultVauleOnInsert = tableInfo.BulkConfig.OperationType == OperationType.Insert
+            var hasDefaultValueOnInsert = tableInfo.BulkConfig.OperationType == OperationType.Insert
                 && !tableInfo.BulkConfig.SetOutputIdentity
                 && tableInfo.DefaultValueProperties.Contains(property.Name);
 
@@ -540,7 +540,10 @@ public class SqlServerAdapter: ISqlOperationsAdapter
                     propertyType = typeof(byte[]);
                 }
 
-                if (!columnsDict.ContainsKey(property.Name) && !hasDefaultVauleOnInsert)
+                // when TimeStamp has default value on Property (issue 958, test TimeStamp example with multiple DBs, second being Sqlite that does not have internal TS)
+                var omitTimeStamp = property.Name == tableInfo.TimeStampPropertyName && tableInfo.BulkConfig.DoNotUpdateIfTimeStampChanged == false;
+
+                if (!columnsDict.ContainsKey(property.Name) && !hasDefaultValueOnInsert && !omitTimeStamp)
                 {
                     dataTable.Columns.Add(columnName, propertyType);
                     columnsDict.Add(property.Name, null);
@@ -575,7 +578,7 @@ public class SqlServerAdapter: ISqlOperationsAdapter
                     propertyType = typeof(byte[]);
                 }
 
-                if (columnName is not null && !(columnsDict.ContainsKey(columnName)) && !hasDefaultVauleOnInsert)
+                if (columnName is not null && !(columnsDict.ContainsKey(columnName)) && !hasDefaultValueOnInsert)
                 {
                     dataTable.Columns.Add(columnName, propertyType);
                     columnsDict.Add(columnName, null);
@@ -764,7 +767,9 @@ public class SqlServerAdapter: ISqlOperationsAdapter
                     propertyValue = memStream.ToArray();
                 }
 
-                if (entityPropertiesDict.ContainsKey(property.Name) && !hasDefaultVauleOnInsert)
+                var omitTimeStamp = property.Name == tableInfo.TimeStampPropertyName && tableInfo.BulkConfig.DoNotUpdateIfTimeStampChanged == false;
+
+                if (entityPropertiesDict.ContainsKey(property.Name) && !hasDefaultVauleOnInsert && !omitTimeStamp)
                 {
                     columnsDict[property.Name] = propertyValue;
                 }
