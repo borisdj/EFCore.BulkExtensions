@@ -232,7 +232,8 @@ public class EFCoreBulkTestAtypical
             };
             entities.Add(entity);
         }
-        context.BulkInsert(entities, bulkAction => bulkAction.SetOutputIdentity = true); // example of setting BulkConfig with Action argument
+
+        context.BulkInsert(entities, bc => bc.SetOutputIdentity = true); // example of setting BulkConfig with Action argument
 
         // Test BulkRead
         var entitiesRead = new List<File>
@@ -562,7 +563,7 @@ public class EFCoreBulkTestAtypical
 
     [Theory]
     [InlineData(SqlType.SqlServer)]
-    //[InlineData(DbServer.Sqlite)] Not supported
+    [InlineData(SqlType.Sqlite)] //Not supported
     private void ShadowFKPropertiesTest(SqlType sqlType) // with Foreign Key as Shadow Property
     {
         ContextUtil.DatabaseType = sqlType;
@@ -613,17 +614,15 @@ public class EFCoreBulkTestAtypical
         }
         context.BulkInsert(entities);
 
-        if (sqlType == SqlType.SqlServer)
-        {
-            List<ItemLink> links = context.ItemLinks.ToList();
-            Assert.True(links.Count > 0, "ItemLink row count");
+        List<ItemLink> links = context.ItemLinks.ToList();
+        Assert.True(links.Count > 0, "ItemLink row count");
 
-            foreach (var link in links)
-            {
-                Assert.NotNull(link.Item);
-            }
+        foreach (var link in links)
+        {
+            Assert.NotNull(link.Item);
         }
-        context.Truncate<ItemLink>();
+
+        //context.Truncate<ItemLink>();
     }
 
     [Theory]

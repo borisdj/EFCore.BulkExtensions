@@ -129,7 +129,6 @@ public class IncludeGraphTests : IDisposable
     {
         yield return WorkOrder1;
         yield return WorkOrder2;
-
     }
 
     public void Dispose()

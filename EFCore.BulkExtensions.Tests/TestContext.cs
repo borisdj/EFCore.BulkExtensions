@@ -114,10 +114,13 @@ public class TestContext : DbContext
         modelBuilder.Entity<Person>().HasIndex(a => a.Name)
             .IsUnique(); // In SQLite UpdateByColumn(nonPK) requires it has UniqueIndex
 
-        modelBuilder.HasSequence<long>("OrderNumber").StartsAt(80000000);
-        modelBuilder.Entity<Document>().Property(o => o.OrderNumber).HasDefaultValueSql<long>("NEXT VALUE FOR OrderNumber");
         modelBuilder.Entity<Document>().Property(p => p.IsActive).HasDefaultValue(true);
         modelBuilder.Entity<Document>().Property(p => p.Tag).HasDefaultValue("DefaultData");
+        if (Database.IsSqlServer())
+        {
+            modelBuilder.HasSequence<long>("OrderNumber").StartsAt(80000000);
+            modelBuilder.Entity<Document>().Property(o => o.OrderNumber).HasDefaultValueSql<long>("NEXT VALUE FOR OrderNumber");
+        }
 
         modelBuilder.Entity<Log>().ToTable(nameof(Log));
         modelBuilder.Entity<LogPersonReport>().ToTable(nameof(LogPersonReport));
@@ -599,7 +602,7 @@ public class File
     public byte[]? DataBytes { get; set; }
 
     [Timestamp]
-    public byte[] VersionChange { get; set; } = null!;
+    public byte[] VersionChange { get; set; } = Guid.NewGuid().ToByteArray();
     //public ulong RowVersion { get; set; }
 }
 
