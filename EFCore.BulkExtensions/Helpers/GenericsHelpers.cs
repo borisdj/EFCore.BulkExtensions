@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 namespace EFCore.BulkExtensions.Helpers;
 
@@ -37,6 +38,9 @@ internal static class GenericsHelpers
                 defaultValue = field.GetValue(Activator.CreateInstance(type, true));
 
             if (temp == defaultValue)
+                result.Add(name);
+            else if (temp != null && defaultValue != null &&
+                    temp.ToString() == "0" && defaultValue.ToString() == "0") // situation for int/long prop with HasSequence (test DefaultValues: Document)
                 result.Add(name);
 
             if (temp is Guid guid && guid == Guid.Empty)

@@ -96,6 +96,10 @@ public class TestContext : DbContext
         modelBuilder.Entity<Info>().Property(p => p.InfoType).HasConversion(new EnumToStringConverter<InfoType>());
         modelBuilder.Entity<Info>().Property(p => p.DateTimeOff).HasConversion(new DateTimeOffsetToBinaryConverter());
 
+        modelBuilder.Entity<Info>(e => { e.Property("LogData"); });
+        modelBuilder.Entity<Info>(e => { e.Property("TimeCreated"); });
+        modelBuilder.Entity<Info>(e => { e.Property("Remark"); });
+
         modelBuilder.Entity<Wall>().HasKey(x => x.Id);
         modelBuilder.Entity<Wall>().Property(x => x.Id).ValueGeneratedNever();
         modelBuilder.Entity<Wall>().Property(x => x.WallTypeValue).HasConversion(new EnumToStringConverter<WallType>());
@@ -104,17 +108,14 @@ public class TestContext : DbContext
         modelBuilder.Entity<TimeRecord>().OwnsOne(a => a.Source,
             b => b.Property(p => p.Type).HasConversion(new EnumToNumberConverter<TimeRecordSourceType, int>()));
 
-        modelBuilder.Entity<Info>(e => { e.Property("LogData"); });
-        modelBuilder.Entity<Info>(e => { e.Property("TimeCreated"); });
-        modelBuilder.Entity<Info>(e => { e.Property("Remark"); });
-
         modelBuilder.Entity<ChangeLog>().OwnsOne(a => a.Audit,
             b => b.Property(p => p.InfoType).HasConversion(new EnumToStringConverter<InfoType>()));
 
         modelBuilder.Entity<Person>().HasIndex(a => a.Name)
             .IsUnique(); // In SQLite UpdateByColumn(nonPK) requires it has UniqueIndex
 
-
+        modelBuilder.HasSequence<long>("OrderNumber").StartsAt(80000000);
+        modelBuilder.Entity<Document>().Property(o => o.OrderNumber).HasDefaultValueSql<long>("NEXT VALUE FOR OrderNumber");
         modelBuilder.Entity<Document>().Property(p => p.IsActive).HasDefaultValue(true);
         modelBuilder.Entity<Document>().Property(p => p.Tag).HasDefaultValue("DefaultData");
 
@@ -550,6 +551,8 @@ public class Document
 
     [DatabaseGenerated(DatabaseGeneratedOption.Computed)] // Computed columns also have to be configured with FluentAPI
     public int ContentLength { get; set; }
+
+    public long OrderNumber { get; private set; }
 }
 
 // For testing parameterless constructor

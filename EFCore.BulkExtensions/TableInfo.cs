@@ -852,7 +852,7 @@ public class TableInfo
 
             existingEntitiesDict.TryGetValue(uniqueProperyValues, out T? existingEntity);
             bool isPostgreSql = context.Database.ProviderName?.EndsWith(SqlType.PostgreSql.ToString(), StringComparison.InvariantCultureIgnoreCase) ?? false;
-            if (existingEntity == null && isPostgreSql && i < existingEntities.Count && entities.Count == existingEntities.Count) // && entities.Count == existingEntities.Count conf fix for READ DO change
+            if (existingEntity == null && isPostgreSql && i < existingEntities.Count && entities.Count == existingEntities.Count) // && entities.Count == existingEntities.Count conf fix for READ. TODO change (issue 1027)
             {
                 existingEntity = existingEntities[i]; // TODO check if BinaryImport with COPY on Postgres preserves order
             }
@@ -869,7 +869,6 @@ public class TableInfo
                     {
                        //TODO: Shadow FK property update
                     }
-                    
                 }
             }
         }

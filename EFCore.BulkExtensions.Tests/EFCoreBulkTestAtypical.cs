@@ -46,6 +46,7 @@ public class EFCoreBulkTestAtypical
         if (sqlType == SqlType.SqlServer)
         {
             Assert.Equal(6, firstDocument?.ContentLength);
+            Assert.NotEqual(0, firstDocument?.OrderNumber);
         }
     }
 
