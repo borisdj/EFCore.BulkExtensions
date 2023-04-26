@@ -35,6 +35,7 @@ Available on <a href="https://www.nuget.org/packages/EFCore.BulkExtensions/"><im
 That is main nuget for all Databases, there are also specific ones with single provider for those who need small packages.<br>
 Only single specific can be installed in a project, if need more then use main one with all providers.<br>
 Package manager console command for installation: *Install-Package EFCore.BulkExtensions*<br>
+Specific ones have adapter sufix: MainNuget + *.SqlServer/PostgreSql/MySql/Sqlite*
 Its assembly is [Strong-Named](https://docs.microsoft.com/en-us/dotnet/standard/library-guidance/strong-naming) and [Signed](https://github.com/borisdj/EFCore.BulkExtensions/issues/161) with a key.
 | Nuget | Target          | Used EF v.  | For projects targeting          |
 | ----- | --------------- | ----------- | ------------------------------- |
@@ -45,7 +46,7 @@ Its assembly is [Strong-Named](https://docs.microsoft.com/en-us/dotnet/standard/
 | 2.x   | NetStandard 2.0 | EF Core 2.n | NetCore(2.0+) or NetFrm(4.6.1+) |
 | 1.x   | NetStandard 1.4 | EF Core 1.0 | NetCore(1.0+)                   |
 
-Supports follows official [.Net lifecycle](https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core), Latest and LTS(even v. number).
+Supports follows official [.Net lifecycle](https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core), currently v.7 as latest and v.6 as LTS.
 
 ## Usage
 It's pretty simple and straightforward.<br>
@@ -57,7 +58,7 @@ context.BulkInsertOrUpdateOrDelete(entities); context.BulkInsertOrUpdateOrDelete
 context.BulkUpdate(entities);                 context.BulkUpdateAsync(entities);
 context.BulkDelete(entities);                 context.BulkDeleteAsync(entities);
 context.BulkRead(entities);                   context.BulkReadAsync(entities);
-context.BulkSaveChanges();                    context.BulkSaveChangesAsync();                    // >= v6
+context.BulkSaveChanges();                    context.BulkSaveChangesAsync();
 ```
 
 **-SQLite** requires package: [*SQLitePCLRaw.bundle_e_sqlite3*](https://docs.microsoft.com/en-us/dotnet/standard/data/sqlite/custom-versions?tabs=netcore-cli) with call to `SQLitePCL.Batteries.Init()`<br>
