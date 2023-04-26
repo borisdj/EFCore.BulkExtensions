@@ -9,9 +9,9 @@ robocopy "EFCore.BulkExtensions" "EFCore.BulkExtensions.PostgreSql" /E /XF "EFCo
 robocopy "EFCore.BulkExtensions\SqlAdapters" "EFCore.BulkExtensions.PostgreSql\SqlAdapters" *.*
 robocopy "EFCore.BulkExtensions\SqlAdapters\PostgreSql" "EFCore.BulkExtensions.PostgreSql\SqlAdapters\PostgreSql" /E
 
-robocopy "EFCore.BulkExtensions" "EFCore.BulkExtensions.SQLite" /E /XF "EFCore.BulkExtensions.csproj" /XD "bin" "obj" "SqlAdapters"
-robocopy "EFCore.BulkExtensions\SqlAdapters" "EFCore.BulkExtensions.SQLite\SqlAdapters" *.*
-robocopy "EFCore.BulkExtensions\SqlAdapters\SQLite" "EFCore.BulkExtensions.SQLite\SqlAdapters\SQLite" /E
+robocopy "EFCore.BulkExtensions" "EFCore.BulkExtensions.Sqlite" /E /XF "EFCore.BulkExtensions.csproj" /XD "bin" "obj" "SqlAdapters"
+robocopy "EFCore.BulkExtensions\SqlAdapters" "EFCore.BulkExtensions.Sqlite\SqlAdapters" *.*
+robocopy "EFCore.BulkExtensions\SqlAdapters\Sqlite" "EFCore.BulkExtensions.Sqlite\SqlAdapters\Sqlite" /E
 
 robocopy "EFCore.BulkExtensions" "EFCore.BulkExtensions.SqlServer" /E /XF "EFCore.BulkExtensions.csproj" /XD "bin" "obj" "SqlAdapters"
 robocopy "EFCore.BulkExtensions\SqlAdapters" "EFCore.BulkExtensions.SqlServer\SqlAdapters" *.*
