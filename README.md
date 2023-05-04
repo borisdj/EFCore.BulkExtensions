@@ -8,7 +8,9 @@ Latest version is using EF Core 7.<br>
 Supports all 4 mayor databases: **SQLServer, PostgreSQL, MySQL, SQLite**
 
 ## License
-* BulkExtensions are [licensed](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE.txt) under the [**Dual License v1.0**](https://www.codis.tech/efcorebulk/) which you must Buy if do not meet criteria for free usage (license also includes active support).
+* BulkExtensions are [licensed](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE.txt) under the [**Dual License v1.0**](https://www.codis.tech/efcorebulk/).<br>
+If you do not meet criteria for free usage with communitiy license then you must Buy commercial one (license also includes active support).<br>
+Dual Lic. as a solution to OpenSource funding - cFOSS (conditionally Free OSS).<br>
 
 ## Support
 If you find this project useful you can mark it by leaving a Github **Star** :star:.</br>
