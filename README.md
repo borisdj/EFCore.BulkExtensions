@@ -9,13 +9,13 @@ Supports all 4 mayor databases: **SQLServer, PostgreSQL, MySQL, SQLite**
 
 ## License
 * BulkExtensions are [licensed](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE.txt) under the [**Dual License v1.0**](https://www.codis.tech/efcorebulk/).<br>
-If you do not meet criteria for free usage with communitiy license then you must Buy commercial one<br>
-(license also includes active support).<br>
+If you do not meet criteria for free usage with community license then you must Buy commercial one.<br>
+If you eligible for free usage but still want to support the development, please consider purchasing the Starter License, which also includes active support.<br>
 Dual Lic. as a solution to OpenSource funding - cFOSS (conditionally Free OSS).<br>
 
 ## Support
 If you find this project useful you can mark it by leaving a Github **Star** :star:.</br>
-OpenSource needs funding, so even for free usage if you can please consider making a DONATION:<br>
+And even with community license you can make a DONATION:<br>
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/yellow_img.png)](https://www.buymeacoffee.com/boris.dj) _ or _ 
 [![Button](https://img.shields.io/badge/donate-Bitcoin-orange.svg?logo=bitcoin):zap:](https://borisdj.net/donation/donate-btc.html)<br>
 
