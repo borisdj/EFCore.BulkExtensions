@@ -6,7 +6,7 @@ Library is Lightweight and very Efficient, having all mostly used [CRUD](https:/
 Was selected in top 20 [EF Core Extensions](https://docs.microsoft.com/en-us/ef/core/extensions/) recommended by Microsoft.<br>
 Latest version is using EF Core 7.<br>
 Supports all 4 mayor databases: **SQLServer, PostgreSQL, MySQL, SQLite**<br>
-Check out [Testimonials](https://docs.google.com/spreadsheets/d/e/2PACX-1vR8wj8gWO4pEZoVOGoUkfCEHXL0GOlNUPShAWoaJRyV-eZbPcBZKv_GwwDs9NmlMyaKjv6Il0aIBjn6/pubhtml) from the Community and User Comments.
+Check out [Testimonials](https://docs.google.com/spreadsheets/d/e/2PACX-1vShdv2sTm3oQfowm9kVIx-PLBCk1lGQEa9E6n92-dX3pni7-XQUEp6taVcMSZVi9BaSAizv1YanWTy3/pubhtml?gid=801420190&single=true) from the Community and User Comments.
 
 ## License
 *BulkExtensions [licensed](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE.txt) under [**Dual License v1.0**](https://www.codis.tech/efcorebulk/) (solution to OpenSource funding, cFOSS: conditionallyFree OSS).<br>
