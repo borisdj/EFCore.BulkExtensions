@@ -21,6 +21,7 @@ And even with community license you can make a DONATION:<br>
 ## Contributing
 Please read [CONTRIBUTING](CONTRIBUTING.md) for details on code of conduct, and the process for submitting pull requests.<br>
 When opening issues do write detailed explanation of the problem or feature with reproducible example.<br>
+Check out [Testimonials](https://docs.google.com/spreadsheets/d/e/2PACX-1vR8wj8gWO4pEZoVOGoUkfCEHXL0GOlNUPShAWoaJRyV-eZbPcBZKv_GwwDs9NmlMyaKjv6Il0aIBjn6/pubhtml) from the Community and User Comments.
 
 ## Description
 Supported databases:<br>
