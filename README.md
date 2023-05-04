@@ -10,7 +10,7 @@ Supports all 4 mayor databases: **SQLServer, PostgreSQL, MySQL, SQLite**
 ## License
 * BulkExtensions are [licensed](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE.txt) under the [**Dual License v1.0**](https://www.codis.tech/efcorebulk/).<br>
 If you do not meet criteria for free usage with community license then you must Buy commercial one.<br>
-If you are eligible for free usage but still want active support and to help the development, consider purchasing Starter Lic.<br>
+If eligible for free usage but still want active support and to help development, consider purchasing Starter Lic.<br>
 Dual Lic. as a solution to OpenSource funding - cFOSS (conditionally Free OSS).<br>
 
 ## Support
