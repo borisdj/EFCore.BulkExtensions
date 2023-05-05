@@ -247,7 +247,7 @@ for (int i = 1; i <= numberOfEntites; i++)
     entities.Add(entity);
 }
 
-// Option 1
+// Option 1 (recommended)
 using (var transaction = context.Database.BeginTransaction())
 {
     context.BulkInsert(entities, new BulkConfig { SetOutputIdentity = true });
