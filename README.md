@@ -10,7 +10,7 @@ Check out [Testimonials](https://docs.google.com/spreadsheets/d/e/2PACX-1vShdv2s
 
 ## License
 *BulkExtensions [licensed](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE.txt) under [**Dual License v1.0**](https://www.codis.tech/efcorebulk/) (solution to OpenSource funding, cFOSS: conditionallyFree OSS).<br>
-If you do not meet criteria for free usage with community license then you have to Buy commercial one.<br>
+If you do not meet criteria for free usage with community license then you have to buy commercial one.<br>
 If eligible for free usage but still want to help development and have active support, consider purchasing Starter Lic.<br>
 
 ## Support
