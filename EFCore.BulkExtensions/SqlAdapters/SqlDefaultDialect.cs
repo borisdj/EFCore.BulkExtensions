@@ -34,6 +34,7 @@ public class SqlDefaultDialect : IQueryBuilderSpecialization
                 if (!ex.Message.StartsWith(noMappingText + "System.Collections.Generic.List") &&             // - Contains
                     !ex.Message.StartsWith(noMappingText + "System.Int32[]") &&                              // - Contains
                     !ex.Message.StartsWith(noMappingText + "System.Int64[]") &&                              // - Contains
+                    !ex.Message.StartsWith(noMappingText + "System.Guid[]") &&                               // - Contains
                     !ex.Message.StartsWith(noMappingText + typeof(System.Text.Json.JsonElement).FullName) && // - JsonElement param
                     !ex.Message.StartsWith(noMappingText + typeof(System.Text.Json.JsonDocument).FullName))  // - JsonElement param
                 {
