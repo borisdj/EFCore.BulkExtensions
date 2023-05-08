@@ -1,15 +1,16 @@
 # EFCore.BulkExtensions
 EntityFrameworkCore extensions: <br>
--Bulk operations: **Insert, Update, Delete, Read, Upsert, Sync, SaveChanges** (extremely fast)<br>
+-Bulk operations (very fast): **Insert, Update, Delete, Read, Upsert, Sync, SaveChanges.**<br>
 -Batch ops: **Delete, Update** - will be Deprecated since EF7 has native Execute-Up/Del; and **Truncate**.<br>
 Library is Lightweight and very Efficient, having all mostly used [CRUD](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete) operation.<br>
 Was selected in top 20 [EF Core Extensions](https://docs.microsoft.com/en-us/ef/core/extensions/) recommended by Microsoft.<br>
 Latest version is using EF Core 7.<br>
-Supports all 4 mayor databases: **SQLServer, PostgreSQL, MySQL, SQLite**
+Supports all 4 mayor sql databases: **SQLServer, PostgreSQL, MySQL, SQLite.**<br>
+Check out [Testimonials](https://docs.google.com/spreadsheets/d/e/2PACX-1vShdv2sTm3oQfowm9kVIx-PLBCk1lGQEa9E6n92-dX3pni7-XQUEp6taVcMSZVi9BaSAizv1YanWTy3/pubhtml?gid=801420190&single=true) from the Community and User Comments.
 
 ## License
 *BulkExtensions [licensed](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE.txt) under [**Dual License v1.0**](https://www.codis.tech/efcorebulk/) (solution to OpenSource funding, cFOSS: conditionallyFree OSS).<br>
-If you do not meet criteria for free usage with community license then you must Buy commercial one.<br>
+If you do not meet criteria for free usage with community license then you have to buy commercial one.<br>
 If eligible for free usage but still want to help development and have active support, consider purchasing Starter Lic.<br>
 
 ## Support
@@ -27,9 +28,9 @@ Supported databases:<br>
 -**SQLServer** (or SqlAzure) under the hood uses [SqlBulkCopy](https://msdn.microsoft.com/en-us/library/system.data.sqlclient.sqlbulkcopy.aspx) for Insert, Update/Delete = BulkInsert + raw Sql [MERGE](https://docs.microsoft.com/en-us/sql/t-sql/statements/merge-transact-sql).<br>
 -**PostgreSQL** (9.5+) is using [COPY BINARY](https://www.postgresql.org/docs/9.2/sql-copy.html) combined with [ON CONFLICT](https://www.postgresql.org/docs/10/sql-insert.html#SQL-ON-CONFLICT) for Update.<br>
 -**MySQL** (8+) is using [MySqlBulkCopy](https://mysqlconnector.net/api/mysqlconnector/mysqlbulkcopytype/) combined with [ON DUPLICATE](https://dev.mysql.com/doc/refman/8.0/en/insert-on-duplicate.html) for Update.<br>
--**SQLite** has no Copy tool, instead library uses plain SQL combined with [UPSERT](https://www.sqlite.org/lang_UPSERT.html).<br>
+-**SQLite** has no Copy tool, instead library uses [plain SQL](https://learn.microsoft.com/en-us/dotnet/standard/data/sqlite/bulk-insert) combined with [UPSERT](https://www.sqlite.org/lang_UPSERT.html).<br>
 Bulk Tests can not have UseInMemoryDb because InMemoryProvider does not support Relational-specific methods.<br>
-Instead Test options are  SqlServer(Developer or Express), LocalDb([if alongside Developer v.](https://stackoverflow.com/questions/42885377/sql-server-2016-developer-version-can-not-connect-to-localdb-mssqllocaldb?noredirect=1&lq=1)), or for other adapters PostgreSQL/MySQL/SQLite.
+Instead Test options are  SqlServer(Developer or Express), LocalDb([if alongside Developer v.](https://stackoverflow.com/questions/42885377/sql-server-2016-developer-version-can-not-connect-to-localdb-mssqllocaldb?noredirect=1&lq=1)), or with  other adapters.
 
 ## Installation
 <!--[![Button](https://img.shields.io/nuget/v/EFCore.BulkExtensions.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/)-->
@@ -246,7 +247,7 @@ for (int i = 1; i <= numberOfEntites; i++)
     entities.Add(entity);
 }
 
-// Option 1
+// Option 1 (recommended)
 using (var transaction = context.Database.BeginTransaction())
 {
     context.BulkInsert(entities, new BulkConfig { SetOutputIdentity = true });
@@ -320,9 +321,7 @@ Performance for bulk ops measured with `ActivitySources` named: '*BulkExecute*' 
 Bulk Extension methods can be [Overridden](https://github.com/borisdj/EFCore.BulkExtensions/issues/56) if required, for example to set AuditInfo.<br>
 If having problems with Deadlock there is useful info in [issue/46](https://github.com/borisdj/EFCore.BulkExtensions/issues/46).
 
-## TPH inheritance
-
-When having TPH ([Table-Per-Hierarchy](https://docs.microsoft.com/en-us/aspnet/core/data/ef-mvc/inheritance)) inheritance model it can be set in 2 ways.<br>
+**TPH** ([Table-Per-Hierarchy](https://docs.microsoft.com/en-us/aspnet/core/data/ef-mvc/inheritance)) inheritance model can  can be set in 2 ways.<br>
 First is automatically by Convention in which case Discriminator column is not directly in Entity but is [Shadow](http://www.learnentityframeworkcore.com/model/shadow-properties) Property.<br>
 And second is to explicitly define Discriminator property in Entity and configure it with `.HasDiscriminator()`.<br>
 Important remark regarding the first case is that since we can not set directly Discriminator to certain value we need first to add list of entities to DbSet where it will be set and after that we can call Bulk operation. Note that SaveChanges are not called and we could optionally turn off TrackingChanges for performance. Example:
@@ -331,4 +330,4 @@ public class Student : Person { ... }
 context.Students.AddRange(entities); // adding to Context so that Shadow property 'Discriminator' gets set
 context.BulkInsert(entities);
 ```
-**TPT** (Table-Per-Type) as of v5 is [partially supported](https://github.com/borisdj/EFCore.BulkExtensions/issues/493).
+**TPT** (Table-Per-Type) way it is [supported](https://github.com/borisdj/EFCore.BulkExtensions/issues/493).
