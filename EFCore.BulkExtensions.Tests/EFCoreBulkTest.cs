@@ -9,7 +9,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text.Json;
 using Xunit;
-
 namespace EFCore.BulkExtensions.Tests;
 
 public class EFCoreBulkTest
@@ -220,6 +219,9 @@ public class EFCoreBulkTest
         // BATCH
         var query = context.Items.AsQueryable().Where(a => a.ItemId <= 1);
         query.BatchUpdate(new Item { Description = "UPDATE N", Price = 1.5m }); //, updateColumns);
+
+        var ids = new[] { Guid.Empty };
+        context.ItemHistories.Where(o => ids.Contains(o.ItemHistoryId)).BatchDelete();
 
         var queryJoin = context.ItemHistories.Where(p => p.Item.Description == "UPDATE 2");
         queryJoin.BatchUpdate(new ItemHistory { Remark = "Rx", });
