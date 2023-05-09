@@ -36,14 +36,7 @@ public class EFCoreBulkTestSaveChanges
     {
         ContextUtil.DatabaseType = dbServer;
 
-        //await new EFCoreBatchTestAsync().RunDeleteAllAsync(dbServer);
-        using (var context = new TestContext(ContextUtil.GetOptions()))
-        {
-            await context.ItemHistories.BatchDeleteAsync();
-
-            context.Database.ExecuteSqlRaw($@"DELETE FROM ""{nameof(Item)}""");
-            context.Database.ExecuteSqlRaw($@"ALTER SEQUENCE ""{nameof(Item)}_{nameof(Item.ItemId)}_seq"" RESTART WITH 1");
-        }
+        await new EFCoreBatchTestAsync().RunDeleteAllAsync(dbServer);
 
         await RunSaveChangesOnInsertAsync(dbServer);
         await RunSaveChangesOnInsertAndUpdateAsync(dbServer);

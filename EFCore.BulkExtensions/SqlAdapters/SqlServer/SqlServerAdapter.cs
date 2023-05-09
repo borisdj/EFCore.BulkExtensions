@@ -21,13 +21,13 @@ public class SqlServerAdapter: ISqlOperationsAdapter
     /// <inheritdoc/>
     #region Methods
     // Insert
-    public void Insert<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress)
+    public void Insert<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress)
     {
         InsertAsync(context, type, entities, tableInfo, progress, isAsync: false, CancellationToken.None).GetAwaiter().GetResult();
     }
 
     /// <inheritdoc/>
-    public async Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress, 
+    public async Task InsertAsync<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress, 
         CancellationToken cancellationToken)
     {
         await InsertAsync(context, type, entities, tableInfo, progress, isAsync: true, cancellationToken).ConfigureAwait(false);
@@ -35,7 +35,7 @@ public class SqlServerAdapter: ISqlOperationsAdapter
     // Public Async and NonAsync are merged into single operation flow with protected method using arg: bool isAsync (keeps code DRY)
     // https://docs.microsoft.com/en-us/archive/msdn-magazine/2015/july/async-programming-brownfield-async-development#the-flag-argument-hack
     /// <inheritdoc/>
-    protected static async Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress, 
+    protected static async Task InsertAsync<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress, 
         bool isAsync, CancellationToken cancellationToken)
     {
         tableInfo.CheckToSetIdentityForPreserveOrder(tableInfo, entities);
@@ -113,19 +113,19 @@ public class SqlServerAdapter: ISqlOperationsAdapter
     }
 
     /// <inheritdoc/>
-    public void Merge<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress) where T : class
+    public void Merge<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress) where T : class
     {
         MergeAsync(context, type, entities, tableInfo, operationType, progress, isAsync: false, CancellationToken.None).GetAwaiter().GetResult();
     }
 
     /// <inheritdoc/>
-    public async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress, CancellationToken cancellationToken) where T : class
+    public async Task MergeAsync<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress, CancellationToken cancellationToken) where T : class
     {
         await MergeAsync(context, type, entities, tableInfo, operationType, progress, isAsync: true, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc/>
-    protected async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken) where T : class
+    protected async Task MergeAsync<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken) where T : class
     {
         bool tempTableCreated = false;
         bool outputTableCreated = false;
@@ -299,19 +299,19 @@ public class SqlServerAdapter: ISqlOperationsAdapter
     }
 
     /// <inheritdoc/>
-    public void Read<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress) where T : class
+    public void Read<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress) where T : class
     {
         ReadAsync(context, type, entities, tableInfo, progress, isAsync: false, CancellationToken.None).GetAwaiter().GetResult();
     }
 
     /// <inheritdoc/>
-    public async Task ReadAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress, CancellationToken cancellationToken) where T : class
+    public async Task ReadAsync<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress, CancellationToken cancellationToken) where T : class
     {
         await ReadAsync(context, type, entities, tableInfo, progress, isAsync: true, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc/>
-    protected async Task ReadAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken) where T : class
+    protected async Task ReadAsync<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken) where T : class
     {
         bool tempTableCreated = false;
         try
@@ -421,14 +421,14 @@ public class SqlServerAdapter: ISqlOperationsAdapter
     /// <param name="entities"></param>
     /// <param name="setColumnMapping"></param>
     /// <param name="progress"></param>
-    private static void SetSqlBulkCopyConfig<T>(SqlBulkCopy sqlBulkCopy, TableInfo tableInfo, IList<T> entities, bool setColumnMapping, Action<decimal>? progress)
+    private static void SetSqlBulkCopyConfig<T>(SqlBulkCopy sqlBulkCopy, TableInfo tableInfo, IEnumerable<T> entities, bool setColumnMapping, Action<decimal>? progress)
     {
         sqlBulkCopy.DestinationTableName = tableInfo.InsertToTempTable ? tableInfo.FullTempTableName : tableInfo.FullTableName;
         sqlBulkCopy.BatchSize = tableInfo.BulkConfig.BatchSize;
         sqlBulkCopy.NotifyAfter = tableInfo.BulkConfig.NotifyAfter ?? tableInfo.BulkConfig.BatchSize;
         sqlBulkCopy.SqlRowsCopied += (sender, e) =>
         {
-            progress?.Invoke(ProgressHelper.GetProgress(entities.Count, e.RowsCopied)); // round to 4 decimal places
+            progress?.Invoke(ProgressHelper.GetProgress(entities.Count(), e.RowsCopied)); // round to 4 decimal places
         };
         sqlBulkCopy.BulkCopyTimeout = tableInfo.BulkConfig.BulkCopyTimeout ?? sqlBulkCopy.BulkCopyTimeout;
         sqlBulkCopy.EnableStreaming = tableInfo.BulkConfig.EnableStreaming;
@@ -455,7 +455,7 @@ public class SqlServerAdapter: ISqlOperationsAdapter
     /// <param name="sqlBulkCopy"></param>
     /// <param name="tableInfo"></param>
     /// <returns></returns>
-    public static DataTable GetDataTable<T>(DbContext context, Type type, IList<T> entities, SqlBulkCopy sqlBulkCopy, TableInfo tableInfo)
+    public static DataTable GetDataTable<T>(DbContext context, Type type, IEnumerable<T> entities, SqlBulkCopy sqlBulkCopy, TableInfo tableInfo)
     {
         DataTable dataTable = InnerGetDataTable(context, ref type, entities, tableInfo);
 
@@ -475,7 +475,7 @@ public class SqlServerAdapter: ISqlOperationsAdapter
     /// <param name="entities"></param>
     /// <param name="tableInfo"></param>
     /// <returns></returns>
-    private static DataTable InnerGetDataTable<T>(DbContext context, ref Type type, IList<T> entities, TableInfo tableInfo)
+    private static DataTable InnerGetDataTable<T>(DbContext context, ref Type type, IEnumerable<T> entities, TableInfo tableInfo)
     {
         var dataTable = new DataTable();
         var columnsDict = new Dictionary<string, object?>();
@@ -486,7 +486,7 @@ public class SqlServerAdapter: ISqlOperationsAdapter
         var sqlServerBytesWriter = new SqlServerBytesWriter();
 
         var objectIdentifier = tableInfo.ObjectIdentifier;
-        type = tableInfo.HasAbstractList ? entities[0]!.GetType() : type;
+        type = tableInfo.HasAbstractList ? entities.ElementAt(0)!.GetType() : type;
         var entityType = context.Model.FindEntityType(type) ?? throw new ArgumentException($"Unable to determine entity type from given type - {type.Name}");
         var entityTypeProperties = entityType.GetProperties();
         var entityPropertiesDict = entityTypeProperties.Where(a => tableInfo.PropertyColumnNamesDict.ContainsKey(a.Name) ||

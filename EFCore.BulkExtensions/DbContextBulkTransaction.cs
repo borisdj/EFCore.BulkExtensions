@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -9,15 +10,15 @@ namespace EFCore.BulkExtensions;
 
 internal static class DbContextBulkTransaction
 {
-    public static void Execute<T>(DbContext context, Type? type, IList<T> entities, OperationType operationType, BulkConfig? bulkConfig, Action<decimal>? progress) where T : class
+    public static void Execute<T>(DbContext context, Type? type, IEnumerable<T> entities, OperationType operationType, BulkConfig? bulkConfig, Action<decimal>? progress) where T : class
     {
         SqlAdaptersMapping.ProviderName = context.Database.ProviderName;
 
         type ??= typeof(T);
 
-        using (ActivitySources.StartExecuteActivity(operationType, entities.Count))
+        using (ActivitySources.StartExecuteActivity(operationType, entities.Count()))
         {
-            if (entities.Count == 0 && 
+            if (entities.Count() == 0 && 
                 operationType != OperationType.InsertOrUpdateOrDelete && 
                 operationType != OperationType.Truncate && 
                 operationType != OperationType.SaveChanges &&
@@ -59,15 +60,15 @@ internal static class DbContextBulkTransaction
         }
     }
 
-    public static async Task ExecuteAsync<T>(DbContext context, Type? type, IList<T> entities, OperationType operationType, BulkConfig? bulkConfig, Action<decimal>? progress, CancellationToken cancellationToken = default) where T : class
+    public static async Task ExecuteAsync<T>(DbContext context, Type? type, IEnumerable<T> entities, OperationType operationType, BulkConfig? bulkConfig, Action<decimal>? progress, CancellationToken cancellationToken = default) where T : class
     {
         SqlAdaptersMapping.ProviderName = context.Database.ProviderName;
 
         type ??= typeof(T);
 
-        using (ActivitySources.StartExecuteActivity(operationType, entities.Count))
+        using (ActivitySources.StartExecuteActivity(operationType, entities.Count()))
         {
-            if (entities.Count == 0 && operationType != OperationType.InsertOrUpdateOrDelete && operationType != OperationType.Truncate && operationType != OperationType.SaveChanges)
+            if (entities.Count() == 0 && operationType != OperationType.InsertOrUpdateOrDelete && operationType != OperationType.Truncate && operationType != OperationType.SaveChanges)
             {
                 return;
             }

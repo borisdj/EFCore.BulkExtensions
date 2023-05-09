@@ -16,20 +16,20 @@ public class SqliteAdapter : ISqlOperationsAdapter
     /// <inheritdoc/>
     #region Methods
     // Insert
-    public void Insert<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress)
+    public void Insert<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress)
     {
         InsertAsync(context, type, entities, tableInfo, progress, isAsync: false, CancellationToken.None).GetAwaiter().GetResult();
     }
 
 
     /// <inheritdoc/>
-    public async Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress, CancellationToken cancellationToken)
+    public async Task InsertAsync<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress, CancellationToken cancellationToken)
     {
         await InsertAsync(context, type, entities, tableInfo, progress, isAsync: true, cancellationToken).ConfigureAwait(false);
     }
     
     /// <inheritdoc/>
-    public static async Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken)
+    public static async Task InsertAsync<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken)
     {
         SqliteConnection? connection = (SqliteConnection?)SqlAdaptersMapping.DbServer!.DbConnection;
         if (connection == null)
@@ -62,7 +62,7 @@ public class SqliteAdapter : ISqlOperationsAdapter
 
             var command = GetSqliteCommand(context, type, entities, tableInfo, connection, transaction);
 
-            type = tableInfo.HasAbstractList ? entities[0]!.GetType() : type;
+            type = tableInfo.HasAbstractList ? entities.ElementAt(0)!.GetType() : type;
             int rowsCopied = 0;
 
             foreach (var item in entities)
@@ -76,7 +76,7 @@ public class SqliteAdapter : ISqlOperationsAdapter
                 {
                     command.ExecuteNonQuery();
                 }
-                ProgressHelper.SetProgress(ref rowsCopied, entities.Count, tableInfo.BulkConfig, progress);
+                ProgressHelper.SetProgress(ref rowsCopied, entities.Count(), tableInfo.BulkConfig, progress);
             }
             if (doExplicitCommit)
             {
@@ -101,19 +101,19 @@ public class SqliteAdapter : ISqlOperationsAdapter
 
     // Merge
     /// <inheritdoc/>
-    public void Merge<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress) where T : class
+    public void Merge<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress) where T : class
     {
         MergeAsync(context, type, entities, tableInfo, operationType, progress, isAsync: false, CancellationToken.None).GetAwaiter().GetResult();
     }
 
     /// <inheritdoc/>
-    public async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress, CancellationToken cancellationToken) where T : class
+    public async Task MergeAsync<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress, CancellationToken cancellationToken) where T : class
     {
         await MergeAsync(context, type, entities, tableInfo, operationType, progress, isAsync: true, cancellationToken).ConfigureAwait(false);
     }
     
     /// <inheritdoc/>
-    protected static async Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken) where T : class
+    protected static async Task MergeAsync<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken) where T : class
     {
         SqliteConnection connection = isAsync ? await OpenAndGetSqliteConnectionAsync(context, cancellationToken).ConfigureAwait(false)
                                                     : OpenAndGetSqliteConnection(context);
@@ -132,7 +132,7 @@ public class SqliteAdapter : ISqlOperationsAdapter
 
             var command = GetSqliteCommand(context, type, entities, tableInfo, connection, transaction);
 
-            type = tableInfo.HasAbstractList ? entities[0].GetType() : type;
+            type = tableInfo.HasAbstractList ? entities.ElementAt(0).GetType() : type;
             int rowsCopied = 0;
 
             foreach (var item in entities)
@@ -146,7 +146,7 @@ public class SqliteAdapter : ISqlOperationsAdapter
                 {
                     command.ExecuteNonQuery();
                 }
-                ProgressHelper.SetProgress(ref rowsCopied, entities.Count, tableInfo.BulkConfig, progress);
+                ProgressHelper.SetProgress(ref rowsCopied, entities.Count(), tableInfo.BulkConfig, progress);
             }
 
             if (operationType == OperationType.Insert && tableInfo.BulkConfig.SetOutputIdentity && tableInfo.IdentityColumnName != null) // For Sqlite Identity can be set by Db only with pure Insert method
@@ -179,19 +179,19 @@ public class SqliteAdapter : ISqlOperationsAdapter
 
     // Read
     /// <inheritdoc/>
-    public void Read<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress) where T : class
+    public void Read<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress) where T : class
     {
         ReadAsync(context, type, entities, tableInfo, progress, isAsync: false, CancellationToken.None).GetAwaiter().GetResult();
     }
 
     /// <inheritdoc/>
-    public async Task ReadAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress, CancellationToken cancellationToken) where T : class
+    public async Task ReadAsync<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress, CancellationToken cancellationToken) where T : class
     {
         await ReadAsync(context, type, entities, tableInfo, progress, isAsync: true, cancellationToken).ConfigureAwait(false);
     }
     
     /// <inheritdoc/>
-    protected static async Task ReadAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken) where T : class
+    protected static async Task ReadAsync<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken) where T : class
     {
         SqliteConnection connection = isAsync ? await OpenAndGetSqliteConnectionAsync(context, cancellationToken).ConfigureAwait(false)
                                                     : OpenAndGetSqliteConnection(context);
@@ -323,7 +323,7 @@ public class SqliteAdapter : ISqlOperationsAdapter
     #endregion
 
     #region SqliteData
-    internal static SqliteCommand GetSqliteCommand<T>(DbContext context, Type? type, IList<T> entities, TableInfo tableInfo, SqliteConnection connection, SqliteTransaction? transaction)
+    internal static SqliteCommand GetSqliteCommand<T>(DbContext context, Type? type, IEnumerable<T> entities, TableInfo tableInfo, SqliteConnection connection, SqliteTransaction? transaction)
     {
         SqliteCommand command = connection.CreateCommand();
         command.Transaction = transaction;
@@ -349,7 +349,7 @@ public class SqliteAdapter : ISqlOperationsAdapter
                 break;
         }
 
-        type = tableInfo.HasAbstractList ? entities[0]?.GetType() : type;
+        type = tableInfo.HasAbstractList ? entities.ElementAt(0)?.GetType() : type;
         if (type is null)
         {
             throw new ArgumentException("Unable to determine entity type");
@@ -485,7 +485,7 @@ public class SqliteAdapter : ISqlOperationsAdapter
     }
     
     /// <inheritdoc/>
-    public static void SetIdentityForOutput<T>(IList<T> entities, TableInfo tableInfo, object? lastRowIdScalar)
+    public static void SetIdentityForOutput<T>(IEnumerable<T> entities, TableInfo tableInfo, object? lastRowIdScalar)
     {
         long counter = (long?)lastRowIdScalar ?? 0;
 
@@ -494,7 +494,7 @@ public class SqliteAdapter : ISqlOperationsAdapter
 
         string idTypeName = identityFastProperty.Property.PropertyType.Name;
         object? idValue = null;
-        for (int i = entities.Count - 1; i >= 0; i--)
+        for (int i = entities.Count() - 1; i >= 0; i--)
         {
             idValue = idTypeName switch
             {
@@ -508,9 +508,9 @@ public class SqliteAdapter : ISqlOperationsAdapter
                 "SByte" => (sbyte)counter,
                 _ => counter,
             };
-            if (entities[i] is not null)
+            if (entities.ElementAt(i) is not null)
             {
-                identityFastProperty.Set(entities[i]!, idValue);
+                identityFastProperty.Set(entities.ElementAt(i)!, idValue);
             }
 
             counter--;

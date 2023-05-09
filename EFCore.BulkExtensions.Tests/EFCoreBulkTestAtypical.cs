@@ -1135,12 +1135,16 @@ public class EFCoreBulkTestAtypical
         ContextUtil.DatabaseType = sqlType;
         using var context = new TestContext(ContextUtil.GetOptions());
 
-        context.BulkDelete(context.Items.ToList());
+        new EFCoreBatchTest().RunDeleteAll(sqlType);
 
-        context.Items.Add(new Item { Name = "name 1" });
-        context.Items.Add(new Item { Name = "name 2" });
-        context.Items.Add(new Item { Name = "name 2" });
-        context.Items.Add(new Item { Name = "name 3" });
+        var list = new List<Item>
+        {
+            new Item { Name = "name 1" },
+            new Item { Name = "name 2" },
+            new Item { Name = "name 2" },
+            new Item { Name = "name 3" }
+        };
+        context.Items.AddRange(list);
         context.SaveChanges();
 
         var names = new List<string> { "name 1", "name 2", "name 3", "name 4" };

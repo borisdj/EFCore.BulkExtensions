@@ -77,7 +77,7 @@ public class TableInfo
 
     public string? TextValueFirstPK { get; set; }
 
-    protected IList<object>? EntitiesSortedReference { get; set; } // Operation Merge writes In Output table first Existing that were Updated then for new that were Inserted so this makes sure order is same in list when need to set Output
+    protected IEnumerable<object>? EntitiesSortedReference { get; set; } // Operation Merge writes In Output table first Existing that were Updated then for new that were Inserted so this makes sure order is same in list when need to set Output
 
     public StoreObjectIdentifier ObjectIdentifier { get; set; }
 
@@ -107,11 +107,11 @@ public class TableInfo
     /// <param name="bulkConfig"></param>
     /// <returns></returns>
     /// <exception cref="InvalidOperationException"></exception>
-    public static TableInfo CreateInstance<T>(DbContext context, Type? type, IList<T> entities, OperationType operationType, BulkConfig? bulkConfig)
+    public static TableInfo CreateInstance<T>(DbContext context, Type? type, IEnumerable<T> entities, OperationType operationType, BulkConfig? bulkConfig)
     {
         var tableInfo = new TableInfo
         {
-            NumberOfEntities = entities.Count,
+            NumberOfEntities = entities.Count(),
             BulkConfig = bulkConfig ?? new BulkConfig() { }
         };
         tableInfo.BulkConfig.OperationType = operationType;
@@ -140,14 +140,14 @@ public class TableInfo
     /// <exception cref="InvalidOperationException"></exception>
     /// <exception cref="MultiplePropertyListSetException"></exception>
     /// <exception cref="InvalidBulkConfigException"></exception>
-    public void LoadData<T>(DbContext context, Type? type, IList<T> entities, bool loadOnlyPKColumn)
+    public void LoadData<T>(DbContext context, Type? type, IEnumerable<T> entities, bool loadOnlyPKColumn)
 
     {
         LoadOnlyPKColumn = loadOnlyPKColumn;
         var entityType = type is null ? null : context.Model.FindEntityType(type);
         if (entityType == null)
         {
-            type = entities[0]?.GetType() ?? throw new ArgumentNullException(nameof(type));
+            type = entities.FirstOrDefault()?.GetType() ?? throw new ArgumentNullException(nameof(type));
             entityType = context.Model.FindEntityType(type);
             HasAbstractList = true;
         }
@@ -601,7 +601,7 @@ public class TableInfo
         if (PrimaryKeysPropertyColumnNameDict.Count == 1)
         {
             string pkName = PrimaryKeysPropertyColumnNameDict.Keys.First();
-            if (entities != null && entities.Count > 0)
+            if (entities != null && entities.Count() > 0)
             {
                 object? instance = entities.First();
                 TextValueFirstPK = FastPropertyDict[pkName].Get(instance ?? "")?.ToString();
@@ -819,7 +819,7 @@ public class TableInfo
         return previousPropertyColumnNamesDict;
     }
 
-    internal void UpdateReadEntities<T>(IList<T> entities, IList<T> existingEntities, DbContext context)
+    internal void UpdateReadEntities<T>(IEnumerable<T> entities, IList<T> existingEntities, DbContext context)
     {
         List<string> propertyNames = OutputPropertyColumnNamesDict.Keys.ToList();
         if (HasOwnedTypes)
@@ -847,14 +847,14 @@ public class TableInfo
 
         for (int i = 0; i < NumberOfEntities; i++)
         {
-            T entity = entities[i];
+            T entity = entities.ElementAt(i);
             string uniqueProperyValues = GetUniquePropertyValues(entity!, selectByPropertyNames, FastPropertyDict);
 
             existingEntitiesDict.TryGetValue(uniqueProperyValues, out T? existingEntity);
             bool isPostgreSql = context.Database.ProviderName?.EndsWith(SqlType.PostgreSql.ToString(), StringComparison.InvariantCultureIgnoreCase) ?? false;
-            if (existingEntity == null && isPostgreSql && i < existingEntities.Count && entities.Count == existingEntities.Count) // && entities.Count == existingEntities.Count conf fix for READ. TODO change (issue 1027)
+            if (existingEntity == null && isPostgreSql && i < existingEntities.Count() && entities.Count() == existingEntities.Count()) // && entities.Count == existingEntities.Count conf fix for READ. TODO change (issue 1027)
             {
-                existingEntity = existingEntities[i]; // TODO check if BinaryImport with COPY on Postgres preserves order
+                existingEntity = existingEntities.ElementAt(i); // TODO check if BinaryImport with COPY on Postgres preserves order
             }
             if (existingEntity != null)
             {
@@ -874,13 +874,19 @@ public class TableInfo
         }
     }
 
-    internal void ReplaceReadEntities<T>(IList<T> entities, IList<T> existingEntities)
+    internal void ReplaceReadEntities<T>(IEnumerable<T> entities, IList<T> existingEntities)
     {
-        entities.Clear();
-
-        foreach (var existingEntity in existingEntities)
+        if (typeof(T) == existingEntities.FirstOrDefault()?.GetType())
         {
-            entities.Add(existingEntity);
+            var entitiesList = (List<T>)entities;
+            entitiesList.Clear();
+            entitiesList.AddRange(existingEntities);
+        }
+        else
+        {
+            var entitiesObjects = entities.Cast<object>().ToList();
+            entitiesObjects.Clear();
+            entitiesObjects.AddRange((IEnumerable<object>)existingEntities);
         }
     }
     #endregion
@@ -891,12 +897,12 @@ public class TableInfo
     /// <param name="tableInfo"></param>
     /// <param name="entities"></param>
     /// <param name="reset"></param>
-    public void CheckToSetIdentityForPreserveOrder<T>(TableInfo tableInfo, IList<T> entities, bool reset = false)
+    public void CheckToSetIdentityForPreserveOrder<T>(TableInfo tableInfo, IEnumerable<T> entities, bool reset = false)
     {
         string identityPropertyName = PropertyColumnNamesDict.SingleOrDefault(a => a.Value == IdentityColumnName).Key;
 
         bool doSetIdentityColumnsForInsertOrder = BulkConfig.PreserveInsertOrder &&
-                                                  entities.Count > 1 &&
+                                                  entities.Count() > 1 &&
                                                   PrimaryKeysPropertyColumnNameDict?.Count == 1 &&
                                                   PrimaryKeysPropertyColumnNameDict?.Select(a => a.Value).First() == IdentityColumnName;
 
@@ -905,7 +911,7 @@ public class TableInfo
         {
             if (operationType == OperationType.Insert) // Insert should either have all zeros for automatic order, or they can be manually set
             {
-                var propertyValue = FastPropertyDict[identityPropertyName].Get(entities[0]!);
+                var propertyValue = FastPropertyDict[identityPropertyName].Get(entities.ElementAt(0)!);
                 var identityValue = Convert.ToInt64(IdentityColumnConverter != null ? IdentityColumnConverter.ConvertToProvider(propertyValue) : propertyValue);
 
                 if (identityValue != 0) // (to check it fast, condition for all 0s is only done on first one)
@@ -923,7 +929,7 @@ public class TableInfo
             var entitiesNew = new List<T>();
             var entitiesSorted = new List<T>();
 
-            long i = -entities.Count;
+            long i = -entities.Count();
             foreach (var entity in entities)
             {
                 var identityFastProperty = FastPropertyDict[identityPropertyName];
@@ -1004,14 +1010,14 @@ public class TableInfo
     /// <param name="tableInfo"></param>
     /// <param name="entities"></param>
     /// <param name="entitiesWithOutputIdentity"></param>
-    public void UpdateEntitiesIdentity<T>(TableInfo tableInfo, IList<T> entities, IList<object> entitiesWithOutputIdentity)
+    public void UpdateEntitiesIdentity<T>(TableInfo tableInfo, IEnumerable<T> entities, IEnumerable<object> entitiesWithOutputIdentity)
     {
         var identifierPropertyName = IdentityColumnName != null ? OutputPropertyColumnNamesDict.SingleOrDefault(a => a.Value == IdentityColumnName).Key // it Identity autoincrement 
                                                                 : PrimaryKeysPropertyColumnNameDict.FirstOrDefault().Key;                               // or PK with default sql value
 
         if (BulkConfig.PreserveInsertOrder) // Updates Db changed Columns in entityList
         {
-            int countDiff = entities.Count - entitiesWithOutputIdentity.Count;
+            int countDiff = entities.Count() - entitiesWithOutputIdentity.Count();
             if (countDiff > 0) // When some ommited from Merge because of TimeStamp conflict then changes are not loaded but output is set in TimeStampInfo
             {
                 tableInfo.BulkConfig.TimeStampInfo = new TimeStampInfo
@@ -1028,7 +1034,7 @@ public class TableInfo
             }
 
             var entitiesDict = new Dictionary<object, T>();
-            var numberOfOutputEntities = Math.Min(NumberOfEntities, entitiesWithOutputIdentity.Count);
+            var numberOfOutputEntities = Math.Min(NumberOfEntities, entitiesWithOutputIdentity.Count());
             for (int i = 0; i < numberOfOutputEntities; i++)
             {
                 if (identifierPropertyName != null)
@@ -1048,22 +1054,22 @@ public class TableInfo
                                 entitiesDict.Add(customPKValue, entity);
                             }
                         }
-                        var identityPropertyValue = FastPropertyDict[identifierPropertyName].Get(entitiesWithOutputIdentity[i]);
-                        PrimaryKeysPropertyColumnNameValues customPKOutputValue = new(customPK.Select(c => FastPropertyDict[c].Get(entitiesWithOutputIdentity[i])));
+                        var identityPropertyValue = FastPropertyDict[identifierPropertyName].Get(entitiesWithOutputIdentity.ElementAt(i));
+                        PrimaryKeysPropertyColumnNameValues customPKOutputValue = new(customPK.Select(c => FastPropertyDict[c].Get(entitiesWithOutputIdentity.ElementAt(i))));
                         FastPropertyDict[identifierPropertyName].Set(entitiesDict[customPKOutputValue]!, identityPropertyValue);
                     }
                     else
                     {
-                        var identityPropertyValue = FastPropertyDict[identifierPropertyName].Get(entitiesWithOutputIdentity[i]);
-                        FastPropertyDict[identifierPropertyName].Set(entities[i]!, identityPropertyValue);
+                        var identityPropertyValue = FastPropertyDict[identifierPropertyName].Get(entitiesWithOutputIdentity.ElementAt(i));
+                        FastPropertyDict[identifierPropertyName].Set(entities.ElementAt(i)!, identityPropertyValue);
                     }
                 }
 
                 if (TimeStampColumnName != null) // timestamp/rowversion is also generated by the SqlServer so if exist should be updated as well
                 {
                     string timeStampPropertyName = OutputPropertyColumnNamesDict.SingleOrDefault(a => a.Value == TimeStampColumnName).Key;
-                    var timeStampPropertyValue = FastPropertyDict[timeStampPropertyName].Get(entitiesWithOutputIdentity[i]);
-                    FastPropertyDict[timeStampPropertyName].Set(entities[i]!, timeStampPropertyValue);
+                    var timeStampPropertyValue = FastPropertyDict[timeStampPropertyName].Get(entitiesWithOutputIdentity.ElementAt(i));
+                    FastPropertyDict[timeStampPropertyName].Set(entities.ElementAt(i)!, timeStampPropertyValue);
                 }
 
                 var propertiesToLoad = tableInfo.OutputPropertyColumnNamesDict.Keys.Where(a => a != identifierPropertyName && a != TimeStampColumnName && // already loaded in segmet above
@@ -1071,14 +1077,16 @@ public class TableInfo
                                                                                                 !tableInfo.PropertyColumnNamesDict.ContainsKey(a)));      // remove others since already have same have (could be omited)
                 foreach (var outputPropertyName in propertiesToLoad)
                 {
-                    var propertyValue = FastPropertyDict[outputPropertyName].Get(entitiesWithOutputIdentity[i]);
-                    FastPropertyDict[outputPropertyName].Set(entities[i]!, propertyValue);
+                    var propertyValue = FastPropertyDict[outputPropertyName].Get(entitiesWithOutputIdentity.ElementAt(i));
+                    FastPropertyDict[outputPropertyName].Set(entities.ElementAt(i)!, propertyValue);
                 }
             }
         }
         else // Clears entityList and then refills it with loaded entites from Db
         {
-            entities.Clear();
+            //entities.Clear();
+            entities = Enumerable.Empty<T>();
+
             if (typeof(T) == entitiesWithOutputIdentity.FirstOrDefault()?.GetType())
             {
                 ((List<T>)entities).AddRange(entitiesWithOutputIdentity.Cast<T>().ToList());
@@ -1107,11 +1115,11 @@ public class TableInfo
     /// <param name="cancellationToken"></param>
     /// <param name="isAsync"></param>
     /// <returns></returns>
-    public async Task LoadOutputDataAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, bool isAsync, CancellationToken cancellationToken) where T : class
+    public async Task LoadOutputDataAsync<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, bool isAsync, CancellationToken cancellationToken) where T : class
     {
         bool hasIdentity = OutputPropertyColumnNamesDict.Any(a => a.Value == IdentityColumnName) ||
                            (tableInfo.HasSinglePrimaryKey && tableInfo.DefaultValueProperties.Contains(tableInfo.PrimaryKeysPropertyColumnNameDict.FirstOrDefault().Key));
-        int totalNumber = entities.Count;
+        int totalNumber = entities.Count();
         if (BulkConfig.SetOutputIdentity && (hasIdentity || tableInfo.TimeStampColumnName == null))
         {
             var databaseType = SqlAdaptersMapping.GetDatabaseType();
@@ -1257,7 +1265,7 @@ public class TableInfo
 
     // Currently not used until issue from previous segment is fixed in EFCore
     #region DirectQuery
-    /*public void UpdateOutputIdentity<T>(DbContext context, IList<T> entities) where T : class
+    /*public void UpdateOutputIdentity<T>(DbContext context, IEnumerable<T> entities) where T : class
     {
         if (HasSinglePrimaryKey)
         {
@@ -1266,7 +1274,7 @@ public class TableInfo
         }
     }
 
-    public async Task UpdateOutputIdentityAsync<T>(DbContext context, IList<T> entities) where T : class
+    public async Task UpdateOutputIdentityAsync<T>(DbContext context, IEnumerable<T> entities) where T : class
     {
         if (HasSinglePrimaryKey)
         {
