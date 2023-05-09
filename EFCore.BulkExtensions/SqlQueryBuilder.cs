@@ -376,9 +376,8 @@ public abstract class SqlQueryBuilder
                 parameters.AddRange(sqlParameters);
             }
 
-            q += (softDeleteAssignment != string.Empty) ?
-                 $" THEN UPDATE SET {softDeleteAssignment}" :
-                  " THEN DELETE";
+            q += (softDeleteAssignment != string.Empty) ? $" THEN UPDATE SET {softDeleteAssignment}"
+                                                        : $" THEN DELETE";
         }
         if (operationType == OperationType.Delete)
         {
