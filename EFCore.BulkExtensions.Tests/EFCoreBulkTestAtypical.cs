@@ -234,7 +234,7 @@ public class EFCoreBulkTestAtypical
 
         context.FilePGs.AddRange(entities);
 
-        context.BulkSaveChanges(bulkConfig);
+        context.BulkSaveChanges();
     }
 
     [Theory]
