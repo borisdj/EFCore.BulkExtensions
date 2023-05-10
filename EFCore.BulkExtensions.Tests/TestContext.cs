@@ -29,6 +29,8 @@ public class TestContext : DbContext
 
     public DbSet<File> Files { get; set; } = null!;
 
+    public DbSet<FilePG> FilePGs { get; set; } = null!;
+
     public DbSet<Box> Boxes { get; set; } = null!;
     public DbSet<Person> Persons { get; set; } = null!;
     public DbSet<Student> Students { get; set; } = null!;
@@ -604,6 +606,17 @@ public class File
     [Timestamp]
     public byte[] VersionChange { get; set; } = Guid.NewGuid().ToByteArray();
     //public ulong RowVersion { get; set; }
+}
+
+// For testing TimeStamp Property and Column with Concurrency Lock
+public class FilePG
+{
+    public int FilePGId { get; set; }
+
+    public string? Description { get; set; }
+
+    [Timestamp]
+    public uint Version { get; set; }
 }
 
 public enum InfoType

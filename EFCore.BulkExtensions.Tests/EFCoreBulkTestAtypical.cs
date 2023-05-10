@@ -214,6 +214,30 @@ public class EFCoreBulkTestAtypical
     }
 
     [Theory]
+    [InlineData(SqlType.PostgreSql)]
+    private void TimeStampPGTest(SqlType sqlType)
+    {
+        ContextUtil.DatabaseType = sqlType;
+        using var context = new TestContext(ContextUtil.GetOptions());
+
+        context.Truncate<FilePG>();
+
+        var entities = new List<FilePG>();
+        for (int i = 1; i <= EntitiesNumber; i++)
+        {
+            var entity = new FilePG
+            {
+                Description = "Some datax " + i
+            };
+            entities.Add(entity);
+        }
+
+        context.FilePGs.AddRange(entities);
+
+        context.BulkSaveChanges(bulkConfig);
+    }
+
+    [Theory]
     [InlineData(SqlType.SqlServer)]
     //[InlineData(DbServer.Sqlite)] // No TimeStamp column type but can be set with DefaultValueSql: "CURRENT_TIMESTAMP" as it is in OnModelCreating() method.
     private void TimeStampTest(SqlType sqlType)
