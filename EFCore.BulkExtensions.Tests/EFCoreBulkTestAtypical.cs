@@ -1064,9 +1064,27 @@ public class EFCoreBulkTestAtypical
     }
 
     [Fact]
+    private void TimeStamp2PGTest()
+    {
+        using var context = new TestContext(ContextUtil.GetOptions());
+
+        context.BulkDelete(context.Events.ToList());
+
+        var entities = new List<Event>();
+        for (int i = 1; i <= 10; i++)
+        {
+            var entity = new Event
+            {
+                Name = "Event " + i,
+                TimeCreated = DateTime.Now
+            };
+        }
+        context.BulkInsert(entities);
+    }
+
+    [Fact]
     private void CustomPrecisionDateTimeTest()
     {
-        ContextUtil.DatabaseType = SqlType.SqlServer;
         using var context = new TestContext(ContextUtil.GetOptions());
 
         context.BulkDelete(context.Events.ToList());

@@ -91,6 +91,9 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
                     else if (columnType.StartsWith("numeric"))
                         columnType = "numeric";
 
+                    if (columnType.StartsWith("timestamp(")) // timestamp(n) | len:12 // TEST: TimeStamp2PGTest
+                        columnType = "timestamp" + columnType.Substring(12, columnType.Length - 12);
+
                     var convertibleDict = tableInfo.ConvertibleColumnConverterDict;
                     if (convertibleDict.TryGetValue(propertyColumnName, out var converter))
                     {

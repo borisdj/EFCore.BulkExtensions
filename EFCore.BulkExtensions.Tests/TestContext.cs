@@ -172,6 +172,7 @@ public class TestContext : DbContext
         if (Database.IsNpgsql())
         {
             modelBuilder.Entity<Event>().Property(p => p.TimeCreated).HasColumnType("timestamp"); // with annotation defined as "datetime2(3)" so here corrected for PG ("timestamp" in short for "timestamp without time zone")
+            modelBuilder.Entity<Event>().Property(p => p.TimeUpdated).HasColumnType("timestamp(2)");
 
             modelBuilder.Entity<Box>().Property(p => p.ElementContent).HasColumnType("jsonb"); // with annotation not mapped since not used for others DBs
             modelBuilder.Entity<Box>().Property(p => p.DocumentContent).HasColumnType("jsonb"); // with annotation not mapped since not used for others DBs
@@ -828,7 +829,6 @@ public class AtypicalRowVersionConverterEntity
 
 public class Event // CustomPrecision DateTime Test (SqlServer only)
 {
-
     public int EventId { get; set; }
 
     [Required]
@@ -838,6 +838,8 @@ public class Event // CustomPrecision DateTime Test (SqlServer only)
 
     [Column(TypeName = "datetime2(3)")]
     public DateTime TimeCreated { get; set; }
+
+    public DateTime? TimeUpdated { get; set; }
 }
 
 public class Archive
