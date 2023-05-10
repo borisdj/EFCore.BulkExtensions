@@ -127,6 +127,8 @@ public class TestContext : DbContext
         modelBuilder.Entity<Log>().ToTable(nameof(Log));
         modelBuilder.Entity<LogPersonReport>().ToTable(nameof(LogPersonReport));
 
+        modelBuilder.Entity<FilePG>().Ignore(p => p.Formats);
+
         if (Database.IsSqlServer())
         {
             modelBuilder.Entity<Document>().Property(p => p.DocumentId).HasDefaultValueSql("NEWID()");
@@ -171,6 +173,8 @@ public class TestContext : DbContext
 
         if (Database.IsNpgsql())
         {
+            modelBuilder.Entity<FilePG>().Property(p => p.Formats).HasColumnType("text[]");
+
             modelBuilder.Entity<Event>().Property(p => p.TimeCreated).HasColumnType("timestamp"); // with annotation defined as "datetime2(3)" so here corrected for PG ("timestamp" in short for "timestamp without time zone")
             modelBuilder.Entity<Event>().Property(p => p.TimeUpdated).HasColumnType("timestamp(2)");
 
@@ -616,7 +620,7 @@ public class FilePG
 
     public string? Description { get; set; }
 
-    [Column(TypeName = "text[]")]
+    //[Column(TypeName = "text[]")] // set in Fluent
     public string[]? Formats { get; set; }
 
     [Timestamp]
