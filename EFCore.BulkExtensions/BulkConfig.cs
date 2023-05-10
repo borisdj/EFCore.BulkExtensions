@@ -261,6 +261,7 @@ public class BulkConfig
 
     /// <summary>
     ///     When set to <c>true</c> result of BulkRead operation will be provided using replace instead of update. Entities list parameter of BulkRead method will be repopulated with obtained data.
+    ///     Enables functionality of Contains/IN which will return all entities matching the criteria and only return the first (does not have to be by unique columns).
     /// </summary>
     public bool ReplaceReadEntities { get; set; }
 
