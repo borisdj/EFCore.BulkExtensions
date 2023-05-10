@@ -215,6 +215,29 @@ public class EFCoreBulkTestAtypical
 
     [Theory]
     [InlineData(SqlType.PostgreSql)]
+    private void ArrayPGTest(SqlType sqlType)
+    {
+        ContextUtil.DatabaseType = sqlType;
+        using var context = new TestContext(ContextUtil.GetOptions());
+
+        context.Truncate<FilePG>();
+
+        var entities = new List<FilePG>();
+        for (int i = 1; i <= EntitiesNumber; i++)
+        {
+            var entity = new FilePG
+            {
+                Description = "Array data" + i,
+                Formats = new string[] { "txt", "pdf" },
+            };
+            entities.Add(entity);
+        }
+
+        context.BulkInsert(entities);
+    }
+
+    [Theory]
+    [InlineData(SqlType.PostgreSql)]
     private void TimeStampPGTest(SqlType sqlType)
     {
         ContextUtil.DatabaseType = sqlType;
@@ -227,7 +250,7 @@ public class EFCoreBulkTestAtypical
         {
             var entity = new FilePG
             {
-                Description = "Some datax " + i
+                Description = "Some data " + i,
             };
             entities.Add(entity);
         }

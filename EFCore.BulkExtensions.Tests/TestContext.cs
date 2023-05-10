@@ -615,6 +615,9 @@ public class FilePG
 
     public string? Description { get; set; }
 
+    [Column(TypeName = "text[]")]
+    public string[]? Formats { get; set; }
+
     [Timestamp]
     public uint Version { get; set; }
 }
