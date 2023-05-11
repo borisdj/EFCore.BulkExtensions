@@ -97,6 +97,8 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
 
                     if (columnType.StartsWith("geometry"))
                         columnType = "geometry";
+                    if (columnType.StartsWith("geography"))
+                        columnType = "geography";
 
                     var convertibleDict = tableInfo.ConvertibleColumnConverterDict;
                     if (convertibleDict.TryGetValue(propertyColumnName, out var converter))
