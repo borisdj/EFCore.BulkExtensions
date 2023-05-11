@@ -30,7 +30,7 @@ public abstract class SqlQueryBuilder
             columnsNames.Remove(tableInfo.TimeStampColumnName);
         }
 
-        string statsColumns = (tableInfo.BulkConfig.CalculateStats && isOutputTable) ? ",[IsUpdate] = CAST(0 AS bit),[IsDelete] = CAST(0 AS bit)" : "";
+        string statsColumns = (tableInfo.BulkConfig.CalculateStats && isOutputTable) ? $",[{tableInfo.SqlActionIUD}] = CAST('' AS char(1))" : "";
 
         var q = $"SELECT TOP 0 {GetCommaSeparatedColumns(columnsNames, "T")} " + statsColumns +
                 $"INTO {newTableName} FROM {existingTableName} AS T " +
@@ -88,8 +88,7 @@ public abstract class SqlQueryBuilder
         }
         if (tableInfo.BulkConfig.CalculateStats && isOutputTable)
         {
-            columnsNamesAndTypes.Add(new Tuple<string, string>("[IsUpdate]", "bit"));
-            columnsNamesAndTypes.Add(new Tuple<string, string>("[IsDelete]", "bit"));
+            columnsNamesAndTypes.Add(new Tuple<string, string>("[SqlActionIUD]", "char(1)"));
         }
         var q = $"CREATE TABLE {newTableName} ({GetCommaSeparatedColumnsAndTypes(columnsNamesAndTypes)});";
         return q;
@@ -129,7 +128,7 @@ public abstract class SqlQueryBuilder
     /// <returns></returns>
     public static string SelectCountIsUpdateFromOutputTable(TableInfo tableInfo)
     {
-        return SelectCountColumnFromOutputTable(tableInfo, "IsUpdate");
+        return SelectCountColumnFromOutputTable(tableInfo, "SqlActionIUD", "U");
     }
 
     /// <summary>
@@ -139,7 +138,7 @@ public abstract class SqlQueryBuilder
     /// <returns></returns>
     public static string SelectCountIsDeleteFromOutputTable(TableInfo tableInfo)
     {
-        return SelectCountColumnFromOutputTable(tableInfo, "IsDelete");
+        return SelectCountColumnFromOutputTable(tableInfo, "SqlActionIUD", "D");
     }
 
     /// <summary>
@@ -147,10 +146,11 @@ public abstract class SqlQueryBuilder
     /// </summary>
     /// <param name="tableInfo"></param>
     /// <param name="columnName"></param>
+    /// <param name="columnValue"></param>
     /// <returns></returns>
-    public static string SelectCountColumnFromOutputTable(TableInfo tableInfo, string columnName)
+    public static string SelectCountColumnFromOutputTable(TableInfo tableInfo, string columnName, string columnValue)
     {
-        var q = $"SELECT COUNT(*) FROM {tableInfo.FullTempOutputTableName} WHERE [{columnName}] = 1";
+        var q = $"SELECT COUNT(*) FROM {tableInfo.FullTempOutputTableName} WHERE [{columnName}] = '{columnValue}'";
         return q;
     }
 
@@ -278,7 +278,7 @@ public abstract class SqlQueryBuilder
 
         string isUpdateStatsValue = "";
         if (tableInfo.BulkConfig.CalculateStats)
-            isUpdateStatsValue = ",(CASE $action WHEN 'UPDATE' THEN 1 Else 0 END),(CASE $action WHEN 'DELETE' THEN 1 Else 0 END)";
+            isUpdateStatsValue = ",SUBSTRING($action, 1, 1)";
 
         if (tableInfo.BulkConfig.PreserveInsertOrder)
         {

@@ -77,6 +77,8 @@ public class TableInfo
 
     public string? TextValueFirstPK { get; set; }
 
+    public string SqlActionIUD => "SqlActionIUD";
+
     protected IEnumerable<object>? EntitiesSortedReference { get; set; } // Operation Merge writes In Output table first Existing that were Updated then for new that were Inserted so this makes sure order is same in list when need to set Output
 
     public StoreObjectIdentifier ObjectIdentifier { get; set; }
@@ -708,67 +710,55 @@ public class TableInfo
     }
 
     /// <summary>
-    /// Checks the number of updated entities
+    /// Checks the IUD Stats numbers of entities
     /// </summary>
     /// <param name="context"></param>
     /// <param name="cancellationToken"></param>
     /// <param name="isAsync"></param>
     /// <returns></returns>
-    protected async Task<int> GetNumberUpdatedAsync(DbContext context, bool isAsync, CancellationToken cancellationToken)
+    protected async Task<int[]> GetStatsNumbersAsync(DbContext context, bool isAsync, CancellationToken cancellationToken)
     {
-        var resultParameter = (IDbDataParameter?)Activator.CreateInstance(typeof(Microsoft.Data.SqlClient.SqlParameter));
-        if (resultParameter is null)
-        {
-            throw new ArgumentException("Unable to create an instance of IDbDataParameter");
-        }
-        resultParameter.ParameterName = "@result";
-        resultParameter.DbType = DbType.Int32;
-        resultParameter.Direction = ParameterDirection.Output;
-        string sqlQueryCount = SqlQueryBuilder.SelectCountIsUpdateFromOutputTable(this);
+        var sqlQueryCountBase = $"SELECT COUNT(0) FROM {FullTempOutputTableName} WHERE [{SqlActionIUD}] = ";
+        var actionCodes = new List<string> { "I", "U", "D" }; // IUD - Inserted, Updated, Deleted
 
-        var sqlSetResult = $"SET @result = ({sqlQueryCount});";
+        var sqlQueryCounts = new List<string>();
+        var sqlParamsNames = new List<string>();
+        var sqlParams = new List<IDbDataParameter>();
+        foreach (var actionCode in actionCodes)
+        {
+            sqlQueryCounts.Add(sqlQueryCountBase + $"'{actionCode}'");
+
+            var resultParameter = (IDbDataParameter?)Activator.CreateInstance(typeof(Microsoft.Data.SqlClient.SqlParameter));
+            if (resultParameter is null)
+            {
+                throw new ArgumentException("Unable to create an instance of IDbDataParameter");
+            }
+            resultParameter.ParameterName = "@result" + actionCode;
+            resultParameter.DbType = DbType.Int32;
+            resultParameter.Direction = ParameterDirection.Output;
+
+            sqlParams.Add(resultParameter);
+
+            sqlParamsNames.Add(resultParameter.ParameterName);
+        }
+
+        var sqlSetResult = $"SET {sqlParamsNames[0]} = ({sqlQueryCounts[0]}); " +
+                           $"SET {sqlParamsNames[1]} = ({sqlQueryCounts[1]}); " +
+                           $"SET {sqlParamsNames[2]} = ({sqlQueryCounts[2]});";
+
+        var sqlParamsArray = sqlParams.ToArray();
         if (isAsync)
         {
-            await context.Database.ExecuteSqlRawAsync(sqlSetResult, new object[] { resultParameter }, cancellationToken).ConfigureAwait(false);
+            await context.Database.ExecuteSqlRawAsync(sqlSetResult, sqlParamsArray, cancellationToken).ConfigureAwait(false);
         }
         else
         {
-            context.Database.ExecuteSqlRaw(sqlSetResult, resultParameter);
+            context.Database.ExecuteSqlRaw(sqlSetResult, sqlParamsArray);
         }
-        return (int)resultParameter.Value!;
+
+        var resultArray = new int[] { (int)sqlParams[0].Value!, (int)sqlParams[1].Value!, (int)sqlParams[2].Value! };
+        return resultArray;
     }
-
-    /// <summary>
-    /// Checks the number of deleted entities
-    /// </summary>
-    /// <param name="context"></param>
-    /// <param name="cancellationToken"></param>
-    /// <param name="isAsync"></param>
-    /// <returns></returns>
-    protected async Task<int> GetNumberDeletedAsync(DbContext context, bool isAsync, CancellationToken cancellationToken)
-    {
-        var resultParameter = (IDbDataParameter?)Activator.CreateInstance(typeof(Microsoft.Data.SqlClient.SqlParameter));
-        if (resultParameter is null)
-        {
-            throw new ArgumentException("Unable to create an instance of IDbDataParameter");
-        }
-        resultParameter.ParameterName = "@result";
-        resultParameter.DbType = DbType.Int32;
-        resultParameter.Direction = ParameterDirection.Output;
-        string sqlQueryCount = SqlQueryBuilder.SelectCountIsDeleteFromOutputTable(this);
-
-        var sqlSetResult = $"SET @result = ({sqlQueryCount});";
-        if (isAsync)
-        {
-            await context.Database.ExecuteSqlRawAsync(sqlSetResult, new object[] { resultParameter }, cancellationToken).ConfigureAwait(false);
-        }
-        else
-        {
-            context.Database.ExecuteSqlRaw(sqlSetResult, resultParameter);
-        }
-        return (int)resultParameter.Value!;
-    }
-
     #endregion
 
     /// <summary>
@@ -1134,23 +1124,20 @@ public class TableInfo
         }
         if (BulkConfig.CalculateStats)
         {
-            int numberUpdated;
-            int numberDeleted;
+            int[] statsNumbers;
             if (isAsync)
             {
-                numberUpdated = await GetNumberUpdatedAsync(context, isAsync: true, cancellationToken).ConfigureAwait(false);// TODO Join in one call
-                numberDeleted = await GetNumberDeletedAsync(context, isAsync: true, cancellationToken).ConfigureAwait(false);
+                statsNumbers = await GetStatsNumbersAsync(context, isAsync: true, cancellationToken).ConfigureAwait(false);
             }
             else
             {
-                numberUpdated = GetNumberUpdatedAsync(context, isAsync: false, cancellationToken).GetAwaiter().GetResult();
-                numberDeleted = GetNumberDeletedAsync(context, isAsync: false, cancellationToken).GetAwaiter().GetResult();
+                statsNumbers = GetStatsNumbersAsync(context, isAsync: false, cancellationToken).GetAwaiter().GetResult();
             }
             BulkConfig.StatsInfo = new StatsInfo
             {
-                StatsNumberUpdated = numberUpdated,
-                StatsNumberDeleted = numberDeleted,
-                StatsNumberInserted = totalNumber - numberUpdated - numberDeleted
+                StatsNumberInserted = statsNumbers[0],
+                StatsNumberUpdated = statsNumbers[1],
+                StatsNumberDeleted = statsNumbers[2],
             };
         }
     }
