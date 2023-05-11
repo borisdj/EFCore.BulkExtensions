@@ -770,10 +770,12 @@ public class EFCoreBulkTestAtypical
         Assert.Equal(2, context.Animals.ToList().Count);
     }
 
-    [Fact]
-    private void GeometryColumnTest()
+    [Theory]
+    [InlineData(SqlType.SqlServer)]
+    [InlineData(SqlType.PostgreSql)]
+    private void GeometryColumnTest(SqlType sqlType)
     {
-        ContextUtil.DatabaseType = SqlType.SqlServer;
+        ContextUtil.DatabaseType = sqlType;
         using var context = new TestContext(ContextUtil.GetOptions());
 
         context.BulkDelete(context.Addresses.ToList());
@@ -785,6 +787,9 @@ public class EFCoreBulkTestAtypical
                     LocationGeometry = new Point(52, 13),
                 }
             };
+
+        //context.Addresses.AddRange(entities);
+        //context.SaveChanges();
 
         context.BulkInsertOrUpdate(entities);
     }

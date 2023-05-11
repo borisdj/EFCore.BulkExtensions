@@ -1,6 +1,7 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using NpgsqlTypes;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -93,6 +94,9 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
 
                     if (columnType.StartsWith("timestamp(")) // timestamp(n) | len:12 // TEST: TimeStamp2PGTest
                         columnType = "timestamp" + columnType.Substring(12, columnType.Length - 12);
+
+                    if (columnType.StartsWith("geometry"))
+                        columnType = "geometry";
 
                     var convertibleDict = tableInfo.ConvertibleColumnConverterDict;
                     if (convertibleDict.TryGetValue(propertyColumnName, out var converter))

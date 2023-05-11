@@ -157,8 +157,12 @@ public class TestContext : DbContext
 
         if (Database.IsSqlite() || Database.IsNpgsql() || Database.IsMySql())
         {
-            modelBuilder.Entity<Address>().Ignore(p => p.LocationGeography);
-            modelBuilder.Entity<Address>().Ignore(p => p.LocationGeometry);
+            if (!Database.IsNpgsql())
+            {
+                modelBuilder.Entity<Address>().Ignore(p => p.LocationGeography);
+                modelBuilder.Entity<Address>().Ignore(p => p.LocationGeometry);
+            }
+
             modelBuilder.Entity<Category>().Ignore(p => p.HierarchyDescription);
 
             modelBuilder.Entity<Event>().Ignore(p => p.TimeCreated);
@@ -173,6 +177,8 @@ public class TestContext : DbContext
 
         if (Database.IsNpgsql())
         {
+            modelBuilder.Entity<Address>().Property(p => p.LocationGeometry).HasColumnType("geometry (point, 2180)").HasSrid(2180);
+
             modelBuilder.Entity<FilePG>().Property(p => p.Formats).HasColumnType("text[]");
 
             modelBuilder.Entity<Event>().Property(p => p.TimeCreated).HasColumnType("timestamp"); // with annotation defined as "datetime2(3)" so here corrected for PG ("timestamp" in short for "timestamp without time zone")
@@ -257,10 +263,11 @@ public static class ContextUtil
             //var connectionString = $@"Data Source=(localdb)\MSSQLLocalDB;Database={databaseName};Trusted_Connection=True;MultipleActiveResultSets=True";
 
             //optionsBuilder.UseSqlServer(connectionString); // Can NOT Test with UseInMemoryDb (Exception: Relational-specific methods can only be used when the context is using a relational)
-            optionsBuilder.UseSqlServer(connectionString, opt => opt.UseNetTopologySuite()); // NetTopologySuite for Geometry / Geometry types
-            optionsBuilder.UseSqlServer(connectionString, conf =>
+            //optionsBuilder.UseSqlServer(connectionString, opt => opt.UseNetTopologySuite()); // NetTopologySuite for Geometry / Geometry types
+            optionsBuilder.UseSqlServer(connectionString, opt =>
             {
-                conf.UseHierarchyId();
+                opt.UseNetTopologySuite();
+                opt.UseHierarchyId();
             });
         }
         else if (dbServerType == SqlType.Sqlite)
@@ -276,7 +283,7 @@ public static class ContextUtil
         else if (DatabaseType == SqlType.PostgreSql)
         {
             string connectionString = GetPostgreSqlConnectionString(databaseName);
-            optionsBuilder.UseNpgsql(connectionString);
+            optionsBuilder.UseNpgsql(connectionString, opt => opt.UseNetTopologySuite());
         }
         else if (DatabaseType == SqlType.MySql)
         {
