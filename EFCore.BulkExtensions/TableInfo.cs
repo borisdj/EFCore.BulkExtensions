@@ -1138,7 +1138,7 @@ public class TableInfo
             int numberDeleted;
             if (isAsync)
             {
-                numberUpdated = await GetNumberUpdatedAsync(context, isAsync: true, cancellationToken).ConfigureAwait(false);
+                numberUpdated = await GetNumberUpdatedAsync(context, isAsync: true, cancellationToken).ConfigureAwait(false);// TODO Join in one call
                 numberDeleted = await GetNumberDeletedAsync(context, isAsync: true, cancellationToken).ConfigureAwait(false);
             }
             else
