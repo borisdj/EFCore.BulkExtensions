@@ -788,9 +788,6 @@ public class EFCoreBulkTestAtypical
                 }
             };
 
-        //context.Addresses.AddRange(entities);
-        //context.SaveChanges();
-
         context.BulkInsertOrUpdate(entities);
     }
 
@@ -826,10 +823,7 @@ public class EFCoreBulkTestAtypical
             Assert.Equal(point.X, address.LocationGeometry.Coordinate.X);
             Assert.Equal(point.Y, address.LocationGeometry.Coordinate.Y);
         }
-
     }
-
-
 
     [Fact]
     private void HierarchyIdColumnTest()

@@ -168,7 +168,8 @@ public class EFCoreBulkTest
         var config = new BulkConfig
         {
             UpdateByProperties = new List<string> { nameof(Item.Name) },
-            NotifyAfter = 1
+            NotifyAfter = 1,
+            CalculateStats = true,
         };
         context.BulkInsertOrUpdate(entities2, config, (a) => WriteProgress(a));
         

@@ -75,9 +75,12 @@ public class TestContext : DbContext
 
     public DbSet<TimeRecord> TimeRecords { get; set; } = null!;
 
+    public static bool UseTopologyPostgres { get; set; } = false;
+
     public TestContext(DbContextOptions options) : base(options)
     {
         Database.EnsureCreated();
+        // if for Postgres on test run get Npgsql Ex:[could not open .../postgis.control] then either install the plugin it or set UseTopologyPostgres to False;
 
         if (Database.IsSqlServer())
         {
@@ -138,7 +141,7 @@ public class TestContext : DbContext
 
             modelBuilder.Entity<UdttIntInt>(entity => { entity.HasNoKey(); });
 
-            modelBuilder.Entity<Address>().Property(p => p.LocationGeometry).HasColumnType("geometry");
+            //modelBuilder.Entity<Address>().Property(p => p.LocationGeometry).HasColumnType("geometry");
             modelBuilder.Entity<Category>().Property(p => p.HierarchyDescription).HasColumnType("hierarchyid");
 
             modelBuilder.Entity<Division>().Property(p => p.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
@@ -157,12 +160,6 @@ public class TestContext : DbContext
 
         if (Database.IsSqlite() || Database.IsNpgsql() || Database.IsMySql())
         {
-            if (!Database.IsNpgsql())
-            {
-                modelBuilder.Entity<Address>().Ignore(p => p.LocationGeography);
-                modelBuilder.Entity<Address>().Ignore(p => p.LocationGeometry);
-            }
-
             modelBuilder.Entity<Category>().Ignore(p => p.HierarchyDescription);
 
             modelBuilder.Entity<Event>().Ignore(p => p.TimeCreated);
@@ -177,7 +174,15 @@ public class TestContext : DbContext
 
         if (Database.IsNpgsql())
         {
-            modelBuilder.Entity<Address>().Property(p => p.LocationGeometry).HasColumnType("geometry (point, 2180)").HasSrid(2180);
+            if (UseTopologyPostgres)
+            {
+                modelBuilder.Entity<Address>().Property(p => p.LocationGeometry).HasColumnType("geometry (point, 2180)").HasSrid(2180);
+            }
+            else
+            {
+                modelBuilder.Entity<Address>().Ignore(p => p.LocationGeography);
+                modelBuilder.Entity<Address>().Ignore(p => p.LocationGeometry);
+            }
 
             modelBuilder.Entity<FilePG>().Property(p => p.Formats).HasColumnType("text[]");
 
@@ -283,7 +288,11 @@ public static class ContextUtil
         else if (DatabaseType == SqlType.PostgreSql)
         {
             string connectionString = GetPostgreSqlConnectionString(databaseName);
-            optionsBuilder.UseNpgsql(connectionString, opt => opt.UseNetTopologySuite());
+
+            if(TestContext.UseTopologyPostgres)
+                optionsBuilder.UseNpgsql(connectionString, opt => opt.UseNetTopologySuite());
+            else
+                optionsBuilder.UseNpgsql(connectionString);
         }
         else if (DatabaseType == SqlType.MySql)
         {
