@@ -10,6 +10,20 @@ namespace EFCore.BulkExtensions.SqlAdapters.PostgreSql;
 /// </summary>
 public class PostgreSqlQueryBuilder : QueryBuilderExtensions
 {
+
+    /// <summary>
+    /// Generates SQL query to create Output table for Stats
+    /// </summary>
+    /// <param name="newTableName"></param>
+    /// <param name="useTempDb"></param>
+    public static string CreateOutputStatsTable(string newTableName, bool useTempDb)
+    {
+        string keywordTEMP = useTempDb ? "TEMP " : ""; // "TEMP " or "TEMPORARY "
+        var q = @$"CREATE {keywordTEMP}TABLE IF NOT EXISTS {newTableName} (""xmaxNumber"" xid)"; // col name can't be just 'xmax' - conflicts with system column
+        q = q.Replace("[", @"""").Replace("]", @"""");
+        return q;
+    }
+
     /// <summary>
     /// Generates SQL query to create table copy
     /// </summary>
@@ -139,10 +153,14 @@ public class PostgreSqlQueryBuilder : QueryBuilderExtensions
             var allColumnsList = tableInfo.OutputPropertyColumnNamesDict.Values.ToList();
             string commaSeparatedColumnsNames = SqlQueryBuilder.GetCommaSeparatedColumns(allColumnsList, tableInfo.FullTableName).Replace("[", @"""").Replace("]", @"""");
             q += $" RETURNING {commaSeparatedColumnsNames}";
+
+            if (tableInfo.BulkConfig.CalculateStats)
+            {
+                q += ", xmax";
+            }
         }
 
         q = q.Replace("[", @"""").Replace("]", @"""");
-        q += ";";
 
         Dictionary<string, string>? sourceDestinationMappings = tableInfo.BulkConfig.CustomSourceDestinationMappingColumns;
         if (tableInfo.BulkConfig.CustomSourceTableName != null && sourceDestinationMappings != null && sourceDestinationMappings.Count > 0)
@@ -167,6 +185,16 @@ public class PostgreSqlQueryBuilder : QueryBuilderExtensions
                 q = q.Replace(qSegment, qSegmentUpdated);
             }
         }
+
+        if (tableInfo.BulkConfig.CalculateStats)
+        {
+            q = $"WITH upserted AS ({q}), " +
+                $"NEW AS ( INSERT INTO {tableInfo.FullTempOutputTableName} SELECT xmax FROM upserted ) " +
+                $"SELECT * FROM upserted";
+        }
+
+        q = q.Replace("[", @"""").Replace("]", @"""");
+        q += ";";
 
         return q;
     }

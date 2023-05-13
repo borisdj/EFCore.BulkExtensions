@@ -169,6 +169,7 @@ public class EFCoreBulkTest
         {
             UpdateByProperties = new List<string> { nameof(Item.Name) },
             NotifyAfter = 1,
+            SetOutputIdentity = true,
             CalculateStats = true,
         };
         context.BulkInsertOrUpdate(entities2, config, (a) => WriteProgress(a));

@@ -216,6 +216,7 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
         bool isAsync, CancellationToken cancellationToken) where T : class
     {
         bool tempTableCreated = false;
+        bool outputTableCreated = false;
         bool uniqueConstrainCreated = false;
         bool connectionOpenedInternally = false;
         try
@@ -234,6 +235,20 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
                     context.Database.ExecuteSqlRaw(sqlCreateTableCopy);
                 }
                 tempTableCreated = true;
+            }
+
+            if (tableInfo.BulkConfig.CalculateStats)
+            {
+                var sqlCreateOutputTableCopy = PostgreSqlQueryBuilder.CreateOutputStatsTable(tableInfo.FullTempOutputTableName, tableInfo.BulkConfig.UseTempDB);
+                if (isAsync)
+                {
+                    await context.Database.ExecuteSqlRawAsync(sqlCreateOutputTableCopy, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    context.Database.ExecuteSqlRaw(sqlCreateOutputTableCopy);
+                }
+                outputTableCreated = true;
             }
 
             bool hasUniqueConstrain = false;
@@ -295,6 +310,24 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
                 List<T> outputEntities = tableInfo.LoadOutputEntities<T>(context, type, sqlMergeTableOutput); // postgresql '42601: syntax error at or near ";"
                 tableInfo.UpdateReadEntities(entities, outputEntities, context);
             }
+
+            if (tableInfo.BulkConfig.CalculateStats)
+            {
+                int numberInserted;
+                if (isAsync)
+                {
+                    numberInserted = await tableInfo.GetStatsNumbersPGAsync(context, isAsync: true, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    numberInserted = tableInfo.GetStatsNumbersPGAsync(context, isAsync: false, cancellationToken).GetAwaiter().GetResult();
+                }
+                tableInfo.BulkConfig.StatsInfo = new StatsInfo
+                {
+                    StatsNumberInserted = numberInserted,
+                    StatsNumberUpdated = entities.Count() - numberInserted,
+                };
+            }
         }
         finally
         {
@@ -315,6 +348,19 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
 
                 if (!tableInfo.BulkConfig.UseTempDB)
                 {
+                    if (outputTableCreated)
+                    {
+                        var sqlDropOutputTable = PostgreSqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName);
+                        if (isAsync)
+                        {
+                            await context.Database.ExecuteSqlRawAsync(sqlDropOutputTable, cancellationToken).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            context.Database.ExecuteSqlRaw(sqlDropOutputTable);
+                        }
+                    }
+
                     if (tempTableCreated)
                     {
                         var sqlDropTable = PostgreSqlQueryBuilder.DropTable(tableInfo.FullTempTableName);
