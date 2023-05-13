@@ -1,13 +1,18 @@
 using EFCore.BulkExtensions.SqlAdapters;
+using EFCore.BulkExtensions.SqlAdapters.Sqlite;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Npgsql;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Data;
+using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -718,7 +723,7 @@ public class TableInfo
     /// <returns></returns>
     protected async Task<int[]> GetStatsNumbersAsync(DbContext context, bool isAsync, CancellationToken cancellationToken)
     {
-        var sqlQueryCountBase = $"SELECT COUNT(0) FROM {FullTempOutputTableName} WHERE [{SqlActionIUD}] = ";
+        var sqlQueryCountBase = $"SELECT COUNT(*) FROM {FullTempOutputTableName} WHERE [{SqlActionIUD}] = ";
         var actionCodes = new List<string> { "I", "U", "D" }; // IUD - Inserted, Updated, Deleted
 
         var sqlQueryCounts = new List<string>();
@@ -759,16 +764,70 @@ public class TableInfo
         var resultArray = new int[] { (int)sqlParams[0].Value!, (int)sqlParams[1].Value!, (int)sqlParams[2].Value! };
         return resultArray;
     }
-    #endregion
 
     /// <summary>
-    /// Returns the unique property values
+    /// Gets the Stats numbers of entities
     /// </summary>
-    /// <param name="entity"></param>
-    /// <param name="propertiesNames"></param>
-    /// <param name="fastPropertyDict"></param>
+    /// <param name="context"></param>
+    /// <param name="cancellationToken"></param>
+    /// <param name="isAsync"></param>
     /// <returns></returns>
-    public static string GetUniquePropertyValues(object entity, List<string> propertiesNames, Dictionary<string, FastProperty> fastPropertyDict)
+    public async Task<int> GetStatsNumbersPGAsync(DbContext context, bool isAsync, CancellationToken cancellationToken)
+    {
+        var sqlQuery = @$"SELECT COUNT(*) FROM {FullTempOutputTableName} WHERE ""xmaxNumber"" = 0;";
+        sqlQuery = sqlQuery.Replace("[", @"""").Replace("]", @"""");
+
+        var connection = (NpgsqlConnection)context.Database.GetDbConnection();
+        bool doExplicitCommit = false;
+        long counter = 0;
+
+        try
+        {
+            var command = connection.CreateCommand();
+
+            if (context.Database.CurrentTransaction == null)
+            {
+                doExplicitCommit = true;
+            }
+
+            var dbTransaction = doExplicitCommit ? connection.BeginTransaction()
+                                                 : context.Database.CurrentTransaction?.GetUnderlyingTransaction(BulkConfig);
+            var transaction = (NpgsqlTransaction?)dbTransaction;
+
+            command.CommandText = sqlQuery;
+
+            object? scalar = isAsync ? await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false)
+                                           : command.ExecuteScalar();
+            counter = (long?)scalar ?? 0;
+
+            if (doExplicitCommit)
+            {
+                transaction?.Commit();
+            }
+        }
+        finally
+        {
+            if (isAsync)
+            {
+                await context.Database.CloseConnectionAsync().ConfigureAwait(false);
+            }
+            else
+            {
+                context.Database.CloseConnection();
+            }
+        }
+        return (int)counter;
+    }
+    #endregion
+
+        /// <summary>
+        /// Returns the unique property values
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="propertiesNames"></param>
+        /// <param name="fastPropertyDict"></param>
+        /// <returns></returns>
+        public static string GetUniquePropertyValues(object entity, List<string> propertiesNames, Dictionary<string, FastProperty> fastPropertyDict)
     {
         StringBuilder uniqueBuilder = new(1024);
         string delimiter = "_"; // TODO: Consider making it Config-urable
