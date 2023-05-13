@@ -258,17 +258,47 @@ public class PostgreSqlQueryBuilder : QueryBuilderExtensions
     public static string CountUniqueConstrain(TableInfo tableInfo)
     {
         var primaryKeysColumns = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList();
+        string q;
 
-        var q = $"SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc ";
-        foreach (var (pkColumn, index) in primaryKeysColumns.Select((value, i) => (value, i)))
+        bool usePG_Catalog = true; // PG_Catalog used instead of Information_Schema
+        if (usePG_Catalog)
         {
-            q += $"INNER JOIN INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE cu{index} " +
-                 $"ON cu{index}.CONSTRAINT_NAME = tc.CONSTRAINT_NAME AND cu{index}.COLUMN_NAME = '{pkColumn}' ";
+            q = @"SELECT COUNT(*)
+                  FROM pg_catalog.pg_namespace nr,
+                      pg_catalog.pg_class r,
+                      pg_catalog.pg_attribute a,
+                      pg_catalog.pg_namespace nc,
+                      pg_catalog.pg_constraint c
+                  WHERE nr.oid = r.relnamespace
+                  AND r.oid = a.attrelid
+                  AND nc.oid = c.connamespace
+                  AND r.oid =
+                      CASE c.contype
+                          WHEN 'f'::""char"" THEN c.confrelid
+                      ELSE c.conrelid
+                          END
+                      AND (a.attnum = ANY (
+                          CASE c.contype
+                      WHEN 'f'::""char"" THEN c.confkey
+                          ELSE c.conkey
+                          END))
+                      AND NOT a.attisdropped
+                      AND (c.contype = ANY (ARRAY ['p'::""char"", 'u'::""char""]))
+                      AND (r.relkind = ANY (ARRAY ['r'::""char"", 'p'::""char""]))" +
+                $" AND r.relname = '{tableInfo.TableName}' AND a.attname IN('{string.Join("','", primaryKeysColumns)}')";
         }
+        else // Deprecated - Information_Schema no longer used (is available only in default database)
+        {
+            q = $"SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc ";
+            foreach (var (pkColumn, index) in primaryKeysColumns.Select((value, i) => (value, i)))
+            {
+                q += $"INNER JOIN INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE cu{index} " +
+                     $"ON cu{index}.CONSTRAINT_NAME = tc.CONSTRAINT_NAME AND cu{index}.COLUMN_NAME = '{pkColumn}' ";
+            }
 
-        q += $"WHERE (tc.CONSTRAINT_TYPE = 'UNIQUE' OR tc.CONSTRAINT_TYPE = 'PRIMARY KEY') " +
-             $"AND tc.TABLE_NAME = '{tableInfo.TableName}' AND tc.TABLE_SCHEMA = '{tableInfo.Schema}'";
-
+            q += $"WHERE (tc.CONSTRAINT_TYPE = 'UNIQUE' OR tc.CONSTRAINT_TYPE = 'PRIMARY KEY') " +
+                 $"AND tc.TABLE_NAME = '{tableInfo.TableName}' AND tc.TABLE_SCHEMA = '{tableInfo.Schema}'";
+        }
         return q;
     }
 
