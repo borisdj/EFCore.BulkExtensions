@@ -1,5 +1,6 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Npgsql;
 using NpgsqlTypes;
 using System;
@@ -316,11 +317,11 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
                 int numberInserted;
                 if (isAsync)
                 {
-                    numberInserted = await tableInfo.GetStatsNumbersPGAsync(context, isAsync: true, cancellationToken).ConfigureAwait(false);
+                    numberInserted = await GetStatsNumbersPGAsync(context, tableInfo, isAsync: true, cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
-                    numberInserted = tableInfo.GetStatsNumbersPGAsync(context, isAsync: false, cancellationToken).GetAwaiter().GetResult();
+                    numberInserted = GetStatsNumbersPGAsync(context, tableInfo, isAsync: false, cancellationToken).GetAwaiter().GetResult();
                 }
                 tableInfo.BulkConfig.StatsInfo = new StatsInfo
                 {
@@ -478,6 +479,63 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
             }
         }
         return (hasUniqueConstrain, connectionOpenedInternally);
+    }
+    #endregion
+
+    #region SqlCommands
+    /// <summary>
+    /// Gets the Stats numbers of entities
+    /// </summary>
+    /// <param name="context"></param>
+    /// <param name="tableInfo"></param>
+    /// <param name="cancellationToken"></param>
+    /// <param name="isAsync"></param>
+    /// <returns></returns>
+    public static async Task<int> GetStatsNumbersPGAsync(DbContext context, TableInfo tableInfo, bool isAsync, CancellationToken cancellationToken)
+    {
+        var sqlQuery = @$"SELECT COUNT(*) FROM {tableInfo.FullTempOutputTableName} WHERE ""xmaxNumber"" = 0;";
+        sqlQuery = sqlQuery.Replace("[", @"""").Replace("]", @"""");
+
+        var connection = (NpgsqlConnection)context.Database.GetDbConnection();
+        bool doExplicitCommit = false;
+        long counter = 0;
+
+        try
+        {
+            var command = connection.CreateCommand();
+
+            if (context.Database.CurrentTransaction == null)
+            {
+                doExplicitCommit = true;
+            }
+
+            var dbTransaction = doExplicitCommit ? connection.BeginTransaction()
+                                                 : context.Database.CurrentTransaction?.GetUnderlyingTransaction(tableInfo.BulkConfig);
+            var transaction = (NpgsqlTransaction?)dbTransaction;
+
+            command.CommandText = sqlQuery;
+
+            object? scalar = isAsync ? await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false)
+                                           : command.ExecuteScalar();
+            counter = (long?)scalar ?? 0;
+
+            if (doExplicitCommit)
+            {
+                transaction?.Commit();
+            }
+        }
+        finally
+        {
+            if (isAsync)
+            {
+                await context.Database.CloseConnectionAsync().ConfigureAwait(false);
+            }
+            else
+            {
+                context.Database.CloseConnection();
+            }
+        }
+        return (int)counter;
     }
     #endregion
 }

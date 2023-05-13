@@ -1,18 +1,13 @@
 using EFCore.BulkExtensions.SqlAdapters;
-using EFCore.BulkExtensions.SqlAdapters.Sqlite;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Npgsql;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Data;
-using System.Diagnostics;
-using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -763,60 +758,6 @@ public class TableInfo
 
         var resultArray = new int[] { (int)sqlParams[0].Value!, (int)sqlParams[1].Value!, (int)sqlParams[2].Value! };
         return resultArray;
-    }
-
-    /// <summary>
-    /// Gets the Stats numbers of entities
-    /// </summary>
-    /// <param name="context"></param>
-    /// <param name="cancellationToken"></param>
-    /// <param name="isAsync"></param>
-    /// <returns></returns>
-    public async Task<int> GetStatsNumbersPGAsync(DbContext context, bool isAsync, CancellationToken cancellationToken)
-    {
-        var sqlQuery = @$"SELECT COUNT(*) FROM {FullTempOutputTableName} WHERE ""xmaxNumber"" = 0;";
-        sqlQuery = sqlQuery.Replace("[", @"""").Replace("]", @"""");
-
-        var connection = (NpgsqlConnection)context.Database.GetDbConnection();
-        bool doExplicitCommit = false;
-        long counter = 0;
-
-        try
-        {
-            var command = connection.CreateCommand();
-
-            if (context.Database.CurrentTransaction == null)
-            {
-                doExplicitCommit = true;
-            }
-
-            var dbTransaction = doExplicitCommit ? connection.BeginTransaction()
-                                                 : context.Database.CurrentTransaction?.GetUnderlyingTransaction(BulkConfig);
-            var transaction = (NpgsqlTransaction?)dbTransaction;
-
-            command.CommandText = sqlQuery;
-
-            object? scalar = isAsync ? await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false)
-                                           : command.ExecuteScalar();
-            counter = (long?)scalar ?? 0;
-
-            if (doExplicitCommit)
-            {
-                transaction?.Commit();
-            }
-        }
-        finally
-        {
-            if (isAsync)
-            {
-                await context.Database.CloseConnectionAsync().ConfigureAwait(false);
-            }
-            else
-            {
-                context.Database.CloseConnection();
-            }
-        }
-        return (int)counter;
     }
     #endregion
 
