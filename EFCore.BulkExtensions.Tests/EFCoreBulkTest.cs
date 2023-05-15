@@ -40,11 +40,10 @@ public class EFCoreBulkTest
             });
         }
 
-        context.Walls.AddRange(walls);
-        context.SaveChanges();
-
+        //context.Walls.AddRange(walls);
+        //context.SaveChanges();
         // INSERT
-        //context.BulkInsert(walls);
+        context.BulkInsert(walls);
 
         var addedWall = context.Walls.AsNoTracking().First(x => x.Id == walls[0].Id);
          

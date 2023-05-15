@@ -172,6 +172,12 @@ public class TestContext : DbContext
             modelBuilder.Entity<ItemHistory>().ToTable(nameof(ItemHistory));
         }
 
+        if (Database.IsMySql())
+        {
+            modelBuilder.Entity<Address>().Ignore(p => p.LocationGeography);
+            modelBuilder.Entity<Address>().Ignore(p => p.LocationGeometry);
+        }
+
         if (Database.IsNpgsql())
         {
             if (UseTopologyPostgres)
