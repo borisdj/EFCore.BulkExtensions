@@ -311,6 +311,9 @@ public class EFCoreBulkTest
         Assert.Equal("info 1", context.Items.Where(a => a.Name == "Name 1").AsNoTracking().FirstOrDefault()?.Description);
         Assert.Equal("info 2", context.Items.Where(a => a.Name == "Name 2").AsNoTracking().FirstOrDefault()?.Description);
 
+        var query = context.Items.AsQueryable().Where(a => a.ItemId <= 1);
+        query.BatchUpdate(new Item { Description = "UPDATE N", Price = 1.5m }); //, updateColumns);
+
         // INSERT Or UPDATE
         //mysql automatically detects unique or primary key
         context.BulkInsertOrUpdate(entities2, new BulkConfig { UpdateByProperties  = new List<string> { nameof(Item.ItemId) } });

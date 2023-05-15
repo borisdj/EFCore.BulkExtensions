@@ -167,6 +167,27 @@ public static class BatchUtil
             }
             sqlParameters = npgsqlParameters;
         }
+        else if (databaseType == SqlType.MySql)
+        {
+            resultQuery = SqlAdaptersMapping.DbServer!.QueryBuilder.RestructureForBatch(resultQuery);
+
+            var mysqlParameters = new List<object>();
+            foreach (var param in sqlParameters)
+            {
+                dynamic mysqlParam = SqlAdaptersMapping.DbServer!.QueryBuilder.CreateParameter((SqlParameter)param);
+
+                string paramName = mysqlParam.ParameterName.Replace("@", "");
+                var propertyType = type.GetProperties().SingleOrDefault(a => a.Name == paramName)?.PropertyType;
+                if (propertyType == typeof(System.Text.Json.JsonElement) || propertyType == typeof(System.Text.Json.JsonElement?)) // for JsonDocument works without fix
+                {
+                    var dbtypeJsonb = SqlAdaptersMapping.DbServer!.QueryBuilder.Dbtype();
+                    SqlAdaptersMapping.DbServer!.QueryBuilder.SetDbTypeParam(mysqlParam, dbtypeJsonb);
+                }
+
+                mysqlParameters.Add(mysqlParam);
+            }
+            sqlParameters = mysqlParameters;
+        }
 
         return (resultQuery, sqlParameters);
     }

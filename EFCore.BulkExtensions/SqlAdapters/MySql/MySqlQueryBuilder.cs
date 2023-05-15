@@ -258,6 +258,25 @@ public class MySqlQueryBuilder : QueryBuilderExtensions
     /// <param name="isDelete"></param>
     public override string RestructureForBatch(string sql, bool isDelete = false)
     {
+        sql = sql.Replace("`", @"""");
+        string firstLetterOfTable = sql.Substring(7, 1);
+
+        sql = sql.Replace(@"""i""", "i");
+        if (isDelete)
+        {
+            sql = sql.Replace($"DELETE {firstLetterOfTable}", "DELETE ");
+        }
+        else
+        {
+            string tableAS = sql.Substring(sql.IndexOf("FROM") + 4, sql.IndexOf($"AS {firstLetterOfTable}") - sql.IndexOf("FROM"));
+
+            sql = sql.Replace($"AS {firstLetterOfTable}", "");
+            string fromClause = sql.Substring(sql.IndexOf("FROM"), sql.IndexOf("WHERE") - sql.IndexOf("FROM"));
+            sql = sql.Replace(fromClause, "");
+
+            sql = sql.Replace($"UPDATE {firstLetterOfTable}", "UPDATE" + tableAS);
+        }
+
         return sql;
     }
 
@@ -268,7 +287,7 @@ public class MySqlQueryBuilder : QueryBuilderExtensions
     /// <returns></returns>
     public override object CreateParameter(SqlParameter sqlParameter)
     {
-        return sqlParameter;
+        return new MySqlConnector.MySqlParameter(sqlParameter.ParameterName, sqlParameter.Value);
     }
 
     /// <inheritdoc/>
