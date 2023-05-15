@@ -52,7 +52,7 @@ public static class SqlAdaptersMapping
 
             var ignoreCase = StringComparison.InvariantCultureIgnoreCase;
 
-            SqlType databaseType = SqlType.SqlServer;                                  // ProviderName: Microsoft.EntityFrameworkCore.SqlServer
+            SqlType databaseType = SqlType.SqlServer;                                       // ProviderName: Microsoft.EntityFrameworkCore.SqlServer
 
             if (ProviderName?.EndsWith(SqlType.PostgreSql.ToString(), ignoreCase) ?? false) // ProviderName: Npgsql.EntityFrameworkCore.PostgreSQL
             {

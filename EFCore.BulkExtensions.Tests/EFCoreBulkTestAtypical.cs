@@ -776,6 +776,7 @@ public class EFCoreBulkTestAtypical
     [Theory]
     [InlineData(SqlType.SqlServer)]
     [InlineData(SqlType.PostgreSql)]
+    //[InlineData(SqlType.Sqlite)]
     private void GeometryColumnTest(SqlType sqlType)
     {
         ContextUtil.DatabaseType = sqlType;

@@ -284,7 +284,10 @@ public static class ContextUtil
         else if (dbServerType == SqlType.Sqlite)
         {
             string connectionString = GetSqliteConnectionString(databaseName);
-            optionsBuilder.UseSqlite(connectionString);
+            optionsBuilder.UseSqlite(connectionString, opt =>
+            {
+                opt.UseNetTopologySuite();
+            });
             SQLitePCL.Batteries.Init();
 
             // ALTERNATIVELY:

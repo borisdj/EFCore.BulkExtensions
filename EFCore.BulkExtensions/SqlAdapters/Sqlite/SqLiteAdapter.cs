@@ -154,7 +154,7 @@ public class SqliteAdapter : ISqlOperationsAdapter
                 command.CommandText = SqliteQueryBuilder.SelectLastInsertRowId();
 
                 object? lastRowIdScalar = isAsync ? await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false)
-                                                       : command.ExecuteScalar();
+                                                        : command.ExecuteScalar();
 
                 SetIdentityForOutput(entities, tableInfo, lastRowIdScalar);
             }
