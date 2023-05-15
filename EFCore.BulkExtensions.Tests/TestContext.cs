@@ -602,7 +602,7 @@ public class Letter
 // For testing Temporal tables (configured via FluentAPI )
 public class Storage
 {
-    public Guid StorageId { get; set; }
+    public int StorageId { get; set; }
 
     public string Data { get; set; } = null!;
 }

@@ -61,11 +61,14 @@ public class EFCoreBulkTestAtypical
 
         var entities = new List<Storage>()
         {
-            new Storage { StorageId = Guid.NewGuid(), Data = "Info " + 1 },
-            new Storage { StorageId = Guid.NewGuid(), Data = "Info " + 2 },
-            new Storage { StorageId = Guid.NewGuid(), Data = "Info " + 3 },
+            new Storage { Data = "Info " + 1 },
+            new Storage { Data = "Info " + 2 },
+            new Storage { Data = "Info " + 3 },
         };
-        context.BulkInsert(entities);
+        context.BulkInsert(entities, new BulkConfig
+        {
+            SetOutputIdentity = true,
+        });
 
         var countDb = context.Storages.Count();
         var countEntities = entities.Count;

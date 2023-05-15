@@ -356,6 +356,11 @@ public class TableInfo
         // TimeStamp prop. is last column in OutputTable since it is added later with varbinary(8) type in which Output can be inserted
         var outputProperties = allPropertiesExceptTimeStamp.Where(a => a.GetColumnName(ObjectIdentifier) != null).Concat(timeStampProperties);
         OutputPropertyColumnNamesDict = outputProperties.ToDictionary(a => a.Name, b => b.GetColumnName(ObjectIdentifier)?.Replace("]", "]]") ?? string.Empty); // square brackets have to be escaped
+        if (HasTemporalColumns)
+        {
+            foreach(var temporalColumns in BulkConfig.TemporalColumns)
+            OutputPropertyColumnNamesDict.Add(temporalColumns, temporalColumns);
+        }
 
         bool AreSpecifiedPropertiesToInclude = BulkConfig.PropertiesToInclude?.Count > 0;
         bool AreSpecifiedPropertiesToExclude = BulkConfig.PropertiesToExclude?.Count > 0;
@@ -1062,9 +1067,12 @@ public class TableInfo
                     FastPropertyDict[timeStampPropertyName].Set(entities.ElementAt(i)!, timeStampPropertyValue);
                 }
 
-                var propertiesToLoad = tableInfo.OutputPropertyColumnNamesDict.Keys.Where(a => a != identifierPropertyName && a != TimeStampColumnName && // already loaded in segmet above
-                                                                                               (tableInfo.DefaultValueProperties.Contains(a) ||           // add Computed and DefaultValues
-                                                                                                !tableInfo.PropertyColumnNamesDict.ContainsKey(a)));      // remove others since already have same have (could be omited)
+                var outputProperties = tableInfo.OutputPropertyColumnNamesDict.Keys;
+                var propertiesToLoad = outputProperties.Where(a => a != identifierPropertyName &&
+                                                                   a != TimeStampColumnName &&                          // already loaded in segmet above
+                                                                   !tableInfo.BulkConfig.TemporalColumns.Contains(a) && // temporal columns not accessible as direct property
+                                                                   (tableInfo.DefaultValueProperties.Contains(a) ||     // add Computed and DefaultValues
+                                                                   !tableInfo.PropertyColumnNamesDict.ContainsKey(a))); // remove others since already have same have (could be omited)
                 foreach (var outputPropertyName in propertiesToLoad)
                 {
                     var propertyValue = FastPropertyDict[outputPropertyName].Get(entitiesWithOutputIdentity.ElementAt(i));
