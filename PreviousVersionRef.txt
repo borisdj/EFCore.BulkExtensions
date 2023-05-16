@@ -31,6 +31,7 @@
     <PackageReference Include="Microsoft.Data.SqlClient" Version="2.1.5" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="6.0.16" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="6.0.16" />
+	<PackageReference Include="NetTopologySuite.IO.SqlServerBytes" Version="2.1.0" />
   </ItemGroup>
   
   <ItemGroup>

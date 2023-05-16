@@ -776,7 +776,7 @@ public class EFCoreBulkTestAtypical
     [Theory]
     [InlineData(SqlType.SqlServer)]
     [InlineData(SqlType.PostgreSql)]
-    //[InlineData(SqlType.Sqlite)]
+    [InlineData(SqlType.Sqlite)]
     private void GeometryColumnTest(SqlType sqlType)
     {
         ContextUtil.DatabaseType = sqlType;
@@ -792,7 +792,7 @@ public class EFCoreBulkTestAtypical
                 }
             };
 
-        context.BulkInsertOrUpdate(entities);
+        context.BulkInsert(entities);
     }
 
     [Fact]

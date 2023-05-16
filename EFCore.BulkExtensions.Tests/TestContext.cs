@@ -550,7 +550,6 @@ public class Address
 {
     public int AddressId { get; set; }
     public string Street { get; set; } = null!;
-
     public Geometry LocationGeography { get; set; } = null!;
     public Geometry LocationGeometry { get; set; } = null!;
 }

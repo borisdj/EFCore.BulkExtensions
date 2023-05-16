@@ -1,8 +1,11 @@
 ﻿using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using NetTopologySuite.Geometries;
+using NetTopologySuite.IO;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -480,7 +483,18 @@ public class SqliteAdapter : ISqlOperationsAdapter
                 value = tableInfo.ConvertibleColumnConverterDict[propertyColumn.Value].ConvertToProvider.Invoke(value);
             }
 
-            command.Parameters[$"@{parameterName}"].Value = value ?? DBNull.Value;
+            var param = command.Parameters[$"@{parameterName}"];
+
+            string columnName = propertyColumnsDict[parameterName];
+            string typeName = tableInfo.ColumnNamesTypesDict[columnName];
+            if (value != null && typeName == "GEOMETRY") // spatial types
+            {
+                param.Value = new GaiaGeoWriter().Write((Geometry)value);
+            }
+            else
+            {
+                param.Value = value ?? DBNull.Value;
+            }
         }
     }
     
