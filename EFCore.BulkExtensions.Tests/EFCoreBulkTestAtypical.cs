@@ -1165,7 +1165,38 @@ public class EFCoreBulkTestAtypical
         Assert.Equal("Desc1", entities[0].Description);
         Assert.Equal("Desc2", entities[1].Description);
     }
-    
+
+    [Theory]
+    [InlineData(SqlType.SqlServer)]
+    [InlineData(SqlType.Sqlite)]
+    private void UpsertWithOnUpdateNonPK(SqlType sqlType)
+    {
+        ContextUtil.DatabaseType = sqlType;
+
+        using var context = new TestContext(ContextUtil.GetOptions());
+
+        var cust = new Customer() { Name =  "Kayle" };
+
+        //context.Customers.Add(cust); context.SaveChanges();
+
+        var customers = new List<Customer>();
+        customers.Add(new Customer() { Name = "John" });
+        customers.Add(new Customer() { Name = "Smith" });
+        customers.Add(new Customer() { Name = "Kayle" });
+
+        using var context2 = new TestContext(ContextUtil.GetOptions());
+
+        context2.BulkInsertOrUpdate(customers, b =>
+        {
+            //b.SetOutputIdentity = true;
+            b.UpdateByProperties = new List<string> { nameof(Customer.Name) };
+        });
+
+        Console.WriteLine($"{customers[0].Id}, {customers[0].Name}");   //   2, John
+        Console.WriteLine($"{customers[1].Id}, {customers[1].Name}");   //   3, Smith
+        Console.WriteLine($"{customers[2].Id}, {customers[2].Name}");   //   1, Kayle
+    }
+
     [Theory]
     [InlineData(SqlType.SqlServer)]
     [InlineData(SqlType.Sqlite)]

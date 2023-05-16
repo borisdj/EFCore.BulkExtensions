@@ -75,6 +75,8 @@ public class TestContext : DbContext
 
     public DbSet<TimeRecord> TimeRecords { get; set; } = null!;
 
+    public DbSet<Customer> Customers { get; set; } = null!;
+
     public static bool UseTopologyPostgres { get; set; } = false;
 
     public TestContext(DbContextOptions options) : base(options)
@@ -109,6 +111,8 @@ public class TestContext : DbContext
         modelBuilder.Entity<Wall>().Property(x => x.Id).ValueGeneratedNever();
         modelBuilder.Entity<Wall>().Property(x => x.WallTypeValue).HasConversion(new EnumToStringConverter<WallType>());
         modelBuilder.Entity<Wall>().Property(x => x.WallCategory).HasConversion(new EnumToStringConverter<WallCategory>());
+
+        modelBuilder.Entity<Customer>().HasIndex(p => p.Name).IsUnique();
 
         modelBuilder.Entity<TimeRecord>().OwnsOne(a => a.Source,
             b => b.Property(p => p.Type).HasConversion(new EnumToNumberConverter<TimeRecordSourceType, int>()));
@@ -911,5 +915,12 @@ public class Division
 public class PrivateKey
 {
     private long Id { get; set; }
+    public string Name { get; set; } = null!;
+}
+
+
+public class Customer
+{
+    public int Id { get; set; }
     public string Name { get; set; } = null!;
 }
