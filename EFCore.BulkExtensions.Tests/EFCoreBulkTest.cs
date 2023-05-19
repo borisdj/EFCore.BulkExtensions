@@ -567,7 +567,11 @@ public class EFCoreBulkTest
         }
         if (isBulk)
         {
-            var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
+            var bulkConfig = new BulkConfig() {
+                SetOutputIdentity = true,
+                CalculateStats = true,
+                SqlBulkCopyOptions = Microsoft.Data.SqlClient.SqlBulkCopyOptions.KeepIdentity
+            };
             context.BulkInsertOrUpdate(entities, bulkConfig, (a) => WriteProgress(a));
             if (sqlType == SqlType.SqlServer)
             {
@@ -578,7 +582,8 @@ public class EFCoreBulkTest
         }
         else
         {
-            context.Items.Add(entities[^1]);
+            var lastEntity1 = entities[^1]; // Last
+            context.Items.Add(lastEntity1);
             context.SaveChanges();
         }
 

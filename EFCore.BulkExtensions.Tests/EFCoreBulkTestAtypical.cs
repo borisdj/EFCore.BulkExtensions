@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using Xunit;
-
 namespace EFCore.BulkExtensions.Tests;
 
 public class EFCoreBulkTestAtypical
@@ -1175,26 +1174,46 @@ public class EFCoreBulkTestAtypical
 
         using var context = new TestContext(ContextUtil.GetOptions());
 
+        context.Truncate<Customer>();
+        if (sqlType == SqlType.Sqlite)
+        {
+            context.Database.ExecuteSqlRaw($"UPDATE SQLITE_SEQUENCE SET SEQ=0 WHERE NAME='{nameof(Customer)}';");
+            context.SaveChanges();
+        }
+
         var cust = new Customer() { Name =  "Kayle" };
 
-        //context.Customers.Add(cust); context.SaveChanges();
+        context.Customers.Add(cust); context.SaveChanges();
 
         var customers = new List<Customer>();
         customers.Add(new Customer() { Name = "John" });
         customers.Add(new Customer() { Name = "Smith" });
         customers.Add(new Customer() { Name = "Kayle" });
 
+        /*customers[0].Id = 3; // Id set in Property
+        customers[1].Id = 0;
+        customers[2].Id = 0;*/
+
         using var context2 = new TestContext(ContextUtil.GetOptions());
 
         context2.BulkInsertOrUpdate(customers, b =>
         {
-            //b.SetOutputIdentity = true;
+            b.SetOutputIdentity = true;
             b.UpdateByProperties = new List<string> { nameof(Customer.Name) };
+            //b.SqlBulkCopyOptions = Microsoft.Data.SqlClient.SqlBulkCopyOptions.KeepIdentity; // use it when Id is set in Property
         });
 
-        Console.WriteLine($"{customers[0].Id}, {customers[0].Name}");   //   2, John
-        Console.WriteLine($"{customers[1].Id}, {customers[1].Name}");   //   3, Smith
-        Console.WriteLine($"{customers[2].Id}, {customers[2].Name}");   //   1, Kayle
+        if (sqlType == SqlType.Sqlite)
+        {
+            context2.BulkRead(customers, b =>
+            {
+                b.UpdateByProperties = new List<string> { nameof(Customer.Name) };
+            });
+        }
+
+        Assert.Equal(2, customers[0].Id);
+        Assert.Equal(3, customers[1].Id);
+        Assert.Equal(1, customers[2].Id);
     }
 
     [Theory]

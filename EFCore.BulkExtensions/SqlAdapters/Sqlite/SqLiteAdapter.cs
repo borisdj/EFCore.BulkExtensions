@@ -152,14 +152,17 @@ public class SqliteAdapter : ISqlOperationsAdapter
                 ProgressHelper.SetProgress(ref rowsCopied, entities.Count(), tableInfo.BulkConfig, progress);
             }
 
-            if (operationType == OperationType.Insert && tableInfo.BulkConfig.SetOutputIdentity && tableInfo.IdentityColumnName != null) // For Sqlite Identity can be set by Db only with pure Insert method
+            if (tableInfo.BulkConfig.SetOutputIdentity && tableInfo.IdentityColumnName != null) // For Sqlite Identity can be set by Db only with pure Insert method
             {
-                command.CommandText = SqliteQueryBuilder.SelectLastInsertRowId();
+                if (operationType == OperationType.Insert)
+                {
+                    command.CommandText = SqliteQueryBuilder.SelectLastInsertRowId();
 
-                object? lastRowIdScalar = isAsync ? await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false)
-                                                        : command.ExecuteScalar();
+                    object? lastRowIdScalar = isAsync ? await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false)
+                                                            : command.ExecuteScalar();
 
-                SetIdentityForOutput(entities, tableInfo, lastRowIdScalar);
+                    SetIdentityForOutput(entities, tableInfo, lastRowIdScalar);
+                }
             }
 
             if (doExplicitCommit)
