@@ -415,13 +415,13 @@ public abstract class SqlQueryBuilder
                 var propertyFormated = $"[{mapping.Value}]";
                 var sourceProperty = mapping.Key;
 
-                if (q.Contains(propertySourceFormated))
-                {
-                    q = q.Replace(propertySourceFormated, $"S.[{sourceProperty}]");
-                }
                 if (qSegment.Contains(propertyFormated))
                 {
                     qSegmentUpdated = qSegmentUpdated.Replace(propertyFormated, $"[{sourceProperty}]");
+                }
+                if (q.Contains(propertySourceFormated))
+                {
+                    q = q.Replace(propertySourceFormated, $"S.[{sourceProperty}]");
                 }
             }
             if (qSegment != qSegmentUpdated)
