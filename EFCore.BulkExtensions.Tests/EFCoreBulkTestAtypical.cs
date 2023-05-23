@@ -14,6 +14,20 @@ public class EFCoreBulkTestAtypical
 
     [Theory]
     [InlineData(SqlType.SqlServer)]
+    //[InlineData(SqlType.PostgreSql)]
+    //[InlineData(SqlType.Sqlite)]
+    private void CalcStatsTest(SqlType sqlType)
+    {
+        ContextUtil.DatabaseType = sqlType;
+        using var context = new TestContext(ContextUtil.GetOptions());
+
+        List<Entry> entries = new() { new Entry() { /*EntryId = 1,*/ Name = "Some Info" } };
+        BulkConfig bulkConfig = new() { CalculateStats = true, SetOutputIdentity = true/*, SqlBulkCopyOptions = SqlBulkCopyOptions.KeepIdentity*/ };
+        context.BulkInsert(entries, bulkConfig);
+    }
+
+    [Theory]
+    [InlineData(SqlType.SqlServer)]
     [InlineData(SqlType.PostgreSql)]
     [InlineData(SqlType.Sqlite)]
     private void DefaultValuesTest(SqlType sqlType)
@@ -57,6 +71,7 @@ public class EFCoreBulkTestAtypical
         using var context = new TestContext(ContextUtil.GetOptions());
         //context.Truncate<Document>(); // Can not be used because table is Temporal, so BatchDelete used instead
         context.Storages.BatchDelete();
+        context.Database.ExecuteSqlRaw($"DBCC CHECKIDENT('{nameof(Storage)}', RESEED, 0);");
 
         var entities = new List<Storage>()
         {
@@ -72,8 +87,18 @@ public class EFCoreBulkTestAtypical
         var countDb = context.Storages.Count();
         var countEntities = entities.Count;
 
-        // TEST
         Assert.Equal(countDb, countEntities);
+
+        var entities2 = new List<Storage>()
+        {
+            new Storage { StorageId = 1 },
+            new Storage { StorageId = 2 },
+            new Storage { StorageId = 3 },
+        };
+        context.BulkRead(entities2);
+
+        // TEST
+        Assert.Equal(entities[0].Data, entities2[0].Data);
     }
 
     [Theory]
@@ -917,6 +942,7 @@ public class EFCoreBulkTestAtypical
     [Theory]
     [InlineData(SqlType.SqlServer)]
     [InlineData(SqlType.PostgreSql)]
+    [InlineData(SqlType.MySql)]
     private void DestinationAndSourceTableNameTest(SqlType sqlType)
     {
         ContextUtil.DatabaseType = sqlType;
@@ -958,12 +984,12 @@ public class EFCoreBulkTestAtypical
         var mappings = new Dictionary<string, string>
         {
             { nameof(EntryPrep.EntryPrepId), nameof(Entry.EntryId) }, // here used 'nameof(Prop)' since Columns have the same name as Props
-            { nameof(EntryPrep.NameInfo), nameof(Entry.Name) }       // if columns they were different name then they would be set with string names, eg. "EntryPrepareId"
+            { nameof(EntryPrep.NameInfo), nameof(Entry.Name) }        // if columns they were different name then they would be set with string names, eg. "EntryPrepareId"
         };
         var bulkConfig = new BulkConfig {
             CustomSourceTableName = nameof(EntryPrep),
             CustomSourceDestinationMappingColumns = mappings,
-            //UpdateByProperties = new List<string> { "Name" } // with this all are insert since names are different
+            //UpdateByProperties = new List<string> { "Name" }        // with this all are insert since names are different
         };
         // [SOURCE] 
         context.BulkInsertOrUpdate(new List<Entry>(), bulkConfig); // InsertOrMERGE from table 'EntryPrep' into table 'Entry'
