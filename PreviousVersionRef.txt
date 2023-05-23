@@ -13,6 +13,7 @@
 	<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="6.0.8" />
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="6.0.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="6.0.16" />
+	<PackageReference Include="NetTopologySuite.IO.SpatiaLite" Version="2.0.0" />
   </ItemGroup>
 
   <ItemGroup>
