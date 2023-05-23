@@ -287,13 +287,15 @@ public class MySqlAdapter : ISqlOperationsAdapter
     /// <inheritdoc/>
     public void Truncate(DbContext context, TableInfo tableInfo)
     {
-        throw new NotImplementedException();
+        var sqlTruncateTable = MySqlQueryBuilder.TruncateTable(tableInfo.FullTableName);
+        context.Database.ExecuteSqlRaw(sqlTruncateTable);
     }
 
     /// <inheritdoc/>
-    public Task TruncateAsync(DbContext context, TableInfo tableInfo, CancellationToken cancellationToken)
+    public async Task TruncateAsync(DbContext context, TableInfo tableInfo, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        var sqlTruncateTable = MySqlQueryBuilder.TruncateTable(tableInfo.FullTableName);
+        await context.Database.ExecuteSqlRawAsync(sqlTruncateTable, cancellationToken).ConfigureAwait(false);
     }
     #endregion
     #region Connection
