@@ -1222,12 +1222,13 @@ public class EFCoreBulkTestAtypical
 
         using var context2 = new TestContext(ContextUtil.GetOptions());
 
-        context2.BulkInsertOrUpdate(customers, b =>
+        var bulkConfig = new BulkConfig
         {
-            b.SetOutputIdentity = true;
-            b.UpdateByProperties = new List<string> { nameof(Customer.Name) };
-            //b.SqlBulkCopyOptions = Microsoft.Data.SqlClient.SqlBulkCopyOptions.KeepIdentity; // use it when Id is set in Property
-        });
+            SetOutputIdentity = true,
+            UpdateByProperties = new List<string> { nameof(Customer.Name) },
+            //SqlBulkCopyOptions = Microsoft.Data.SqlClient.SqlBulkCopyOptions.KeepIdentity, // use it when Id is set in Property
+        };
+        context2.BulkInsertOrUpdate(customers, bulkConfig);
 
         if (sqlType == SqlType.Sqlite)
         {
@@ -1237,9 +1238,9 @@ public class EFCoreBulkTestAtypical
             });
         }
 
+        Assert.Equal(1, customers[2].Id);
         Assert.Equal(2, customers[0].Id);
         Assert.Equal(3, customers[1].Id);
-        Assert.Equal(1, customers[2].Id);
     }
 
     [Theory]

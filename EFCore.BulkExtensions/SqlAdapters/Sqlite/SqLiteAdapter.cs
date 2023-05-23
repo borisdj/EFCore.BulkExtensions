@@ -488,7 +488,7 @@ public class SqliteAdapter : ISqlOperationsAdapter
 
             var param = command.Parameters[$"@{parameterName}"];
 
-            string columnName = propertyColumnsDict[parameterName];
+            string columnName = propertyColumn.Value;
             string typeName = tableInfo.ColumnNamesTypesDict[columnName];
             if (value != null && typeName == "GEOMETRY") // spatial types
             {

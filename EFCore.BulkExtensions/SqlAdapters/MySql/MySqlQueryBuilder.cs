@@ -263,10 +263,10 @@ public class MySqlQueryBuilder : QueryBuilderExtensions
     /// <param name="isDelete"></param>
     public override string RestructureForBatch(string sql, bool isDelete = false)
     {
-        sql = sql.Replace("`", @"""");
+        sql = sql.Replace("[", "`").Replace("]", "`");
         string firstLetterOfTable = sql.Substring(7, 1);
 
-        sql = sql.Replace(@"""i""", "i");
+        sql = sql.Replace("`i`", "i");
         if (isDelete)
         {
             sql = sql.Replace($"DELETE {firstLetterOfTable}", "DELETE ");
