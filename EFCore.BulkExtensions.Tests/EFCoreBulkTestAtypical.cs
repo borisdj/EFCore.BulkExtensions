@@ -22,7 +22,7 @@ public class EFCoreBulkTestAtypical
         using var context = new TestContext(ContextUtil.GetOptions());
 
         List<Entry> entries = new() { new Entry() { /*EntryId = 1,*/ Name = "Some Info" } };
-        BulkConfig bulkConfig = new() { CalculateStats = true, SetOutputIdentity = true/*, SqlBulkCopyOptions = SqlBulkCopyOptions.KeepIdentity*/ };
+        BulkConfig bulkConfig = new() { CalculateStats = true, SetOutputIdentity = true, /*SetOutputNonIdentityColumns = false, SqlBulkCopyOptions = SqlBulkCopyOptions.KeepIdentity*/ };
         context.BulkInsert(entries, bulkConfig);
     }
 

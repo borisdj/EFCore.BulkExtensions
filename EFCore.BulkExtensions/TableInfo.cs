@@ -1055,7 +1055,10 @@ public class TableInfo
                     }
                     else
                     {
-                        var identityPropertyValue = FastPropertyDict[identifierPropertyName].Get(entitiesWithOutputIdentity.ElementAt(i));
+                        bool outputIdentityOnly = BulkConfig.SetOutputNonIdentityColumns == false && IdentityColumnName != null;
+                        var element = entitiesWithOutputIdentity.ElementAt(i);
+                        var identityPropertyValue = outputIdentityOnly ? element
+                                                                       : FastPropertyDict[identifierPropertyName].Get(element);
                         FastPropertyDict[identifierPropertyName].Set(entities.ElementAt(i)!, identityPropertyValue);
                     }
                 }
@@ -1159,7 +1162,9 @@ public class TableInfo
     /// <returns></returns>
     protected IEnumerable QueryOutputTable(DbContext context, Type type, string sqlQuery)
     {
-        var compiled = EF.CompileQuery(GetQueryExpression(type, sqlQuery));
+        bool doSelect = BulkConfig.SetOutputIdentity && BulkConfig.SetOutputNonIdentityColumns == false && IdentityColumnName != null;
+
+        var compiled = EF.CompileQuery(GetQueryExpression(type, sqlQuery, true, doSelect));
         var result = compiled(context);
         return result;
     }
@@ -1213,9 +1218,10 @@ public class TableInfo
     /// </summary>
     /// <param name="entityType"></param>
     /// <param name="sqlQuery"></param>
-    /// <param name="ordered"></param>
+    /// <param name="doOrder"></param>
+    /// <param name="doSelect"></param>
     /// <returns></returns>
-    public Expression<Func<DbContext, IEnumerable>> GetQueryExpression(Type entityType, string sqlQuery, bool ordered = true)
+    public Expression<Func<DbContext, IEnumerable>> GetQueryExpression(Type entityType, string sqlQuery, bool doOrder = true, bool doSelect = false)
     {
         var parameter = Expression.Parameter(typeof(DbContext), "ctx");
         var expression = Expression.Call(parameter, "Set", new Type[] { entityType });
@@ -1230,8 +1236,22 @@ public class TableInfo
         {
             expression = Expression.Call(typeof(EntityFrameworkQueryableExtensions), "IgnoreQueryFilters", new Type[] { entityType }, expression);
         }
-        expression = ordered ? OrderBy(entityType, expression, PrimaryKeysPropertyColumnNameDict.Select(a => a.Key).ToList()) : expression;
-        return Expression.Lambda<Func<DbContext, IEnumerable>>(expression, parameter);
+
+        if (doOrder)
+        {
+            var primaryKeys = PrimaryKeysPropertyColumnNameDict.Select(a => a.Key).ToList();
+            expression = OrderBy(entityType, expression, primaryKeys);
+        }
+
+        if (doSelect)
+        {
+            var identityPropName = PropertyColumnNamesDict.Where(a => a.Value == IdentityColumnName).Select(a => a.Key).ToList();
+            expression = Select(entityType, expression, identityPropName);
+        }
+        
+        var expressionResult = Expression.Lambda<Func<DbContext, IEnumerable>>(expression, parameter);
+
+        return expressionResult;
 
         // ALTERNATIVELY OrderBy with DynamicLinq ('using System.Linq.Dynamic.Core;' NuGet required) that eliminates need for custom OrderBy<T> method with Expression.
         //var queryOrdered = query.OrderBy(PrimaryKeys[0]);
@@ -1252,6 +1272,25 @@ public class TableInfo
                 string methodName = firstArgOrderBy ? "OrderBy" : "ThenBy";
                 expression = Expression.Call(typeof(Queryable), methodName, new Type[] { entityType, property.PropertyType }, expression, Expression.Quote(orderByExp));
                 firstArgOrderBy = false;
+            }
+        }
+        return expression;
+    }
+
+    private static MethodCallExpression Select(Type entityType, Expression source, List<string> selectProps)
+    {
+        var expression = (MethodCallExpression)source;
+        ParameterExpression parameter = Expression.Parameter(entityType);
+        //foreach (var selectProp in selectProps)
+        {
+            PropertyInfo? property = entityType.GetProperty(selectProps[0]); // currently supports Select only 1 property, first in list, that is Identity
+            if (property != null)
+            {
+                MemberExpression propertyAccess = Expression.MakeMemberAccess(parameter, property);
+                LambdaExpression selectExp = Expression.Lambda(propertyAccess, parameter);
+                string methodName = "Select";
+                var typeArgs = new Type[] { entityType, property.PropertyType };
+                expression = Expression.Call(typeof(Queryable), methodName, typeArgs, expression, Expression.Quote(selectExp));
             }
         }
         return expression;

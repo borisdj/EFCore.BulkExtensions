@@ -28,6 +28,15 @@ public class BulkConfig
     public bool SetOutputIdentity { get; set; }
 
     /// <summary>
+    ///    Used only when SetOutputIdentity is set to true, and if this remains True (which is default) all columns are reloaded from Db.
+    ///    When changed to false only Identity column is loaded.
+    /// </summary>
+    /// <remarks>
+    ///     Used for optimization to reduce load back from DB.
+    /// </remarks>
+    public bool SetOutputNonIdentityColumns { get; set; } = true;
+
+    /// <summary>
     ///     Propagated to SqlBulkCopy util object.
     /// </summary>
     /// <value>
