@@ -138,7 +138,7 @@ Partial Sync can be done on table subset using expression set on config with met
 Not supported for SQLite (Lite has only UPSERT statement) nor currently for PostgreSQL. Way to achieve there sync functionality is to Select or BulkRead existing data from DB, split list into sublists and call separately Bulk methods for BulkInsertOrUpdate and Delete.
 
 **BulkRead** (SELECT and JOIN done in Sql)<br>
-Useful when need to Select from big List based on Unique Prop./Columns specified in config `UpdateByProperties`<br>
+Used when need to Select from big List based on Unique Prop./Columns specified in config `UpdateByProperties`<br>
 ```C#
 // instead of WhereIN which will TimeOut for List with over around 40 K records
 var entities = context.Items.Where(a => itemsNames.Contains(a.Name)).AsNoTracking().ToList(); // SQL IN
@@ -150,6 +150,7 @@ var items = itemsNames.Select(a => new Item { Name = a }).ToList(); // Items lis
 var bulkConfig = new BulkConfig { UpdateByProperties = new List<string> { nameof(Item.Name) } };
 context.BulkRead(items, bulkConfig); // Items list will be loaded from Db with data(other properties)
 ```
+Useful config **ReplaceReadEntities** that works as *Contains/IN* and returns all which match the criteria (not unique).<br>
 [Example](https://github.com/borisdj/EFCore.BulkExtensions/issues/733#issuecomment-1017417579) of special use case when need to BulkRead child entities after BulkReading parent list. 
 
 **SaveChanges** uses Change Tracker to find all modified(CUD) entities and call proper BulkOperations for each table.<br>
@@ -288,7 +289,7 @@ _ Also in some [sql collation](https://github.com/borisdj/EFCore.BulkExtensions/
 **DateTime2PrecisionForceRound** If dbtype datetime2 has precision less then default 7, example 'datetime2(3)' SqlBulkCopy does Floor instead of Round so when this Property is set then Rounding will be done in memory to make sure inserted values are same as with regular SaveChanges.<br>
 **TemporalColumns** are shadow columns used for Temporal table. Default elements 'PeriodStart' and 'PeriodEnd' can be changed if those columns have custom names.<br>
 **OnSaveChangesSetFK** is used only for BulkSaveChanges. When multiply entries have FK relationship which is Db generated, this set proper value after reading parent PK from Db. IF PK are generated in memory like are some Guid then this can be set to false for better efficiency.<br>
-**ReplaceReadEntities** when set to True result of BulkRead operation will be provided using replace instead of update. Entities list parameter of BulkRead method will be repopulated with obtained data. Enables functionality of Contains/IN which will return all entities matching the criteria and only return the first (does not have to be by unique columns).
+**ReplaceReadEntities** when set to True result of BulkRead operation will be provided using replace instead of update. Entities list parameter of BulkRead method will be repopulated with obtained data. Enables functionality of Contains/IN which will return all entities matching the criteria (does not have to be by unique columns).
 
 **SqlBulkCopyOptions** is Enum (only for SqlServer) with [[Flags]](https://stackoverflow.com/questions/8447/what-does-the-flags-enum-attribute-mean-in-c) attribute which enables specifying one or more options:<br>
 *Default, KeepIdentity, CheckConstraints, TableLock, KeepNulls, FireTriggers, UseInternalTransaction*<br>
