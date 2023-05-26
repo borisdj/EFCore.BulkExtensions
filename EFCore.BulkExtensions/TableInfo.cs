@@ -14,6 +14,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Npgsql;
 
 namespace EFCore.BulkExtensions;
 
@@ -169,7 +170,15 @@ public class TableInfo
         if (isSqlServer)
             defaultSchema = "dbo";
         if (isNpgsql)
+        {            
             defaultSchema = "public";
+
+            var csb = new NpgsqlConnectionStringBuilder(context.Database.GetConnectionString());
+            if (!string.IsNullOrWhiteSpace(csb.SearchPath))
+            {
+                defaultSchema = csb.SearchPath.Split(',')[0];
+            }
+        }
 
         string? customSchema = null;
         string? customTableName = null;
