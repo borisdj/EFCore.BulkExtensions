@@ -32,7 +32,7 @@ public class BulkConfig
     ///    When changed to false only Identity column is loaded.
     /// </summary>
     /// <remarks>
-    ///     Used for optimization to reduce load back from DB.
+    ///     Used for efficiency to reduce load back from DB.
     /// </remarks>
     public bool SetOutputNonIdentityColumns { get; set; } = true;
 
