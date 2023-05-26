@@ -151,7 +151,7 @@ var bulkConfig = new BulkConfig { UpdateByProperties = new List<string> { nameof
 context.BulkRead(items, bulkConfig); // Items list will be loaded from Db with data(other properties)
 ```
 Useful config **ReplaceReadEntities** that works as *Contains/IN* and returns all which match the criteria (not unique).<br>
-[Example](https://github.com/borisdj/EFCore.BulkExtensions/issues/733#issuecomment-1017417579) of special use case when need to BulkRead child entities after BulkReading parent list. 
+[Example](https://github.com/borisdj/EFCore.BulkExtensions/issues/733) of special use case when need to BulkRead child entities after BulkReading parent list. 
 
 **SaveChanges** uses Change Tracker to find all modified(CUD) entities and call proper BulkOperations for each table.<br>
 Because it needs tracking it is slower then pure BulkOps but still much faster then regular SaveChanges.<br>
