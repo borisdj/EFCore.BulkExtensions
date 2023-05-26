@@ -1,5 +1,5 @@
 C:\Projects\EFCore.BulkExtensions\EFCore.BulkExtensions\bin\Release
-C:\Projects\EFCore.BulkExtensions\EFCore.BulkExtensions.MySql\bin\Release
-C:\Projects\EFCore.BulkExtensions\EFCore.BulkExtensions.PostgreSql\bin\Release
-C:\Projects\EFCore.BulkExtensions\EFCore.BulkExtensions.Sqlite\bin\Release
-C:\Projects\EFCore.BulkExtensions\EFCore.BulkExtensions.SqlServer\bin\Release
+C:\Projects\EFCore.BulkExtensions\EFCore.BulkExtensions.PerProvider\EFCore.BulkExtensions.MySql\bin\Release
+C:\Projects\EFCore.BulkExtensions\EFCore.BulkExtensions.PerProvider\EFCore.BulkExtensions.PostgreSql\bin\Release
+C:\Projects\EFCore.BulkExtensions\EFCore.BulkExtensions.PerProvider\EFCore.BulkExtensions.Sqlite\bin\Release
+C:\Projects\EFCore.BulkExtensions\EFCore.BulkExtensions.PerProvider\EFCore.BulkExtensions.SqlServer\bin\Release

@@ -7,7 +7,3 @@ obj
 /EFCore.BulkExtensions.Tests/testsettings.local.json
 !*.csproj
 !*.png
-/EFCore.BulkExtensions.MySql/*
-/EFCore.BulkExtensions.PostgreSql/*
-/EFCore.BulkExtensions.Sqlite/*
-/EFCore.BulkExtensions.SqlServer/*
