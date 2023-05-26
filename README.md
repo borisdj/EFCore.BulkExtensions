@@ -174,11 +174,12 @@ PROPERTY : DEFAULTvalue
 ----------------------------------------------------------------------------------------------
 PreserveInsertOrder: true,                    PropertiesToInclude: null,
 SetOutputIdentity: false,                     PropertiesToIncludeOnCompare: null,
-BatchSize: 2000,                              PropertiesToIncludeOnUpdate: null,
-NotifyAfter: null,                            PropertiesToExclude: null,
-BulkCopyTimeout: null,                        PropertiesToExcludeOnCompare: null,
-EnableStreaming: false,                       PropertiesToExcludeOnUpdate: null,
-UseTempDB: false,                             UpdateByProperties: null,
+SetOutputNonIdentityColumns: true,            PropertiesToIncludeOnUpdate: null,
+BatchSize: 2000,                              PropertiesToExclude: null,
+NotifyAfter: null,                            PropertiesToExcludeOnCompare: null,
+BulkCopyTimeout: null,                        PropertiesToExcludeOnUpdate: null,
+EnableStreaming: false,                       UpdateByProperties: null,
+UseTempDB: false,                             ReplaceReadEntities: false,
 UniqueTableNameTempDb: true,                  EnableShadowProperties: false,
 CustomDestinationTableName: null,             IncludeGraph: false,
 CustomSourceTableName: null,                  OmitClauseExistsExcept: false,
@@ -188,7 +189,7 @@ WithHoldlock: true,                           DateTime2PrecisionForceRound: fals
 CalculateStats: false,                        TemporalColumns: { "PeriodStart", "PeriodEnd" },
 SqlBulkCopyOptions: Default,                  OnSaveChangesSetFK: true,
 SqlBulkCopyColumnOrderHints: null,            IgnoreGlobalQueryFilters: false,
-OnConflictUpdateWhereSql: null,               ReplaceReadEntities: false,
+OnConflictUpdateWhereSql: null,               
 ----------------------------------------------------------------------------------------------
 METHOD: SetSynchronizeFilter<T>
         SetSynchronizeSoftDelete<T>
@@ -232,6 +233,8 @@ Also for SQLite combination of BulkInsertOrUpdate and IdentityId automatic set w
 After Insert is done to first table, we need Id-s (if using Option 1) that were generated in Db because they are FK(ForeignKey) in second table.<br>
 It is implemented with [OUTPUT](https://docs.microsoft.com/en-us/sql/t-sql/queries/output-clause-transact-sql) as part of MERGE Query, so in this case even the Insert is not done directly to TargetTable but to TempTable and then Merged with TargetTable.<br>
 When used Id-s will be updated in entitiesList, and if *PreserveInsertOrder* is set to *false* then entitiesList will be cleared and reloaded.<br>
+**SetOutputNonIdentityColumns** used only when *SetOutputIdentity* is set to true, and if this remains True (which is default) all columns are reloaded from Db.<br>
+When changed to false only Identity column is loaded to reduce load back from DB for efficiency.<br>
 Example of *SetOutputIdentity* with parent-child FK related tables:
 ```C#
 int numberOfEntites = 1000;
