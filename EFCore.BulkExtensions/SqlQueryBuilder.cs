@@ -25,14 +25,16 @@ public abstract class SqlQueryBuilder
         List<string> columnsNames = (isOutputTable ? tableInfo.OutputPropertyColumnNamesDict
                                                    : tableInfo.PropertyColumnNamesDict
                                                    ).Values.ToList();
+        string timeStampColumn = "";
         if (tableInfo.TimeStampColumnName != null)
         {
             columnsNames.Remove(tableInfo.TimeStampColumnName);
+            timeStampColumn = $", [{tableInfo.TimeStampColumnName}] = CAST('' AS {TableInfo.TimeStampOutColumnType})"; // tsType:varbinary(8)
         }
 
-        string statsColumns = (tableInfo.BulkConfig.CalculateStats && isOutputTable) ? $",[{tableInfo.SqlActionIUD}] = CAST('' AS char(1))" : "";
+        string statsColumn = (tableInfo.BulkConfig.CalculateStats && isOutputTable) ? $", [{tableInfo.SqlActionIUD}] = CAST('' AS char(1))" : "";
 
-        var q = $"SELECT TOP 0 {GetCommaSeparatedColumns(columnsNames, "T")} " + statsColumns +
+        var q = $"SELECT TOP 0 {GetCommaSeparatedColumns(columnsNames, "T")}" + timeStampColumn + statsColumn + " " +
                 $"INTO {newTableName} FROM {existingTableName} AS T " +
                 $"LEFT JOIN {existingTableName} AS Source ON 1 = 0;"; // removes Identity constrain
         return q;

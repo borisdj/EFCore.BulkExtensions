@@ -150,19 +150,6 @@ public class SqlServerAdapter: ISqlOperationsAdapter
                 }
                 tempTableCreated = true;
 
-                if (tableInfo.TimeStampColumnName != null)
-                {
-                    var sqlAddColumn = SqlQueryBuilder.AddColumn(tableInfo.FullTempTableName, tableInfo.TimeStampColumnName, TableInfo.TimeStampOutColumnType);
-                    if (isAsync)
-                    {
-                        await context.Database.ExecuteSqlRawAsync(sqlAddColumn, cancellationToken).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        context.Database.ExecuteSqlRaw(sqlAddColumn);
-                    }
-                }
-
                 if (isAsync)
                 {
                     await InsertAsync(context, type, entities, tableInfo, progress, cancellationToken).ConfigureAwait(false);
@@ -185,19 +172,6 @@ public class SqlServerAdapter: ISqlOperationsAdapter
                     context.Database.ExecuteSqlRaw(sqlCreateOutputTableCopy);
                 }
                 outputTableCreated = true;
-
-                if (tableInfo.TimeStampColumnName != null)
-                {
-                    var sqlAddColumn = SqlQueryBuilder.AddColumn(tableInfo.FullTempOutputTableName, tableInfo.TimeStampColumnName, TableInfo.TimeStampOutColumnType);
-                    if (isAsync)
-                    {
-                        await context.Database.ExecuteSqlRawAsync(sqlAddColumn, cancellationToken).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        context.Database.ExecuteSqlRaw(sqlAddColumn);
-                    }
-                }
 
                 if (operationType == OperationType.InsertOrUpdateOrDelete)
                 {
