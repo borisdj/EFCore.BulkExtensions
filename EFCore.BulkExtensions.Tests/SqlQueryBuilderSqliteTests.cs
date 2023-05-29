@@ -1,7 +1,7 @@
+using EFCore.BulkExtensions.SqlAdapters.Sqlite;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using EFCore.BulkExtensions.SqlAdapters.Sqlite;
 using Xunit;
 
 namespace EFCore.BulkExtensions.Tests;

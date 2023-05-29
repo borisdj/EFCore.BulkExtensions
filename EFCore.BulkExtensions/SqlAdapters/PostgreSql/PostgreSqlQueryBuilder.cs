@@ -8,7 +8,7 @@ namespace EFCore.BulkExtensions.SqlAdapters.PostgreSql;
 /// <summary>
 /// Contains a list of methods to generate SQL queries required by EFCore
 /// </summary>
-public class PostgreSqlQueryBuilder : QueryBuilderExtensions
+public class PostgreSqlQueryBuilder : SqlQueryBuilder
 {
 
     /// <summary>
@@ -233,7 +233,7 @@ public class PostgreSqlQueryBuilder : QueryBuilderExtensions
     /// Generates SQL query to truncate a table
     /// </summary>
     /// <param name="tableName"></param>
-    public static string TruncateTable(string tableName)
+    public override string TruncateTable(string tableName)
     {
         var q = $"TRUNCATE {tableName} RESTART IDENTITY;";
         q = q.Replace("[", @"""").Replace("]", @"""");
@@ -450,7 +450,7 @@ public class PostgreSqlQueryBuilder : QueryBuilderExtensions
     /// <returns></returns>
     public override string SelectFromOutputTable(TableInfo tableInfo)
     {
-        return SqlQueryBuilder.SelectFromOutputTable(tableInfo);
+        return SelectFromOutputTable(tableInfo);
     }
 
     /// <summary>

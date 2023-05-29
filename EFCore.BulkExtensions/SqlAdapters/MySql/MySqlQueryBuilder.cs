@@ -10,7 +10,7 @@ namespace EFCore.BulkExtensions.SqlAdapters.MySql;
 /// <summary>
 ///  Contains a list of methods to generate SQL queries required by EFCore
 /// </summary>
-public class MySqlQueryBuilder : QueryBuilderExtensions
+public class MySqlQueryBuilder : SqlQueryBuilder
 {
     /// <summary>
     /// Generates SQL query to create table copy
@@ -35,7 +35,7 @@ public class MySqlQueryBuilder : QueryBuilderExtensions
     /// <param name="tableName"></param>
     /// <param name="isTempTable"></param>
     /// <returns></returns>
-    public static string DropTable(string tableName, bool isTempTable)
+    public override string DropTable(string tableName, bool isTempTable)
     {
         isTempTable = false;
         string keywordTemp = isTempTable ? "TEMPORARY " : "";
@@ -290,7 +290,7 @@ public class MySqlQueryBuilder : QueryBuilderExtensions
     /// </summary>
     /// <param name="tableName"></param>
     /// <returns></returns>
-    public static string TruncateTable(string tableName)
+    public override string TruncateTable(string tableName)
     {
         var q = $"TRUNCATE TABLE {tableName};";
         q = q.Replace("[", "`").Replace("]", "`");

@@ -1,4 +1,5 @@
 using DelegateDecompiler.EntityFrameworkCore;
+using EFCore.BulkExtensions.SqlAdapters;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,9 +17,11 @@ public class SqlQueryBuilderUnitTests
         tableInfo.IdentityColumnName = "ItemId";
         string result = SqlQueryBuilder.MergeTable<Item>(null, tableInfo, OperationType.Insert).sql;
 
-        string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
+        string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T " + 
+                          "USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
                           "ON T.[ItemId] = S.[ItemId] " +
-                          "WHEN NOT MATCHED BY TARGET THEN INSERT ([Name]) VALUES (S.[Name]);";
+                          "WHEN NOT MATCHED BY TARGET " +
+                          "THEN INSERT ([Name]) VALUES (S.[Name]);";
 
         Assert.Equal(result, expected);
     }
@@ -30,11 +33,14 @@ public class SqlQueryBuilderUnitTests
         tableInfo.IdentityColumnName = "ItemId";
         string result = SqlQueryBuilder.MergeTable<Item>(null, tableInfo, OperationType.InsertOrUpdate).sql;
 
-        string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
+        string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T " +
+                          "USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
                           "ON T.[ItemId] = S.[ItemId] " +
-                          "WHEN NOT MATCHED BY TARGET THEN INSERT ([Name]) VALUES (S.[Name]) " +
-                          "WHEN MATCHED AND EXISTS (SELECT S.[Name] " +
-                          "EXCEPT SELECT T.[Name]) " +
+                          "WHEN NOT MATCHED BY TARGET " +
+                          "THEN INSERT ([Name]) VALUES (S.[Name]) " +
+                          "WHEN MATCHED AND " +
+                          "EXISTS (SELECT S.[Name]" +
+                          " EXCEPT SELECT T.[Name]) " +
                           "THEN UPDATE SET T.[Name] = S.[Name];";
 
         Assert.Equal(result, expected);
@@ -47,12 +53,15 @@ public class SqlQueryBuilderUnitTests
         tableInfo.IdentityColumnName = "ItemId";
         string actual = SqlQueryBuilder.MergeTable<Item>(null, tableInfo, OperationType.InsertOrUpdate).sql;
 
-        string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
+        string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T " +
+                          "USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
                           "ON T.[ItemId] = S.[ItemId] " +
-                          "WHEN NOT MATCHED BY TARGET THEN INSERT ([Name]) VALUES (S.[Name]) " +
-                          "WHEN MATCHED AND EXISTS (SELECT S.[Name] " +
-                          "EXCEPT SELECT T.[Name]) " +
-                          $"AND S.ItemTimestamp > T.ItemTimestamp " +
+                          "WHEN NOT MATCHED BY TARGET " +
+                          "THEN INSERT ([Name]) VALUES (S.[Name]) " +
+                          "WHEN MATCHED AND " +
+                          "EXISTS (SELECT S.[Name]" +
+                          " EXCEPT SELECT T.[Name]) " +
+                          "AND S.ItemTimestamp > T.ItemTimestamp " +
                           "THEN UPDATE SET T.[Name] = S.[Name];";
 
         Assert.Equal(expected, actual);
@@ -65,11 +74,14 @@ public class SqlQueryBuilderUnitTests
         tableInfo.IdentityColumnName = "ItemId";
         string result = SqlQueryBuilder.MergeTable<Item>(null, tableInfo, OperationType.InsertOrUpdate).sql;
 
-        string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
+        string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T " +
+                          "USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
                           "ON T.[ItemId] = S.[ItemId] " +
-                          "WHEN NOT MATCHED BY TARGET THEN INSERT ([Name], [TimeUpdated]) VALUES (S.[Name], S.[TimeUpdated]) " +
-                          "WHEN MATCHED AND EXISTS (SELECT S.[Name] " +
-                          "EXCEPT SELECT T.[Name]) " +
+                          "WHEN NOT MATCHED BY TARGET " +
+                          "THEN INSERT ([Name], [TimeUpdated]) VALUES (S.[Name], S.[TimeUpdated]) " +
+                          "WHEN MATCHED AND " +
+                          "EXISTS (SELECT S.[Name]" +
+                          " EXCEPT SELECT T.[Name]) " +
                           "THEN UPDATE SET T.[Name] = S.[Name], T.[TimeUpdated] = S.[TimeUpdated];";
 
         Assert.Equal(result, expected);
@@ -82,11 +94,13 @@ public class SqlQueryBuilderUnitTests
         tableInfo.IdentityColumnName = "ItemId";
         string actual = SqlQueryBuilder.MergeTable<Item>(null, tableInfo, OperationType.InsertOrUpdate).sql;
 
-        string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
+        string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T " +
+                          "USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
                           "ON T.[ItemId] = S.[ItemId] " +
                           "WHEN NOT MATCHED BY TARGET THEN INSERT ([Name], [TimeUpdated]) VALUES (S.[Name], S.[TimeUpdated]) " +
-                          "WHEN MATCHED AND EXISTS (SELECT S.[Name] " +
-                          "EXCEPT SELECT T.[Name]) " +
+                          "WHEN MATCHED AND " +
+                          "EXISTS (SELECT S.[Name]" +
+                          " EXCEPT SELECT T.[Name]) " +
                           "AND S.ItemTimestamp > T.ItemTimestamp " +
                           "THEN UPDATE SET T.[Name] = S.[Name], T.[TimeUpdated] = S.[TimeUpdated];";
 
@@ -100,11 +114,14 @@ public class SqlQueryBuilderUnitTests
         tableInfo.IdentityColumnName = "ItemId";
         string result = SqlQueryBuilder.MergeTable<Item>(null, tableInfo, OperationType.InsertOrUpdate).sql;
 
-        string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
+        string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T " +
+                          "USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
                           "ON T.[ItemId] = S.[ItemId] " +
-                          "WHEN NOT MATCHED BY TARGET THEN INSERT ([Name], [TimeUpdated]) VALUES (S.[Name], S.[TimeUpdated]) " +
-                          "WHEN MATCHED AND EXISTS (SELECT S.[Name], S.[TimeUpdated] " +
-                          "EXCEPT SELECT T.[Name], T.[TimeUpdated]) " +
+                          "WHEN NOT MATCHED BY TARGET " +
+                          "THEN INSERT ([Name], [TimeUpdated]) VALUES (S.[Name], S.[TimeUpdated]) " +
+                          "WHEN MATCHED AND " +
+                          "EXISTS (SELECT S.[Name], S.[TimeUpdated]" +
+                          " EXCEPT SELECT T.[Name], T.[TimeUpdated]) " +
                           "THEN UPDATE SET T.[Name] = S.[Name];";
 
         Assert.Equal(result, expected);
@@ -117,11 +134,13 @@ public class SqlQueryBuilderUnitTests
         tableInfo.IdentityColumnName = "ItemId";
         string actual = SqlQueryBuilder.MergeTable<Item>(null, tableInfo, OperationType.InsertOrUpdate).sql;
 
-        string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
+        string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T " +
+                          "USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
                           "ON T.[ItemId] = S.[ItemId] " +
                           "WHEN NOT MATCHED BY TARGET THEN INSERT ([Name], [TimeUpdated]) VALUES (S.[Name], S.[TimeUpdated]) " +
-                          "WHEN MATCHED AND EXISTS (SELECT S.[Name], S.[TimeUpdated] " +
-                          "EXCEPT SELECT T.[Name], T.[TimeUpdated]) " +
+                          "WHEN MATCHED AND " +
+                          "EXISTS (SELECT S.[Name], S.[TimeUpdated]" +
+                          " EXCEPT SELECT T.[Name], T.[TimeUpdated]) " +
                           "AND S.ItemTimestamp > T.ItemTimestamp " +
                           "THEN UPDATE SET T.[Name] = S.[Name];";
 
@@ -135,10 +154,12 @@ public class SqlQueryBuilderUnitTests
         tableInfo.IdentityColumnName = "ItemId";
         string result = SqlQueryBuilder.MergeTable<Item>(null, tableInfo, OperationType.Update).sql;
 
-        string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
+        string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING " +
+                          "(SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
                           "ON T.[ItemId] = S.[ItemId] " +
-                          "WHEN MATCHED AND EXISTS (SELECT S.[Name] " +
-                          "EXCEPT SELECT T.[Name]) " +
+                          "WHEN MATCHED AND " +
+                          "EXISTS (SELECT S.[Name]" +
+                          " EXCEPT SELECT T.[Name]) " +
                           "THEN UPDATE SET T.[Name] = S.[Name];";
 
         Assert.Equal(result, expected);
@@ -151,10 +172,12 @@ public class SqlQueryBuilderUnitTests
         tableInfo.IdentityColumnName = "ItemId";
         string actual = SqlQueryBuilder.MergeTable<Item>(null, tableInfo, OperationType.Update).sql;
 
-        string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
+        string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING " +
+                          "(SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
                           "ON T.[ItemId] = S.[ItemId] " +
-                          "WHEN MATCHED AND EXISTS (SELECT S.[Name] " +
-                          "EXCEPT SELECT T.[Name]) " +
+                          "WHEN MATCHED AND " +
+                          "EXISTS (SELECT S.[Name]" +
+                          " EXCEPT SELECT T.[Name]) " +
                           "AND S.ItemTimestamp > T.ItemTimestamp " +
                           "THEN UPDATE SET T.[Name] = S.[Name];";
 
@@ -181,7 +204,8 @@ public class SqlQueryBuilderUnitTests
         var tableInfo = GetTestTableInfo();
         string result = SqlQueryBuilder.MergeTable<Item>(null, tableInfo, OperationType.Delete).sql;
 
-        string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
+        string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING " +
+                          "(SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
                           "ON T.[ItemId] = S.[ItemId] " +
                           "WHEN MATCHED THEN DELETE;";
 

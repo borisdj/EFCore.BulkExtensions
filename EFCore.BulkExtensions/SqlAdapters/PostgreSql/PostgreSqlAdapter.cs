@@ -1,8 +1,6 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 using Npgsql;
-using NpgsqlTypes;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -16,6 +14,8 @@ namespace EFCore.BulkExtensions.SqlAdapters.PostgreSql;
 /// <inheritdoc/>
 public class PostgreSqlAdapter : ISqlOperationsAdapter
 {
+    private PostgreSqlQueryBuilder ProviderSqlQueryBuilder => new PostgreSqlQueryBuilder();
+
     /// <inheritdoc/>
     #region Methods
     // Insert
@@ -411,14 +411,14 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
     /// <inheritdoc/>
     public void Truncate(DbContext context, TableInfo tableInfo)
     {
-        var sqlTruncateTable = PostgreSqlQueryBuilder.TruncateTable(tableInfo.FullTableName);
+        var sqlTruncateTable = new PostgreSqlQueryBuilder().TruncateTable(tableInfo.FullTableName);
         context.Database.ExecuteSqlRaw(sqlTruncateTable);
     }
 
     /// <inheritdoc/>
     public async Task TruncateAsync(DbContext context, TableInfo tableInfo, CancellationToken cancellationToken)
     {
-        var sqlTruncateTable = PostgreSqlQueryBuilder.TruncateTable(tableInfo.FullTableName);
+        var sqlTruncateTable = ProviderSqlQueryBuilder.TruncateTable(tableInfo.FullTableName);
         await context.Database.ExecuteSqlRawAsync(sqlTruncateTable, cancellationToken).ConfigureAwait(false);
     }
     #endregion

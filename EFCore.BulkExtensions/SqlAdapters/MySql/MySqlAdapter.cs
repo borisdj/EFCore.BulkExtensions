@@ -17,6 +17,8 @@ namespace EFCore.BulkExtensions.SqlAdapters.MySql;
 /// <inheritdoc/>
 public class MySqlAdapter : ISqlOperationsAdapter
 {
+    private MySqlQueryBuilder ProviderSqlQueryBuilder => new MySqlQueryBuilder();
+
     /// <inheritdoc/>
     #region Methods
     // Insert
@@ -232,7 +234,7 @@ public class MySqlAdapter : ISqlOperationsAdapter
             {
                 if (outputTableCreated)
                 {
-                    var sqlDropOutputTable = MySqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName, tableInfo.InsertToTempTable);
+                    var sqlDropOutputTable = ProviderSqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName, tableInfo.InsertToTempTable);
                     if (isAsync)
                     {
                         await context.Database.ExecuteSqlRawAsync(sqlDropOutputTable, cancellationToken).ConfigureAwait(false);
@@ -245,7 +247,7 @@ public class MySqlAdapter : ISqlOperationsAdapter
                 }
                 if (tempTableCreated)
                 {
-                    var sqlDropTable = MySqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.InsertToTempTable);
+                    var sqlDropTable = ProviderSqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.InsertToTempTable);
                     if (isAsync)
                     {
                         await context.Database.ExecuteSqlRawAsync(sqlDropTable, cancellationToken).ConfigureAwait(false);
@@ -287,14 +289,14 @@ public class MySqlAdapter : ISqlOperationsAdapter
     /// <inheritdoc/>
     public void Truncate(DbContext context, TableInfo tableInfo)
     {
-        var sqlTruncateTable = MySqlQueryBuilder.TruncateTable(tableInfo.FullTableName);
+        var sqlTruncateTable = ProviderSqlQueryBuilder.TruncateTable(tableInfo.FullTableName);
         context.Database.ExecuteSqlRaw(sqlTruncateTable);
     }
 
     /// <inheritdoc/>
     public async Task TruncateAsync(DbContext context, TableInfo tableInfo, CancellationToken cancellationToken)
     {
-        var sqlTruncateTable = MySqlQueryBuilder.TruncateTable(tableInfo.FullTableName);
+        var sqlTruncateTable = ProviderSqlQueryBuilder.TruncateTable(tableInfo.FullTableName);
         await context.Database.ExecuteSqlRawAsync(sqlTruncateTable, cancellationToken).ConfigureAwait(false);
     }
     #endregion

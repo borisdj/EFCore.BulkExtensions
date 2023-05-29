@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 
-namespace EFCore.BulkExtensions.Helpers;
+namespace EFCore.BulkExtensions;
 
 /// <summary>
 /// This class helps to extract properties of the incoming type which have default sql values

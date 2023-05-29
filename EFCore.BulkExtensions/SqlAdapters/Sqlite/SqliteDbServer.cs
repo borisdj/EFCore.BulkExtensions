@@ -21,9 +21,9 @@ public class SqliteDbServer : IDbServer
     /// <inheritdoc/>
     public DbTransaction? DbTransaction { get; set; }
 
-    SqlAdapters.QueryBuilderExtensions _queryBuilder = new SqliteQueryBuilder();
+    SqlAdapters.SqlQueryBuilder _queryBuilder = new SqliteQueryBuilder();
     /// <inheritdoc/>
-    public QueryBuilderExtensions QueryBuilder => _queryBuilder;
+    public SqlQueryBuilder QueryBuilder => _queryBuilder;
 
     string IDbServer.ValueGenerationStrategy => String.Empty;
 

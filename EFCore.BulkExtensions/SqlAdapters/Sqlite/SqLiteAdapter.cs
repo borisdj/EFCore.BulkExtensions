@@ -16,6 +16,8 @@ namespace EFCore.BulkExtensions.SqlAdapters.Sqlite;
 /// <inheritdoc/>
 public class SqliteAdapter : ISqlOperationsAdapter
 {
+    private SqliteQueryBuilder ProviderSqlQueryBuilder => new SqliteQueryBuilder();
+
     /// <inheritdoc/>
     #region Methods
     // Insert

@@ -129,7 +129,7 @@ public static class SqlAdaptersMapping
     /// Returns per provider QueryBuilder instance, containing a compilation of SQL queries used in EFCore.
     /// </summary>
     /// <returns></returns>
-    public static QueryBuilderExtensions GetQueryBuilder()
+    public static SqlQueryBuilder GetQueryBuilder()
     {
         return DbServer!.QueryBuilder;
     }

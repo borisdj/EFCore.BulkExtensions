@@ -76,20 +76,12 @@ internal static class SqlBulkOperation
 
     public static void Read<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress) where T : class
     {
-        if (tableInfo.BulkConfig.UseTempDB) // dropTempTableIfExists
-        {
-            context.Database.ExecuteSqlRaw(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB));
-        }
         var adapter = SqlAdaptersMapping.CreateBulkOperationsAdapter();
         adapter.Read(context, type, entities, tableInfo, progress);
     }
 
     public static async Task ReadAsync<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress, CancellationToken cancellationToken) where T : class
     {
-        if (tableInfo.BulkConfig.UseTempDB) // dropTempTableIfExists
-        {
-            await context.Database.ExecuteSqlRawAsync(SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB), cancellationToken).ConfigureAwait(false);
-        }
         var adapter = SqlAdaptersMapping.CreateBulkOperationsAdapter();
         await adapter.ReadAsync(context, type, entities, tableInfo, progress, cancellationToken).ConfigureAwait(false);
     }

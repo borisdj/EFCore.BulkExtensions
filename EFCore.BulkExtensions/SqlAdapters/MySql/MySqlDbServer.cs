@@ -15,9 +15,9 @@ public class MySqlDbServer : IDbServer
     MySqlDialect _dialect = new();
     IQueryBuilderSpecialization IDbServer.Dialect => _dialect;
 
-    SqlAdapters.QueryBuilderExtensions _queryBuilder = new MySqlQueryBuilder();
+    SqlAdapters.SqlQueryBuilder _queryBuilder = new MySqlQueryBuilder();
     /// <inheritdoc/>
-    public QueryBuilderExtensions QueryBuilder => _queryBuilder;
+    public SqlQueryBuilder QueryBuilder => _queryBuilder;
 
     string IDbServer.ValueGenerationStrategy => nameof(MySqlValueGenerationStrategy);
 

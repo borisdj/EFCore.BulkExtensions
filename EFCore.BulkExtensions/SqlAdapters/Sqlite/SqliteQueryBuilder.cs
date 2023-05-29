@@ -8,7 +8,7 @@ namespace EFCore.BulkExtensions.SqlAdapters.Sqlite;
 /// <summary>
 /// Contains a compilation of SQL queries used in EFCore.
 /// </summary>
-public class SqliteQueryBuilder : QueryBuilderExtensions
+public class SqliteQueryBuilder : SqlQueryBuilder
 {
     /// <summary>
     /// Generates SQL query to retrieve the last inserted row id
@@ -149,12 +149,6 @@ public class SqliteQueryBuilder : QueryBuilderExtensions
     public override string RestructureForBatch(string sql, bool isDelete = false)
     {
         throw new NotImplementedException();
-    }
-
-    /// <inheritdoc/>
-    public override string SelectFromOutputTable(TableInfo tableInfo)
-    {
-        return SqlQueryBuilder.SelectFromOutputTable(tableInfo);
     }
 
     /// <inheritdoc/>

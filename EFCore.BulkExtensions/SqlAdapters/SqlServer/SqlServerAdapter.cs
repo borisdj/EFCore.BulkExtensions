@@ -1,5 +1,4 @@
-﻿using EFCore.BulkExtensions.Helpers;
-using Microsoft.Data.SqlClient;
+﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using NetTopologySuite.Geometries;
@@ -16,8 +15,10 @@ using System.Threading.Tasks;
 namespace EFCore.BulkExtensions.SqlAdapters.SqlServer;
 
 /// <inheritdoc/>
-public class SqlServerAdapter: ISqlOperationsAdapter
+public class SqlServerAdapter : ISqlOperationsAdapter
 {
+    private SqlServerQueryBuilder ProviderSqlQueryBuilder { get; set; } = new SqlServerQueryBuilder();
+
     /// <inheritdoc/>
     #region Methods
     // Insert
@@ -77,8 +78,8 @@ public class SqlServerAdapter: ISqlOperationsAdapter
 
                     if (!tableExist)
                     {
-                        var sqlCreateTableCopy = SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo);
-                        var sqlDropTable = SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
+                        var sqlCreateTableCopy = new SqlServerQueryBuilder().CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo);
+                        var sqlDropTable = new SqlServerQueryBuilder().DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
 
                         if (isAsync)
                         {
@@ -139,7 +140,7 @@ public class SqlServerAdapter: ISqlOperationsAdapter
             {
                 tableInfo.InsertToTempTable = true;
 
-                var sqlCreateTableCopy = SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo);
+                var sqlCreateTableCopy = new SqlServerQueryBuilder().CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo);
                 if (isAsync)
                 {
                     await context.Database.ExecuteSqlRawAsync(sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
@@ -162,7 +163,7 @@ public class SqlServerAdapter: ISqlOperationsAdapter
 
             if (tableInfo.CreateOutputTable)
             {
-                var sqlCreateOutputTableCopy = SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempOutputTableName, tableInfo, true);
+                var sqlCreateOutputTableCopy = new SqlServerQueryBuilder().CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempOutputTableName, tableInfo, true);
                 if (isAsync)
                 {
                     await context.Database.ExecuteSqlRawAsync(sqlCreateOutputTableCopy, cancellationToken).ConfigureAwait(false);
@@ -232,7 +233,7 @@ public class SqlServerAdapter: ISqlOperationsAdapter
             {
                 if (outputTableCreated)
                 {
-                    var sqlDropOutputTable = SqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName, tableInfo.BulkConfig.UseTempDB);
+                    var sqlDropOutputTable = new SqlServerQueryBuilder().DropTable(tableInfo.FullTempOutputTableName, tableInfo.BulkConfig.UseTempDB);
                     if (isAsync)
                     {
                         await context.Database.ExecuteSqlRawAsync(sqlDropOutputTable, cancellationToken).ConfigureAwait(false);
@@ -244,7 +245,7 @@ public class SqlServerAdapter: ISqlOperationsAdapter
                 }
                 if (tempTableCreated) // otherwise following lines execute the drop
                 {
-                    var sqlDropTable = SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
+                    var sqlDropTable = new SqlServerQueryBuilder().DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
                     if (isAsync)
                     {
                         await context.Database.ExecuteSqlRawAsync(sqlDropTable, cancellationToken).ConfigureAwait(false);
@@ -292,7 +293,7 @@ public class SqlServerAdapter: ISqlOperationsAdapter
         {
             Dictionary<string, string> previousPropertyColumnNamesDict = tableInfo.ConfigureBulkReadTableInfo();
 
-            var sqlCreateTableCopy = SqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo);
+            var sqlCreateTableCopy = new SqlServerQueryBuilder().CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo);
             if (isAsync)
             {
                 await context.Database.ExecuteSqlRawAsync(sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
@@ -345,7 +346,7 @@ public class SqlServerAdapter: ISqlOperationsAdapter
             {
                 if (tempTableCreated)
                 {
-                    var sqlDropTable = SqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
+                    var sqlDropTable = new SqlServerQueryBuilder().DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
                     if (isAsync)
                     {
                         await context.Database.ExecuteSqlRawAsync(sqlDropTable, cancellationToken).ConfigureAwait(false);
@@ -362,14 +363,14 @@ public class SqlServerAdapter: ISqlOperationsAdapter
     /// <inheritdoc/>
     public void Truncate(DbContext context, TableInfo tableInfo)
     {
-        var sqlTruncateTable = SqlQueryBuilder.TruncateTable(tableInfo.FullTableName);
+        var sqlTruncateTable = new SqlServerQueryBuilder().TruncateTable(tableInfo.FullTableName);
         context.Database.ExecuteSqlRaw(sqlTruncateTable);
     }
 
     /// <inheritdoc/>
     public async Task TruncateAsync(DbContext context, TableInfo tableInfo, CancellationToken cancellationToken)
     {
-        var sqlTruncateTable = SqlQueryBuilder.TruncateTable(tableInfo.FullTableName);
+        var sqlTruncateTable = new SqlServerQueryBuilder().TruncateTable(tableInfo.FullTableName);
         await context.Database.ExecuteSqlRawAsync(sqlTruncateTable, cancellationToken).ConfigureAwait(false);
     }
     #endregion
