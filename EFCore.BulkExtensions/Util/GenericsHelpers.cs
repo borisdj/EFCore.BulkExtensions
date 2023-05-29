@@ -27,23 +27,22 @@ internal static class GenericsHelpers
             {
                 continue;
             }
-            
+
             var temp = field.GetValue(value);
             object? defaultValue = null;
-            
+
             //bypass instance creation if incoming type is an interface or class does not have parameterless constructor
             var hasParameterlessConstructor = type.GetConstructor(Type.EmptyTypes) != null;
             if (!type.IsInterface && hasParameterlessConstructor)
                 defaultValue = field.GetValue(Activator.CreateInstance(type, true));
 
-            if (temp == defaultValue)
+            if (temp == defaultValue ||
+                (temp != null && defaultValue != null &&
+                 temp.ToString() == "0" && defaultValue.ToString() == "0") || // situation for int/long prop with HasSequence (test DefaultValues: Document)
+                (temp is Guid guid && guid == Guid.Empty))
+            {
                 result.Add(name);
-            else if (temp != null && defaultValue != null &&
-                    temp.ToString() == "0" && defaultValue.ToString() == "0") // situation for int/long prop with HasSequence (test DefaultValues: Document)
-                result.Add(name);
-
-            if (temp is Guid guid && guid == Guid.Empty)
-                result.Add(name);
+            }
         }
 
         return result;
@@ -55,5 +54,4 @@ internal static class GenericsHelpers
         var result = values.FirstOrDefault()?.GetPropertiesDefaultValue(type, tableInfo)?.Distinct();
         return result;
     }
-    
 }
