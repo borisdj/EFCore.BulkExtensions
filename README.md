@@ -235,6 +235,7 @@ It is implemented with [OUTPUT](https://docs.microsoft.com/en-us/sql/t-sql/queri
 When used Id-s will be updated in entitiesList, and if *PreserveInsertOrder* is set to *false* then entitiesList will be cleared and reloaded.<br>
 **SetOutputNonIdentityColumns** used only when *SetOutputIdentity* is set to true, and if this remains True (which is default) all columns are reloaded from Db.<br>
 When changed to false only Identity column is loaded to reduce load back from DB for efficiency.<br>
+  
 Example of *SetOutputIdentity* with parent-child FK related tables:
 ```C#
 int numberOfEntites = 1000;
