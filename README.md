@@ -1,18 +1,21 @@
 # EFCore.BulkExtensions
 EntityFrameworkCore extensions: <br>
--Bulk operations: **Insert, Update, Delete, Read, Upsert, Sync, SaveChanges** (extremely fast)<br>
+-Bulk operations (very fast): **Insert, Update, Delete, Read, Upsert, Sync, SaveChanges.**<br>
 -Batch ops: **Delete, Update** - will be Deprecated since EF7 has native Execute-Up/Del; and **Truncate**.<br>
 Library is Lightweight and very Efficient, having all mostly used [CRUD](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete) operation.<br>
 Was selected in top 20 [EF Core Extensions](https://docs.microsoft.com/en-us/ef/core/extensions/) recommended by Microsoft.<br>
 Latest version is using EF Core 7.<br>
-Supports all 4 mayor databases: **SQLServer, PostgreSQL, MySQL, SQLite**
+Supports all 4 mayor sql databases: **SQLServer, PostgreSQL, MySQL, SQLite.**<br>
+Check out [Testimonials](https://docs.google.com/spreadsheets/d/e/2PACX-1vShdv2sTm3oQfowm9kVIx-PLBCk1lGQEa9E6n92-dX3pni7-XQUEp6taVcMSZVi9BaSAizv1YanWTy3/pubhtml?gid=801420190&single=true) from the Community and User Comments.
 
 ## License
-* BulkExtensions are [licensed](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE.txt) under the [**Dual License v1.0**](https://www.codis.tech/efcorebulk/) which you must Buy if do not meet criteria for free usage (license also includes active support).
+*BulkExtensions [licensed](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE.txt) under [**Dual License v1.0**](https://www.codis.tech/efcorebulk/) (solution to OpenSource funding, cFOSS: conditionallyFree OSS).<br>
+If you do not meet criteria for free usage with community license then you have to buy commercial one.<br>
+If eligible for free usage but still want to help development and have active support, consider purchasing Starter Lic.<br>
 
 ## Support
 If you find this project useful you can mark it by leaving a Github **Star** :star:.</br>
-OpenSource needs funding, so even for free usage if you can please consider making a DONATION:<br>
+And even with community license you can make a DONATION:<br>
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/yellow_img.png)](https://www.buymeacoffee.com/boris.dj) _ or _ 
 [![Button](https://img.shields.io/badge/donate-Bitcoin-orange.svg?logo=bitcoin):zap:](https://borisdj.net/donation/donate-btc.html)<br>
 
@@ -25,9 +28,9 @@ Supported databases:<br>
 -**SQLServer** (or SqlAzure) under the hood uses [SqlBulkCopy](https://msdn.microsoft.com/en-us/library/system.data.sqlclient.sqlbulkcopy.aspx) for Insert, Update/Delete = BulkInsert + raw Sql [MERGE](https://docs.microsoft.com/en-us/sql/t-sql/statements/merge-transact-sql).<br>
 -**PostgreSQL** (9.5+) is using [COPY BINARY](https://www.postgresql.org/docs/9.2/sql-copy.html) combined with [ON CONFLICT](https://www.postgresql.org/docs/10/sql-insert.html#SQL-ON-CONFLICT) for Update.<br>
 -**MySQL** (8+) is using [MySqlBulkCopy](https://mysqlconnector.net/api/mysqlconnector/mysqlbulkcopytype/) combined with [ON DUPLICATE](https://dev.mysql.com/doc/refman/8.0/en/insert-on-duplicate.html) for Update.<br>
--**SQLite** has no Copy tool, instead library uses plain SQL combined with [UPSERT](https://www.sqlite.org/lang_UPSERT.html).<br>
+-**SQLite** has no Copy tool, instead library uses [plain SQL](https://learn.microsoft.com/en-us/dotnet/standard/data/sqlite/bulk-insert) combined with [UPSERT](https://www.sqlite.org/lang_UPSERT.html).<br>
 Bulk Tests can not have UseInMemoryDb because InMemoryProvider does not support Relational-specific methods.<br>
-Instead Test options are  SqlServer(Developer or Express), LocalDb([if alongside Developer v.](https://stackoverflow.com/questions/42885377/sql-server-2016-developer-version-can-not-connect-to-localdb-mssqllocaldb?noredirect=1&lq=1)), or for other adapters PostgreSQL/MySQL/SQLite.
+Instead Test options are  SqlServer(Developer or Express), LocalDb([if alongside Developer v.](https://stackoverflow.com/questions/42885377/sql-server-2016-developer-version-can-not-connect-to-localdb-mssqllocaldb?noredirect=1&lq=1)), or with  other adapters.
 
 ## Installation
 <!--[![Button](https://img.shields.io/nuget/v/EFCore.BulkExtensions.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/)-->
@@ -62,7 +65,7 @@ context.BulkSaveChanges();                    context.BulkSaveChangesAsync();
 ```
 
 **-SQLite** requires package: [*SQLitePCLRaw.bundle_e_sqlite3*](https://docs.microsoft.com/en-us/dotnet/standard/data/sqlite/custom-versions?tabs=netcore-cli) with call to `SQLitePCL.Batteries.Init()`<br>
-**-MySQL** when want to run Test on it for the first time execute sql command: `SET GLOBAL local_infile = true;`
+**-MySQL** when running its Test for the first time execute sql command ([local-data](https://stackoverflow.com/questions/59993844/error-loading-local-data-is-disabled-this-must-be-enabled-on-both-the-client)): `SET GLOBAL local_infile = true;`
 
 **Batch** Extensions are made on *IQueryable* DbSet and can be used as in the following code segment.<br>
 They are done as pure sql and no check is done whether some are prior loaded in memory and are being Tracked.<br>
@@ -135,7 +138,7 @@ Partial Sync can be done on table subset using expression set on config with met
 Not supported for SQLite (Lite has only UPSERT statement) nor currently for PostgreSQL. Way to achieve there sync functionality is to Select or BulkRead existing data from DB, split list into sublists and call separately Bulk methods for BulkInsertOrUpdate and Delete.
 
 **BulkRead** (SELECT and JOIN done in Sql)<br>
-Useful when need to Select from big List based on Unique Prop./Columns specified in config `UpdateByProperties`<br>
+Used when need to Select from big List based on Unique Prop./Columns specified in config `UpdateByProperties`<br>
 ```C#
 // instead of WhereIN which will TimeOut for List with over around 40 K records
 var entities = context.Items.Where(a => itemsNames.Contains(a.Name)).AsNoTracking().ToList(); // SQL IN
@@ -147,7 +150,8 @@ var items = itemsNames.Select(a => new Item { Name = a }).ToList(); // Items lis
 var bulkConfig = new BulkConfig { UpdateByProperties = new List<string> { nameof(Item.Name) } };
 context.BulkRead(items, bulkConfig); // Items list will be loaded from Db with data(other properties)
 ```
-[Example](https://github.com/borisdj/EFCore.BulkExtensions/issues/733#issuecomment-1017417579) of special use case when need to BulkRead child entities after BulkReading parent list. 
+Useful config **ReplaceReadEntities** that works as *Contains/IN* and returns all which match the criteria (not unique).<br>
+[Example](https://github.com/borisdj/EFCore.BulkExtensions/issues/733) of special use case when need to BulkRead child entities after BulkReading parent list. 
 
 **SaveChanges** uses Change Tracker to find all modified(CUD) entities and call proper BulkOperations for each table.<br>
 Because it needs tracking it is slower then pure BulkOps but still much faster then regular SaveChanges.<br>
@@ -170,11 +174,12 @@ PROPERTY : DEFAULTvalue
 ----------------------------------------------------------------------------------------------
 PreserveInsertOrder: true,                    PropertiesToInclude: null,
 SetOutputIdentity: false,                     PropertiesToIncludeOnCompare: null,
-BatchSize: 2000,                              PropertiesToIncludeOnUpdate: null,
-NotifyAfter: null,                            PropertiesToExclude: null,
-BulkCopyTimeout: null,                        PropertiesToExcludeOnCompare: null,
-EnableStreaming: false,                       PropertiesToExcludeOnUpdate: null,
-UseTempDB: false,                             UpdateByProperties: null,
+SetOutputNonIdentityColumns: true,            PropertiesToIncludeOnUpdate: null,
+BatchSize: 2000,                              PropertiesToExclude: null,
+NotifyAfter: null,                            PropertiesToExcludeOnCompare: null,
+BulkCopyTimeout: null,                        PropertiesToExcludeOnUpdate: null,
+EnableStreaming: false,                       UpdateByProperties: null,
+UseTempDB: false,                             ReplaceReadEntities: false,
 UniqueTableNameTempDb: true,                  EnableShadowProperties: false,
 CustomDestinationTableName: null,             IncludeGraph: false,
 CustomSourceTableName: null,                  OmitClauseExistsExcept: false,
@@ -184,7 +189,7 @@ WithHoldlock: true,                           DateTime2PrecisionForceRound: fals
 CalculateStats: false,                        TemporalColumns: { "PeriodStart", "PeriodEnd" },
 SqlBulkCopyOptions: Default,                  OnSaveChangesSetFK: true,
 SqlBulkCopyColumnOrderHints: null,            IgnoreGlobalQueryFilters: false,
-OnConflictUpdateWhereSql: null,               ReplaceReadEntities: false,
+OnConflictUpdateWhereSql: null,               
 ----------------------------------------------------------------------------------------------
 METHOD: SetSynchronizeFilter<T>
         SetSynchronizeSoftDelete<T>
@@ -228,6 +233,9 @@ Also for SQLite combination of BulkInsertOrUpdate and IdentityId automatic set w
 After Insert is done to first table, we need Id-s (if using Option 1) that were generated in Db because they are FK(ForeignKey) in second table.<br>
 It is implemented with [OUTPUT](https://docs.microsoft.com/en-us/sql/t-sql/queries/output-clause-transact-sql) as part of MERGE Query, so in this case even the Insert is not done directly to TargetTable but to TempTable and then Merged with TargetTable.<br>
 When used Id-s will be updated in entitiesList, and if *PreserveInsertOrder* is set to *false* then entitiesList will be cleared and reloaded.<br>
+**SetOutputNonIdentityColumns** used only when *SetOutputIdentity* is set to true, and if this remains True (which is default) all columns are reloaded from Db.<br>
+When changed to false only Identity column is loaded to reduce load back from DB for efficiency.<br>
+  
 Example of *SetOutputIdentity* with parent-child FK related tables:
 ```C#
 int numberOfEntites = 1000;
@@ -244,7 +252,7 @@ for (int i = 1; i <= numberOfEntites; i++)
     entities.Add(entity);
 }
 
-// Option 1
+// Option 1 (recommended)
 using (var transaction = context.Database.BeginTransaction())
 {
     context.BulkInsert(entities, new BulkConfig { SetOutputIdentity = true });
@@ -269,6 +277,8 @@ context.BulkSaveChanges();
 When **CalculateStats** set to True the result returned in `BulkConfig.StatsInfo` (*StatsNumber-Inserted/Updated/Deleted*).<br>
 If used for pure Insert (with Batching) then SetOutputIdentity should also be configured because Merge is required.<br>
 **TrackingEntities** can be set to True if we want to have tracking of entities from BulkRead or if SetOutputIdentity is set.<br>
+**WithHoldlock** means [Serializable isolation](https://github.com/borisdj/EFCore.BulkExtensions/issues/41) level that locks the table (can have negative effect on concurrency).<br>
+_ Setting it False can optionally be used to solve deadlock issue Insert.<br>
 **UseTempDB** when set then BulkOperation has to be [inside Transaction](https://github.com/borisdj/EFCore.BulkExtensions/issues/49).<br>
 **UniqueTableNameTempDb** when changed to false temp table name will be only 'Temp' without random numbers.<br>
 **CustomDestinationTableName** can be set with 'TableName' only or with 'Schema.TableName'.<br>
@@ -283,7 +293,7 @@ _ Also in some [sql collation](https://github.com/borisdj/EFCore.BulkExtensions/
 **DateTime2PrecisionForceRound** If dbtype datetime2 has precision less then default 7, example 'datetime2(3)' SqlBulkCopy does Floor instead of Round so when this Property is set then Rounding will be done in memory to make sure inserted values are same as with regular SaveChanges.<br>
 **TemporalColumns** are shadow columns used for Temporal table. Default elements 'PeriodStart' and 'PeriodEnd' can be changed if those columns have custom names.<br>
 **OnSaveChangesSetFK** is used only for BulkSaveChanges. When multiply entries have FK relationship which is Db generated, this set proper value after reading parent PK from Db. IF PK are generated in memory like are some Guid then this can be set to false for better efficiency.<br>
-**ReplaceReadEntities** when set to True result of BulkRead operation will be provided using replace instead of update. Entities list parameter of BulkRead method will be repopulated with obtained data.
+**ReplaceReadEntities** when set to True result of BulkRead operation will be provided using replace instead of update. Entities list parameter of BulkRead method will be repopulated with obtained data. Enables functionality of Contains/IN which will return all entities matching the criteria (does not have to be by unique columns).
 
 **SqlBulkCopyOptions** is Enum (only for SqlServer) with [[Flags]](https://stackoverflow.com/questions/8447/what-does-the-flags-enum-attribute-mean-in-c) attribute which enables specifying one or more options:<br>
 *Default, KeepIdentity, CheckConstraints, TableLock, KeepNulls, FireTriggers, UseInternalTransaction*<br>
@@ -316,9 +326,7 @@ Performance for bulk ops measured with `ActivitySources` named: '*BulkExecute*' 
 Bulk Extension methods can be [Overridden](https://github.com/borisdj/EFCore.BulkExtensions/issues/56) if required, for example to set AuditInfo.<br>
 If having problems with Deadlock there is useful info in [issue/46](https://github.com/borisdj/EFCore.BulkExtensions/issues/46).
 
-## TPH inheritance
-
-When having TPH ([Table-Per-Hierarchy](https://docs.microsoft.com/en-us/aspnet/core/data/ef-mvc/inheritance)) inheritance model it can be set in 2 ways.<br>
+**TPH** ([Table-Per-Hierarchy](https://docs.microsoft.com/en-us/aspnet/core/data/ef-mvc/inheritance)) inheritance model can  can be set in 2 ways.<br>
 First is automatically by Convention in which case Discriminator column is not directly in Entity but is [Shadow](http://www.learnentityframeworkcore.com/model/shadow-properties) Property.<br>
 And second is to explicitly define Discriminator property in Entity and configure it with `.HasDiscriminator()`.<br>
 Important remark regarding the first case is that since we can not set directly Discriminator to certain value we need first to add list of entities to DbSet where it will be set and after that we can call Bulk operation. Note that SaveChanges are not called and we could optionally turn off TrackingChanges for performance. Example:
@@ -327,4 +335,4 @@ public class Student : Person { ... }
 context.Students.AddRange(entities); // adding to Context so that Shadow property 'Discriminator' gets set
 context.BulkInsert(entities);
 ```
-**TPT** (Table-Per-Type) as of v5 is [partially supported](https://github.com/borisdj/EFCore.BulkExtensions/issues/493).
+**TPT** (Table-Per-Type) way it is [supported](https://github.com/borisdj/EFCore.BulkExtensions/issues/493).

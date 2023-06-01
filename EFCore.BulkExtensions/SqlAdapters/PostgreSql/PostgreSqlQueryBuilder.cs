@@ -8,8 +8,22 @@ namespace EFCore.BulkExtensions.SqlAdapters.PostgreSql;
 /// <summary>
 /// Contains a list of methods to generate SQL queries required by EFCore
 /// </summary>
-public class PostgreSqlQueryBuilder : QueryBuilderExtensions
+public class PostgreSqlQueryBuilder : SqlQueryBuilder
 {
+
+    /// <summary>
+    /// Generates SQL query to create Output table for Stats
+    /// </summary>
+    /// <param name="newTableName"></param>
+    /// <param name="useTempDb"></param>
+    public static string CreateOutputStatsTable(string newTableName, bool useTempDb)
+    {
+        string keywordTEMP = useTempDb ? "TEMP " : ""; // "TEMP " or "TEMPORARY "
+        var q = @$"CREATE {keywordTEMP}TABLE IF NOT EXISTS {newTableName} (""xmaxNumber"" xid)"; // col name can't be just 'xmax' - conflicts with system column
+        q = q.Replace("[", @"""").Replace("]", @"""");
+        return q;
+    }
+
     /// <summary>
     /// Generates SQL query to create table copy
     /// </summary>
@@ -139,10 +153,14 @@ public class PostgreSqlQueryBuilder : QueryBuilderExtensions
             var allColumnsList = tableInfo.OutputPropertyColumnNamesDict.Values.ToList();
             string commaSeparatedColumnsNames = SqlQueryBuilder.GetCommaSeparatedColumns(allColumnsList, tableInfo.FullTableName).Replace("[", @"""").Replace("]", @"""");
             q += $" RETURNING {commaSeparatedColumnsNames}";
+
+            if (tableInfo.BulkConfig.CalculateStats)
+            {
+                q += ", xmax";
+            }
         }
 
         q = q.Replace("[", @"""").Replace("]", @"""");
-        q += ";";
 
         Dictionary<string, string>? sourceDestinationMappings = tableInfo.BulkConfig.CustomSourceDestinationMappingColumns;
         if (tableInfo.BulkConfig.CustomSourceTableName != null && sourceDestinationMappings != null && sourceDestinationMappings.Count > 0)
@@ -167,6 +185,16 @@ public class PostgreSqlQueryBuilder : QueryBuilderExtensions
                 q = q.Replace(qSegment, qSegmentUpdated);
             }
         }
+
+        if (tableInfo.BulkConfig.CalculateStats)
+        {
+            q = $"WITH upserted AS ({q}), " +
+                $"NEW AS ( INSERT INTO {tableInfo.FullTempOutputTableName} SELECT xmax FROM upserted ) " +
+                $"SELECT * FROM upserted";
+        }
+
+        q = q.Replace("[", @"""").Replace("]", @"""");
+        q += ";";
 
         return q;
     }
@@ -205,7 +233,7 @@ public class PostgreSqlQueryBuilder : QueryBuilderExtensions
     /// Generates SQL query to truncate a table
     /// </summary>
     /// <param name="tableName"></param>
-    public static string TruncateTable(string tableName)
+    public override string TruncateTable(string tableName)
     {
         var q = $"TRUNCATE {tableName} RESTART IDENTITY;";
         q = q.Replace("[", @"""").Replace("]", @"""");
@@ -230,17 +258,47 @@ public class PostgreSqlQueryBuilder : QueryBuilderExtensions
     public static string CountUniqueConstrain(TableInfo tableInfo)
     {
         var primaryKeysColumns = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList();
+        string q;
 
-        var q = $"SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc ";
-        foreach (var (pkColumn, index) in primaryKeysColumns.Select((value, i) => (value, i)))
+        bool usePG_Catalog = true; // PG_Catalog used instead of Information_Schema
+        if (usePG_Catalog)
         {
-            q += $"INNER JOIN INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE cu{index} " +
-                 $"ON cu{index}.CONSTRAINT_NAME = tc.CONSTRAINT_NAME AND cu{index}.COLUMN_NAME = '{pkColumn}' ";
+            q = @"SELECT COUNT(*)
+                  FROM pg_catalog.pg_namespace nr,
+                      pg_catalog.pg_class r,
+                      pg_catalog.pg_attribute a,
+                      pg_catalog.pg_namespace nc,
+                      pg_catalog.pg_constraint c
+                  WHERE nr.oid = r.relnamespace
+                  AND r.oid = a.attrelid
+                  AND nc.oid = c.connamespace
+                  AND r.oid =
+                      CASE c.contype
+                          WHEN 'f'::""char"" THEN c.confrelid
+                      ELSE c.conrelid
+                          END
+                      AND (a.attnum = ANY (
+                          CASE c.contype
+                      WHEN 'f'::""char"" THEN c.confkey
+                          ELSE c.conkey
+                          END))
+                      AND NOT a.attisdropped
+                      AND (c.contype = ANY (ARRAY ['p'::""char"", 'u'::""char""]))
+                      AND (r.relkind = ANY (ARRAY ['r'::""char"", 'p'::""char""]))" +
+                $" AND r.relname = '{tableInfo.TableName}' AND a.attname IN('{string.Join("','", primaryKeysColumns)}')";
         }
+        else // Deprecated - Information_Schema no longer used (is available only in default database)
+        {
+            q = $"SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc ";
+            foreach (var (pkColumn, index) in primaryKeysColumns.Select((value, i) => (value, i)))
+            {
+                q += $"INNER JOIN INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE cu{index} " +
+                     $"ON cu{index}.CONSTRAINT_NAME = tc.CONSTRAINT_NAME AND cu{index}.COLUMN_NAME = '{pkColumn}' ";
+            }
 
-        q += $"WHERE (tc.CONSTRAINT_TYPE = 'UNIQUE' OR tc.CONSTRAINT_TYPE = 'PRIMARY KEY') " +
-             $"AND tc.TABLE_NAME = '{tableInfo.TableName}' AND tc.TABLE_SCHEMA = '{tableInfo.Schema}'";
-
+            q += $"WHERE (tc.CONSTRAINT_TYPE = 'UNIQUE' OR tc.CONSTRAINT_TYPE = 'PRIMARY KEY') " +
+                 $"AND tc.TABLE_NAME = '{tableInfo.TableName}' AND tc.TABLE_SCHEMA = '{tableInfo.Schema}'";
+        }
         return q;
     }
 
@@ -392,7 +450,7 @@ public class PostgreSqlQueryBuilder : QueryBuilderExtensions
     /// <returns></returns>
     public override string SelectFromOutputTable(TableInfo tableInfo)
     {
-        return SqlQueryBuilder.SelectFromOutputTable(tableInfo);
+        return SelectFromOutputTable(tableInfo);
     }
 
     /// <summary>

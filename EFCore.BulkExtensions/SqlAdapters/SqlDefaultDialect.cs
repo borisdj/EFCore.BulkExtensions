@@ -1,5 +1,4 @@
-﻿using EFCore.BulkExtensions.SqlAdapters;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -34,6 +33,7 @@ public class SqlDefaultDialect : IQueryBuilderSpecialization
                 if (!ex.Message.StartsWith(noMappingText + "System.Collections.Generic.List") &&             // - Contains
                     !ex.Message.StartsWith(noMappingText + "System.Int32[]") &&                              // - Contains
                     !ex.Message.StartsWith(noMappingText + "System.Int64[]") &&                              // - Contains
+                    !ex.Message.StartsWith(noMappingText + "System.Guid[]") &&                               // - Contains
                     !ex.Message.StartsWith(noMappingText + typeof(System.Text.Json.JsonElement).FullName) && // - JsonElement param
                     !ex.Message.StartsWith(noMappingText + typeof(System.Text.Json.JsonDocument).FullName))  // - JsonElement param
                 {
@@ -57,6 +57,11 @@ public class SqlDefaultDialect : IQueryBuilderSpecialization
         var isPostgreSql = databaseType == SqlType.PostgreSql;
         var escapeSymbolEnd = isPostgreSql ? "." : "]";
         var escapeSymbolStart = isPostgreSql ? " " : "["; // SqlServer : PostrgeSql;
+        if (databaseType == SqlType.MySql)
+        {
+            escapeSymbolEnd = "`.";
+            escapeSymbolStart = "`";
+        }
         var tableAliasEnd = sqlQuery[SelectStatementLength..sqlQuery.IndexOf(escapeSymbolEnd, StringComparison.Ordinal)]; // " TOP(10) [table_alias" / " [table_alias" : " table_alias"
         var tableAliasStartIndex = tableAliasEnd.IndexOf(escapeSymbolStart, StringComparison.Ordinal);
         var tableAlias = tableAliasEnd[(tableAliasStartIndex + escapeSymbolStart.Length)..]; // "table_alias"

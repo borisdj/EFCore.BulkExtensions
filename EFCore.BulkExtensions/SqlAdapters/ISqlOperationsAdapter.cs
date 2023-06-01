@@ -20,7 +20,7 @@ public interface ISqlOperationsAdapter
     /// <param name="entities"></param>
     /// <param name="tableInfo"></param>
     /// <param name="progress"></param>
-    void Insert<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress);
+    void Insert<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress);
 
     /// <summary>
     /// Inserts a list of entities
@@ -32,7 +32,7 @@ public interface ISqlOperationsAdapter
     /// <param name="tableInfo"></param>
     /// <param name="progress"></param>
     /// <param name="cancellationToken"></param>
-    Task InsertAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress, CancellationToken cancellationToken);
+    Task InsertAsync<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress, CancellationToken cancellationToken);
 
     /// <summary>
     /// Merges a list of entities with a table source
@@ -44,7 +44,7 @@ public interface ISqlOperationsAdapter
     /// <param name="tableInfo"></param>
     /// <param name="operationType"></param>
     /// <param name="progress"></param>
-    void Merge<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress) where T : class;
+    void Merge<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress) where T : class;
 
     /// <summary>
     /// Merges a list of entities with a table source
@@ -57,7 +57,7 @@ public interface ISqlOperationsAdapter
     /// <param name="operationType"></param>
     /// <param name="progress"></param>
     /// <param name="cancellationToken"></param>
-    Task MergeAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress, CancellationToken cancellationToken) where T : class;
+    Task MergeAsync<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress, CancellationToken cancellationToken) where T : class;
 
     /// <summary>
     /// Reads a list of entities from database
@@ -68,7 +68,7 @@ public interface ISqlOperationsAdapter
     /// <param name="entities"></param>
     /// <param name="tableInfo"></param>
     /// <param name="progress"></param>
-    void Read<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress) where T : class;
+    void Read<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress) where T : class;
 
     /// <summary>
     /// Reads a list of entities from database
@@ -80,7 +80,7 @@ public interface ISqlOperationsAdapter
     /// <param name="tableInfo"></param>
     /// <param name="progress"></param>
     /// <param name="cancellationToken"></param>
-    Task ReadAsync<T>(DbContext context, Type type, IList<T> entities, TableInfo tableInfo, Action<decimal>? progress, CancellationToken cancellationToken) where T : class;
+    Task ReadAsync<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress, CancellationToken cancellationToken) where T : class;
 
     /// <summary>
     /// Truncates a table

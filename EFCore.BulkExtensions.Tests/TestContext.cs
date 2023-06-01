@@ -29,6 +29,8 @@ public class TestContext : DbContext
 
     public DbSet<File> Files { get; set; } = null!;
 
+    public DbSet<FilePG> FilePGs { get; set; } = null!;
+
     public DbSet<Box> Boxes { get; set; } = null!;
     public DbSet<Person> Persons { get; set; } = null!;
     public DbSet<Student> Students { get; set; } = null!;
@@ -73,9 +75,14 @@ public class TestContext : DbContext
 
     public DbSet<TimeRecord> TimeRecords { get; set; } = null!;
 
+    public DbSet<Customer> Customers { get; set; } = null!;
+
+    public static bool UseTopologyPostgres { get; set; } = false;
+
     public TestContext(DbContextOptions options) : base(options)
     {
         Database.EnsureCreated();
+        // if for Postgres on test run get Npgsql Ex:[could not open .../postgis.control] then either install the plugin it or set UseTopologyPostgres to False;
 
         if (Database.IsSqlServer())
         {
@@ -105,6 +112,8 @@ public class TestContext : DbContext
         modelBuilder.Entity<Wall>().Property(x => x.WallTypeValue).HasConversion(new EnumToStringConverter<WallType>());
         modelBuilder.Entity<Wall>().Property(x => x.WallCategory).HasConversion(new EnumToStringConverter<WallCategory>());
 
+        modelBuilder.Entity<Customer>().HasIndex(p => p.Name).IsUnique();
+
         modelBuilder.Entity<TimeRecord>().OwnsOne(a => a.Source,
             b => b.Property(p => p.Type).HasConversion(new EnumToNumberConverter<TimeRecordSourceType, int>()));
 
@@ -125,6 +134,8 @@ public class TestContext : DbContext
         modelBuilder.Entity<Log>().ToTable(nameof(Log));
         modelBuilder.Entity<LogPersonReport>().ToTable(nameof(LogPersonReport));
 
+        modelBuilder.Entity<FilePG>().Ignore(p => p.Formats);
+
         if (Database.IsSqlServer())
         {
             modelBuilder.Entity<Document>().Property(p => p.DocumentId).HasDefaultValueSql("NEWID()");
@@ -134,7 +145,7 @@ public class TestContext : DbContext
 
             modelBuilder.Entity<UdttIntInt>(entity => { entity.HasNoKey(); });
 
-            modelBuilder.Entity<Address>().Property(p => p.LocationGeometry).HasColumnType("geometry");
+            //modelBuilder.Entity<Address>().Property(p => p.LocationGeometry).HasColumnType("geometry");
             modelBuilder.Entity<Category>().Property(p => p.HierarchyDescription).HasColumnType("hierarchyid");
 
             modelBuilder.Entity<Division>().Property(p => p.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
@@ -153,8 +164,6 @@ public class TestContext : DbContext
 
         if (Database.IsSqlite() || Database.IsNpgsql() || Database.IsMySql())
         {
-            modelBuilder.Entity<Address>().Ignore(p => p.LocationGeography);
-            modelBuilder.Entity<Address>().Ignore(p => p.LocationGeometry);
             modelBuilder.Entity<Category>().Ignore(p => p.HierarchyDescription);
 
             modelBuilder.Entity<Event>().Ignore(p => p.TimeCreated);
@@ -167,9 +176,28 @@ public class TestContext : DbContext
             modelBuilder.Entity<ItemHistory>().ToTable(nameof(ItemHistory));
         }
 
+        if (Database.IsMySql())
+        {
+            modelBuilder.Entity<Address>().Ignore(p => p.LocationGeography);
+            modelBuilder.Entity<Address>().Ignore(p => p.LocationGeometry);
+        }
+
         if (Database.IsNpgsql())
         {
+            if (UseTopologyPostgres)
+            {
+                modelBuilder.Entity<Address>().Property(p => p.LocationGeometry).HasColumnType("geometry (point, 2180)").HasSrid(2180);
+            }
+            else
+            {
+                modelBuilder.Entity<Address>().Ignore(p => p.LocationGeography);
+                modelBuilder.Entity<Address>().Ignore(p => p.LocationGeometry);
+            }
+
+            modelBuilder.Entity<FilePG>().Property(p => p.Formats).HasColumnType("text[]");
+
             modelBuilder.Entity<Event>().Property(p => p.TimeCreated).HasColumnType("timestamp"); // with annotation defined as "datetime2(3)" so here corrected for PG ("timestamp" in short for "timestamp without time zone")
+            modelBuilder.Entity<Event>().Property(p => p.TimeUpdated).HasColumnType("timestamp(2)");
 
             modelBuilder.Entity<Box>().Property(p => p.ElementContent).HasColumnType("jsonb"); // with annotation not mapped since not used for others DBs
             modelBuilder.Entity<Box>().Property(p => p.DocumentContent).HasColumnType("jsonb"); // with annotation not mapped since not used for others DBs
@@ -250,16 +278,20 @@ public static class ContextUtil
             //var connectionString = $@"Data Source=(localdb)\MSSQLLocalDB;Database={databaseName};Trusted_Connection=True;MultipleActiveResultSets=True";
 
             //optionsBuilder.UseSqlServer(connectionString); // Can NOT Test with UseInMemoryDb (Exception: Relational-specific methods can only be used when the context is using a relational)
-            optionsBuilder.UseSqlServer(connectionString, opt => opt.UseNetTopologySuite()); // NetTopologySuite for Geometry / Geometry types
-            optionsBuilder.UseSqlServer(connectionString, conf =>
+            //optionsBuilder.UseSqlServer(connectionString, opt => opt.UseNetTopologySuite()); // NetTopologySuite for Geometry / Geometry types
+            optionsBuilder.UseSqlServer(connectionString, opt =>
             {
-                conf.UseHierarchyId();
+                opt.UseNetTopologySuite();
+                opt.UseHierarchyId();
             });
         }
         else if (dbServerType == SqlType.Sqlite)
         {
             string connectionString = GetSqliteConnectionString(databaseName);
-            optionsBuilder.UseSqlite(connectionString);
+            optionsBuilder.UseSqlite(connectionString, opt =>
+            {
+                opt.UseNetTopologySuite();
+            });
             SQLitePCL.Batteries.Init();
 
             // ALTERNATIVELY:
@@ -269,7 +301,11 @@ public static class ContextUtil
         else if (DatabaseType == SqlType.PostgreSql)
         {
             string connectionString = GetPostgreSqlConnectionString(databaseName);
-            optionsBuilder.UseNpgsql(connectionString);
+
+            if(TestContext.UseTopologyPostgres)
+                optionsBuilder.UseNpgsql(connectionString, opt => opt.UseNetTopologySuite());
+            else
+                optionsBuilder.UseNpgsql(connectionString);
         }
         else if (DatabaseType == SqlType.MySql)
         {
@@ -518,7 +554,6 @@ public class Address
 {
     public int AddressId { get; set; }
     public string Street { get; set; } = null!;
-
     public Geometry LocationGeography { get; set; } = null!;
     public Geometry LocationGeometry { get; set; } = null!;
 }
@@ -573,7 +608,7 @@ public class Letter
 // For testing Temporal tables (configured via FluentAPI )
 public class Storage
 {
-    public Guid StorageId { get; set; }
+    public int StorageId { get; set; }
 
     public string Data { get; set; } = null!;
 }
@@ -604,6 +639,20 @@ public class File
     [Timestamp]
     public byte[] VersionChange { get; set; } = Guid.NewGuid().ToByteArray();
     //public ulong RowVersion { get; set; }
+}
+
+// For testing TimeStamp Property and Column with Concurrency Lock
+public class FilePG
+{
+    public int FilePGId { get; set; }
+
+    public string? Description { get; set; }
+
+    //[Column(TypeName = "text[]")] // set in Fluent
+    public string[]? Formats { get; set; }
+
+    [Timestamp]
+    public uint Version { get; set; }
 }
 
 public enum InfoType
@@ -812,7 +861,6 @@ public class AtypicalRowVersionConverterEntity
 
 public class Event // CustomPrecision DateTime Test (SqlServer only)
 {
-
     public int EventId { get; set; }
 
     [Required]
@@ -822,6 +870,8 @@ public class Event // CustomPrecision DateTime Test (SqlServer only)
 
     [Column(TypeName = "datetime2(3)")]
     public DateTime TimeCreated { get; set; }
+
+    public DateTime? TimeUpdated { get; set; }
 }
 
 public class Archive
@@ -865,5 +915,12 @@ public class Division
 public class PrivateKey
 {
     private long Id { get; set; }
+    public string Name { get; set; } = null!;
+}
+
+
+public class Customer
+{
+    public int Id { get; set; }
     public string Name { get; set; } = null!;
 }

@@ -6,7 +6,7 @@ namespace EFCore.BulkExtensions.SqlAdapters.SqlServer;
 /// <summary>
 /// Contains a compilation of SQL queries used in EFCore.
 /// </summary>
-public class SqlServerQueryBuilder : QueryBuilderExtensions
+public class SqlServerQueryBuilder : SqlQueryBuilder
 {
     /// <inheritdoc/>
     public override object CreateParameter(SqlParameter sqlParameter)
@@ -24,12 +24,6 @@ public class SqlServerQueryBuilder : QueryBuilderExtensions
     public override string RestructureForBatch(string sql, bool isDelete = false)
     {
         throw new NotImplementedException();
-    }
-
-    /// <inheritdoc/>
-    public override string SelectFromOutputTable(TableInfo tableInfo)
-    {
-        return SqlQueryBuilder.SelectFromOutputTable(tableInfo);
     }
 
     /// <inheritdoc/>

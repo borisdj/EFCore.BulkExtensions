@@ -10,7 +10,7 @@ namespace EFCore.BulkExtensions.SqlAdapters.MySql;
 /// <summary>
 ///  Contains a list of methods to generate SQL queries required by EFCore
 /// </summary>
-public class MySqlQueryBuilder : QueryBuilderExtensions
+public class MySqlQueryBuilder : SqlQueryBuilder
 {
     /// <summary>
     /// Generates SQL query to create table copy
@@ -35,7 +35,7 @@ public class MySqlQueryBuilder : QueryBuilderExtensions
     /// <param name="tableName"></param>
     /// <param name="isTempTable"></param>
     /// <returns></returns>
-    public static string DropTable(string tableName, bool isTempTable)
+    public override string DropTable(string tableName, bool isTempTable)
     {
         isTempTable = false;
         string keywordTemp = isTempTable ? "TEMPORARY " : "";
@@ -88,13 +88,13 @@ public class MySqlQueryBuilder : QueryBuilderExtensions
             throw new NotImplementedException($"For MySql method {OperationType.InsertOrUpdateOrDelete} is not yet supported. Use combination of InsertOrUpdate with Read and Delete");
         }
 
-        string query;
+        string q;
         var firstPrimaryKey = tableInfo.PrimaryKeysPropertyColumnNameDict.FirstOrDefault().Key;
         if (operationType == OperationType.Delete)
         {
-            query = $"DELETE A " +
-                    $"FROM {tableInfo.FullTableName} AS A " +
-                    $"INNER JOIN {tableInfo.FullTempTableName} B on A.{firstPrimaryKey} = B.{firstPrimaryKey}; ";
+            q = $"DELETE A " +
+                $"FROM {tableInfo.FullTableName} AS A " +
+                $"INNER JOIN {tableInfo.FullTempTableName} B on A.{firstPrimaryKey} = B.{firstPrimaryKey}; ";
         }
         else
         {
@@ -103,61 +103,66 @@ public class MySqlQueryBuilder : QueryBuilderExtensions
             var columnsToUpdate = columnsListEquals.Where(c => tableInfo.PropertyColumnNamesUpdateDict.ContainsValue(c)).ToList();
             var equalsColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsToUpdate, equalsTable: "EXCLUDED").Replace("[", "`").Replace("]", "`");
 
-            query = $"INSERT INTO {tableInfo.FullTableName} ({commaSeparatedColumns}) " +
-                    $"SELECT {commaSeparatedColumns} FROM {tableInfo.FullTempTableName} AS EXCLUDED " +
-                    $"ON DUPLICATE KEY UPDATE " +
-                    $"{equalsColumns}; ";
+            q = $"INSERT INTO {tableInfo.FullTableName} ({commaSeparatedColumns}) " +
+                $"SELECT {commaSeparatedColumns} FROM {tableInfo.FullTempTableName} AS EXCLUDED " +
+                $"ON DUPLICATE KEY UPDATE " +
+                $"{equalsColumns}; ";
             if (tableInfo.CreateOutputTable)
             {
                 if (operationType == OperationType.Insert || operationType == OperationType.InsertOrUpdate)
                 {
-                    query += $"INSERT INTO {tableInfo.FullTempOutputTableName} " +
-                             $"SELECT * FROM {tableInfo.FullTableName} " +
-                             $"WHERE {firstPrimaryKey} >= LAST_INSERT_ID() " +
-                             $"AND {firstPrimaryKey} < LAST_INSERT_ID() + row_count(); ";
+                    q += $"INSERT INTO {tableInfo.FullTempOutputTableName} " +
+                         $"SELECT * FROM {tableInfo.FullTableName} " +
+                         $"WHERE {firstPrimaryKey} >= LAST_INSERT_ID() " +
+                         $"AND {firstPrimaryKey} < LAST_INSERT_ID() + row_count(); ";
                 }
                 else if (operationType == OperationType.Update)
                 {
-                    query += $"INSERT INTO {tableInfo.FullTempOutputTableName} " +
-                             $"SELECT * FROM {tableInfo.FullTempTableName} ";
+                    q += $"INSERT INTO {tableInfo.FullTempOutputTableName} " +
+                         $"SELECT * FROM {tableInfo.FullTempTableName} ";
                 }
                 /* elseif (operationType == OperationType.InsertOrUpdate)
                 {
-                    query += $"INSERT INTO {tableInfo.FullTempOutputTableName} " +
-                             $"SELECT A.* FROM {tableInfo.FullTempTableName} A " +
-                             $"LEFT OUTER JOIN {tableInfo.FullTempOutputTableName} B " +
-                             $" ON A.{firstPrimaryKey} = B.{firstPrimaryKey} " +
-                             $"WHERE  B.{firstPrimaryKey} IS NULL; ";
+                    q += $"INSERT INTO {tableInfo.FullTempOutputTableName} " +
+                         $"SELECT A.* FROM {tableInfo.FullTempTableName} A " +
+                         $"LEFT OUTER JOIN {tableInfo.FullTempOutputTableName} B " +
+                         $" ON A.{firstPrimaryKey} = B.{firstPrimaryKey} " +
+                         $"WHERE  B.{firstPrimaryKey} IS NULL; ";
                 }*/
             }
         }
 
-        query = query.Replace("[", "`").Replace("]", "`");
+        q = q.Replace("[", "`").Replace("]", "`");
 
         Dictionary<string, string>? sourceDestinationMappings = tableInfo.BulkConfig.CustomSourceDestinationMappingColumns;
         if (tableInfo.BulkConfig.CustomSourceTableName != null && sourceDestinationMappings != null && sourceDestinationMappings.Count > 0)
         {
             var textSelect = "SELECT ";
             var textFrom = " FROM";
-            int startIndex = query.IndexOf(textSelect);
-            var qSegment = query[startIndex..query.IndexOf(textFrom)];
+            int startIndex = q.IndexOf(textSelect);
+            var qSegment = q[startIndex..q.IndexOf(textFrom)];
             var qSegmentUpdated = qSegment;
             foreach (var mapping in sourceDestinationMappings)
             {
-                var propertyFormated = $"{mapping.Value}";
+                var propertySourceFormated = $"EXCLUDED.`{mapping.Value}`";
+                var propertyFormated = $"`{mapping.Value}`";
                 var sourceProperty = mapping.Key;
 
                 if (qSegment.Contains(propertyFormated))
                 {
-                    qSegmentUpdated = qSegmentUpdated.Replace(propertyFormated, $"{sourceProperty}");
+                    qSegmentUpdated = qSegmentUpdated.Replace(propertyFormated, sourceProperty);
+                }
+                if (q.Contains(propertySourceFormated))
+                {
+                    q = q.Replace(propertySourceFormated, $"EXCLUDED.`{sourceProperty}`");
                 }
             }
             if (qSegment != qSegmentUpdated)
             {
-                query = query.Replace(qSegment, qSegmentUpdated);
+                q = q.Replace(qSegment, qSegmentUpdated);
             }
         }
-        return query;
+        return q;
     }
     /// <summary>
     /// Generates SQL query to select output from a table
@@ -258,7 +263,38 @@ public class MySqlQueryBuilder : QueryBuilderExtensions
     /// <param name="isDelete"></param>
     public override string RestructureForBatch(string sql, bool isDelete = false)
     {
+        sql = sql.Replace("[", "`").Replace("]", "`");
+        string firstLetterOfTable = sql.Substring(7, 1);
+
+        sql = sql.Replace("`i`", "i");
+        if (isDelete)
+        {
+            sql = sql.Replace($"DELETE {firstLetterOfTable}", "DELETE ");
+        }
+        else
+        {
+            string tableAS = sql.Substring(sql.IndexOf("FROM") + 4, sql.IndexOf($"AS {firstLetterOfTable}") - sql.IndexOf("FROM"));
+
+            sql = sql.Replace($"AS {firstLetterOfTable}", "");
+            string fromClause = sql.Substring(sql.IndexOf("FROM"), sql.IndexOf("WHERE") - sql.IndexOf("FROM"));
+            sql = sql.Replace(fromClause, "");
+
+            sql = sql.Replace($"UPDATE {firstLetterOfTable}", "UPDATE" + tableAS);
+        }
+
         return sql;
+    }
+
+    /// <summary>
+    /// Generates SQL query to truncate table
+    /// </summary>
+    /// <param name="tableName"></param>
+    /// <returns></returns>
+    public override string TruncateTable(string tableName)
+    {
+        var q = $"TRUNCATE TABLE {tableName};";
+        q = q.Replace("[", "`").Replace("]", "`");
+        return q;
     }
 
     /// <summary>
@@ -268,7 +304,7 @@ public class MySqlQueryBuilder : QueryBuilderExtensions
     /// <returns></returns>
     public override object CreateParameter(SqlParameter sqlParameter)
     {
-        return sqlParameter;
+        return new MySqlConnector.MySqlParameter(sqlParameter.ParameterName, sqlParameter.Value);
     }
 
     /// <inheritdoc/>

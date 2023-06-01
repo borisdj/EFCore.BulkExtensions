@@ -26,7 +26,7 @@ public interface IDbServer
     /// <summary>
     /// Contains a compilation of SQL queries used in EFCore.
     /// </summary>
-    SqlAdapters.QueryBuilderExtensions QueryBuilder { get; }
+    SqlAdapters.SqlQueryBuilder QueryBuilder { get; }
 
     /// <summary>
     /// Gets or Sets a DbConnection for the provider

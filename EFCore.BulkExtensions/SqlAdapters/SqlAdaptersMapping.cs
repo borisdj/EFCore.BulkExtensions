@@ -52,7 +52,7 @@ public static class SqlAdaptersMapping
 
             var ignoreCase = StringComparison.InvariantCultureIgnoreCase;
 
-            SqlType databaseType = SqlType.SqlServer;                                  // ProviderName: Microsoft.EntityFrameworkCore.SqlServer
+            SqlType databaseType = SqlType.SqlServer;                                       // ProviderName: Microsoft.EntityFrameworkCore.SqlServer
 
             if (ProviderName?.EndsWith(SqlType.PostgreSql.ToString(), ignoreCase) ?? false) // ProviderName: Npgsql.EntityFrameworkCore.PostgreSQL
             {
@@ -129,7 +129,7 @@ public static class SqlAdaptersMapping
     /// Returns per provider QueryBuilder instance, containing a compilation of SQL queries used in EFCore.
     /// </summary>
     /// <returns></returns>
-    public static QueryBuilderExtensions GetQueryBuilder()
+    public static SqlQueryBuilder GetQueryBuilder()
     {
         return DbServer!.QueryBuilder;
     }

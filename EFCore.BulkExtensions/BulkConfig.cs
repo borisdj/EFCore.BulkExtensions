@@ -28,6 +28,15 @@ public class BulkConfig
     public bool SetOutputIdentity { get; set; }
 
     /// <summary>
+    ///    Used only when SetOutputIdentity is set to true, and if this remains True (which is default) all columns are reloaded from Db.
+    ///    When changed to false only Identity column is loaded.
+    /// </summary>
+    /// <remarks>
+    ///     Used for efficiency to reduce load back from DB.
+    /// </remarks>
+    public bool SetOutputNonIdentityColumns { get; set; } = true;
+
+    /// <summary>
     ///     Propagated to SqlBulkCopy util object.
     /// </summary>
     /// <value>
@@ -261,6 +270,7 @@ public class BulkConfig
 
     /// <summary>
     ///     When set to <c>true</c> result of BulkRead operation will be provided using replace instead of update. Entities list parameter of BulkRead method will be repopulated with obtained data.
+    ///     Enables functionality of Contains/IN which will return all entities matching the criteria and only return the first (does not have to be by unique columns).
     /// </summary>
     public bool ReplaceReadEntities { get; set; }
 

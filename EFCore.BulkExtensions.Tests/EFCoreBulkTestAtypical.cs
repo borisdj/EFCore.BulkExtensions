@@ -15,6 +15,20 @@ public class EFCoreBulkTestAtypical
 
     [Theory]
     [InlineData(SqlType.SqlServer)]
+    //[InlineData(SqlType.PostgreSql)]
+    //[InlineData(SqlType.Sqlite)]
+    private void CalcStatsTest(SqlType sqlType)
+    {
+        ContextUtil.DatabaseType = sqlType;
+        using var context = new TestContext(ContextUtil.GetOptions());
+
+        List<Entry> entries = new() { new Entry() { /*EntryId = 1,*/ Name = "Some Info" } };
+        BulkConfig bulkConfig = new() { CalculateStats = true, SetOutputIdentity = true, /*SetOutputNonIdentityColumns = false, SqlBulkCopyOptions = SqlBulkCopyOptions.KeepIdentity*/ };
+        context.BulkInsert(entries, bulkConfig);
+    }
+
+    [Theory]
+    [InlineData(SqlType.SqlServer)]
     [InlineData(SqlType.PostgreSql)]
     [InlineData(SqlType.Sqlite)]
     private void DefaultValuesTest(SqlType sqlType)
@@ -58,20 +72,34 @@ public class EFCoreBulkTestAtypical
         using var context = new TestContext(ContextUtil.GetOptions());
         //context.Truncate<Document>(); // Can not be used because table is Temporal, so BatchDelete used instead
         context.Storages.BatchDelete();
+        context.Database.ExecuteSqlRaw($"DBCC CHECKIDENT('{nameof(Storage)}', RESEED, 0);");
 
         var entities = new List<Storage>()
         {
-            new Storage { StorageId = Guid.NewGuid(), Data = "Info " + 1 },
-            new Storage { StorageId = Guid.NewGuid(), Data = "Info " + 2 },
-            new Storage { StorageId = Guid.NewGuid(), Data = "Info " + 3 },
+            new Storage { Data = "Info " + 1 },
+            new Storage { Data = "Info " + 2 },
+            new Storage { Data = "Info " + 3 },
         };
-        context.BulkInsert(entities);
+        context.BulkInsert(entities, new BulkConfig
+        {
+            SetOutputIdentity = true,
+        });
 
         var countDb = context.Storages.Count();
         var countEntities = entities.Count;
 
-        // TEST
         Assert.Equal(countDb, countEntities);
+
+        var entities2 = new List<Storage>()
+        {
+            new Storage { StorageId = 1 },
+            new Storage { StorageId = 2 },
+            new Storage { StorageId = 3 },
+        };
+        context.BulkRead(entities2);
+
+        // TEST
+        Assert.Equal(entities[0].Data, entities2[0].Data);
     }
 
     [Theory]
@@ -211,6 +239,53 @@ public class EFCoreBulkTestAtypical
         // TEST
         Assert.Equal(counter, count);
         Assert.Equal("Note 1", firstDocumentNote.Note);
+    }
+
+    [Theory]
+    [InlineData(SqlType.PostgreSql)]
+    private void ArrayPGTest(SqlType sqlType)
+    {
+        ContextUtil.DatabaseType = sqlType;
+        using var context = new TestContext(ContextUtil.GetOptions());
+
+        context.Truncate<FilePG>();
+
+        var entities = new List<FilePG>();
+        for (int i = 1; i <= EntitiesNumber; i++)
+        {
+            var entity = new FilePG
+            {
+                Description = "Array data" + i,
+                Formats = new string[] { "txt", "pdf" },
+            };
+            entities.Add(entity);
+        }
+
+        context.BulkInsert(entities);
+    }
+
+    [Theory]
+    [InlineData(SqlType.PostgreSql)]
+    private void TimeStampPGTest(SqlType sqlType)
+    {
+        ContextUtil.DatabaseType = sqlType;
+        using var context = new TestContext(ContextUtil.GetOptions());
+
+        context.Truncate<FilePG>();
+
+        var entities = new List<FilePG>();
+        for (int i = 1; i <= EntitiesNumber; i++)
+        {
+            var entity = new FilePG
+            {
+                Description = "Some data " + i,
+            };
+            entities.Add(entity);
+        }
+
+        context.FilePGs.AddRange(entities);
+
+        context.BulkSaveChanges();
     }
 
     [Theory]
@@ -723,10 +798,13 @@ public class EFCoreBulkTestAtypical
         Assert.Equal(2, context.Animals.ToList().Count);
     }
 
-    [Fact]
-    private void GeometryColumnTest()
+    [Theory]
+    [InlineData(SqlType.SqlServer)]
+    [InlineData(SqlType.PostgreSql)]
+    [InlineData(SqlType.Sqlite)]
+    private void GeometryColumnTest(SqlType sqlType)
     {
-        ContextUtil.DatabaseType = SqlType.SqlServer;
+        ContextUtil.DatabaseType = sqlType;
         using var context = new TestContext(ContextUtil.GetOptions());
 
         context.BulkDelete(context.Addresses.ToList());
@@ -739,7 +817,7 @@ public class EFCoreBulkTestAtypical
                 }
             };
 
-        context.BulkInsertOrUpdate(entities);
+        context.BulkInsert(entities);
     }
 
     [Fact]
@@ -774,10 +852,7 @@ public class EFCoreBulkTestAtypical
             Assert.Equal(point.X, address.LocationGeometry.Coordinate.X);
             Assert.Equal(point.Y, address.LocationGeometry.Coordinate.Y);
         }
-
     }
-
-
 
     [Fact]
     private void HierarchyIdColumnTest()
@@ -868,6 +943,7 @@ public class EFCoreBulkTestAtypical
     [Theory]
     [InlineData(SqlType.SqlServer)]
     [InlineData(SqlType.PostgreSql)]
+    [InlineData(SqlType.MySql)]
     private void DestinationAndSourceTableNameTest(SqlType sqlType)
     {
         ContextUtil.DatabaseType = sqlType;
@@ -909,12 +985,12 @@ public class EFCoreBulkTestAtypical
         var mappings = new Dictionary<string, string>
         {
             { nameof(EntryPrep.EntryPrepId), nameof(Entry.EntryId) }, // here used 'nameof(Prop)' since Columns have the same name as Props
-            { nameof(EntryPrep.NameInfo), nameof(Entry.Name) }       // if columns they were different name then they would be set with string names, eg. "EntryPrepareId"
+            { nameof(EntryPrep.NameInfo), nameof(Entry.Name) }        // if columns they were different name then they would be set with string names, eg. "EntryPrepareId"
         };
         var bulkConfig = new BulkConfig {
             CustomSourceTableName = nameof(EntryPrep),
             CustomSourceDestinationMappingColumns = mappings,
-            //UpdateByProperties = new List<string> { "Name" } // with this all are insert since names are different
+            //UpdateByProperties = new List<string> { "Name" }        // with this all are insert since names are different
         };
         // [SOURCE] 
         context.BulkInsertOrUpdate(new List<Entry>(), bulkConfig); // InsertOrMERGE from table 'EntryPrep' into table 'Entry'
@@ -1017,9 +1093,27 @@ public class EFCoreBulkTestAtypical
     }
 
     [Fact]
+    private void TimeStamp2PGTest()
+    {
+        using var context = new TestContext(ContextUtil.GetOptions());
+
+        context.BulkDelete(context.Events.ToList());
+
+        var entities = new List<Event>();
+        for (int i = 1; i <= 10; i++)
+        {
+            var entity = new Event
+            {
+                Name = "Event " + i,
+                TimeCreated = DateTime.Now
+            };
+        }
+        context.BulkInsert(entities);
+    }
+
+    [Fact]
     private void CustomPrecisionDateTimeTest()
     {
-        ContextUtil.DatabaseType = SqlType.SqlServer;
         using var context = new TestContext(ContextUtil.GetOptions());
 
         context.BulkDelete(context.Events.ToList());
@@ -1097,7 +1191,59 @@ public class EFCoreBulkTestAtypical
         Assert.Equal("Desc1", entities[0].Description);
         Assert.Equal("Desc2", entities[1].Description);
     }
-    
+
+    [Theory]
+    [InlineData(SqlType.SqlServer)]
+    [InlineData(SqlType.Sqlite)]
+    private void UpsertWithOnUpdateNonPK(SqlType sqlType)
+    {
+        ContextUtil.DatabaseType = sqlType;
+
+        using var context = new TestContext(ContextUtil.GetOptions());
+
+        context.Truncate<Customer>();
+        if (sqlType == SqlType.Sqlite)
+        {
+            context.Database.ExecuteSqlRaw($"UPDATE SQLITE_SEQUENCE SET SEQ=0 WHERE NAME='{nameof(Customer)}';");
+            context.SaveChanges();
+        }
+
+        var cust = new Customer() { Name =  "Kayle" };
+
+        context.Customers.Add(cust); context.SaveChanges();
+
+        var customers = new List<Customer>();
+        customers.Add(new Customer() { Name = "John" });
+        customers.Add(new Customer() { Name = "Smith" });
+        customers.Add(new Customer() { Name = "Kayle" });
+
+        /*customers[0].Id = 3; // Id set in Property
+        customers[1].Id = 0;
+        customers[2].Id = 0;*/
+
+        using var context2 = new TestContext(ContextUtil.GetOptions());
+
+        var bulkConfig = new BulkConfig
+        {
+            SetOutputIdentity = true,
+            UpdateByProperties = new List<string> { nameof(Customer.Name) },
+            //SqlBulkCopyOptions = Microsoft.Data.SqlClient.SqlBulkCopyOptions.KeepIdentity, // use it when Id is set in Property
+        };
+        context2.BulkInsertOrUpdate(customers, bulkConfig);
+
+        if (sqlType == SqlType.Sqlite)
+        {
+            context2.BulkRead(customers, b =>
+            {
+                b.UpdateByProperties = new List<string> { nameof(Customer.Name) };
+            });
+        }
+
+        Assert.Equal(1, customers[2].Id);
+        Assert.Equal(2, customers[0].Id);
+        Assert.Equal(3, customers[1].Id);
+    }
+
     [Theory]
     [InlineData(SqlType.SqlServer)]
     [InlineData(SqlType.Sqlite)]
@@ -1135,12 +1281,16 @@ public class EFCoreBulkTestAtypical
         ContextUtil.DatabaseType = sqlType;
         using var context = new TestContext(ContextUtil.GetOptions());
 
-        context.BulkDelete(context.Items.ToList());
+        new EFCoreBatchTest().RunDeleteAll(sqlType);
 
-        context.Items.Add(new Item { Name = "name 1" });
-        context.Items.Add(new Item { Name = "name 2" });
-        context.Items.Add(new Item { Name = "name 2" });
-        context.Items.Add(new Item { Name = "name 3" });
+        var list = new List<Item>
+        {
+            new Item { Name = "name 1" },
+            new Item { Name = "name 2" },
+            new Item { Name = "name 2" },
+            new Item { Name = "name 3" }
+        };
+        context.Items.AddRange(list);
         context.SaveChanges();
 
         var names = new List<string> { "name 1", "name 2", "name 3", "name 4" };

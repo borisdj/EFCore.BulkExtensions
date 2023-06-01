@@ -41,11 +41,10 @@ public class EFCoreBulkTest
             });
         }
 
-        context.Walls.AddRange(walls);
-        context.SaveChanges();
-
+        //context.Walls.AddRange(walls);
+        //context.SaveChanges();
         // INSERT
-        //context.BulkInsert(walls);
+        context.BulkInsert(walls);
 
         var addedWall = context.Walls.AsNoTracking().First(x => x.Id == walls[0].Id);
          
@@ -169,7 +168,9 @@ public class EFCoreBulkTest
         var config = new BulkConfig
         {
             UpdateByProperties = new List<string> { nameof(Item.Name) },
-            NotifyAfter = 1
+            NotifyAfter = 1,
+            SetOutputIdentity = true,
+            CalculateStats = true,
         };
         context.BulkInsertOrUpdate(entities2, config, (a) => WriteProgress(a));
         
@@ -220,6 +221,9 @@ public class EFCoreBulkTest
         // BATCH
         var query = context.Items.AsQueryable().Where(a => a.ItemId <= 1);
         query.BatchUpdate(new Item { Description = "UPDATE N", Price = 1.5m }); //, updateColumns);
+
+        var ids = new[] { Guid.Empty };
+        context.ItemHistories.Where(o => ids.Contains(o.ItemHistoryId)).BatchDelete();
 
         var queryJoin = context.ItemHistories.Where(p => p.Item.Description == "UPDATE 2");
         queryJoin.BatchUpdate(new ItemHistory { Remark = "Rx", });
@@ -307,6 +311,9 @@ public class EFCoreBulkTest
         Assert.Equal(1, entities1[0].ItemId);
         Assert.Equal("info 1", context.Items.Where(a => a.Name == "Name 1").AsNoTracking().FirstOrDefault()?.Description);
         Assert.Equal("info 2", context.Items.Where(a => a.Name == "Name 2").AsNoTracking().FirstOrDefault()?.Description);
+
+        var query = context.Items.AsQueryable().Where(a => a.ItemId <= 1);
+        query.BatchUpdate(new Item { Description = "UPDATE N", Price = 1.5m }); //, updateColumns);
 
         // INSERT Or UPDATE
         //mysql automatically detects unique or primary key
@@ -561,7 +568,11 @@ public class EFCoreBulkTest
         }
         if (isBulk)
         {
-            var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
+            var bulkConfig = new BulkConfig() {
+                SetOutputIdentity = true,
+                CalculateStats = true,
+                SqlBulkCopyOptions = Microsoft.Data.SqlClient.SqlBulkCopyOptions.KeepIdentity
+            };
             context.BulkInsertOrUpdate(entities, bulkConfig, (a) => WriteProgress(a));
             if (sqlType == SqlType.SqlServer)
             {
@@ -572,7 +583,8 @@ public class EFCoreBulkTest
         }
         else
         {
-            context.Items.Add(entities[^1]);
+            var lastEntity1 = entities[^1]; // Last
+            context.Items.Add(lastEntity1);
             context.SaveChanges();
         }
 

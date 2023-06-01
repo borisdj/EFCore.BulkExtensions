@@ -4,13 +4,54 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-namespace EFCore.BulkExtensions;
+
+namespace EFCore.BulkExtensions.SqlAdapters;
 
 /// <summary>
-/// Contains a compilation of SQL queries used in EFCore.
+/// Contains a list of methods to generate Adpaters and helpers instances
 /// </summary>
 public abstract class SqlQueryBuilder
 {
+    /// <summary>
+    /// Restructures a sql query for batch commands
+    /// </summary>
+    /// <param name="sql"></param>
+    /// <param name="isDelete"></param>
+    public abstract string RestructureForBatch(string sql, bool isDelete = false);
+
+    /// <summary>
+    /// Returns a DbParameters intanced per provider
+    /// </summary>
+    /// <param name="sqlParameter"></param>
+    /// <returns></returns>
+    public abstract object CreateParameter(SqlParameter sqlParameter);
+
+    /// <summary>
+    /// Returns NpgsqlDbType for PostgreSql parameters. Throws <see cref="NotImplementedException"/> for anothers providers
+    /// </summary>
+    /// <returns></returns>
+    public abstract object Dbtype();
+
+    /// <summary>
+    /// Returns void. Throws <see cref="NotImplementedException"/> for anothers providers
+    /// </summary>
+    /// <exception cref="NotImplementedException"></exception>
+    public abstract void SetDbTypeParam(object npgsqlParameter, object dbType);
+
+    /// <summary>
+    /// Generates SQL query to select output from a table
+    /// </summary>
+    /// <param name="tableInfo"></param>
+    /// <returns></returns>
+    public virtual string SelectFromOutputTable(TableInfo tableInfo)
+    {
+        List<string> columnsNames = tableInfo.OutputPropertyColumnNamesDict.Values.ToList();
+        var q = $"SELECT {GetCommaSeparatedColumns(columnsNames)} " +
+                $"FROM {tableInfo.FullTempOutputTableName} " +
+                $"WHERE [{tableInfo.PrimaryKeysPropertyColumnNameDict.Select(x => x.Value).FirstOrDefault()}] IS NOT NULL";
+        return q;
+    }
+
     /// <summary>
     /// Generates SQL query to create a table copy
     /// </summary>
@@ -19,20 +60,22 @@ public abstract class SqlQueryBuilder
     /// <param name="tableInfo"></param>
     /// <param name="isOutputTable"></param>
     /// <returns></returns>
-    public static string CreateTableCopy(string existingTableName, string newTableName, TableInfo tableInfo, bool isOutputTable = false)
+    public virtual string CreateTableCopy(string existingTableName, string newTableName, TableInfo tableInfo, bool isOutputTable = false)
     {
         // TODO: (optionaly) if CalculateStats = True but SetOutputIdentity = False then Columns could be ommited from Create and from MergeOutput
         List<string> columnsNames = (isOutputTable ? tableInfo.OutputPropertyColumnNamesDict
                                                    : tableInfo.PropertyColumnNamesDict
                                                    ).Values.ToList();
+        string timeStampColumn = "";
         if (tableInfo.TimeStampColumnName != null)
         {
             columnsNames.Remove(tableInfo.TimeStampColumnName);
+            timeStampColumn = $", [{tableInfo.TimeStampColumnName}] = CAST('' AS {TableInfo.TimeStampOutColumnType})"; // tsType:varbinary(8)
         }
 
-        string statsColumns = (tableInfo.BulkConfig.CalculateStats && isOutputTable) ? ",[IsUpdate] = CAST(0 AS bit),[IsDelete] = CAST(0 AS bit)" : "";
+        string statsColumn = (tableInfo.BulkConfig.CalculateStats && isOutputTable) ? $", [{tableInfo.SqlActionIUD}] = CAST('' AS char(1))" : "";
 
-        var q = $"SELECT TOP 0 {GetCommaSeparatedColumns(columnsNames, "T")} " + statsColumns +
+        var q = $"SELECT TOP 0 {GetCommaSeparatedColumns(columnsNames, "T")}" + timeStampColumn + statsColumn + " " +
                 $"INTO {newTableName} FROM {existingTableName} AS T " +
                 $"LEFT JOIN {existingTableName} AS Source ON 1 = 0;"; // removes Identity constrain
         return q;
@@ -88,8 +131,7 @@ public abstract class SqlQueryBuilder
         }
         if (tableInfo.BulkConfig.CalculateStats && isOutputTable)
         {
-            columnsNamesAndTypes.Add(new Tuple<string, string>("[IsUpdate]", "bit"));
-            columnsNamesAndTypes.Add(new Tuple<string, string>("[IsDelete]", "bit"));
+            columnsNamesAndTypes.Add(new Tuple<string, string>("[SqlActionIUD]", "char(1)"));
         }
         var q = $"CREATE TABLE {newTableName} ({GetCommaSeparatedColumnsAndTypes(columnsNamesAndTypes)});";
         return q;
@@ -109,27 +151,13 @@ public abstract class SqlQueryBuilder
     }
 
     /// <summary>
-    /// Generates SQL query to select output from a table
-    /// </summary>
-    /// <param name="tableInfo"></param>
-    /// <returns></returns>
-    public static string SelectFromOutputTable(TableInfo tableInfo)
-    {
-        List<string> columnsNames = tableInfo.OutputPropertyColumnNamesDict.Values.ToList();
-        var q = $"SELECT {GetCommaSeparatedColumns(columnsNames)} " +
-                $"FROM {tableInfo.FullTempOutputTableName} " +
-                $"WHERE [{tableInfo.PrimaryKeysPropertyColumnNameDict.Select(x => x.Value).FirstOrDefault()}] IS NOT NULL";
-        return q;
-    }
-
-    /// <summary>
     /// Generates SQL query to select count updated from output table
     /// </summary>
     /// <param name="tableInfo"></param>
     /// <returns></returns>
     public static string SelectCountIsUpdateFromOutputTable(TableInfo tableInfo)
     {
-        return SelectCountColumnFromOutputTable(tableInfo, "IsUpdate");
+        return SelectCountColumnFromOutputTable(tableInfo, "SqlActionIUD", "U");
     }
 
     /// <summary>
@@ -139,7 +167,7 @@ public abstract class SqlQueryBuilder
     /// <returns></returns>
     public static string SelectCountIsDeleteFromOutputTable(TableInfo tableInfo)
     {
-        return SelectCountColumnFromOutputTable(tableInfo, "IsDelete");
+        return SelectCountColumnFromOutputTable(tableInfo, "SqlActionIUD", "D");
     }
 
     /// <summary>
@@ -147,10 +175,11 @@ public abstract class SqlQueryBuilder
     /// </summary>
     /// <param name="tableInfo"></param>
     /// <param name="columnName"></param>
+    /// <param name="columnValue"></param>
     /// <returns></returns>
-    public static string SelectCountColumnFromOutputTable(TableInfo tableInfo, string columnName)
+    public static string SelectCountColumnFromOutputTable(TableInfo tableInfo, string columnName, string columnValue)
     {
-        var q = $"SELECT COUNT(*) FROM {tableInfo.FullTempOutputTableName} WHERE [{columnName}] = 1";
+        var q = $"SELECT COUNT(*) FROM {tableInfo.FullTempOutputTableName} WHERE [{columnName}] = '{columnValue}'";
         return q;
     }
 
@@ -160,7 +189,7 @@ public abstract class SqlQueryBuilder
     /// <param name="tableName"></param>
     /// <param name="isTempTable"></param>
     /// <returns></returns>
-    public static string DropTable(string tableName, bool isTempTable)
+    public virtual string DropTable(string tableName, bool isTempTable)
     {
         string q;
         if (isTempTable)
@@ -278,7 +307,7 @@ public abstract class SqlQueryBuilder
 
         string isUpdateStatsValue = "";
         if (tableInfo.BulkConfig.CalculateStats)
-            isUpdateStatsValue = ",(CASE $action WHEN 'UPDATE' THEN 1 Else 0 END),(CASE $action WHEN 'DELETE' THEN 1 Else 0 END)";
+            isUpdateStatsValue = ",SUBSTRING($action, 1, 1)";
 
         if (tableInfo.BulkConfig.PreserveInsertOrder)
         {
@@ -321,7 +350,7 @@ public abstract class SqlQueryBuilder
                      (!tableInfo.BulkConfig.DoNotUpdateIfTimeStampChanged || tableInfo.TimeStampColumnName == null ? string.Empty :
                       $" AND S.[{tableInfo.TimeStampColumnName}] = T.[{tableInfo.TimeStampColumnName}]"
                      ) +
-                     (tableInfo.BulkConfig.OnConflictUpdateWhereSql != null ? $" AND {tableInfo.BulkConfig.OnConflictUpdateWhereSql("T", "S")}" : string.Empty ) +
+                     (tableInfo.BulkConfig.OnConflictUpdateWhereSql != null ? $" AND {tableInfo.BulkConfig.OnConflictUpdateWhereSql("T", "S")}" : string.Empty) +
                      $" THEN UPDATE SET {GetCommaSeparatedColumns(updateColumnNames, "T", "S")}";
             }
         }
@@ -376,9 +405,8 @@ public abstract class SqlQueryBuilder
                 parameters.AddRange(sqlParameters);
             }
 
-            q += (softDeleteAssignment != string.Empty) ?
-                 $" THEN UPDATE SET {softDeleteAssignment}" :
-                  " THEN DELETE";
+            q += (softDeleteAssignment != string.Empty) ? $" THEN UPDATE SET {softDeleteAssignment}"
+                                                        : $" THEN DELETE";
         }
         if (operationType == OperationType.Delete)
         {
@@ -416,13 +444,13 @@ public abstract class SqlQueryBuilder
                 var propertyFormated = $"[{mapping.Value}]";
                 var sourceProperty = mapping.Key;
 
-                if (q.Contains(propertySourceFormated))
-                {
-                    q = q.Replace(propertySourceFormated, $"S.[{sourceProperty}]");
-                }
                 if (qSegment.Contains(propertyFormated))
                 {
                     qSegmentUpdated = qSegmentUpdated.Replace(propertyFormated, $"[{sourceProperty}]");
+                }
+                if (q.Contains(propertySourceFormated))
+                {
+                    q = q.Replace(propertySourceFormated, $"S.[{sourceProperty}]");
                 }
             }
             if (qSegment != qSegmentUpdated)
@@ -439,7 +467,7 @@ public abstract class SqlQueryBuilder
     /// </summary>
     /// <param name="tableName"></param>
     /// <returns></returns>
-    public static string TruncateTable(string tableName)
+    public virtual string TruncateTable(string tableName)
     {
         var q = $"TRUNCATE TABLE {tableName};";
         return q;

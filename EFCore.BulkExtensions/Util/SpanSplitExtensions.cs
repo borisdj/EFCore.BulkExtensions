@@ -1,6 +1,6 @@
-﻿namespace EFCore.BulkExtensions;
+﻿using System;
 
-using System;
+namespace EFCore.BulkExtensions;
 
 static class SpanSplitExtensions
 {

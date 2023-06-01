@@ -21,9 +21,9 @@ public class PostgreSqlDbServer : IDbServer
     /// <inheritdoc/>
     public DbTransaction? DbTransaction { get; set; }
 
-    SqlAdapters.QueryBuilderExtensions _queryBuilder = new PostgreSqlQueryBuilder();
+    SqlAdapters.SqlQueryBuilder _queryBuilder = new PostgreSqlQueryBuilder();
     /// <inheritdoc/>
-    public QueryBuilderExtensions QueryBuilder => _queryBuilder;
+    public SqlQueryBuilder QueryBuilder => _queryBuilder;
 
 #pragma warning disable EF1001
     string IDbServer.ValueGenerationStrategy => NpgsqlAnnotationNames.ValueGenerationStrategy;
