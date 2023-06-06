@@ -95,7 +95,10 @@ public abstract class SqlQueryBuilder
             string columnName = column.Key;
             string columnType = column.Value;
             if (columnName == tableInfo.TimeStampColumnName)
+            {
                 columnType = TableInfo.TimeStampOutColumnType;
+            }
+            columnName = columnName.Replace("]", "]]");
             q += $"ALTER TABLE {tableName} ALTER COLUMN [{columnName}] {columnType}; ";
         }
         return q;

@@ -883,6 +883,7 @@ public class Archive
 public class Counter
 {
     public uint CounterId { get; set; }
+
     public string? Name { get; set; }
 }
 
@@ -907,7 +908,6 @@ public class Division
 {
     public Guid Id { get; set; }
     public string Name { get; set; } = null!;
-
     public Guid DepartmentId { get; set; }
     public Department? Department { get; set; }
 }
@@ -915,6 +915,8 @@ public class Division
 public class PrivateKey
 {
     private long Id { get; set; }
+
+    [Column("Name]")] // to test escaping brackets
     public string Name { get; set; } = null!;
 }
 
@@ -922,5 +924,6 @@ public class PrivateKey
 public class Customer
 {
     public int Id { get; set; }
+
     public string Name { get; set; } = null!;
 }
