@@ -777,6 +777,31 @@ public class EFCoreBulkTestAtypical
 
     [Theory]
     [InlineData(SqlType.SqlServer)]
+    private void EscapeBracketTest(SqlType sqlType)
+    {
+        ContextUtil.DatabaseType = sqlType;
+        using var context = new TestContext(ContextUtil.GetOptions());
+
+        var list0 = context.Templates.ToList();
+        context.BulkDelete(list0);
+
+        var list = new List<Template>();
+        for (int i = 1; i <= 10; i++)
+        {
+            list.Add(new Template
+            {
+                Name = "Name " + i.ToString("00")
+            });
+        }
+        context.BulkInsert(list, bc => bc.SetOutputIdentity = true);
+        context.BulkUpdate(list);
+
+        // TEST
+        Assert.Equal(10, context.Templates.ToList().Count);
+    }
+
+    [Theory]
+    [InlineData(SqlType.SqlServer)]
     [InlineData(SqlType.Sqlite)]
     private void NonEntityChildTest(SqlType sqlType)
     {
@@ -1264,6 +1289,8 @@ public class EFCoreBulkTestAtypical
                 }
             };
             context.BulkInsertOrUpdate(entities);
+
+            context.BulkUpdate(entities);
         }
 
         using (var context = new TestContext(ContextUtil.GetOptions()))

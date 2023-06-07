@@ -77,6 +77,8 @@ public class TestContext : DbContext
 
     public DbSet<Customer> Customers { get; set; } = null!;
 
+    public DbSet<Template> Templates { get; set; } = null!;
+
     public static bool UseTopologyPostgres { get; set; } = false;
 
     public TestContext(DbContextOptions options) : base(options)
@@ -916,7 +918,6 @@ public class PrivateKey
 {
     private long Id { get; set; }
 
-    [Column("Name]")] // to test escaping brackets
     public string Name { get; set; } = null!;
 }
 
@@ -925,5 +926,13 @@ public class Customer
 {
     public int Id { get; set; }
 
+    public string Name { get; set; } = null!;
+}
+
+public class Template
+{
+    public int Id { get; set; }
+
+    [Column("Name]")] // to test escaping brackets
     public string Name { get; set; } = null!;
 }
