@@ -538,4 +538,21 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
         return (int)counter;
     }
     #endregion
+
+    /// <summary>
+    /// Sets provider specific config in TableInfo
+    /// </summary>
+    /// <param name="context"></param>
+    /// <param name="tableInfo"></param>
+    /// <returns></returns>
+    public string? ReconfigureTableInfo(DbContext context, TableInfo tableInfo)
+    {
+        var defaultSchema = "public";
+        var csb = new NpgsqlConnectionStringBuilder(context.Database.GetConnectionString());
+        if (!string.IsNullOrWhiteSpace(csb.SearchPath))
+        {
+            defaultSchema = csb.SearchPath.Split(',')[0];
+        }
+        return defaultSchema;
+    }
 }

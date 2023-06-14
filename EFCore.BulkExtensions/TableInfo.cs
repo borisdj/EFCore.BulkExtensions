@@ -3,12 +3,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Npgsql;
+//using Npgsql;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Data;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -168,16 +169,13 @@ public class TableInfo
 
         string? defaultSchema = null;
         if (isSqlServer)
+        {
             defaultSchema = "dbo";
-        if (isNpgsql)
-        {            
-            defaultSchema = "public";
-
-            var csb = new NpgsqlConnectionStringBuilder(context.Database.GetConnectionString());
-            if (!string.IsNullOrWhiteSpace(csb.SearchPath))
-            {
-                defaultSchema = csb.SearchPath.Split(',')[0];
-            }
+        }
+        else if (isNpgsql)
+        {
+            var adapter = SqlAdaptersMapping.CreateBulkOperationsAdapter();
+            defaultSchema = adapter.ReconfigureTableInfo(context, this);
         }
 
         string? customSchema = null;
@@ -193,6 +191,7 @@ public class TableInfo
             }
         }
         Schema = customSchema ?? entityType.GetSchema() ?? defaultSchema;
+
         var entityTableName = entityType.GetTableName();
         TableName = customTableName ?? entityTableName;
 

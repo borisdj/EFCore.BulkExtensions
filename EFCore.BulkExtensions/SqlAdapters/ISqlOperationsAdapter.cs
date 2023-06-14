@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -96,4 +97,12 @@ public interface ISqlOperationsAdapter
     /// <param name="tableInfo"></param>
     /// <param name="cancellationToken"></param>
     Task TruncateAsync(DbContext context, TableInfo tableInfo, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Sets provider specific config in TableInfo
+    /// </summary>
+    /// <param name="context"></param>
+    /// <param name="tableInfo"></param>
+    /// <returns></returns>
+    virtual string? ReconfigureTableInfo(DbContext context, TableInfo tableInfo) { return null; }
 }
