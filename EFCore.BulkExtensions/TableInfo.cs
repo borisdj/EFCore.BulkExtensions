@@ -286,6 +286,8 @@ public class TableInfo
         HasOwnedTypes = ownedTypes.Any();
         OwnedTypesDict = ownedTypes.ToDictionary(a => a.Name, a => a);
 
+        var jsonTypes = navigations.Where(a => a.TargetEntityType.IsMappedToJson()); /// TODO yet to be implemented
+
         if (isSqlServer || isNpgsql || isMySql)
         {
             var strategyName = SqlAdaptersMapping.DbServer!.ValueGenerationStrategy;

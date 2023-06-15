@@ -1336,4 +1336,31 @@ public class EFCoreBulkTestAtypical
         Assert.Equal(2, items.Where(i => i.Name == "name 2").Count());
         Assert.Empty(items.Where(i => i.Name == "name 4"));
     }
+
+    [Theory]
+    [InlineData(SqlType.SqlServer)]
+    private void JsonTest(SqlType sqlType)
+    {
+        ContextUtil.DatabaseType = sqlType;
+        using var context = new TestContext(ContextUtil.GetOptions());
+
+        //new EFCoreBatchTest().RunDeleteAll(sqlType);
+
+        var list = new List<Author>
+        {
+            new Author
+            {
+                Name = "At",
+                Contact = new ContactDetails
+                {
+                    Phone = "123-456",
+                    Address = new AddressCD ( "Str1", "Ct", "10000", "" )
+                }
+            }
+        };
+        context.Authors.AddRange(list);
+        context.SaveChanges();
+
+        context.BulkInsert(list);
+    }
 }

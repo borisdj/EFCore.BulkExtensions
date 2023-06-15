@@ -79,6 +79,8 @@ public class TestContext : DbContext
 
     public DbSet<Template> Templates { get; set; } = null!;
 
+    public DbSet<Author> Authors { get; set; } = null!;
+
     public static bool UseTopologyPostgres { get; set; } = false;
 
     public TestContext(DbContextOptions options) : base(options)
@@ -96,6 +98,13 @@ public class TestContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.RemovePluralizingTableNameConvention();
+
+        modelBuilder.Entity<Author>().OwnsOne(
+        author => author.Contact, ownedNavigationBuilder =>
+        {
+            ownedNavigationBuilder.ToJson();
+            ownedNavigationBuilder.OwnsOne(contactDetails => contactDetails.Address);
+        });
 
         modelBuilder.Entity<Info>(e => { e.Property(p => p.ConvertedTime).HasConversion((value) => value.AddDays(1), (value) => value.AddDays(-1)); });
 
@@ -140,6 +149,26 @@ public class TestContext : DbContext
 
         if (Database.IsSqlServer())
         {
+            /*modelBuilder.Entity<Author>().OwnsOne(
+                author => author.Contact, ownedNavigationBuilder =>
+                {
+                    ownedNavigationBuilder.OwnsOne(contactDetails => contactDetails.Address);
+                });
+            /*
+            modelBuilder.Entity<Author>().OwnsOne(
+               author => author.Contact, ownedNavigationBuilder =>
+               {
+                   ownedNavigationBuilder.OwnsOne(contactDetails => contactDetails.Address);
+               });*/
+        
+        /*
+        modelBuilder.Entity<Author>().OwnsOne(
+                author => author.Contact, ownedNavigationBuilder =>
+                {
+                    ownedNavigationBuilder.ToJson();
+                    ownedNavigationBuilder.OwnsOne(contactDetails => contactDetails.Address);
+                });
+        */
             modelBuilder.Entity<Document>().Property(p => p.DocumentId).HasDefaultValueSql("NEWID()");
             modelBuilder.Entity<Document>().Property(p => p.ContentLength).HasComputedColumnSql($"(CONVERT([int], len([{nameof(Document.Content)}])))");
 
@@ -935,4 +964,60 @@ public class Template
 
     [Column("Name]")] // to test escaping brackets
     public string Name { get; set; } = null!;
+}
+
+/*
+public class ContactDetail
+{
+    public Location Location { get; set; } = null!;
+    public string? Phone { get; set; }
+}
+
+// JSON
+public class Location
+{
+    public string Street { get; set; } = null!;
+    public string City { get; set; } = null!;
+    public string Postcode { get; set; } = null!;
+    public string Country { get; set; } = null!;
+}
+
+public class Author
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = null!;
+    public ContactDetail Contact { get; set; } = null!;
+}
+
+*/
+
+public class Author
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = null!;
+    public ContactDetails Contact { get; set; } = null!;
+}
+
+[Owned]
+public class ContactDetails
+{
+    public AddressCD Address { get; set; } = null!;
+    public string? Phone { get; set; }
+}
+
+[Owned]
+public class AddressCD
+{
+    public AddressCD(string street, string city, string postcode, string country)
+    {
+        Street = street;
+        City = city;
+        Postcode = postcode;
+        Country = country;
+    }
+
+    public string Street { get; set; }
+    public string City { get; set; }
+    public string Postcode { get; set; }
+    public string Country { get; set; }
 }
