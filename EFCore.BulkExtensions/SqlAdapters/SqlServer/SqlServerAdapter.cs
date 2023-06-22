@@ -559,7 +559,7 @@ public class SqlServerAdapter : ISqlOperationsAdapter
                     columnsDict.Add(columnName, null);
                 }
             }
-            else if (entityNavigationOwnedDict.ContainsKey(property.Name)) // isOWned
+            else if (entityNavigationOwnedDict.ContainsKey(property.Name) && !tableInfo.JsonTypesDict.ContainsKey(property.Name)) // isOWned
             {
                 //Type? navOwnedType = type.Assembly.GetType(property.PropertyType.FullName!); // was not used
 
@@ -623,11 +623,15 @@ public class SqlServerAdapter : ISqlOperationsAdapter
 
                                 dataTable.Columns.Add(columnName, ownedPropertyType);
                             }
-  ;
                             columnsDict.Add(property.Name + "_" + innerProperty.Name, null);
                         }
                     }
                 }
+            }
+            else if (tableInfo.JsonTypesDict.ContainsKey(property.Name)) // isJson
+            {
+                dataTable.Columns.Add(property.Name, typeof(string));
+                columnsDict.Add(property.Name, null);
             }
         }
 
@@ -682,7 +686,8 @@ public class SqlServerAdapter : ISqlOperationsAdapter
             var propertiesToLoad = properties
                 .Where(a => !tableInfo.AllNavigationsDictionary.ContainsKey(a.Name)
                             || entityShadowFkPropertiesDict.ContainsKey(a.Name)
-                            || tableInfo.OwnedTypesDict.ContainsKey(a.Name)); // omit virtual Navigation (except Owned and ShadowNavig.) since it's Getter can cause unwanted Select-s from Db
+                            || tableInfo.OwnedTypesDict.ContainsKey(a.Name) // omit virtual Navigation (except Owned and ShadowNavig.) since it's Getter can cause unwanted Select-s from Db
+                            || tableInfo.JsonTypesDict.ContainsKey(a.Name));
 
             foreach (var property in propertiesToLoad)
             {
@@ -761,7 +766,7 @@ public class SqlServerAdapter : ISqlOperationsAdapter
                         ? null
                         : foreignKeyShadowProperty.FindFirstPrincipal()?.PropertyInfo?.GetValue(propertyValue); // TODO Check if can be optimized
                 }
-                else if (entityNavigationOwnedDict.ContainsKey(property.Name) && !tableInfo.LoadOnlyPKColumn)
+                else if (entityNavigationOwnedDict.ContainsKey(property.Name) && !tableInfo.JsonTypesDict.ContainsKey(property.Name) && !tableInfo.LoadOnlyPKColumn)
                 {
                     var ownedProperties = property.PropertyType.GetProperties().Where(a => ownedEntitiesMappedProperties.Contains(property.Name + "_" + a.Name));
                     foreach (var ownedProperty in ownedProperties)
@@ -790,6 +795,13 @@ public class SqlServerAdapter : ISqlOperationsAdapter
                             columnsDict[columnName] = ownedPropertyValue;
                         }
                     }
+                }
+                else if (tableInfo.JsonTypesDict.ContainsKey(property.Name) && !tableInfo.LoadOnlyPKColumn) // isJson
+                {
+                    var columnName = property.Name; // TODO if Diff
+                    var jsonPropertyValue = tableInfo.FastPropertyDict[columnName].Get(entity!);
+                    string jsonValue = System.Text.Json.JsonSerializer.Serialize(jsonPropertyValue);
+                    columnsDict[columnName] = jsonValue;
                 }
             }
 

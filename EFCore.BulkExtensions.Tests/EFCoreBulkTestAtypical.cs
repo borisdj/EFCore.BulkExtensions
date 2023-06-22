@@ -43,9 +43,11 @@ public class EFCoreBulkTestAtypical
         var entities = new List<Document>();
         for (int i = 1; i <= 5; i++)
         {
-            entities.Add(new Document { 
-                DocumentId = SeqGuid.Create(sqlType), 
-                Content = "Info " + i });
+            entities.Add(new Document
+            {
+                DocumentId = SeqGuid.Create(sqlType),
+                Content = "Info " + i
+            });
         };
         context.BulkInsertOrUpdate(entities, bulkConfig => bulkConfig.SetOutputIdentity = true); // example of setting BulkConfig with Action argument
 
@@ -1012,7 +1014,8 @@ public class EFCoreBulkTestAtypical
             { nameof(EntryPrep.EntryPrepId), nameof(Entry.EntryId) }, // here used 'nameof(Prop)' since Columns have the same name as Props
             { nameof(EntryPrep.NameInfo), nameof(Entry.Name) }        // if columns they were different name then they would be set with string names, eg. "EntryPrepareId"
         };
-        var bulkConfig = new BulkConfig {
+        var bulkConfig = new BulkConfig
+        {
             CustomSourceTableName = nameof(EntryPrep),
             CustomSourceDestinationMappingColumns = mappings,
             //UpdateByProperties = new List<string> { "Name" }        // with this all are insert since names are different
@@ -1021,7 +1024,7 @@ public class EFCoreBulkTestAtypical
         context.BulkInsertOrUpdate(new List<Entry>(), bulkConfig); // InsertOrMERGE from table 'EntryPrep' into table 'Entry'
         Assert.Equal(20, context.Entries.Count());
     }
-        
+
     [Fact]
     private void TablePerTypeInsertTest()
     {
@@ -1233,7 +1236,7 @@ public class EFCoreBulkTestAtypical
             context.SaveChanges();
         }
 
-        var cust = new Customer() { Name =  "Kayle" };
+        var cust = new Customer() { Name = "Kayle" };
 
         context.Customers.Add(cust); context.SaveChanges();
 
@@ -1344,7 +1347,7 @@ public class EFCoreBulkTestAtypical
         ContextUtil.DatabaseType = sqlType;
         using var context = new TestContext(ContextUtil.GetOptions());
 
-        //new EFCoreBatchTest().RunDeleteAll(sqlType);
+        context.Truncate<Author>();
 
         var list = new List<Author>
         {
@@ -1358,9 +1361,11 @@ public class EFCoreBulkTestAtypical
                 }
             }
         };
-        context.Authors.AddRange(list);
-        context.SaveChanges();
+        //context.Authors.AddRange(list);
+        //context.SaveChanges();
 
         context.BulkInsert(list);
+
+        Assert.Equal("123-456", context.Authors.FirstOrDefault()?.Contact.Phone);
     }
 }

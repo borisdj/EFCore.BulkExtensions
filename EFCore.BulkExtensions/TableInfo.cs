@@ -49,6 +49,7 @@ public class TableInfo
     public bool HasIdentity => IdentityColumnName != null;
     public ValueConverter? IdentityColumnConverter { get; set; }
     public bool HasOwnedTypes { get; set; }
+    public bool HasJsonTypes { get; set; }
     public bool HasAbstractList { get; set; }
     public bool ColumnNameContainsSquareBracket { get; set; }
     public bool LoadOnlyPKColumn { get; set; }
@@ -66,6 +67,7 @@ public class TableInfo
     public Dictionary<string, FastProperty> FastPropertyDict { get; set; } = new();
     public Dictionary<string, INavigation> AllNavigationsDictionary { get; private set; } = null!;
     public Dictionary<string, INavigation> OwnedTypesDict { get; set; } = new();
+    public Dictionary<string, INavigation> JsonTypesDict { get; set; } = new();
     public HashSet<string> ShadowProperties { get; set; } = new HashSet<string>();
     public HashSet<string> DefaultValueProperties { get; set; } = new HashSet<string>();
 
@@ -282,11 +284,11 @@ public class TableInfo
         var navigations = entityType.GetNavigations();
         AllNavigationsDictionary = navigations.ToDictionary(nav => nav.Name, nav => nav);
 
-        var ownedTypes = navigations.Where(a => a.TargetEntityType.IsOwned());
-        HasOwnedTypes = ownedTypes.Any();
-        OwnedTypesDict = ownedTypes.ToDictionary(a => a.Name, a => a);
+        OwnedTypesDict = navigations.Where(a => a.TargetEntityType.IsOwned()).ToDictionary(a => a.Name, a => a);
+        HasOwnedTypes = OwnedTypesDict.Count() > 0;
 
-        var jsonTypes = navigations.Where(a => a.TargetEntityType.IsMappedToJson()); /// TODO yet to be implemented
+        JsonTypesDict = navigations.Where(a => a.TargetEntityType.IsMappedToJson()).ToDictionary(a => a.Name, a => a);
+        HasJsonTypes = JsonTypesDict.Count() > 0;
 
         if (isSqlServer || isNpgsql || isMySql)
         {
@@ -543,6 +545,7 @@ public class TableInfo
 
             if (HasOwnedTypes)  // Support owned entity property update. TODO: Optimize
             {
+                var ownedTypes = OwnedTypesDict.Values.ToList();
                 foreach (var navigationProperty in ownedTypes)
                 {
                     var property = navigationProperty.PropertyInfo;
@@ -611,6 +614,27 @@ public class TableInfo
                             }
                         }
                     }
+                }
+            }
+
+            if (HasJsonTypes)
+            {
+                var jsonTypes = JsonTypesDict.Values.ToList();
+                foreach (var jsonProperty in jsonTypes)
+                {
+                    var property = jsonProperty.PropertyInfo;
+                    //FastPropertyDict.Add(property!.Name, FastProperty.GetOrCreate(property));
+
+                    //var value = FastPropertyDict[property?.Name!].Get(jsonProperty);
+                    //var jsonValue = System.Text.Json.JsonSerializer.Serialize(value);
+                    //var j1 = jsonProperty.TargetEntityType.GetJsonPropertyName();
+
+                    string columnName = property?.Name!;
+                    string propertyName = property?.Name!;
+                    PropertyColumnNamesDict.Add(propertyName, columnName);
+                    PropertyColumnNamesCompareDict.Add(propertyName, columnName);
+                    PropertyColumnNamesUpdateDict.Add(propertyName, columnName);
+                    OutputPropertyColumnNamesDict.Add(propertyName, columnName);
                 }
             }
         }
