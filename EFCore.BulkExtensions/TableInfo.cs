@@ -67,7 +67,9 @@ public class TableInfo
     public Dictionary<string, FastProperty> FastPropertyDict { get; set; } = new();
     public Dictionary<string, INavigation> AllNavigationsDictionary { get; private set; } = null!;
     public Dictionary<string, INavigation> OwnedTypesDict { get; set; } = new();
-    public Dictionary<string, INavigation> JsonTypesDict { get; set; } = new();
+
+    public Dictionary<string, INavigation> OwnedRegularTypesDict { get; set; } = new();
+    public Dictionary<string, INavigation> OwnedJsonTypesDict { get; set; } = new();
     public HashSet<string> ShadowProperties { get; set; } = new HashSet<string>();
     public HashSet<string> DefaultValueProperties { get; set; } = new HashSet<string>();
 
@@ -287,8 +289,9 @@ public class TableInfo
         OwnedTypesDict = navigations.Where(a => a.TargetEntityType.IsOwned()).ToDictionary(a => a.Name, a => a);
         HasOwnedTypes = OwnedTypesDict.Count() > 0;
 
-        JsonTypesDict = navigations.Where(a => a.TargetEntityType.IsMappedToJson()).ToDictionary(a => a.Name, a => a);
-        HasJsonTypes = JsonTypesDict.Count() > 0;
+        OwnedRegularTypesDict = navigations.Where(a => a.TargetEntityType.IsOwned() && !a.TargetEntityType.IsMappedToJson()).ToDictionary(a => a.Name, a => a);
+        OwnedJsonTypesDict = navigations.Where(a => a.TargetEntityType.IsMappedToJson()).ToDictionary(a => a.Name, a => a);
+        HasJsonTypes = OwnedJsonTypesDict.Count() > 0;
 
         if (isSqlServer || isNpgsql || isMySql)
         {
@@ -545,7 +548,7 @@ public class TableInfo
 
             if (HasOwnedTypes)  // Support owned entity property update. TODO: Optimize
             {
-                var ownedTypes = OwnedTypesDict.Values.ToList();
+                var ownedTypes = OwnedRegularTypesDict.Values.ToList();
                 foreach (var navigationProperty in ownedTypes)
                 {
                     var property = navigationProperty.PropertyInfo;
@@ -619,11 +622,11 @@ public class TableInfo
 
             if (HasJsonTypes)
             {
-                var jsonTypes = JsonTypesDict.Values.ToList();
+                var jsonTypes = OwnedJsonTypesDict.Values.ToList();
                 foreach (var jsonProperty in jsonTypes)
                 {
                     var property = jsonProperty.PropertyInfo;
-                    //FastPropertyDict.Add(property!.Name, FastProperty.GetOrCreate(property));
+                    FastPropertyDict.Add(property!.Name, FastProperty.GetOrCreate(property));
 
                     //var value = FastPropertyDict[property?.Name!].Get(jsonProperty);
                     //var jsonValue = System.Text.Json.JsonSerializer.Serialize(value);

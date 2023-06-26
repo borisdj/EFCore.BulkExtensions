@@ -99,13 +99,6 @@ public class TestContext : DbContext
     {
         modelBuilder.RemovePluralizingTableNameConvention();
 
-        modelBuilder.Entity<Author>().OwnsOne(
-        author => author.Contact, ownedNavigationBuilder =>
-        {
-            ownedNavigationBuilder.ToJson();
-            ownedNavigationBuilder.OwnsOne(contactDetails => contactDetails.Address);
-        });
-
         modelBuilder.Entity<Info>(e => { e.Property(p => p.ConvertedTime).HasConversion((value) => value.AddDays(1), (value) => value.AddDays(-1)); });
 
         modelBuilder.Entity<UserRole>().HasKey(a => new { a.UserId, a.RoleId });
@@ -149,26 +142,6 @@ public class TestContext : DbContext
 
         if (Database.IsSqlServer())
         {
-            /*modelBuilder.Entity<Author>().OwnsOne(
-                author => author.Contact, ownedNavigationBuilder =>
-                {
-                    ownedNavigationBuilder.OwnsOne(contactDetails => contactDetails.Address);
-                });
-            /*
-            modelBuilder.Entity<Author>().OwnsOne(
-               author => author.Contact, ownedNavigationBuilder =>
-               {
-                   ownedNavigationBuilder.OwnsOne(contactDetails => contactDetails.Address);
-               });*/
-        
-        /*
-        modelBuilder.Entity<Author>().OwnsOne(
-                author => author.Contact, ownedNavigationBuilder =>
-                {
-                    ownedNavigationBuilder.ToJson();
-                    ownedNavigationBuilder.OwnsOne(contactDetails => contactDetails.Address);
-                });
-        */
             modelBuilder.Entity<Document>().Property(p => p.DocumentId).HasDefaultValueSql("NEWID()");
             modelBuilder.Entity<Document>().Property(p => p.ContentLength).HasComputedColumnSql($"(CONVERT([int], len([{nameof(Document.Content)}])))");
 
@@ -187,6 +160,13 @@ public class TestContext : DbContext
             //modelBuilder.HasSequence<int>("SequenceData", "dbo").StartsAt(10).IncrementsBy(5);
 
             modelBuilder.Entity<Tracker>().OwnsOne(t => t.Location);
+
+            modelBuilder.Entity<Author>().OwnsOne(
+                author => author.Contact, ownedNavigationBuilder =>
+                {
+                    ownedNavigationBuilder.ToJson();
+                    ownedNavigationBuilder.OwnsOne(contactDetails => contactDetails.Address);
+                });
         }
         else
         {
@@ -965,31 +945,6 @@ public class Template
     [Column("Name]")] // to test escaping brackets
     public string Name { get; set; } = null!;
 }
-
-/*
-public class ContactDetail
-{
-    public Location Location { get; set; } = null!;
-    public string? Phone { get; set; }
-}
-
-// JSON
-public class Location
-{
-    public string Street { get; set; } = null!;
-    public string City { get; set; } = null!;
-    public string Postcode { get; set; } = null!;
-    public string Country { get; set; } = null!;
-}
-
-public class Author
-{
-    public int Id { get; set; }
-    public string Name { get; set; } = null!;
-    public ContactDetail Contact { get; set; } = null!;
-}
-
-*/
 
 public class Author
 {

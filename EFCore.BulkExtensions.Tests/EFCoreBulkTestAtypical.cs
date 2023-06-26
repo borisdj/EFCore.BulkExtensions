@@ -1238,7 +1238,8 @@ public class EFCoreBulkTestAtypical
 
         var cust = new Customer() { Name = "Kayle" };
 
-        context.Customers.Add(cust); context.SaveChanges();
+        context.Customers.Add(cust);
+        context.SaveChanges();
 
         var customers = new List<Customer>();
         customers.Add(new Customer() { Name = "John" });
@@ -1265,11 +1266,11 @@ public class EFCoreBulkTestAtypical
             {
                 b.UpdateByProperties = new List<string> { nameof(Customer.Name) };
             });
-        }
 
-        Assert.Equal(1, customers[2].Id);
-        Assert.Equal(2, customers[0].Id);
-        Assert.Equal(3, customers[1].Id);
+            Assert.Equal(1, customers[2].Id);
+            Assert.Equal(2, customers[0].Id);
+            Assert.Equal(3, customers[1].Id);
+        }
     }
 
     [Theory]
@@ -1342,6 +1343,7 @@ public class EFCoreBulkTestAtypical
 
     [Theory]
     [InlineData(SqlType.SqlServer)]
+    //[InlineData(SqlType.Sqlite)] // post v 8.0
     private void JsonTest(SqlType sqlType)
     {
         ContextUtil.DatabaseType = sqlType;
@@ -1361,11 +1363,29 @@ public class EFCoreBulkTestAtypical
                 }
             }
         };
-        //context.Authors.AddRange(list);
-        //context.SaveChanges();
 
         context.BulkInsert(list);
 
-        Assert.Equal("123-456", context.Authors.FirstOrDefault()?.Contact.Phone);
+        list[0].Id = 1;
+        list[0].Name = "At2";
+        list[0].Contact.Address.Street = "Str2";
+        context.BulkUpdate(list);
+
+        var author = context.Authors.FirstOrDefault()!;
+
+        Assert.Equal("123-456", author.Contact.Phone);
+
+        Assert.Equal("At2", author.Name);
+        Assert.Equal("Str2", author.Contact.Address.Street);
+
+        var list2 = new List<Author>
+        {
+            new Author
+            {
+                Id = 1
+            }
+        };
+        context.BulkRead(list2);
+        Assert.Equal("At2", list2.FirstOrDefault()?.Name);
     }
 }
