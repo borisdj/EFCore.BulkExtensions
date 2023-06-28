@@ -81,7 +81,7 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
                         continue;
                     }
 
-                    var propertyValue = GetPropertyValue(tableInfo, propertyName, entity);
+                    var propertyValue = GetPropertyValue(context, tableInfo, propertyName, entity);
                     var propertyColumnName = tableInfo.PropertyColumnNamesDict.GetValueOrDefault(propertyName, "");
                     var columnType = tableInfo.ColumnNamesTypesDict[propertyColumnName];
 
@@ -167,18 +167,41 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
         }
     }
 
-    static object? GetPropertyValue<T>(TableInfo tableInfo, string propertyName, T entity)
+    static object? GetPropertyValue<T>(DbContext context, TableInfo tableInfo, string propertyName, T entity)
     {
+        var propertyValue = default(object);
+
         if (!tableInfo.FastPropertyDict.ContainsKey(propertyName.Replace('.', '_')) || entity is null)
         {
+            var objectIdentifier = tableInfo.ObjectIdentifier;
+            var shadowPropertyColumnNamesDict = tableInfo.ColumnToPropertyDictionary
+                .Where(a => a.Value.IsShadowProperty()).ToDictionary(a => a.Key, a => a.Value.GetColumnName(objectIdentifier));
+            if (shadowPropertyColumnNamesDict.ContainsKey(propertyName))
+            {
+                if (tableInfo.BulkConfig.ShadowPropertyValue == null)
+                {
+                    propertyValue = context.Entry(entity!).Property(propertyName).CurrentValue;
+                }
+                else
+                {
+                    propertyValue = tableInfo.BulkConfig.ShadowPropertyValue(entity!, propertyName);
+                }
+
+                if (tableInfo.ConvertibleColumnConverterDict.ContainsKey(propertyName))
+                {
+                    propertyValue = tableInfo.ConvertibleColumnConverterDict[propertyName].ConvertToProvider.Invoke(propertyValue);
+                }
+                return propertyValue;
+            }
+
             return null;
         }
 
-        object? propertyValue = entity;
+        //object? propertyValue = entity;
         string fullPropertyName = string.Empty;
         foreach (var entry in propertyName.AsSpan().Split("."))
         {
-            if (propertyValue == null)
+            if (entity == null)
             {
                 return null;
             }
@@ -192,7 +215,7 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
                 fullPropertyName = new string(entry.Token);
             }
             
-            propertyValue = tableInfo.FastPropertyDict[fullPropertyName].Get(propertyValue);
+            propertyValue = tableInfo.FastPropertyDict[fullPropertyName].Get(entity);
         }
 
         return propertyValue;

@@ -805,7 +805,7 @@ public class SqlServerAdapter : ISqlOperationsAdapter
                 }
             }
 
-            if (tableInfo.BulkConfig.EnableShadowProperties)
+            if (tableInfo.BulkConfig.EnableShadowProperties) // TODO change for regular Shadow props to work even without this config
             {
                 foreach (var shadowPropertyName in shadowPropertyColumnNamesDict.Keys)
                 {

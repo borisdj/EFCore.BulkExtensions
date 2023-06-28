@@ -81,6 +81,8 @@ public class TestContext : DbContext
 
     public DbSet<Author> Authors { get; set; } = null!;
 
+    public DbSet<Partner> Partners { get; set; } = null!;
+
     public static bool UseTopologyPostgres { get; set; } = false;
 
     public TestContext(DbContextOptions options) : base(options)
@@ -139,6 +141,8 @@ public class TestContext : DbContext
         modelBuilder.Entity<LogPersonReport>().ToTable(nameof(LogPersonReport));
 
         modelBuilder.Entity<FilePG>().Ignore(p => p.Formats);
+
+        modelBuilder.Entity<ItemLink>().Property<string>("Data");
 
         if (Database.IsSqlServer())
         {
@@ -212,6 +216,10 @@ public class TestContext : DbContext
 
             modelBuilder.Entity<Box>().Property(p => p.ElementContent).HasColumnType("jsonb"); // with annotation not mapped since not used for others DBs
             modelBuilder.Entity<Box>().Property(p => p.DocumentContent).HasColumnType("jsonb"); // with annotation not mapped since not used for others DBs
+        }
+        else
+        {
+            modelBuilder.Entity<Partner>().Ignore(p => p.RowVersion);
         }
 
         //modelBuilder.Entity<Modul>(buildAction => { buildAction.HasNoKey(); });
@@ -975,4 +983,16 @@ public class AddressCD
     public string City { get; set; }
     public string Postcode { get; set; }
     public string Country { get; set; }
+}
+
+public class Partner
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = null!;
+    public string? FirstName { get; set; }
+
+    [Timestamp]
+    [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
+    [Column("xmin", TypeName = "xid")]
+    public uint RowVersion { get; set; }
 }

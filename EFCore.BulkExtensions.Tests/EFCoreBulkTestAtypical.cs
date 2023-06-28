@@ -1,5 +1,6 @@
 using EFCore.BulkExtensions.SqlAdapters;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using NetTopologySuite.Geometries;
 using System;
 using System.Collections.Generic;
@@ -640,6 +641,7 @@ public class EFCoreBulkTestAtypical
 
     [Theory]
     [InlineData(SqlType.SqlServer)]
+    [InlineData(SqlType.PostgreSql)]
     [InlineData(SqlType.Sqlite)] //Not supported
     private void ShadowFKPropertiesTest(SqlType sqlType) // with Foreign Key as Shadow Property
     {
@@ -658,7 +660,6 @@ public class EFCoreBulkTestAtypical
         }
         //context.BulkDelete(context.Items.ToList()); // On table with FK Truncate does not work
 
-
         if (!context.Items.Any())
         {
             for (int i = 1; i <= 10; ++i)
@@ -670,7 +671,7 @@ public class EFCoreBulkTestAtypical
                     Description = string.Concat("info ", Guid.NewGuid().ToString().AsSpan(0, 3)),
                     Quantity = i % 10,
                     Price = i / (i % 5 + 1),
-                    TimeUpdated = DateTime.Now,
+                    TimeUpdated = sqlType == SqlType.PostgreSql ? DateTime.UtcNow : DateTime.Now,
                     ItemHistories = new List<ItemHistory>()
                 };
 
@@ -683,13 +684,22 @@ public class EFCoreBulkTestAtypical
         var entities = new List<ItemLink>();
         for (int i = 0; i < EntitiesNumber; i++)
         {
-            entities.Add(new ItemLink
+            var itemLink = new ItemLink
             {
                 ItemLinkId = 0,
                 Item = items[i % items.Count]
-            });
+            };
+
+            context.Entry(itemLink).Property("Data").CurrentValue = "aaa";
+            context.Entry(itemLink).Property("ItemId").CurrentValue = itemLink.Item.ItemId;
+
+            entities.Add(itemLink);
         }
-        context.BulkInsert(entities);
+
+        context.ItemLinks.AddRange(entities);
+        context.SaveChanges();
+
+        //context.BulkInsert(entities);
 
         List<ItemLink> links = context.ItemLinks.ToList();
         Assert.True(links.Count > 0, "ItemLink row count");
@@ -1387,5 +1397,42 @@ public class EFCoreBulkTestAtypical
         };
         context.BulkRead(list2);
         Assert.Equal("At2", list2.FirstOrDefault()?.Name);
+    }
+
+    [Theory]
+    [InlineData(SqlType.PostgreSql)]
+    private void XminTest(SqlType sqlType)
+    {
+        ContextUtil.DatabaseType = sqlType;
+        using var context = new TestContext(ContextUtil.GetOptions());
+
+        context.Truncate<Partner>();
+
+        var list = new List<Partner>
+        {
+            new Partner { Name = "Aa1", FirstName = "Ab2" },
+            new Partner { Name = "Ba1", FirstName = "Bb2" }
+        };
+
+        //context.BulkInsert(list);
+
+        context.Partners.AddRange(list);
+        context.SaveChanges();
+
+        var first = context.Partners.FirstOrDefault();
+        var list2 = new List<Partner>
+        {
+            new Partner
+            {
+                Id = first?.Id ?? Guid.Empty
+            }
+        };
+
+        var bulkConfig = new BulkConfig
+        {
+            UpdateByProperties = new List<string> { nameof(Partner.Id) },
+            PropertiesToInclude = new List<string> { nameof(Partner.Id), nameof(Partner.Name) }
+        };
+        context.BulkRead(list2, bulkConfig);
     }
 }
