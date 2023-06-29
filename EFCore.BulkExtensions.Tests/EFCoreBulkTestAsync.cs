@@ -210,17 +210,22 @@ public class EFCoreBulkTestAsync
         {
             entities.Add(new Item
             {
-                ItemId = i,
+                ItemId = isBulk ? i : 0,
                 Name = "name InsertOrUpdate " + i,
                 Description = "info",
-                Quantity = i,
+                Quantity = i + 100,
                 Price = i / (i % 5 + 1),
                 TimeUpdated = dateTimeNow,
             });
         }
         if (isBulk)
         {
-            var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
+            var bulkConfig = new BulkConfig()
+            {
+                SetOutputIdentity = true,
+                CalculateStats = true,
+                SqlBulkCopyOptions = Microsoft.Data.SqlClient.SqlBulkCopyOptions.KeepIdentity
+            };
             await context.BulkInsertOrUpdateAsync(entities, bulkConfig);
             if (sqlType == SqlType.SqlServer)
             {
