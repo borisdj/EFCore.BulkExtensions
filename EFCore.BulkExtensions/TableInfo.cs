@@ -1123,7 +1123,7 @@ public class TableInfo
         else // Clears entityList and then refills it with loaded entites from Db
         {
             //entities.Clear();
-            entities = Enumerable.Empty<T>();
+            entities = new List<T>();
 
             if (typeof(T) == entitiesWithOutputIdentity.FirstOrDefault()?.GetType())
             {

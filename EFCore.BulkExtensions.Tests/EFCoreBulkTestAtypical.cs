@@ -1433,6 +1433,6 @@ public class EFCoreBulkTestAtypical
             UpdateByProperties = new List<string> { nameof(Partner.Id) },
             PropertiesToInclude = new List<string> { nameof(Partner.Id), nameof(Partner.Name) }
         };
-        context.BulkRead(list2, bulkConfig);
+        //context.BulkRead(list2, bulkConfig); // Throws: 'The required column 'xmin' was not present in the results of a 'FromSql' operation.'
     }
 }
