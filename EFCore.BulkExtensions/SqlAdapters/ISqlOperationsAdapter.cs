@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Npgsql;
 using System;
 using System.Collections.Generic;
 using System.Threading;

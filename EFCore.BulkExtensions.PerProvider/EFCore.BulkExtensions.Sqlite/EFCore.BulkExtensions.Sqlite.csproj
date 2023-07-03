@@ -1,10 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <Title>EFCore.BulkExtensions.Sqlite</Title>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <Version>7.1.2</Version>
+    <Version>7.1.3</Version>
     <Nullable>enable</Nullable>
     <Authors>borisdj</Authors>
     <Description>EntityFramework .Net EFCore EF Core Bulk Batch Extensions for Insert Update Delete Read (CRUD) operations on SQLite</Description>
@@ -12,14 +11,14 @@
     <Company>CODIS LLC</Company>
     <PackageIcon>EFCoreBulk.png</PackageIcon>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
-	<PackageReleaseNotes>Multiple fixes</PackageReleaseNotes>
+	<PackageReleaseNotes>Some updates</PackageReleaseNotes>
     <PackageTags>EntityFrameworkCore Entity Framework Core .Net EFCore EF Core SQLite Bulk Batch Copy SqlBulkCopy Extensions Insert Update Delete Read Truncate SaveChanges</PackageTags>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
 	<RepositoryUrl>https://github.com/borisdj/EFCore.BulkExtensions</RepositoryUrl>
     <RepositoryType>Git</RepositoryType>
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
-    <AssemblyVersion>7.1.2.0</AssemblyVersion>
-    <FileVersion>7.1.2.0</FileVersion>
+    <AssemblyVersion>7.1.3.0</AssemblyVersion>
+    <FileVersion>7.1.3.0</FileVersion>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>..\..\Keys\EFCore.BulkExtensions.snk</AssemblyOriginatorKeyFile>
     <DelaySign>false</DelaySign>
@@ -35,7 +34,6 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="7.0.5" />
     <PackageReference Include="NetTopologySuite.IO.SpatiaLite" Version="2.0.0" />
   </ItemGroup>
-
   <ItemGroup>
     <None Include="EFCoreBulk.png">
       <Pack>True</Pack>
