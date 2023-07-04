@@ -7,10 +7,10 @@
 	set "search2=Multiple fixes"
     set "replace2=Some updates"
 	
-    set "textFile1=EFCore.BulkExtensions.PerProvider\EFCore.BulkExtensions.MySql\EFCore.BulkExtensions.MySql.csproj"
-	set "textFile2=EFCore.BulkExtensions.PerProvider\EFCore.BulkExtensions.PostgreSql\EFCore.BulkExtensions.PostgreSql.csproj"
-	set "textFile3=EFCore.BulkExtensions.PerProvider\EFCore.BulkExtensions.Sqlite\EFCore.BulkExtensions.Sqlite.csproj"
-	set "textFile4=EFCore.BulkExtensions.PerProvider\EFCore.BulkExtensions.SqlServer\EFCore.BulkExtensions.SqlServer.csproj"
+    set "textFile1=..\EFCore.BulkExtensions.PerProvider\EFCore.BulkExtensions.MySql\EFCore.BulkExtensions.MySql.csproj"
+	set "textFile2=..\EFCore.BulkExtensions.PerProvider\EFCore.BulkExtensions.PostgreSql\EFCore.BulkExtensions.PostgreSql.csproj"
+	set "textFile3=..\EFCore.BulkExtensions.PerProvider\EFCore.BulkExtensions.Sqlite\EFCore.BulkExtensions.Sqlite.csproj"
+	set "textFile4=..\EFCore.BulkExtensions.PerProvider\EFCore.BulkExtensions.SqlServer\EFCore.BulkExtensions.SqlServer.csproj"
 	
     for /f "delims=" %%i in ('type "%textFile1%" ^& break ^> "%textFile1%" ') do (
         set "line=%%i"
