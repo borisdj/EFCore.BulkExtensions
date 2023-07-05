@@ -174,7 +174,7 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
             var propertyValueInner = default(object);
             var objectIdentifier = tableInfo.ObjectIdentifier;
             var shadowPropertyColumnNamesDict = tableInfo.ColumnToPropertyDictionary
-                .Where(a => a.Value.IsShadowProperty()).ToDictionary(a => a.Key, a => a.Value.GetColumnName(objectIdentifier));
+                .Where(a => a.Value.IsShadowProperty()).ToDictionary(a => a.Value.Name, a => a.Value.GetColumnName(objectIdentifier));
             if (shadowPropertyColumnNamesDict.ContainsKey(propertyName))
             {
                 if (tableInfo.BulkConfig.ShadowPropertyValue == null)
