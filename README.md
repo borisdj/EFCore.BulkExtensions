@@ -178,18 +178,18 @@ SetOutputNonIdentityColumns: true,            PropertiesToIncludeOnUpdate: null,
 BatchSize: 2000,                              PropertiesToExclude: null,
 NotifyAfter: null,                            PropertiesToExcludeOnCompare: null,
 BulkCopyTimeout: null,                        PropertiesToExcludeOnUpdate: null,
-EnableStreaming: false,                       UpdateByProperties: null,
+TrackingEntities: false,                      UpdateByProperties: null,
 UseTempDB: false,                             ReplaceReadEntities: false,
 UniqueTableNameTempDb: true,                  EnableShadowProperties: false,
 CustomDestinationTableName: null,             IncludeGraph: false,
 CustomSourceTableName: null,                  OmitClauseExistsExcept: false,
 CustomSourceDestinationMappingColumns: null,  DoNotUpdateIfTimeStampChanged: false,
-TrackingEntities: false,                      SRID: 4326,
+OnConflictUpdateWhereSql: null,               SRID: 4326,
 WithHoldlock: true,                           DateTime2PrecisionForceRound: false,
 CalculateStats: false,                        TemporalColumns: { "PeriodStart", "PeriodEnd" },
 SqlBulkCopyOptions: Default,                  OnSaveChangesSetFK: true,
 SqlBulkCopyColumnOrderHints: null,            IgnoreGlobalQueryFilters: false,
-OnConflictUpdateWhereSql: null,               
+DataReader: null,                             EnableStreaming: false,                   
 ----------------------------------------------------------------------------------------------
 METHOD: SetSynchronizeFilter<T>
         SetSynchronizeSoftDelete<T>
@@ -294,6 +294,9 @@ _ Also in some [sql collation](https://github.com/borisdj/EFCore.BulkExtensions/
 **TemporalColumns** are shadow columns used for Temporal table. Default elements 'PeriodStart' and 'PeriodEnd' can be changed if those columns have custom names.  
 **OnSaveChangesSetFK** is used only for BulkSaveChanges. When multiply entries have FK relationship which is Db generated, this set proper value after reading parent PK from Db. IF PK are generated in memory like are some Guid then this can be set to false for better efficiency.  
 **ReplaceReadEntities** when set to True result of BulkRead operation will be provided using replace instead of update. Entities list parameter of BulkRead method will be repopulated with obtained data. Enables functionality of Contains/IN which will return all entities matching the criteria (does not have to be by unique columns).
+
+**DataReader** can be used when DataReader ia also configured and when set it is propagated to SqlBulkCopy util object.
+**EnableStreaming** can be set to True if want to have tracking of entities from BulkRead or when SetOutputIdentity is set.
 
 **SqlBulkCopyOptions** is Enum (only for SqlServer) with [[Flags]](https://stackoverflow.com/questions/8447/what-does-the-flags-enum-attribute-mean-in-c) attribute which enables specifying one or more options:  
 *Default, KeepIdentity, CheckConstraints, TableLock, KeepNulls, FireTriggers, UseInternalTransaction*  
