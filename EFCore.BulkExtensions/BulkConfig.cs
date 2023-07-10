@@ -1,6 +1,7 @@
 using Microsoft.Data.SqlClient;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
 using System.Linq.Expressions;
 
@@ -55,11 +56,6 @@ public class BulkConfig
     public int? BulkCopyTimeout { get; set; }
 
     /// <summary>
-    ///     Propagated to SqlBulkCopy util object.
-    /// </summary>
-    public bool EnableStreaming { get; set; }
-
-    /// <summary>
     ///     When set to <c>true</c> Temp tables are created as #Temporary. More info: <c>https://www.sqlservertutorial.net/sql-server-basics/sql-server-temporary-tables/</c>
     /// </summary>
     /// <remarks>
@@ -95,6 +91,16 @@ public class BulkConfig
     ///     Only if CustomSourceTableName is set and used for specifying Source - Destination column names when they are not the same.
     /// </summary>
     public Dictionary<string, string>? CustomSourceDestinationMappingColumns { get; set; }
+
+    /// <summary>
+    ///     When configured data is loaded from this object instead of entity list which should be empty
+    /// </summary>
+    public IDataReader? DataReader { get; set; }
+
+    /// <summary>
+    ///     Can be used when DataReader ia also configured and when set it is propagated to SqlBulkCopy util object.
+    /// </summary>
+    public bool EnableStreaming { get; set; }
 
     /// <summary>
     ///     Can be set to True if want to have tracking of entities from BulkRead or when SetOutputIdentity is set.

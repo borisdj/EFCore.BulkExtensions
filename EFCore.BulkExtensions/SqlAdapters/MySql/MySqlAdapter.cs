@@ -56,13 +56,21 @@ public class MySqlAdapter : ISqlOperationsAdapter
             SetMySqlBulkCopyConfig(mySqlBulkCopy, tableInfo);
 
             var dataTable = GetDataTable(context, type, entities, mySqlBulkCopy, tableInfo);
+            IDataReader? dataReader = tableInfo.BulkConfig.DataReader;
+
             if (isAsync)
             {
-                await mySqlBulkCopy.WriteToServerAsync(dataTable, cancellationToken).ConfigureAwait(false);
+                if(dataReader == null)
+                    await mySqlBulkCopy.WriteToServerAsync(dataTable, cancellationToken).ConfigureAwait(false);
+                else
+                    await mySqlBulkCopy.WriteToServerAsync(dataReader, cancellationToken).ConfigureAwait(false);
             }
             else
             {
-                mySqlBulkCopy.WriteToServer(dataTable);
+                if (dataReader == null)
+                    mySqlBulkCopy.WriteToServer(dataTable);
+                else
+                    mySqlBulkCopy.WriteToServer(dataReader);
             }
         }
         finally

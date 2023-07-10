@@ -22,7 +22,8 @@ internal static class DbContextBulkTransaction
                 operationType != OperationType.InsertOrUpdateOrDelete && 
                 operationType != OperationType.Truncate && 
                 operationType != OperationType.SaveChanges &&
-                (bulkConfig == null || bulkConfig.CustomSourceTableName == null))
+                (bulkConfig == null || bulkConfig.CustomSourceTableName == null) &&
+                (bulkConfig == null || bulkConfig.DataReader == null))
             {
                 return;
             }

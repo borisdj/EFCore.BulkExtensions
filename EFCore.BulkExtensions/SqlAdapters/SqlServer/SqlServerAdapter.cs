@@ -6,6 +6,7 @@ using NetTopologySuite.IO;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -60,13 +61,21 @@ public class SqlServerAdapter : ISqlOperationsAdapter
             try
             {
                 var dataTable = GetDataTable(context, type, entities, sqlBulkCopy, tableInfo);
+                IDataReader? dataReader = tableInfo.BulkConfig.DataReader;
+
                 if (isAsync)
                 {
-                    await sqlBulkCopy.WriteToServerAsync(dataTable, cancellationToken).ConfigureAwait(false);
+                    if(dataReader == null)
+                        await sqlBulkCopy.WriteToServerAsync(dataTable, cancellationToken).ConfigureAwait(false);
+                    else
+                        await sqlBulkCopy.WriteToServerAsync(dataReader, cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
-                    sqlBulkCopy.WriteToServer(dataTable);
+                    if (dataReader == null)
+                        sqlBulkCopy.WriteToServer(dataTable);
+                    else
+                        sqlBulkCopy.WriteToServer(dataReader);
                 }
             }
             catch (InvalidOperationException ex)

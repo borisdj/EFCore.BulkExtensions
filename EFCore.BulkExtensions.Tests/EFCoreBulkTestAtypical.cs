@@ -1,4 +1,5 @@
 using EFCore.BulkExtensions.SqlAdapters;
+using FastMember;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using NetTopologySuite.Geometries;
@@ -1434,5 +1435,25 @@ public class EFCoreBulkTestAtypical
             PropertiesToInclude = new List<string> { nameof(Partner.Id), nameof(Partner.Name) }
         };
         //context.BulkRead(list2, bulkConfig); // Throws: 'The required column 'xmin' was not present in the results of a 'FromSql' operation.'
+    }
+
+    [Theory]
+    [InlineData(SqlType.SqlServer)]
+    private void DataReaderTest(SqlType sqlType)
+    {
+        ContextUtil.DatabaseType = sqlType;
+
+        using var context = new TestContext(ContextUtil.GetOptions());
+
+        context.Truncate<Customer>();
+
+        var entities = new List<Customer>
+        {
+            new Customer { Name = "Cust 1" },
+            new Customer { Name = "Cust 2" },
+        };
+
+        using (var reader = ObjectReader.Create(entities))
+        context.BulkInsert(new List<Customer>(), new BulkConfig { DataReader = reader }); // , EnableStreaming = true
     }
 }
