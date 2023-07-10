@@ -289,7 +289,7 @@ public class TableInfo
         HasOwnedTypes = OwnedTypesDict.Count() > 0;
 
         OwnedRegularTypesDict = navigations.Where(a => a.TargetEntityType.IsOwned() && !a.TargetEntityType.IsMappedToJson()).ToDictionary(a => a.Name, a => a);
-        OwnedJsonTypesDict = navigations.Where(a => a.TargetEntityType.IsOwned() && a.TargetEntityType.IsMappedToJson()).ToDictionary(a => a.Name, a => a);
+        OwnedJsonTypesDict = navigations.Where(a => a.TargetEntityType.IsMappedToJson()).ToDictionary(a => a.Name, a => a);
         // for .Net 6
         //OwnedRegularTypesDict = navigations.Where(a => a.TargetEntityType.IsOwned()).ToDictionary(a => a.Name, a => a);
         //OwnedJsonTypesDict = navigations.Where(a => a.TargetEntityType == null).ToDictionary(a => a.Name, a => a); // should be empty
