@@ -189,7 +189,8 @@ WithHoldlock: true,                           DateTime2PrecisionForceRound: fals
 CalculateStats: false,                        TemporalColumns: { "PeriodStart", "PeriodEnd" },
 SqlBulkCopyOptions: Default,                  OnSaveChangesSetFK: true,
 SqlBulkCopyColumnOrderHints: null,            IgnoreGlobalQueryFilters: false,
-DataReader: null,                             EnableStreaming: false,                   
+DataReader: null,                             EnableStreaming: false,
+UseOptionLoopJoin:false,                
 ----------------------------------------------------------------------------------------------
 METHOD: SetSynchronizeFilter<T>
         SetSynchronizeSoftDelete<T>
@@ -293,7 +294,8 @@ _ Also in some [sql collation](https://github.com/borisdj/EFCore.BulkExtensions/
 **DateTime2PrecisionForceRound** If dbtype datetime2 has precision less then default 7, example 'datetime2(3)' SqlBulkCopy does Floor instead of Round so when this Property is set then Rounding will be done in memory to make sure inserted values are same as with regular SaveChanges.  
 **TemporalColumns** are shadow columns used for Temporal table. Default elements 'PeriodStart' and 'PeriodEnd' can be changed if those columns have custom names.  
 **OnSaveChangesSetFK** is used only for BulkSaveChanges. When multiply entries have FK relationship which is Db generated, this set proper value after reading parent PK from Db. IF PK are generated in memory like are some Guid then this can be set to false for better efficiency.  
-**ReplaceReadEntities** when set to True result of BulkRead operation will be provided using replace instead of update. Entities list parameter of BulkRead method will be repopulated with obtained data. Enables functionality of Contains/IN which will return all entities matching the criteria (does not have to be by unique columns).
+**ReplaceReadEntities** when set to True result of BulkRead operation will be provided using replace instead of update. Entities list parameter of BulkRead method will be repopulated with obtained data. Enables functionality of Contains/IN which will return all entities matching the criteria (does not have to be by unique columns).  
+**UseOptionLoopJoin** when set it appends 'OPTION (LOOP JOIN)' for SqlServer, to reduce potential deadlocks on tables that have FKs. Use this hint as a last resort for experienced devs and db admins.
 
 **DataReader** can be used when DataReader ia also configured and when set it is propagated to SqlBulkCopy util object.
 **EnableStreaming** can be set to True if want to have tracking of entities from BulkRead or when SetOutputIdentity is set, useful for big field like blob, binary column.
