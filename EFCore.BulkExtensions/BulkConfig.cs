@@ -98,7 +98,7 @@ public class BulkConfig
     public IDataReader? DataReader { get; set; }
 
     /// <summary>
-    ///     Can be used when DataReader ia also configured and when set it is propagated to SqlBulkCopy util object.
+    ///     Can be used when DataReader is also configured and when set it is propagated to SqlBulkCopy util object, useful for big field like blob, binary column.
     /// </summary>
     public bool EnableStreaming { get; set; }
 

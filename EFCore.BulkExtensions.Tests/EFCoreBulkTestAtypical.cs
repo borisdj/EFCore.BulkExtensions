@@ -1453,7 +1453,7 @@ public class EFCoreBulkTestAtypical
             new Customer { Name = "Cust 2" },
         };
 
-        using (var reader = ObjectReader.Create(entities))
+        using var reader = ObjectReader.Create(entities);
         context.BulkInsert(new List<Customer>(), new BulkConfig { DataReader = reader }); // , EnableStreaming = true
     }
 }
