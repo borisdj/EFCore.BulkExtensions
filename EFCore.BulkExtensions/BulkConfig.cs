@@ -72,6 +72,17 @@ public class BulkConfig
     public bool UniqueTableNameTempDb { get; set; } = true;
 
     /// <summary>
+    ///     When set it appends 'OPTION (LOOP JOIN)' for SqlServer, to reduce potential deadlocks on tables that have FKs.
+    /// </summary>
+    /// <remarks>
+    ///     Use this hint as a last resort for experienced devs and db admins.
+    /// </remarks>
+    /// <value>
+    ///     Default value is <c>false</c>.
+    /// </value>
+    public bool UseOptionLoopJoin { get; set; } = true;
+
+    /// <summary>
     ///     Enables specifying custom name of table in Db that does not have to be mapped to Entity.
     /// </summary>
     /// <value>

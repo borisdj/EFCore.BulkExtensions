@@ -429,6 +429,11 @@ public abstract class SqlQueryBuilder
             q += $" OUTPUT {commaSeparatedColumnsNames}" + isUpdateStatsValue +
                  $" INTO {tableInfo.FullTempOutputTableName}";
         }
+        if(tableInfo.BulkConfig.UseOptionLoopJoin)
+        {
+            q += " OPTION (LOOP JOIN)";
+        }
+        
         q += ";";
 
         Dictionary<string, string> sourceDestinationMappings = tableInfo.BulkConfig.CustomSourceDestinationMappingColumns ?? new();
