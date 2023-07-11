@@ -1,12 +1,12 @@
 using EFCore.BulkExtensions.SqlAdapters;
 using FastMember;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using NetTopologySuite.Geometries;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace EFCore.BulkExtensions.Tests;
@@ -1455,5 +1455,38 @@ public class EFCoreBulkTestAtypical
 
         using var reader = ObjectReader.Create(entities);
         context.BulkInsert(new List<Customer>(), new BulkConfig { DataReader = reader }); // , EnableStreaming = true
+    }
+
+    [Theory]
+    [InlineData(SqlType.SqlServer)]
+    private void ParallelsTestAsync(SqlType sqlType)
+    {
+        ContextUtil.DatabaseType = sqlType;
+        
+        var entitiesLists = new List<List<Customer>>();
+
+        for (int l = 0; l < 10; l++)
+        {
+            var entities = new List<Customer>();
+            for (int i = 1; i <= 10000; i++)
+            {
+                int k = l * 10000 + i;
+                var entity = new Customer
+                {
+                    Name = "name " + k,
+                };
+                entities.Add(entity);
+            }
+            entitiesLists.Add(entities);
+        }
+
+        using var context = new TestContext(ContextUtil.GetOptions());
+        context.Truncate<Customer>();
+
+        Parallel.ForEach(entitiesLists, chunk =>
+            {
+                context.BulkInsertAsync(chunk);
+            }
+        );
     }
 }
