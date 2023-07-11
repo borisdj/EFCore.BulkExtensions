@@ -296,7 +296,7 @@ _ Also in some [sql collation](https://github.com/borisdj/EFCore.BulkExtensions/
 **ReplaceReadEntities** when set to True result of BulkRead operation will be provided using replace instead of update. Entities list parameter of BulkRead method will be repopulated with obtained data. Enables functionality of Contains/IN which will return all entities matching the criteria (does not have to be by unique columns).
 
 **DataReader** can be used when DataReader ia also configured and when set it is propagated to SqlBulkCopy util object.
-**EnableStreaming** can be set to True if want to have tracking of entities from BulkRead or when SetOutputIdentity is set.
+**EnableStreaming** can be set to True if want to have tracking of entities from BulkRead or when SetOutputIdentity is set, useful for big field like blob, binary column.
 
 **SqlBulkCopyOptions** is Enum (only for SqlServer) with [[Flags]](https://stackoverflow.com/questions/8447/what-does-the-flags-enum-attribute-mean-in-c) attribute which enables specifying one or more options:  
 *Default, KeepIdentity, CheckConstraints, TableLock, KeepNulls, FireTriggers, UseInternalTransaction*  
