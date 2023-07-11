@@ -315,6 +315,11 @@ Last optional argument is **Action progress** (Example in *EfOperationTest.cs* *
 context.BulkInsert(entitiesList, null, (a) => WriteProgress(a));
 ```
 
+For **parallelism** important notes are:  
+1.SqlBulk [in Parallel](https://www.adathedev.co.uk/2011/01/sqlbulkcopy-to-sql-server-in-parallel.html)  
+2.Concurrent operations not run on [same Context instance](https://learn.microsoft.com/en-us/ef/core/miscellaneous/async)  
+3.Import data to single unindexed table with [tabel level lock](https://learn.microsoft.com/en-us/previous-versions/sql/sql-server-2005/ms186341(v=sql.90))  
+
 Library supports [Global Query Filters](https://docs.microsoft.com/en-us/ef/core/querying/filters) and [Value Conversions](https://docs.microsoft.com/en-us/ef/core/modeling/value-conversions) as well.</br>
 Additionally BatchUpdate and named Property works with [EnumToString Conversion](https://github.com/borisdj/EFCore.BulkExtensions/issues/397).</br>
 It can map [OwnedTypes](https://docs.microsoft.com/en-us/ef/core/modeling/owned-entities), also next are links with info how to achieve 
