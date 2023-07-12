@@ -89,7 +89,7 @@ public class MySqlQueryBuilder : SqlQueryBuilder
         }
 
         string q;
-        var firstPrimaryKey = tableInfo.PrimaryKeysPropertyColumnNameDict.FirstOrDefault().Key;
+        var firstPrimaryKey = tableInfo.EntityPKPropertyColumnNameDict.FirstOrDefault().Key;
         if (operationType == OperationType.Delete)
         {
             q = $"DELETE A " +
@@ -104,9 +104,19 @@ public class MySqlQueryBuilder : SqlQueryBuilder
             var equalsColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsToUpdate, equalsTable: "EXCLUDED").Replace("[", "`").Replace("]", "`");
 
             q = $"INSERT INTO {tableInfo.FullTableName} ({commaSeparatedColumns}) " +
-                $"SELECT {commaSeparatedColumns} FROM {tableInfo.FullTempTableName} AS EXCLUDED " +
-                $"ON DUPLICATE KEY UPDATE " +
-                $"{equalsColumns}; ";
+                $"SELECT {commaSeparatedColumns} FROM {tableInfo.FullTempTableName} AS EXCLUDED ";
+
+            if (columnsToUpdate.Count == 0)
+            {
+                q = q.Replace("INSERT INTO", "INSERT IGNORE INTO");
+            }
+            else
+            {
+                q += $"ON DUPLICATE KEY UPDATE " +
+                     $"{equalsColumns}";
+            }
+            q += "; ";
+
             if (tableInfo.CreateOutputTable)
             {
                 if (operationType == OperationType.Insert || operationType == OperationType.InsertOrUpdate)

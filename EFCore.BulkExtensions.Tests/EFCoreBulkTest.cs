@@ -351,6 +351,28 @@ public class EFCoreBulkTest
         context.BulkSaveChanges();
         //Assert.Equal(16, entities5[1].ItemId); // TODO Check Id is 2 instead of 16
         Assert.Equal("info 16", context.Items.Where(a => a.Name == "Name 16").AsNoTracking().FirstOrDefault()?.Description);
+
+        var entities6 = new List<Item>();
+        for (int i = 16; i <= 17; i++)
+        {
+            var entity = new Item
+            {
+                ItemId = i,
+                Name = "Name " + i,
+                Description = "info " + i,
+                Quantity = i,
+                Price = 0.1m * i,
+                TimeUpdated = currentTime,
+            };
+            entities6.Add(entity);
+        }
+        var bulkConfig = new BulkConfig
+        {
+            UpdateByProperties = new List<string> { nameof(Item.Name) },
+            PropertiesToIncludeOnUpdate = new List<string> { "" },
+            SetOutputIdentity = true
+        };
+        context.BulkInsertOrUpdate(entities6, bulkConfig);
     }
     
     [Theory]
