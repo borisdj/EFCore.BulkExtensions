@@ -78,7 +78,7 @@ public class SqlServerAdapter : ISqlOperationsAdapter
                         sqlBulkCopy.WriteToServer(dataReader);
                 }
             }
-            catch (InvalidOperationException ex)
+            catch (Exception ex)
             {
                 if (ex.Message.Contains(BulkExceptionMessage.ColumnMappingNotMatch))
                 {
