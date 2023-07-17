@@ -256,6 +256,14 @@ public class BulkConfig
     public bool DoNotUpdateIfTimeStampChanged { get; set; }
 
     /// <summary>
+    ///     Default is zero '0'. When set to larger value it appends: LIMIT 'N', to generated query
+    /// </summary>
+    /// <remarks>
+    ///     Used only with PostgreSql.
+    /// </remarks>
+    public int ApplySubqueryLimit { get; set; } = 0;
+
+    /// <summary>
     ///     Spatial Reference Identifier - for SQL Server with NetTopologySuite. Default value is <c>4326</c>.
     /// </summary>
     /// <remarks>

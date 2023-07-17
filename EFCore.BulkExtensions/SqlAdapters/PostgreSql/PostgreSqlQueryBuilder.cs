@@ -131,13 +131,14 @@ public class PostgreSqlQueryBuilder : SqlQueryBuilder
             var columnsToUpdate = columnsListEquals.Where(c => tableInfo.PropertyColumnNamesUpdateDict.ContainsValue(c)).ToList();
             var equalsColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsToUpdate, equalsTable: "EXCLUDED").Replace("[", @"""").Replace("]", @"""");
 
-            bool applySubqueryLimit = columnsToUpdate.Count == 0 || string.IsNullOrWhiteSpace(equalsColumns);
-            var subqueryText = applySubqueryLimit ? "LIMIT 1 " : "";
+            int subqueryLimit = tableInfo.BulkConfig.ApplySubqueryLimit;
+            var subqueryText = subqueryLimit > 0 ? $"LIMIT {subqueryLimit} " : "";
+            bool onUpdateDoNothing = columnsToUpdate.Count == 0 || string.IsNullOrWhiteSpace(equalsColumns);
 
             q = $"INSERT INTO {tableInfo.FullTableName} ({commaSeparatedColumns}) " +
                 $"(SELECT {commaSeparatedColumns} FROM {tableInfo.FullTempTableName}) " + subqueryText +
                 $"ON CONFLICT ({updateByColumns}) " +
-                (applySubqueryLimit
+                (onUpdateDoNothing
                  ? $"DO NOTHING"
                  : $"DO UPDATE SET {equalsColumns}");
 
