@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <Title>EFCore.BulkExtensions</Title>
@@ -29,7 +29,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.1" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="7.0.8" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="7.0.9" />
 	<PackageReference Include="System.Diagnostics.DiagnosticSource" Version="7.0.2" />
 	<PackageReference Include="NetTopologySuite.IO.SqlServerBytes" Version="2.1.0" />
 	<PackageReference Include="EntityFrameworkCore.SqlServer.HierarchyId" Version="4.0.0" />
