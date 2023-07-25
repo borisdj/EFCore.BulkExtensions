@@ -3,7 +3,7 @@
     <TargetFramework>net6.0</TargetFramework>
     <Title>EFCore.BulkExtensions.MySQL</Title>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <Version>7.1.4</Version>
+    <Version>7.1.5</Version>
     <Nullable>enable</Nullable>
     <Authors>borisdj</Authors>
     <Description>EntityFramework .Net EFCore EF Core Bulk Batch Extensions for Insert Update Delete Read (CRUD) operations on MySQL</Description>
@@ -11,14 +11,14 @@
     <Company>CODIS LLC</Company>
     <PackageIcon>EFCoreBulk.png</PackageIcon>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
-	<PackageReleaseNotes>Added DataReader for streaming</PackageReleaseNotes>
+	<PackageReleaseNotes>SaveChanges sort dependecies</PackageReleaseNotes>
     <PackageTags>EntityFrameworkCore Entity Framework Core .Net EFCore EF Core MySQL Bulk Batch Copy SqlBulkCopy Extensions Insert Update Delete Read Truncate SaveChanges</PackageTags>
 	<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
     <RepositoryUrl>https://github.com/borisdj/EFCore.BulkExtensions</RepositoryUrl>
     <RepositoryType>Git</RepositoryType>
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
-    <AssemblyVersion>7.1.4.0</AssemblyVersion>
-    <FileVersion>7.1.4.0</FileVersion>
+    <AssemblyVersion>7.1.5.0</AssemblyVersion>
+    <FileVersion>7.1.5.0</FileVersion>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>..\..\Keys\EFCore.BulkExtensions.snk</AssemblyOriginatorKeyFile>
     <DelaySign>false</DelaySign>
@@ -31,6 +31,8 @@
 	<PackageReference Include="EntityFrameworkCore.SqlServer.HierarchyId" Version="4.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" Version="7.0.8" />
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="7.0.0" />
+	<PackageReference Include="MedallionTopologicalSort" Version="1.0.0" />
+	<PackageReference Include="StrongNamer" Version="0.2.5" />
   </ItemGroup>
   <ItemGroup>
     <None Include="EFCoreBulk.png">
