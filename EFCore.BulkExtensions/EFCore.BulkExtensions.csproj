@@ -28,8 +28,10 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="MedallionTopologicalSort" Version="1.0.0" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="7.0.8" />
+    <PackageReference Include="StrongNamer" Version="0.2.5" />
 	<PackageReference Include="System.Diagnostics.DiagnosticSource" Version="7.0.2" />
 	<PackageReference Include="NetTopologySuite.IO.SqlServerBytes" Version="2.1.0" />
 	<PackageReference Include="EntityFrameworkCore.SqlServer.HierarchyId" Version="4.0.0" />
