@@ -1,11 +1,11 @@
 @echo off 
     setlocal enableextensions disabledelayedexpansion
 	
-    set "search=^>7.1.3"
-    set "replace=^>7.1.4"
+    set "search=^>7.1.4"
+    set "replace=^>7.1.5"
 	
-	set "search2=Some updates"
-    set "replace2=Added DataReader for streaming"
+	set "search2=Added DataReader for streaming"
+    set "replace2=SaveChanges sort dependecies"
 	
     set "textFile1=..\EFCore.BulkExtensions.PerProvider\EFCore.BulkExtensions.MySql\EFCore.BulkExtensions.MySql.csproj"
 	set "textFile2=..\EFCore.BulkExtensions.PerProvider\EFCore.BulkExtensions.PostgreSql\EFCore.BulkExtensions.PostgreSql.csproj"

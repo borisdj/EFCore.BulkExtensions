@@ -1,14 +1,14 @@
 @echo off 
 setlocal enableextensions disabledelayedexpansion
 
-set "search0=^>7.1.4"
-set "replace0=^>6.7.14"
+set "search0=^>7.1.5"
+set "replace0=^>6.7.15"
 
 
 set "search1="5.1.1"
 set "replace1="2.1.6"
 
-set "search2="7.0.8"
+set "search2="7.0.9"
 set "replace2="6.0.19"
 
 set "search3="7.0.2"
@@ -20,7 +20,7 @@ set "replace4="2.1.0"
 set "search5="4.0.0"
 set "replace5="3.0.1"
 
-set "search6="7.0.8"
+set "search6="7.0.9"
 set "replace6="6.0.19"
 
 set "search7="7.0.4"
@@ -29,7 +29,7 @@ set "replace7="6.0.8"
 set "search8="7.0.0"
 set "replace8="6.0.2"
 
-set "search9="7.0.8"
+set "search9="7.0.9"
 set "replace9="6.0.19"
 
 set "search10="2.0.0"
