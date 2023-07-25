@@ -190,7 +190,7 @@ CalculateStats: false,                        TemporalColumns: { "PeriodStart", 
 SqlBulkCopyOptions: Default,                  OnSaveChangesSetFK: true,
 SqlBulkCopyColumnOrderHints: null,            IgnoreGlobalQueryFilters: false,
 DataReader: null,                             EnableStreaming: false,
-UseOptionLoopJoin:false,                
+UseOptionLoopJoin:false,                      ApplySubqueryLimit: 0
 ----------------------------------------------------------------------------------------------
 METHOD: SetSynchronizeFilter<T>
         SetSynchronizeSoftDelete<T>
@@ -297,6 +297,7 @@ Return info will be in *BulkConfig.**TimeStampInfo*** object within field `Numbe
 **OnSaveChangesSetFK** is used only for BulkSaveChanges. When multiply entries have FK relationship which is Db generated, this set proper value after reading parent PK from Db. IF PK are generated in memory like are some Guid then this can be set to false for better efficiency.  
 **ReplaceReadEntities** when set to True result of BulkRead operation will be provided using replace instead of update. Entities list parameter of BulkRead method will be repopulated with obtained data. Enables functionality of Contains/IN which will return all entities matching the criteria (does not have to be by unique columns).  
 **UseOptionLoopJoin** when set it appends 'OPTION (LOOP JOIN)' for SqlServer, to reduce potential deadlocks on tables that have FKs. Use this [sql hint](https://learn.microsoft.com/en-us/sql/t-sql/queries/hints-transact-sql-query?view=sql-server-ver16) as a last resort for experienced devs and db admins.
+**ApplySubqueryLimit** Default is zero '0'. When set to larger value it appends: LIMIT 'N', to generated query. Used only with PostgreSql.
 
 **DataReader** can be used when DataReader ia also configured and when set it is propagated to SqlBulkCopy util object.
 **EnableStreaming** can be set to True if want to have tracking of entities from BulkRead or when SetOutputIdentity is set, useful for big field like blob, binary column.
