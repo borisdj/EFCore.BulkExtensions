@@ -1,5 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Medallion.Collections; // uses StrongNamer nuget to sign ref. with Strong Name
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.Metadata;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -38,13 +40,36 @@ internal static class DbContextBulkTransactionSaveChanges
             bulkConfig.SetOutputIdentity = true;
         }
 
-        var entries = context.ChangeTracker.Entries();
-        var entriesGroupedByEntity = entries.GroupBy(a => new { EntityType = a.Entity.GetType(), a.State },
-                                                     (entry, group) => new { entry.EntityType, EntityState = entry.State, Entities = group.Select(a => a.Entity).ToList() });
-        var entriesGroupedChanged = entriesGroupedByEntity.Where(a => EntityStateBulkMethodDict.ContainsKey(a.EntityState) & a.Entities.Count >= 0);
-        var entriesGroupedChangedSorted = entriesGroupedChanged.OrderBy(a => a.EntityState.ToString() != EntityState.Modified.ToString()).ToList();
-        if (entriesGroupedChangedSorted.Count == 0)
-            return;
+        var entries = context.ChangeTracker.Entries().Where(x => x.State != EntityState.Unchanged);
+        var entriesGroupedByEntity = entries.GroupBy(a => new { EntityType = GetNonProxyType(a.Entity.GetType()), a.State },
+            (entry, group) => new
+            {
+                entry.State,
+                Entities = group.Select(a => a.Entity).ToList(),
+                EntryType = entry.EntityType,
+                EntityType = context.Model.FindEntityType(entry.EntityType)!,
+            })
+        .ToList();
+
+        // Function to get FKs of an entity type, except self-referencies
+        Func<IEntityType, IEnumerable<IEntityType>> getFks = e => e.GetForeignKeys()
+            .Where(x => x.PrincipalEntityType != e)
+            .Select(x => x.PrincipalEntityType);
+
+        // Topoligicaly sort insert operations by FK
+        var added = entriesGroupedByEntity.Where(x => x.State == EntityState.Added);
+        var addedLookup = added.ToLookup(x => x.EntityType);
+        var sortedAdded = added.OrderTopologicallyBy(g => getFks(g.EntityType).SelectMany(x => addedLookup[x]));
+
+        // Topoligicaly sort delete operations by reverse FK
+        var deleted = entriesGroupedByEntity.Where(x => x.State == EntityState.Deleted);
+        var deletedLookup = deleted.ToLookup(x => x.EntityType);
+        var sortedDeleted = deleted.OrderTopologicallyBy(g => getFks(g.EntityType).SelectMany(x => deletedLookup[x]).Reverse());
+
+        var sortedGroups = sortedAdded
+            .Concat(entriesGroupedByEntity.Where(x => x.State == EntityState.Modified))
+            .Concat(sortedDeleted)
+            .ToList();
 
         if (isAsync)
         {
@@ -70,11 +95,12 @@ internal static class DbContextBulkTransactionSaveChanges
             if (option == 1)
             {
                 Dictionary<string, Dictionary<string, FastProperty>> fastPropertyDicts = new();
-                foreach (var entryGroup in entriesGroupedChangedSorted)
+                foreach (var entryGroup in sortedGroups)
                 {
-                    Type entityType = entryGroup.EntityType;
+                    Type entityType = entryGroup.EntryType;
                     entityType = (entityType.Namespace == "Castle.Proxies") ? entityType.BaseType! : entityType;
-                    var entityModelType = context.Model.FindEntityType(entityType) ?? throw new ArgumentNullException($"Unable to determine EntityType from given type with name {entityType.Name}");
+                    var entityModelType = context.Model.FindEntityType(entityType) ??
+                                            throw new ArgumentNullException($"Unable to determine EntityType from given type with name {entityType.Name}");
 
                     var entityPropertyDict = new Dictionary<string, FastProperty>();
                     if (!fastPropertyDicts.ContainsKey(entityType.Name))
@@ -145,7 +171,7 @@ internal static class DbContextBulkTransactionSaveChanges
                         }
                     }
 
-                    string methodName = EntityStateBulkMethodDict[entryGroup.EntityState].Key;
+                    string methodName = EntityStateBulkMethodDict[entryGroup.State].Key;
                     if (isAsync)
                     {
                         await InvokeBulkMethod(context, entryGroup.Entities, entityType, methodName, bulkConfig, progress, isAsync: true, cancellationToken).ConfigureAwait(false);
