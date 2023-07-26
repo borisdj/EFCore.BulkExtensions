@@ -580,6 +580,7 @@ public class Address
     public string Street { get; set; } = null!;
     public Geometry LocationGeography { get; set; } = null!;
     public Geometry LocationGeometry { get; set; } = null!;
+    public LineString GeoLine { get; set; } = null!;
 }
 
 public class Category

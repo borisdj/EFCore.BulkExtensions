@@ -492,9 +492,16 @@ public class SqliteAdapter : ISqlOperationsAdapter
 
             string columnName = propertyColumn.Value;
             string typeName = tableInfo.ColumnNamesTypesDict[columnName];
-            if (value != null && typeName == "GEOMETRY") // spatial types
+            if (value != null && typeName == nameof(Geometry).ToUpper()) // spatial types
             {
                 param.Value = new GaiaGeoWriter().Write((Geometry)value);
+            }
+            else if (value != null && typeName == nameof(LineString).ToUpper())
+            {
+                LineString lineString = (LineString)value;
+                if (lineString.SRID == 0)
+                    lineString.SRID = tableInfo.BulkConfig.SRID;
+                param.Value = new GaiaGeoWriter().Write(lineString);
             }
             else
             {
