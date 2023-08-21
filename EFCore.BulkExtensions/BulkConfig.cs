@@ -80,7 +80,7 @@ public class BulkConfig
     /// <value>
     ///     Default value is <c>false</c>.
     /// </value>
-    public bool UseOptionLoopJoin { get; set; } = true;
+    public bool UseOptionLoopJoin { get; set; } = false;
 
     /// <summary>
     ///     Enables specifying custom name of table in Db that does not have to be mapped to Entity.
