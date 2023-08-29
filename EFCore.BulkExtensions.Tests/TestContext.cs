@@ -1,4 +1,6 @@
 using EFCore.BulkExtensions.SqlAdapters;
+using HotChocolate;
+using HotChocolate.Types;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -10,6 +12,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Data;
 using System.Linq;
 using System.Text.Json;
 
@@ -17,6 +20,7 @@ namespace EFCore.BulkExtensions.Tests;
 
 public class TestContext : DbContext
 {
+
     public DbSet<Item> Items { get; set; } = null!;
     public DbSet<ItemHistory> ItemHistories { get; set; } = null!;
 
@@ -83,7 +87,9 @@ public class TestContext : DbContext
 
     public DbSet<Partner> Partners { get; set; } = null!;
 
-    public static bool UseTopologyPostgres { get; set; } = false;
+    public DbSet<GraphQLModel> GraphQLModels { get; set; } = null!;
+
+    public static bool UseTopologyPostgres { get; set; } = true; // needed for object Address with Geo. props
 
     public TestContext(DbContextOptions options) : base(options)
     {
@@ -105,6 +111,8 @@ public class TestContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.RemovePluralizingTableNameConvention();
+
+        modelBuilder.Entity<GraphQLModel>().Property(x => x.Id).HasDefaultValueSql("gen_random_uuid()");
 
         modelBuilder.Entity<Info>(e => { e.Property(p => p.ConvertedTime).HasConversion((value) => value.AddDays(1), (value) => value.AddDays(-1)); });
 
@@ -399,6 +407,16 @@ public static class ModelBuilderExtensions
             }
         }
     }
+}
+
+public class GraphQLModel
+{
+    [Key]
+    [GraphQLType(typeof(IdType))]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    public virtual System.Guid Id { get; set; }
+
+    public string? Name { get; set; }
 }
 
 public class Item

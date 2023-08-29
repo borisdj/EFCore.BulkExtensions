@@ -248,6 +248,21 @@ public class EFCoreBulkTest
         var boxQuery = context.Boxes.AsQueryable().Where(a => a.BoxId <= 1);
         boxQuery.BatchUpdate(new Box { DocumentContent = jsonbDoc2, ElementContent = jsonbDoc2.RootElement });
 
+
+        var graphQLModels = new List<GraphQLModel>();
+        for (int i = 1; i <= 2; i++)
+        {
+            var graphQLModel = new GraphQLModel
+            {
+                //ItemId = i,
+                Name = "Name " + i,
+            };
+            graphQLModels.Add(graphQLModel);
+        }
+
+        var cnfg = new BulkConfig() { PropertiesToExclude = new List<string> { nameof(GraphQLModel.Id) } };
+        context.BulkInsert(graphQLModels, cnfg);
+
         //var incrementStep = 100;
         //var suffix = " Concatenated";
         //query.BatchUpdate(a => new Item { Name = a.Name + suffix, Quantity = a.Quantity + incrementStep }); // example of BatchUpdate Increment/Decrement value in variable
