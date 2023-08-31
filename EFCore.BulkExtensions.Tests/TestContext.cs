@@ -48,7 +48,7 @@ public class TestContext : DbContext
     public DbSet<Tracker> Trackers { get; set; } = null!;
     public DbSet<ItemLink> ItemLinks { get; set; } = null!;
     public DbSet<Address> Addresses { get; set; } = null!;
-    public DbSet<Category> Categories { get; set; } = null!;
+    //public DbSet<Category> Categories { get; set; } = null!;
 
     public DbSet<Parent> Parents { get; set; } = null!;
     public DbSet<ParentDetail> ParentDetails { get; set; } = null!;
@@ -112,7 +112,7 @@ public class TestContext : DbContext
     {
         modelBuilder.RemovePluralizingTableNameConvention();
 
-        modelBuilder.Entity<GraphQLModel>().Property(x => x.Id).HasDefaultValueSql("gen_random_uuid()");
+        modelBuilder.Entity<GraphQLModel>().Property(x => x.Id).HasDefaultValueSql("NEWID()"); //"gen_random_uuid()" // for PG
 
         modelBuilder.Entity<Info>(e => { e.Property(p => p.ConvertedTime).HasConversion((value) => value.AddDays(1), (value) => value.AddDays(-1)); });
 
@@ -167,7 +167,7 @@ public class TestContext : DbContext
             modelBuilder.Entity<UdttIntInt>(entity => { entity.HasNoKey(); });
 
             //modelBuilder.Entity<Address>().Property(p => p.LocationGeometry).HasColumnType("geometry");
-            modelBuilder.Entity<Category>().Property(p => p.HierarchyDescription).HasColumnType("hierarchyid");
+            //modelBuilder.Entity<Category>().Property(p => p.HierarchyDescription).HasColumnType("hierarchyid");
 
             modelBuilder.Entity<Division>().Property(p => p.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
             modelBuilder.Entity<Department>().Property(p => p.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
