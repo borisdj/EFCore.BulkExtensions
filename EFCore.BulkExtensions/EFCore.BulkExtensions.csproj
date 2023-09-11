@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
     <Title>EFCore.BulkExtensions</Title>
@@ -44,7 +44,7 @@
   </ItemGroup>
   <!-- net 7.0 -->
   <ItemGroup Condition=" '$(TargetFramework)' == 'net7.0' ">
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.1" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.0-preview3.23201.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="7.0.10" />
 	<PackageReference Include="System.Diagnostics.DiagnosticSource" Version="7.0.2" />
 	<PackageReference Include="NetTopologySuite.IO.SqlServerBytes" Version="2.1.0" />
@@ -59,7 +59,7 @@
   </ItemGroup>
   <!-- net 6.0 -->
   <ItemGroup Condition=" '$(TargetFramework)' == 'net6.0' ">
-  	<PackageReference Include="Microsoft.Data.SqlClient" Version="2.1.6" />
+  	<PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.0-preview3.23201.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="6.0.21" />
 	<PackageReference Include="System.Diagnostics.DiagnosticSource" Version="6.0.1" />
 	<PackageReference Include="NetTopologySuite.IO.SqlServerBytes" Version="2.1.0" />
