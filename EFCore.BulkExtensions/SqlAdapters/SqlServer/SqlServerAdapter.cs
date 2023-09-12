@@ -1,15 +1,19 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
+using NetTopologySuite.Algorithm;
 using NetTopologySuite.Geometries;
 using NetTopologySuite.IO;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Data;
 using System.Data.Common;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.AccessControl;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -751,13 +755,11 @@ public class SqlServerAdapter : ISqlOperationsAdapter
                 {
                     using MemoryStream memStream = new();
                     using BinaryWriter binWriter = new(memStream);
-                    
-                    hierarchyValue.Write(binWriter);
+
+                    //hierarchyValue.Write(binWriter); // removed as of EF8 (throws: Error CS1061  'HierarchyId' does not contain a definition for 'Write' and no accessible extension method 'Write' accepting a first argument of type 'HierarchyId' could be found.
                     propertyValue = memStream.ToArray();
                 }
-
                 var omitTimeStamp = property.Name == tableInfo.TimeStampPropertyName && tableInfo.BulkConfig.DoNotUpdateIfTimeStampChanged == false;
-
                 if (entityPropertiesDict.ContainsKey(property.Name) && !hasDefaultVauleOnInsert && !omitTimeStamp)
                 {
                     columnsDict[property.Name] = propertyValue;
@@ -770,7 +772,6 @@ public class SqlServerAdapter : ISqlOperationsAdapter
                     {
                         continue; // BulkRead
                     };
-
                     columnsDict[columnName] = propertyValue == null
                         ? null
                         : foreignKeyShadowProperty.FindFirstPrincipal()?.PropertyInfo?.GetValue(propertyValue); // TODO Check if can be optimized

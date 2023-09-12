@@ -578,7 +578,7 @@ public class EFCoreBulkTest
         }
 
         // TEST
-        int entitiesCount = ItemsCountQuery(context);
+        int entitiesCount = context.Items.Count();
         Item? lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
 
         Assert.Equal(EntitiesNumber - 1, entitiesCount);

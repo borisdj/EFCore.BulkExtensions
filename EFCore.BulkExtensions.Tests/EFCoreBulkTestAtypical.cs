@@ -893,7 +893,7 @@ public class EFCoreBulkTestAtypical
         }
     }
 
-    /*[Fact]
+    [Fact]
     private void HierarchyIdColumnTest()
     {
         ContextUtil.DatabaseType = SqlType.SqlServer;
@@ -915,9 +915,9 @@ public class EFCoreBulkTestAtypical
 
             context.BulkInsertOrUpdate(entities);
         }
-    }*/
+    }
 
-    /*[Fact]
+    [Fact]
     private void HierarchyIdIsPersistedCorrectlySimpleTest()
     {
         ContextUtil.DatabaseType = SqlType.SqlServer;
@@ -945,9 +945,8 @@ public class EFCoreBulkTestAtypical
             var category = context.Categories.Single();
             Assert.Equal(nodeIdAsString, category.HierarchyDescription.ToString());
         }
-    }*/
+    }
 
-    /*
     [Fact]
     private void HierarchyIdIsPersistedCorrectlyLargerHierarchyTest()
     {
@@ -977,7 +976,6 @@ public class EFCoreBulkTestAtypical
             Assert.Equal(nodeIdAsString, category.HierarchyDescription.ToString());
         }
     }
-    */
 
     [Theory]
     [InlineData(SqlType.SqlServer)]

@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net6.0;net7.0;net8.0</TargetFrameworks>
+    <TargetFrameworks>net8.0;net7.0;net6.0;</TargetFrameworks>
     <Title>EFCore.BulkExtensions</Title>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <Version>8.0.0-preview.7</Version>
@@ -33,7 +33,7 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.0-preview.7.23375.4" />
 	<PackageReference Include="System.Diagnostics.DiagnosticSource" Version="8.0.0-preview.7.23375.6" />
 	<PackageReference Include="NetTopologySuite.IO.SqlServerBytes" Version="2.1.0" />
-	<PackageReference Include="EntityFrameworkCore.SqlServer.HierarchyId" Version="4.0.0" />
+	<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.HierarchyId" Version="8.0.0-preview.7.23375.4" />
 	<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" Version="8.0.0-preview.7.23375.4" />
 	<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.0-preview.7" />
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="7.0.0" />
