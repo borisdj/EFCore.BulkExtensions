@@ -861,7 +861,8 @@ public class TableInfo
 
     internal void UpdateReadEntities<T>(IEnumerable<T> entities, IList<T> existingEntities, DbContext context)
     {
-        List<string> propertyNames = OutputPropertyColumnNamesDict.Keys.ToList();
+        var propColDict = BulkConfig.LoadOnlyIncludedColumns ? PropertyColumnNamesDict : OutputPropertyColumnNamesDict;
+        List<string> propertyNames = propColDict.Keys.ToList();
         if (HasOwnedTypes)
         {
             foreach (string ownedTypeName in OwnedTypesDict.Keys)

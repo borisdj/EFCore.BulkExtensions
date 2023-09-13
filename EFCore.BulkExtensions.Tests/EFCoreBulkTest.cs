@@ -180,7 +180,7 @@ public class EFCoreBulkTest
         var configUpdateBy = new BulkConfig {
             SetOutputIdentity = true,
             UpdateByProperties = new List<string> { nameof(Item.Name) },
-            //PropertiesToInclude = new List<string> { nameof(Item.Name), nameof(Item.Description) }, // "Name" in list not necessary since is in UpdateBy
+            PropertiesToInclude = new List<string> { nameof(Item.Name), nameof(Item.Description) }, // "Name" in list not necessary since is in UpdateBy
         };
         context.BulkUpdate(entities3, configUpdateBy);
 
