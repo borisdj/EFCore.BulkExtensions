@@ -20,6 +20,7 @@ public static class IQueryableBatchExtensions
     /// </summary>
     /// <param name="query"></param>
     /// <returns></returns>
+    [Obsolete("As of EF 7 there are native method ExcuteDelete.")]
     public static int BatchDelete(this IQueryable query)
     {
         var (context, sql, sqlParameters) = GetBatchDeleteArguments(query);
@@ -32,6 +33,7 @@ public static class IQueryableBatchExtensions
     /// <param name="query"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
+    [Obsolete("As of EF 7 there are native method ExcuteDelete.")]
     public static async Task<int> BatchDeleteAsync(this IQueryable query, CancellationToken cancellationToken = default)
     {
         var (context, sql, sqlParameters) = GetBatchDeleteArguments(query);
@@ -60,6 +62,7 @@ public static class IQueryableBatchExtensions
     /// <param name="updateValues"></param>
     /// <param name="updateColumns"></param>
     /// <returns></returns>
+    [Obsolete("As of EF 7 there are native method ExcuteUpdate.")]
     public static int BatchUpdate<T>(this IQueryable<T> query, object updateValues, List<string> ?updateColumns = null) where T : class
     {
         var (context, sql, sqlParameters) = GetBatchUpdateArguments(query, updateValues, updateColumns);
@@ -74,6 +77,7 @@ public static class IQueryableBatchExtensions
     /// <param name="updateColumns"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
+    [Obsolete]
     public static async Task<int> BatchUpdateAsync(this IQueryable query, object updateValues, List<string>? updateColumns = null, CancellationToken cancellationToken = default)
     {
         var (context, sql, sqlParameters) = GetBatchUpdateArguments((IQueryable<object>)query, updateValues, updateColumns);
@@ -88,6 +92,7 @@ public static class IQueryableBatchExtensions
     /// <param name="updateExpression"></param>
     /// <param name="type"></param>
     /// <returns></returns>
+    [Obsolete("As of EF 7 there are native method ExcuteUpdate.")]
     public static int BatchUpdate<T>(this IQueryable<T> query, Expression<Func<T, T>> updateExpression, Type? type = null) where T : class
     {
         var (context, sql, sqlParameters) = GetBatchUpdateArguments(query, updateExpression: updateExpression, type: type);
@@ -103,6 +108,7 @@ public static class IQueryableBatchExtensions
     /// <param name="type"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
+    [Obsolete("As of EF 7 there are native method ExcuteUpdate.")]
     public static async Task<int> BatchUpdateAsync<T>(this IQueryable<T> query, Expression<Func<T, T>> updateExpression, Type? type = null, CancellationToken cancellationToken = default) where T : class
     {
         var (context, sql, sqlParameters) = GetBatchUpdateArguments(query, updateExpression: updateExpression, type: type);

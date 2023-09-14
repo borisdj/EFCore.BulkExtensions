@@ -304,7 +304,7 @@ public class SqlQueryBuilderUnitTests
     public async Task DelegateDecompiler_DecompileAsync_WorksAsync()
     {
         using var context = new TestContext(ContextUtil.GetOptions());
-
+#pragma warning disable
         await context.Items
             .Where(x => x.ItemId < 0)
             .DecompileAsync()

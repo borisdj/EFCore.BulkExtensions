@@ -29,8 +29,9 @@ public class EFCoreBatchTest
         context.SaveChanges();
 
         var updateTo = new Info { Message = "name B Updated" };
+#pragma warning disable 0618
         context.Infos.BatchUpdate(updateTo);
-
+#pragma warning restore 0618
         using var contextRead = new TestContext(ContextUtil.GetOptions());
         Assert.Equal(currentDate, contextRead.Infos.First().DateTimeOff);
     }
@@ -103,6 +104,7 @@ public class EFCoreBatchTest
         context.Items.Add(new Item { }); // used for initial add so that after RESEED it starts from 1, not 0
         context.SaveChanges();
 
+#pragma warning disable
         context.Items.BatchDelete();
         context.BulkDelete(context.Items.ToList());
 

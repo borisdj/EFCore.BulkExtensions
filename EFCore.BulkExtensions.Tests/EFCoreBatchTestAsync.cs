@@ -62,6 +62,7 @@ public class EFCoreBatchTestAsync
         string oldPhoneNumber = "7756789999";
         string newPhoneNumber = "3606789999";
 
+#pragma warning disable
         _ = await testContext.Parents
             .Where(parent => parent.PhoneNumber == oldPhoneNumber)
             .BatchUpdateAsync(parent => new Parent { PhoneNumber = newPhoneNumber });
@@ -145,9 +146,9 @@ WHERE [p].[PhoneNumber] = @__oldPhoneNumber_0";
         {
             query = query.Where(a => a.ItemId <= 500); // Sqlite currently does Not support multiple conditions
         }
-
+#pragma warning disable
         await query.BatchUpdateAsync(new Item { Description = "Updated" }/*, updateColumns*/);
-
+#pragma warning disable
         await query.BatchUpdateAsync(a => new Item { Name = a.Name + " Concatenated", Quantity = a.Quantity + 100, Price = null }); // example of BatchUpdate value Increment/Decrement
 
         if (dbServer == SqlType.SqlServer) // Sqlite currently does Not support Take(): LIMIT

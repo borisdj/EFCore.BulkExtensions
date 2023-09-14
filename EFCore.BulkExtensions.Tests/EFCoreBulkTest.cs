@@ -220,8 +220,9 @@ public class EFCoreBulkTest
 
         // BATCH
         var query = context.Items.AsQueryable().Where(a => a.ItemId <= 1);
+#pragma warning disable
         query.BatchUpdate(new Item { Description = "UPDATE N", Price = 1.5m }); //, updateColumns);
-
+#pragma warning disable
         var ids = new[] { Guid.Empty };
         context.ItemHistories.Where(o => ids.Contains(o.ItemHistoryId)).BatchDelete();
 
