@@ -20,7 +20,7 @@ public static class IQueryableBatchExtensions
     /// </summary>
     /// <param name="query"></param>
     /// <returns></returns>
-    [Obsolete("As of EF 7 there are native method ExcuteDelete.")]
+    [Obsolete("As of EF 7 there are native method ExcuteDelete.")] // ExcuteDelete does not support: context.Items.Include(x => x.ItemHistories).Where(x => !x.ItemHistories.Any()).ExecuteDelete(); // 'Include' could not be translated
     public static int BatchDelete(this IQueryable query)
     {
         var (context, sql, sqlParameters) = GetBatchDeleteArguments(query);
