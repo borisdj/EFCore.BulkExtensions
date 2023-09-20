@@ -112,7 +112,7 @@ public class TestContext : DbContext
     {
         modelBuilder.RemovePluralizingTableNameConvention();
 
-        modelBuilder.Entity<GraphQLModel>().Property(x => x.Id).HasDefaultValueSql("gen_random_uuid()");
+        modelBuilder.Entity<GraphQLModel>().Property(x => x.Id).HasDefaultValueSql(Database.IsSqlServer() ? "NEWID()" :"gen_random_uuid()");
 
         modelBuilder.Entity<Info>(e => { e.Property(p => p.ConvertedTime).HasConversion((value) => value.AddDays(1), (value) => value.AddDays(-1)); });
 
@@ -301,11 +301,10 @@ public static class ContextUtil
         where TDbContext : DbContext
     {
         var optionsBuilder = new DbContextOptionsBuilder<TDbContext>();
-
+        var connectionString = GetConnectionString(dbServerType, databaseName);
+        
         if (dbServerType == SqlType.SqlServer)
         {
-            var connectionString = GetSqlServerConnectionString(databaseName);
-
             // ALTERNATIVELY (Using MSSQLLocalDB):
             //var connectionString = $@"Data Source=(localdb)\MSSQLLocalDB;Database={databaseName};Trusted_Connection=True;MultipleActiveResultSets=True";
 
@@ -319,7 +318,6 @@ public static class ContextUtil
         }
         else if (dbServerType == SqlType.Sqlite)
         {
-            string connectionString = GetSqliteConnectionString(databaseName);
             optionsBuilder.UseSqlite(connectionString, opt =>
             {
                 opt.UseNetTopologySuite();
@@ -332,7 +330,6 @@ public static class ContextUtil
         }
         else if (DatabaseType == SqlType.PostgreSql)
         {
-            string connectionString = GetPostgreSqlConnectionString(databaseName);
 
             if(TestContext.UseTopologyPostgres)
                 optionsBuilder.UseNpgsql(connectionString, opt => opt.UseNetTopologySuite());
@@ -341,7 +338,6 @@ public static class ContextUtil
         }
         else if (DatabaseType == SqlType.MySql)
         {
-            string connectionString = GetMySqlConnectionString(databaseName);
             optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
         }
         else
@@ -356,6 +352,14 @@ public static class ContextUtil
 
         return optionsBuilder.Options;
     }
+
+    public static string GetConnectionString(SqlType dbServerType, string dbName) => dbServerType switch {
+        SqlType.SqlServer => GetSqlServerConnectionString(dbName),
+        SqlType.Sqlite => GetSqliteConnectionString(dbName),
+        SqlType.PostgreSql => GetPostgreSqlConnectionString(dbName),
+        SqlType.MySql => GetMySqlConnectionString(dbName),
+        _ => throw new ArgumentOutOfRangeException(nameof(dbServerType), dbServerType, null)
+    };
 
     private static IConfiguration GetConfiguration()
     {
