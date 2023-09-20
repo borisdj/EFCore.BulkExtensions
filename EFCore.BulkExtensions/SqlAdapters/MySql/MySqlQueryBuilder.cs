@@ -182,7 +182,7 @@ public class MySqlQueryBuilder : SqlQueryBuilder
     public override string SelectFromOutputTable(TableInfo tableInfo)
     {
         List<string> columnsNames = tableInfo.OutputPropertyColumnNamesDict.Values.ToList();
-        var query = $"SELECT {SqlQueryBuilder.GetCommaSeparatedColumns(columnsNames)} FROM {tableInfo.FullTempOutputTableName} WHERE [{tableInfo.PrimaryKeysPropertyColumnNameDict.Select(x => x.Value).FirstOrDefault()}] IS NOT NULL";
+        var query = $"SELECT {GetCommaSeparatedColumns(columnsNames)} FROM {tableInfo.FullTempOutputTableName}";
         query = query.Replace("[", "`").Replace("]", "`");
         return query;
     }

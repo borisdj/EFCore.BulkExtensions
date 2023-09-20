@@ -46,9 +46,7 @@ public abstract class SqlQueryBuilder
     public virtual string SelectFromOutputTable(TableInfo tableInfo)
     {
         List<string> columnsNames = tableInfo.OutputPropertyColumnNamesDict.Values.ToList();
-        var q = $"SELECT {GetCommaSeparatedColumns(columnsNames)} " +
-                $"FROM {tableInfo.FullTempOutputTableName} " +
-                $"WHERE [{tableInfo.PrimaryKeysPropertyColumnNameDict.Select(x => x.Value).FirstOrDefault()}] IS NOT NULL";
+        var q = $"SELECT {GetCommaSeparatedColumns(columnsNames)} " + $"FROM {tableInfo.FullTempOutputTableName} ";
         return q;
     }
 

@@ -445,16 +445,6 @@ public class PostgreSqlQueryBuilder : SqlQueryBuilder
     }
 
     /// <summary>
-    /// Generates SQL query to select output from a table
-    /// </summary>
-    /// <param name="tableInfo"></param>
-    /// <returns></returns>
-    public override string SelectFromOutputTable(TableInfo tableInfo)
-    {
-        return SelectFromOutputTable(tableInfo);
-    }
-
-    /// <summary>
     /// Returns NpgsqlDbType for PostgreSql parameters. Throws <see cref="NotImplementedException"/> for anothers providers
     /// </summary>
     /// <returns></returns>
