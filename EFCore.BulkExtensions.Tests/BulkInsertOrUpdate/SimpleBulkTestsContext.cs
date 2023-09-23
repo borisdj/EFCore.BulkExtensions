@@ -5,7 +5,7 @@ namespace EFCore.BulkExtensions.Tests.BulkInsertOrUpdate;
 
 public class SimpleBulkTestsContext : DbContext
 {
-    public DbSet<SimpleItem> Items { get; set; } = null!;
+    public DbSet<SimpleItem> SimpleItems { get; set; } = null!;
 
     public SimpleBulkTestsContext(DbContextOptions options)
         : base(options)
