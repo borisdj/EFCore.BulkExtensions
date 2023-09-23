@@ -342,7 +342,7 @@ public abstract class SqlQueryBuilder
             {
                 throw new InvalidBulkConfigException($"'Bulk{operationType}' operation can not have zero columns to update.");
             }
-            else if (updateColumnNames.Count > 0 && !tableInfo.BulkConfig.SetOutputIdentity)
+            else if (updateColumnNames.Count > 0)
             {
                 q += $" WHEN MATCHED" +
                      (tableInfo.BulkConfig.OmitClauseExistsExcept || tableInfo.HasSpatialType ? string.Empty : // The data type Geography (Spatial) cannot be used as an operand to the UNION, INTERSECT or EXCEPT operators because it is not comparable
@@ -406,7 +406,7 @@ public abstract class SqlQueryBuilder
 
                 var sql = sqlOriginal.Replace("[i]", "T");
                 int indexFrom = sql.IndexOf(".") - 1;
-                int indexTo = sql.IndexOf("\r\n") - indexFrom;
+                int indexTo = sql.IndexOf("\n") - indexFrom;
                 softDeleteAssignment = sql.Substring(indexFrom, indexTo);
                 softDeleteAssignment = softDeleteAssignment.TrimEnd();
                 parameters.AddRange(sqlParameters);
