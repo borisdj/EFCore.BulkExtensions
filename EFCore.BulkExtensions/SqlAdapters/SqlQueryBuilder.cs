@@ -321,7 +321,8 @@ public abstract class SqlQueryBuilder
 
         string textWITH_HOLDLOCK = tableInfo.BulkConfig.WithHoldlock ? " WITH (HOLDLOCK)" : string.Empty;
 
-        var q = $"MERGE {targetTable}{textWITH_HOLDLOCK} AS T " +
+        var q = tableInfo.BulkConfig.SetOutputIdentity? " DECLARE @temp INT; \n" : null + // Declare dummy value so we can have noop in case of 'insert only do not update scenario'
+                $" MERGE {targetTable}{textWITH_HOLDLOCK} AS T " +
                 $"USING {sourceTable} AS S " +
                 $"ON {GetANDSeparatedColumns(primaryKeys, "T", "S", tableInfo.UpdateByPropertiesAreNullable)}";
         q += (primaryKeys.Count == 0) ? "1=0" : string.Empty;
@@ -341,7 +342,7 @@ public abstract class SqlQueryBuilder
             {
                 throw new InvalidBulkConfigException($"'Bulk{operationType}' operation can not have zero columns to update.");
             }
-            else if (updateColumnNames.Count > 0)
+            else if (updateColumnNames.Count > 0 && !tableInfo.BulkConfig.SetOutputIdentity)
             {
                 q += $" WHEN MATCHED" +
                      (tableInfo.BulkConfig.OmitClauseExistsExcept || tableInfo.HasSpatialType ? string.Empty : // The data type Geography (Spatial) cannot be used as an operand to the UNION, INTERSECT or EXCEPT operators because it is not comparable
@@ -353,6 +354,11 @@ public abstract class SqlQueryBuilder
                      ) +
                      (tableInfo.BulkConfig.OnConflictUpdateWhereSql != null ? $" AND {tableInfo.BulkConfig.OnConflictUpdateWhereSql("T", "S")}" : string.Empty) +
                      $" THEN UPDATE SET {GetCommaSeparatedColumns(updateColumnNames, "T", "S")}";
+            } 
+            else if (updateColumnNames.Count == 0 && tableInfo.BulkConfig.SetOutputIdentity)
+            {
+                // Do nothing operation (set dummy value), but we need to have 'WHEN MATCHED' clause so we will get the output ids in the output table.
+                q += " WHEN MATCHED THEN UPDATE SET @temp = 1 "; 
             }
         }
 
