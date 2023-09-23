@@ -322,7 +322,7 @@ public abstract class SqlQueryBuilder
         string textWITH_HOLDLOCK = tableInfo.BulkConfig.WithHoldlock ? " WITH (HOLDLOCK)" : string.Empty;
 
         var q = tableInfo.BulkConfig.SetOutputIdentity? " DECLARE @temp INT; \n" : null + // Declare dummy value so we can have noop in case of 'insert only do not update scenario'
-                $" MERGE {targetTable}{textWITH_HOLDLOCK} AS T " +
+                $"MERGE {targetTable}{textWITH_HOLDLOCK} AS T " +
                 $"USING {sourceTable} AS S " +
                 $"ON {GetANDSeparatedColumns(primaryKeys, "T", "S", tableInfo.UpdateByPropertiesAreNullable)}";
         q += (primaryKeys.Count == 0) ? "1=0" : string.Empty;
