@@ -357,6 +357,9 @@ public class BulkConfig
     internal object? SynchronizeFilter { get; private set; }
 
     internal object? SynchronizeSoftDelete { get; private set; }
+
+    internal bool OutputTableHasSqlActionColumn => CalculateStats 
+                                                   || (OperationType is OperationType.InsertOrUpdateOrDelete or OperationType.Delete); // In case of delete we need to able to filter out 'delete' rows from the output table
 }
 
 /// <summary>
