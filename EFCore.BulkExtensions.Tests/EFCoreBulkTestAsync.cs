@@ -306,9 +306,9 @@ public class EFCoreBulkTestAsync
         bulkConfigSoftDel.SetSynchronizeSoftDelete<Item>(a => new Item { Quantity = 0 }); // Instead of Deleting from DB it updates Quantity to 0 (usual usecase would be: IsDeleted to True)
         context.BulkInsertOrUpdateOrDelete(new List<Item> { entities[1] }, bulkConfigSoftDel);
 
-        var list = await context.Items.Take(2).ToListAsync();
-        Assert.True(list[0].Quantity != 0);
-        Assert.True(list[1].Quantity == 0);
+        var list = await context.Items.ToListAsync();
+        Assert.True(list.Single(x => x.ItemId == entities[1].ItemId).Quantity != 0);
+        Assert.True(list.Where(x => x.ItemId != entities[1].ItemId).All(x => x.Quantity == 0));
     }
 
     private static async Task RunUpdateAsync(bool isBulk, SqlType sqlType)
