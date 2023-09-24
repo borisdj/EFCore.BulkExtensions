@@ -87,7 +87,7 @@ public class TableInfo
     protected IEnumerable<object>? EntitiesSortedReference { get; set; } // Operation Merge writes In Output table first Existing that were Updated then for new that were Inserted so this makes sure order is same in list when need to set Output
 
     public StoreObjectIdentifier ObjectIdentifier { get; set; }
-
+    
     ////Sqlite
     //internal SqliteConnection? SqliteConnection { get; set; }
     //internal SqliteTransaction? SqliteTransaction { get; set; }
@@ -1063,52 +1063,78 @@ public class TableInfo
                 };
                 return;
             }
+            
+            var customPK = tableInfo.PrimaryKeysPropertyColumnNameDict.Keys;
+
+            if (countDiff < 0)
+            {
+                // This might happen in case of BulkInsertOrUpdate with custom UpdateBy properties, when there are multiple matching rows in table which is updated
+                // for more see: https://github.com/borisdj/EFCore.BulkExtensions/issues/1251
+                // In case of setting output identity, we cannot decide which id we should use (as there might be multiple rows in output table, which 'belong' to only one row in source table).
+                
+                var nonUniqueKeys = entitiesWithOutputIdentity.GroupBy(x => new PrimaryKeysPropertyColumnNameValues(customPK.Select(c => FastPropertyDict[c].Get(x)))).Where(x => x.Count() > 1).Select(x => x.Key).ToList();
+
+                throw new InvalidOperationException("Items were Inserted/Updated successfully in db, but we cannot set output identity correctly since single source row(s) matched multiple rows in db. "
+                                                    + "Keys which matched more rows: " + string.Join("\n", nonUniqueKeys.Select(x => x.ToLogString())));
+            }
 
             if (tableInfo.EntitiesSortedReference != null)
             {
                 entities = tableInfo.EntitiesSortedReference.Cast<T>().ToList();
             }
 
-            var entitiesDict = new Dictionary<object, T>();
-            var numberOfOutputEntities = Math.Min(NumberOfEntities, entitiesWithOutputIdentity.Count());
-            for (int i = 0; i < numberOfOutputEntities; i++)
+            
+            // (UpsertOrderTest) fix for BulkInsertOrUpdate assigns wrong output IDs when PreserveInsertOrder = true and SetOutputIdentity = true
+            var setByDictionary = !(customPK.Count == 1 && customPK.First() == identifierPropertyName)
+                                  && (tableInfo.BulkConfig.OperationType == OperationType.Update
+                                      || tableInfo.BulkConfig.OperationType == OperationType.InsertOrUpdate
+                                      || tableInfo.BulkConfig.OperationType == OperationType.InsertOrUpdateOrDelete);
+
+            Dictionary<PrimaryKeysPropertyColumnNameValues, T> entitiesDict;
+
+            if (setByDictionary)
             {
+                entitiesDict = new Dictionary<PrimaryKeysPropertyColumnNameValues, T>();
+                foreach (var entity in entities)
+                {
+                    PrimaryKeysPropertyColumnNameValues customPKValue = new(customPK.Select(c => FastPropertyDict[c].Get(entity!)));
+                    entitiesDict.Add(customPKValue, entity);
+                }
+            }
+            else
+            {
+                // we will not be using the dictionary in the loop below.
+                entitiesDict = null!;
+            }
+
+
+            for (int i = 0; i < NumberOfEntities; i++)
+            {
+                T entityToBeFilled;
+                object elementFromOutputTable = entitiesWithOutputIdentity.ElementAt(i);
+                
+                if (setByDictionary)
+                {
+                    PrimaryKeysPropertyColumnNameValues customPKOutputValue = new(customPK.Select(c => FastPropertyDict[c].Get(elementFromOutputTable)));
+                    entityToBeFilled = entitiesDict[customPKOutputValue]!;
+                }
+                else
+                {
+                    // We rely on the order:
+                    entityToBeFilled = entities.ElementAt(i)!;
+                }
+
                 if (identifierPropertyName != null)
                 {
-                    var customPK = tableInfo.PrimaryKeysPropertyColumnNameDict.Keys;
-                    if (!(customPK.Count == 1 && customPK.First() == identifierPropertyName) &&
-                        (tableInfo.BulkConfig.OperationType == OperationType.Update ||
-                         tableInfo.BulkConfig.OperationType == OperationType.InsertOrUpdate ||
-                         tableInfo.BulkConfig.OperationType == OperationType.InsertOrUpdateOrDelete)
-                       ) // (UpsertOrderTest) fix for BulkInsertOrUpdate assigns wrong output IDs when PreserveInsertOrder = true and SetOutputIdentity = true
-                    {
-                        if (entitiesDict.Count == 0)
-                        {
-                            foreach (var entity in entities)
-                            {
-                                PrimaryKeysPropertyColumnNameValues customPKValue = new(customPK.Select(c => FastPropertyDict[c].Get(entity!)));
-                                entitiesDict.Add(customPKValue, entity);
-                            }
-                        }
-                        var identityPropertyValue = FastPropertyDict[identifierPropertyName].Get(entitiesWithOutputIdentity.ElementAt(i));
-                        PrimaryKeysPropertyColumnNameValues customPKOutputValue = new(customPK.Select(c => FastPropertyDict[c].Get(entitiesWithOutputIdentity.ElementAt(i))));
-                        FastPropertyDict[identifierPropertyName].Set(entitiesDict[customPKOutputValue]!, identityPropertyValue);
-                    }
-                    else
-                    {
-                        // This is the case BulkInsert(orUpdate) by identity column. In this case we rely on order only.
-                        var element = entitiesWithOutputIdentity.ElementAt(i);
-                        var identityPropertyValue = selectOnlyIdentityColumn ? element
-                                                                       : FastPropertyDict[identifierPropertyName].Get(element);
-                        FastPropertyDict[identifierPropertyName].Set(entities.ElementAt(i)!, identityPropertyValue);
-                    }
+                    var identityPropertyValue = selectOnlyIdentityColumn ? elementFromOutputTable : FastPropertyDict[identifierPropertyName].Get(elementFromOutputTable);
+                    FastPropertyDict[identifierPropertyName].Set(entityToBeFilled, identityPropertyValue);
                 }
 
                 if (TimeStampColumnName != null) // timestamp/rowversion is also generated by the SqlServer so if exist should be updated as well
                 {
                     string timeStampPropertyName = OutputPropertyColumnNamesDict.SingleOrDefault(a => a.Value == TimeStampColumnName).Key;
-                    var timeStampPropertyValue = FastPropertyDict[timeStampPropertyName].Get(entitiesWithOutputIdentity.ElementAt(i));
-                    FastPropertyDict[timeStampPropertyName].Set(entities.ElementAt(i)!, timeStampPropertyValue);
+                    var timeStampPropertyValue = FastPropertyDict[timeStampPropertyName].Get(elementFromOutputTable);
+                    FastPropertyDict[timeStampPropertyName].Set(entityToBeFilled, timeStampPropertyValue);
                 }
 
                 var outputProperties = tableInfo.OutputPropertyColumnNamesDict.Keys;
@@ -1119,8 +1145,8 @@ public class TableInfo
                                                                    !tableInfo.PropertyColumnNamesDict.ContainsKey(a))); // remove others since already have same have (could be omited)
                 foreach (var outputPropertyName in propertiesToLoad)
                 {
-                    var propertyValue = FastPropertyDict[outputPropertyName].Get(entitiesWithOutputIdentity.ElementAt(i));
-                    FastPropertyDict[outputPropertyName].Set(entities.ElementAt(i)!, propertyValue);
+                    var propertyValue = FastPropertyDict[outputPropertyName].Get(elementFromOutputTable);
+                    FastPropertyDict[outputPropertyName].Set(entityToBeFilled, propertyValue);
                 }
             }
         }
@@ -1414,5 +1440,10 @@ internal class PrimaryKeysPropertyColumnNameValues
             }
             return hash;
         }
+    }
+
+    public string ToLogString()
+    {
+        return "( " + string.Join(", ", PkValues) + " )";
     }
 }

@@ -46,7 +46,9 @@ public abstract class SqlQueryBuilder
     public virtual string SelectFromOutputTable(TableInfo tableInfo)
     {
         List<string> columnsNames = tableInfo.OutputPropertyColumnNamesDict.Values.ToList();
-        var q = $"SELECT {GetCommaSeparatedColumns(columnsNames)} " + $"FROM {tableInfo.FullTempOutputTableName} ";
+        var q = $"SELECT {GetCommaSeparatedColumns(columnsNames)} FROM {tableInfo.FullTempOutputTableName}"
+                + (tableInfo.BulkConfig.OutputTableHasSqlActionColumn ? $" WHERE {tableInfo.SqlActionIUD} <> 'D'" : ""); // Filter out the information about deleted rows (since we do not care about them when setting the output identity etc.)
+
         return q;
     }
 
@@ -71,7 +73,7 @@ public abstract class SqlQueryBuilder
             timeStampColumn = $", [{tableInfo.TimeStampColumnName}] = CAST('' AS {TableInfo.TimeStampOutColumnType})"; // tsType:varbinary(8)
         }
 
-        string statsColumn = (tableInfo.BulkConfig.CalculateStats && isOutputTable) ? $", [{tableInfo.SqlActionIUD}] = CAST('' AS char(1))" : "";
+        string statsColumn = (tableInfo.BulkConfig.OutputTableHasSqlActionColumn && isOutputTable) ? $", [{tableInfo.SqlActionIUD}] = CAST('' AS char(1))" : "";
 
         var q = $"SELECT TOP 0 {GetCommaSeparatedColumns(columnsNames, "T")}" + timeStampColumn + statsColumn + " " +
                 $"INTO {newTableName} FROM {existingTableName} AS T " +
@@ -306,9 +308,12 @@ public abstract class SqlQueryBuilder
             insertColumnsNames = insertColumnsNames.Where(a => !defaults.Contains(a)).ToList();
         }
 
-        string isUpdateStatsValue = "";
-        if (tableInfo.BulkConfig.CalculateStats)
-            isUpdateStatsValue = ",SUBSTRING($action, 1, 1)";
+        string mergeActionColumn = "";
+
+        if (tableInfo.BulkConfig.OutputTableHasSqlActionColumn)
+        {
+            mergeActionColumn = ",SUBSTRING($action, 1, 1)";
+        }
 
         if (tableInfo.BulkConfig.PreserveInsertOrder)
         {
@@ -321,7 +326,7 @@ public abstract class SqlQueryBuilder
 
         string textWITH_HOLDLOCK = tableInfo.BulkConfig.WithHoldlock ? " WITH (HOLDLOCK)" : string.Empty;
 
-        var q = (tableInfo.BulkConfig.SetOutputIdentity? " DECLARE @temp INT; \n" : null) + // Declare dummy value so we can have noop in case of 'insert only do not update scenario'
+        var q = (tableInfo.BulkConfig.SetOutputIdentity? "DECLARE @temp INT; \n" : null) + // Declare dummy value so we can have noop in case of 'insert only do not update scenario'
                 $"MERGE {targetTable}{textWITH_HOLDLOCK} AS T " +
                 $"USING {sourceTable} AS S " +
                 $"ON {GetANDSeparatedColumns(primaryKeys, "T", "S", tableInfo.UpdateByPropertiesAreNullable)}";
@@ -430,7 +435,7 @@ public abstract class SqlQueryBuilder
             {
                 commaSeparatedColumnsNames = GetCommaSeparatedColumns(outputColumnsNames, "INSERTED");
             }
-            q += $" OUTPUT {commaSeparatedColumnsNames}" + isUpdateStatsValue +
+            q += $" OUTPUT {commaSeparatedColumnsNames}" + mergeActionColumn +
                  $" INTO {tableInfo.FullTempOutputTableName}";
         }
         if(tableInfo.BulkConfig.UseOptionLoopJoin)
