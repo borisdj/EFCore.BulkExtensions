@@ -157,6 +157,74 @@ public class EfCoreBulkInsertOrUpdateTests : IClassFixture<EfCoreBulkInsertOrUpd
         Assert.NotEqual(0, newItem.Id);
     }
 
+    /// <summary>
+    /// Covers: https://github.com/borisdj/EFCore.BulkExtensions/issues/1251
+    /// </summary>
+    [Theory]
+    [InlineData(SqlType.SqlServer)]
+    public void BulkInsertOrUpdate_WillNotSetOutputIdentityIfThereIsConflict(SqlType dbType)
+    {
+        var bulkId = Guid.NewGuid();
+        var existingItemId = "existingDuplicateOf";
+
+        var initialItem = new SimpleItem()
+        {
+            StringProperty = existingItemId,
+            Name = "initial1",
+            BulkIdentifier = bulkId,
+        };
+
+        var duplicateInitial = new SimpleItem()
+        {
+            StringProperty = existingItemId,
+            Name = "initial2",
+            BulkIdentifier = bulkId,
+        };
+
+        using (var db = _dbFixture.GetDb(dbType))
+        {
+            db.SimpleItems.Add(initialItem);
+            db.SimpleItems.Add(duplicateInitial);
+            db.SaveChanges();
+
+            Assert.NotEqual(0, initialItem.Id);
+            Assert.NotEqual(0, duplicateInitial.Id);
+        }
+
+        using (var db = _dbFixture.GetDb(dbType))
+        {
+            var updatingItem = new SimpleItem()
+            {
+                StringProperty = existingItemId,
+                BulkIdentifier = bulkId,
+                Name = "updates multiple rows",
+            };
+
+            var ensureList = new[] { updatingItem, };
+
+            // We throw we cannot set output identity deterministically.
+            var exception = Assert.Throws<InvalidOperationException>(
+                () => db.BulkInsertOrUpdate(ensureList, c =>
+                {
+                    c.UpdateByProperties = new List<string> { nameof(SimpleItem.StringProperty), nameof(SimpleItem.BulkIdentifier) };
+                    c.SetOutputIdentity = true;
+                    c.PreserveInsertOrder = true;
+                }));
+
+            Assert.StartsWith("Items were Inserted/Updated successfully in db, but we cannot set output identity correctly since single source row(s) matched multiple rows in db.", exception.Message);
+
+            var bulkItems = GetItemsOfBulk(bulkId, dbType);
+
+            Assert.Equal(2, bulkItems.Count);
+
+            // Item updated both of the matching rows
+            foreach (var dbItem in bulkItems)
+            {
+                Assert.Equal(updatingItem.Name, dbItem.Name);
+            }
+        }
+    }
+
     private List<SimpleItem> GetItemsOfBulk(Guid bulkId, SqlType sqlType)
     {
         using var db = _dbFixture.GetDb(sqlType);
