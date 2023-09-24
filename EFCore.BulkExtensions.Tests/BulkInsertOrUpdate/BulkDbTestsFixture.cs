@@ -4,6 +4,9 @@ using System.Collections.Generic;
 
 namespace EFCore.BulkExtensions.Tests.BulkInsertOrUpdate;
 
+/// <summary>
+/// Expected to be used as fixture in XUnit tests. For example usage see: EfCoreBulkInsertOrUpdateTests.cs
+/// </summary>
 public abstract class BulkDbTestsFixture : IDisposable
 {
     private readonly string _dbName;

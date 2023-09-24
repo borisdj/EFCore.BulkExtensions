@@ -1045,7 +1045,8 @@ public class TableInfo
     /// <param name="tableInfo"></param>
     /// <param name="entities"></param>
     /// <param name="entitiesWithOutputIdentity"></param>
-    public void UpdateEntitiesIdentity<T>(TableInfo tableInfo, IEnumerable<T> entities, IEnumerable<object> entitiesWithOutputIdentity)
+    /// <param name="selectOnlyIdentityColumn"></param>
+    public void UpdateEntitiesIdentity<T>(TableInfo tableInfo, IEnumerable<T> entities, IEnumerable<object> entitiesWithOutputIdentity, bool selectOnlyIdentityColumn)
     {
         var identifierPropertyName = IdentityColumnName != null ? OutputPropertyColumnNamesDict.SingleOrDefault(a => a.Value == IdentityColumnName).Key // it Identity autoincrement 
                                                                 : PrimaryKeysPropertyColumnNameDict.FirstOrDefault().Key;                               // or PK with default sql value
@@ -1095,9 +1096,9 @@ public class TableInfo
                     }
                     else
                     {
-                        bool outputIdentityOnly = BulkConfig.SetOutputNonIdentityColumns == false && IdentityColumnName != null;
+                        // This is the case BulkInsert(orUpdate) by identity column. In this case we rely on order only.
                         var element = entitiesWithOutputIdentity.ElementAt(i);
-                        var identityPropertyValue = outputIdentityOnly ? element
+                        var identityPropertyValue = selectOnlyIdentityColumn ? element
                                                                        : FastPropertyDict[identifierPropertyName].Get(element);
                         FastPropertyDict[identifierPropertyName].Set(entities.ElementAt(i)!, identityPropertyValue);
                     }
@@ -1112,7 +1113,7 @@ public class TableInfo
 
                 var outputProperties = tableInfo.OutputPropertyColumnNamesDict.Keys;
                 var propertiesToLoad = outputProperties.Where(a => a != identifierPropertyName &&
-                                                                   a != TimeStampColumnName &&                          // already loaded in segmet above
+                                                                   a != TimeStampColumnName &&                          // already loaded in segments above
                                                                    !tableInfo.BulkConfig.TemporalColumns.Contains(a) && // temporal columns not accessible as direct property
                                                                    (tableInfo.DefaultValueProperties.Contains(a) ||     // add Computed and DefaultValues
                                                                    !tableInfo.PropertyColumnNamesDict.ContainsKey(a))); // remove others since already have same have (could be omited)
@@ -1166,11 +1167,17 @@ public class TableInfo
             var databaseType = SqlAdaptersMapping.GetDatabaseType();
             string sqlQuery = SqlAdaptersMapping.DbServer!.QueryBuilder.SelectFromOutputTable(this);
             //var entitiesWithOutputIdentity = await QueryOutputTableAsync<T>(context, sqlQuery).ToListAsync(cancellationToken).ConfigureAwait(false); // TempFIX
-            var entitiesWithOutputIdentity = QueryOutputTable(context, type, sqlQuery).Cast<object>().ToList();
+            
+            var selectOnlyIdentityColumn  = BulkConfig.SetOutputIdentity 
+                                           && BulkConfig.SetOutputNonIdentityColumns == false 
+                                           && IdentityColumnName != null 
+                                           && BulkConfig.OperationType == OperationType.Insert; // On InsertOrUpdate/OrDelete we have to select all columns, because we use dictionary to set the ids values back.
+
+            var entitiesWithOutputIdentity = QueryOutputTable(context, type, sqlQuery, selectOnlyIdentityColumn).Cast<object>().ToList();
             //var entitiesWithOutputIdentity = (typeof(T) == type) ? QueryOutputTable<object>(context, sqlQuery).ToList() : QueryOutputTable(context, type, sqlQuery).Cast<object>().ToList();
 
             //var entitiesObjects = entities.Cast<object>().ToList();
-            UpdateEntitiesIdentity(tableInfo, entities, entitiesWithOutputIdentity);
+            UpdateEntitiesIdentity(tableInfo, entities, entitiesWithOutputIdentity, selectOnlyIdentityColumn);
             totalNumber = entitiesWithOutputIdentity.Count;
         }
         if (BulkConfig.CalculateStats)
@@ -1196,15 +1203,9 @@ public class TableInfo
     /// <summary>
     /// Queries the output table data
     /// </summary>
-    /// <param name="context"></param>
-    /// <param name="type"></param>
-    /// <param name="sqlQuery"></param>
-    /// <returns></returns>
-    protected IEnumerable QueryOutputTable(DbContext context, Type type, string sqlQuery)
+    protected IEnumerable QueryOutputTable(DbContext context, Type type, string sqlQuery, bool queryOnlyIdentityColumn)
     {
-        bool doSelect = BulkConfig.SetOutputIdentity && BulkConfig.SetOutputNonIdentityColumns == false && IdentityColumnName != null;
-
-        var compiled = EF.CompileQuery(GetQueryExpression(type, sqlQuery, true, doSelect));
+        var compiled = EF.CompileQuery(GetQueryExpression(type, sqlQuery, true, queryOnlyIdentityColumn));
         var result = compiled(context);
         return result;
     }
@@ -1259,9 +1260,9 @@ public class TableInfo
     /// <param name="entityType"></param>
     /// <param name="sqlQuery"></param>
     /// <param name="doOrder"></param>
-    /// <param name="doSelect"></param>
+    /// <param name="selectOnlyIdentityColumn"></param>
     /// <returns></returns>
-    public Expression<Func<DbContext, IEnumerable>> GetQueryExpression(Type entityType, string sqlQuery, bool doOrder = true, bool doSelect = false)
+    public Expression<Func<DbContext, IEnumerable>> GetQueryExpression(Type entityType, string sqlQuery, bool doOrder = true, bool selectOnlyIdentityColumn = false)
     {
         var parameter = Expression.Parameter(typeof(DbContext), "ctx");
         var expression = Expression.Call(parameter, "Set", new Type[] { entityType });
@@ -1283,7 +1284,7 @@ public class TableInfo
             expression = OrderBy(entityType, expression, primaryKeys);
         }
 
-        if (doSelect)
+        if (selectOnlyIdentityColumn)
         {
             var identityPropName = PropertyColumnNamesDict.Where(a => a.Value == IdentityColumnName).Select(a => a.Key).ToList();
             expression = Select(entityType, expression, identityPropName);

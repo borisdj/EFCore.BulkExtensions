@@ -5,7 +5,7 @@ using System.Linq;
 using Xunit;
 using Xunit.Abstractions;
 
-#nullable disable
+
 namespace EFCore.BulkExtensions.Tests.BulkInsertOrUpdate;
 
 public class EfCoreBulkInsertOrUpdateTests : IClassFixture<EfCoreBulkInsertOrUpdateTests.DatabaseFixture>
@@ -121,6 +121,40 @@ public class EfCoreBulkInsertOrUpdateTests : IClassFixture<EfCoreBulkInsertOrUpd
             Assert.Equal(newDb.StringProperty, newItem.StringProperty);
             Assert.Equal(newDb.BulkIdentifier, newItem.BulkIdentifier);
         }
+    }
+
+    /// <summary>
+    /// Covers: https://github.com/borisdj/EFCore.BulkExtensions/issues/1250
+    /// </summary>
+    [Theory]
+    [InlineData(SqlType.SqlServer)]
+    public void BulkInsertOrUpdate_SetOutputIdentity_SetOutputNonIdentityColumns(SqlType dbType)
+    {
+        using var db = _dbFixture.GetDb(dbType);
+
+        var newItem = new SimpleItem()
+        {
+            StringProperty = "newItem",
+            GuidProperty = new Guid("9f71ff93-2326-44d3-acb6-95b5d0566d68"),
+            Name = "newName",
+        };
+
+        var ensureList = new[] { newItem, };
+
+        // OutputIdentity == true && SetOutputNonIdentityColumns == false
+        db.BulkInsertOrUpdate(ensureList,
+                              c =>
+                              {
+                                  c.SetOutputIdentity = true;
+                                  c.UpdateByProperties = new List<string> { nameof(SimpleItem.StringProperty), nameof(SimpleItem.Name) };
+                                  c.PreserveInsertOrder = true;
+                                  c.SetOutputNonIdentityColumns = false; // For case of is ignored
+                              });
+
+        var fromDb = db.SimpleItems.SingleOrDefault(x => x.GuidProperty == newItem.GuidProperty);
+        Assert.NotNull(fromDb); // Item was inserted!
+
+        Assert.NotEqual(0, newItem.Id);
     }
 
     private List<SimpleItem> GetItemsOfBulk(Guid bulkId, SqlType sqlType)
