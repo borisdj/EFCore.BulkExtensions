@@ -38,8 +38,9 @@ public class EFCoreBulkTestAtypical
         ContextUtil.DatabaseType = sqlType;
         using var context = new TestContext(ContextUtil.GetOptions());
         context.Truncate<Document>();
+#pragma warning disable
         context.Documents.BatchDelete();
-
+#pragma warning disable
         SeqGuid.Create(sqlType);
 
         var entities = new List<Document>();
@@ -860,7 +861,7 @@ public class EFCoreBulkTestAtypical
     }
 
     [Fact]
-    private void GeographyAndGeometryArePersistedCorrectlyTest()
+    private void GeographyAndGeometryArePersistedCorrectlyTest() // GEOJson
     {
         ContextUtil.DatabaseType = SqlType.SqlServer;
         using (var context = new TestContext(ContextUtil.GetOptions()))
@@ -945,7 +946,6 @@ public class EFCoreBulkTestAtypical
             var category = context.Categories.Single();
             Assert.Equal(nodeIdAsString, category.HierarchyDescription.ToString());
         }
-
     }
 
     [Fact]
@@ -976,7 +976,6 @@ public class EFCoreBulkTestAtypical
             var category = context.Categories.Single();
             Assert.Equal(nodeIdAsString, category.HierarchyDescription.ToString());
         }
-
     }
 
     [Theory]

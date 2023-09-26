@@ -38,6 +38,11 @@ public class BulkConfig
     public bool SetOutputNonIdentityColumns { get; set; } = true;
 
     /// <summary>
+    ///    Used only when SetOutputIdentity is set to true, and when changed to True then columns that were no included in Upsert are not loaded.
+    /// </summary>
+    public bool LoadOnlyIncludedColumns { get; set; } = false;
+
+    /// <summary>
     ///     Propagated to SqlBulkCopy util object.
     /// </summary>
     /// <value>

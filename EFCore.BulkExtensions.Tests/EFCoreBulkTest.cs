@@ -180,7 +180,7 @@ public class EFCoreBulkTest
         var configUpdateBy = new BulkConfig {
             SetOutputIdentity = true,
             UpdateByProperties = new List<string> { nameof(Item.Name) },
-            //PropertiesToInclude = new List<string> { nameof(Item.Name), nameof(Item.Description) }, // "Name" in list not necessary since is in UpdateBy
+            PropertiesToInclude = new List<string> { nameof(Item.Name), nameof(Item.Description) }, // "Name" in list not necessary since is in UpdateBy
         };
         context.BulkUpdate(entities3, configUpdateBy);
 
@@ -220,8 +220,9 @@ public class EFCoreBulkTest
 
         // BATCH
         var query = context.Items.AsQueryable().Where(a => a.ItemId <= 1);
+#pragma warning disable
         query.BatchUpdate(new Item { Description = "UPDATE N", Price = 1.5m }); //, updateColumns);
-
+#pragma warning disable
         var ids = new[] { Guid.Empty };
         context.ItemHistories.Where(o => ids.Contains(o.ItemHistoryId)).BatchDelete();
 
@@ -451,7 +452,8 @@ public class EFCoreBulkTest
 
             bulkOperation(context);
 
-            context.Database.ExecuteSqlRaw($"SELECT {columnName} FROM {tableName}");
+            var sql = $"SELECT {columnName} FROM {tableName}";
+            context.Database.ExecuteSqlRaw(sql);
         }
         catch (Exception)
         {
@@ -577,7 +579,7 @@ public class EFCoreBulkTest
         }
 
         // TEST
-        int entitiesCount = ItemsCountQuery(context);
+        int entitiesCount = context.Items.Count();
         Item? lastEntity = context.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
 
         Assert.Equal(EntitiesNumber - 1, entitiesCount);

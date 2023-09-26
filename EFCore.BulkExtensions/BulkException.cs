@@ -21,7 +21,7 @@ public static class BulkExceptionMessage
 /// <summary>
 /// Custom exception class
 /// </summary>
-[Serializable]
+//[Serializable]
 public class InvalidBulkConfigException : Exception
 {
     /// <summary>
@@ -40,13 +40,14 @@ public class InvalidBulkConfigException : Exception
     /// <param name="message"></param>
     /// <param name="innerException"></param>
     public InvalidBulkConfigException(string message, Exception innerException) : base(message, innerException) { }
-
+    /*
     /// <summary>
     /// Custom exception class to indicate a custom exception was triggered for BulkConfig
     /// </summary>
     /// <param name="info"></param>
     /// <param name="context"></param>
     protected InvalidBulkConfigException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+    */
 }
 
 

@@ -47,6 +47,7 @@ public class ValueConverterTests: IDisposable
         db.BulkInsertOrUpdate(GetTestData().ToList());
 
         var date = new LocalDate(2020, 3, 21);
+#pragma warning disable
         db.VcModels.Where(x => x.LocalDate > date).BatchUpdate(x => new VcModel
         {
             Enum = VcEnum.Why

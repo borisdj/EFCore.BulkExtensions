@@ -1,6 +1,7 @@
 using EFCore.BulkExtensions.SqlAdapters;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -28,8 +29,9 @@ public class EFCoreBatchTest
         context.SaveChanges();
 
         var updateTo = new Info { Message = "name B Updated" };
+#pragma warning disable 0618
         context.Infos.BatchUpdate(updateTo);
-
+#pragma warning restore 0618
         using var contextRead = new TestContext(ContextUtil.GetOptions());
         Assert.Equal(currentDate, contextRead.Infos.First().DateTimeOff);
     }
@@ -102,6 +104,7 @@ public class EFCoreBatchTest
         context.Items.Add(new Item { }); // used for initial add so that after RESEED it starts from 1, not 0
         context.SaveChanges();
 
+#pragma warning disable
         context.Items.BatchDelete();
         context.BulkDelete(context.Items.ToList());
 
@@ -403,7 +406,8 @@ WHERE [p].[ParentId] = 1";
             dt.Rows.Add(item.C1, item.C2);
         }
         var parameter = new SqlParameter(parameterName, dt) { SqlDbType = SqlDbType.Structured, TypeName = "dbo.UdttIntInt", };
-        return context.Set<UdttIntInt>().FromSqlRaw($@"select * from {parameterName}", parameter);
+        var sql = $"select * from {parameterName}";
+        return context.Set<UdttIntInt>().FromSqlRaw(sql, parameter);
     }
 
     private static void UpdateSetting(SettingsEnum settings, object value)

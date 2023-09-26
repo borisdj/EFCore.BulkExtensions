@@ -112,8 +112,6 @@ public class TestContext : DbContext
     {
         modelBuilder.RemovePluralizingTableNameConvention();
 
-        modelBuilder.Entity<GraphQLModel>().Property(x => x.Id).HasDefaultValueSql(Database.IsSqlServer() ? "NEWID()" :"gen_random_uuid()");
-
         modelBuilder.Entity<Info>(e => { e.Property(p => p.ConvertedTime).HasConversion((value) => value.AddDays(1), (value) => value.AddDays(-1)); });
 
         modelBuilder.Entity<UserRole>().HasKey(a => new { a.UserId, a.RoleId });
@@ -159,6 +157,8 @@ public class TestContext : DbContext
 
         if (Database.IsSqlServer())
         {
+            modelBuilder.Entity<GraphQLModel>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
+
             modelBuilder.Entity<Document>().Property(p => p.DocumentId).HasDefaultValueSql("NEWID()");
             modelBuilder.Entity<Document>().Property(p => p.ContentLength).HasComputedColumnSql($"(CONVERT([int], len([{nameof(Document.Content)}])))");
 
@@ -166,11 +166,12 @@ public class TestContext : DbContext
 
             modelBuilder.Entity<UdttIntInt>(entity => { entity.HasNoKey(); });
 
-            //modelBuilder.Entity<Address>().Property(p => p.LocationGeometry).HasColumnType("geometry");
             modelBuilder.Entity<Category>().Property(p => p.HierarchyDescription).HasColumnType("hierarchyid");
 
             modelBuilder.Entity<Division>().Property(p => p.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
             modelBuilder.Entity<Department>().Property(p => p.Id).HasDefaultValueSql("NEWSEQUENTIALID()");
+
+            //modelBuilder.Entity<Address>().Property(p => p.LocationGeometry).HasColumnType("geometry");
 
             //modelBuilder.Entity<SequentialInfo>().HasKey(a => a.Id);
             //SqlServerPropertyBuilderExtensions.UseHiLo(modelBuilder.Entity<SequentialInfo>().Property(a => a.Id), name: "SequenceData", schema: "dbo");
@@ -202,16 +203,21 @@ public class TestContext : DbContext
             modelBuilder.Entity<File>().Property(p => p.VersionChange).ValueGeneratedOnAddOrUpdate().IsConcurrencyToken().HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             modelBuilder.Entity<ItemHistory>().ToTable(nameof(ItemHistory));
+
+            modelBuilder.Entity<Address>().Ignore(p => p.GeoLine); // throws: SQLite Error 19: 'Address.GeoLine violates Geometry constraint [geom-type or SRID 
         }
 
         if (Database.IsMySql())
         {
             modelBuilder.Entity<Address>().Ignore(p => p.LocationGeography);
             modelBuilder.Entity<Address>().Ignore(p => p.LocationGeometry);
+            modelBuilder.Entity<Address>().Ignore(p => p.GeoLine);
         }
 
         if (Database.IsNpgsql())
         {
+            modelBuilder.Entity<GraphQLModel>().Property(x => x.Id).HasDefaultValueSql("gen_random_uuid()");
+
             if (UseTopologyPostgres)
             {
                 modelBuilder.Entity<Address>().Property(p => p.LocationGeometry).HasColumnType("geometry (point, 2180)").HasSrid(2180);
@@ -262,7 +268,7 @@ public class TestContext : DbContext
         // [Timestamp] alternative:
         //modelBuilder.Entity<Document>().Property(x => x.RowVersion).HasColumnType("timestamp").ValueGeneratedOnAddOrUpdate().HasConversion(new NumberToBytesConverter<ulong>()).IsConcurrencyToken();
 
-        //modelBuilder.Entity<Item>().HasQueryFilter(p => p.Description != "1234"); // For testing Global Filter
+        //modelBuilder.Entity<Item>().HasQueryFilter(p => p.Description != "1234"); // For testing Global Filter // TODO add new test
     }
 }
 
@@ -602,7 +608,7 @@ public class Address
     public string Street { get; set; } = null!;
     public Geometry LocationGeography { get; set; } = null!;
     public Geometry LocationGeometry { get; set; } = null!;
-    public LineString GeoLine { get; set; } = null!;
+    public LineString? GeoLine { get; set; }
 }
 
 public class Category

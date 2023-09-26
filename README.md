@@ -1,7 +1,7 @@
 # EFCore.BulkExtensions
 EntityFrameworkCore extensions:  
 -Bulk operations (very fast-forward): **Insert, Update, Delete, Read, Upsert, Sync, SaveChanges.**  
--Batch ops: **Delete, Update** - will be Deprecated since EF7 has native Execute-Up/Del; and **Truncate**.  
+-Batch ops: **Delete, Update** - Deprecated from EF8 since EF7+ has native Execute-Up/Del; and **Truncate**.  
 Library is Lightweight and very Efficient, having all mostly used [CRUD](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete) operation.  
 Was selected in top 20 [EF Core Extensions](https://docs.microsoft.com/en-us/ef/core/extensions/) recommended by Microsoft.  
 Latest version is using EF Core 7.  
@@ -49,7 +49,7 @@ Its assembly is [Strong-Named](https://docs.microsoft.com/en-us/dotnet/standard/
 | 2.x   | NetStandard 2.0 | EF Core 2.n | NetCore(2.0+) or NetFrm(4.6.1+) |
 | 1.x   | NetStandard 1.4 | EF Core 1.0 | NetCore(1.0+)                   |
 
-Supports follows official [.Net lifecycle](https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core), currently v.7 as latest and v.6 as LTS.
+Supports follows official [.Net lifecycle](https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core), currently v.7 as latest (+ v.8 preview) and v.6 as LTS.
 
 ## Usage
 It's pretty simple and straightforward.  
@@ -175,12 +175,13 @@ PROPERTY : DEFAULTvalue
 PreserveInsertOrder: true,                    PropertiesToInclude: null,
 SetOutputIdentity: false,                     PropertiesToIncludeOnCompare: null,
 SetOutputNonIdentityColumns: true,            PropertiesToIncludeOnUpdate: null,
-BatchSize: 2000,                              PropertiesToExclude: null,
-NotifyAfter: null,                            PropertiesToExcludeOnCompare: null,
-BulkCopyTimeout: null,                        PropertiesToExcludeOnUpdate: null,
-TrackingEntities: false,                      UpdateByProperties: null,
-UseTempDB: false,                             ReplaceReadEntities: false,
-UniqueTableNameTempDb: true,                  EnableShadowProperties: false,
+LoadOnlyIncludedColumns: false,               PropertiesToExclude: null,
+BatchSize: 2000,                              PropertiesToExcludeOnCompare: null,
+NotifyAfter: null,                            PropertiesToExcludeOnUpdate: null,
+BulkCopyTimeout: null,                        UpdateByProperties: null,
+TrackingEntities: false,                      ReplaceReadEntities: false,
+UseTempDB: false,                             EnableShadowProperties: false,
+UniqueTableNameTempDb: true,                  
 CustomDestinationTableName: null,             IncludeGraph: false,
 CustomSourceTableName: null,                  OmitClauseExistsExcept: false,
 CustomSourceDestinationMappingColumns: null,  DoNotUpdateIfTimeStampChanged: false,

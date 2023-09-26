@@ -288,11 +288,16 @@ public class TableInfo
         OwnedTypesDict = navigations.Where(a => a.TargetEntityType.IsOwned()).ToDictionary(a => a.Name, a => a);
         HasOwnedTypes = OwnedTypesDict.Count() > 0;
 
+#if NET8_0
         OwnedRegularTypesDict = navigations.Where(a => a.TargetEntityType.IsOwned() && !a.TargetEntityType.IsMappedToJson()).ToDictionary(a => a.Name, a => a);
         OwnedJsonTypesDict = navigations.Where(a => a.TargetEntityType.IsMappedToJson()).ToDictionary(a => a.Name, a => a);
-        // for .Net 6
-        //OwnedRegularTypesDict = navigations.Where(a => a.TargetEntityType.IsOwned()).ToDictionary(a => a.Name, a => a);
-        //OwnedJsonTypesDict = navigations.Where(a => a.TargetEntityType == null).ToDictionary(a => a.Name, a => a); // should be empty
+#elif NET7_0
+        OwnedRegularTypesDict = navigations.Where(a => a.TargetEntityType.IsOwned() && !a.TargetEntityType.IsMappedToJson()).ToDictionary(a => a.Name, a => a);
+        OwnedJsonTypesDict = navigations.Where(a => a.TargetEntityType.IsMappedToJson()).ToDictionary(a => a.Name, a => a);
+#else
+        OwnedRegularTypesDict = navigations.Where(a => a.TargetEntityType.IsOwned()).ToDictionary(a => a.Name, a => a);
+        OwnedJsonTypesDict = navigations.Where(a => a.TargetEntityType == null).ToDictionary(a => a.Name, a => a); // should be empty
+#endif
 
         HasJsonTypes = OwnedJsonTypesDict.Count() > 0;
 
@@ -856,7 +861,8 @@ public class TableInfo
 
     internal void UpdateReadEntities<T>(IEnumerable<T> entities, IList<T> existingEntities, DbContext context)
     {
-        List<string> propertyNames = OutputPropertyColumnNamesDict.Keys.ToList();
+        var propColDict = BulkConfig.LoadOnlyIncludedColumns ? PropertyColumnNamesDict : OutputPropertyColumnNamesDict;
+        List<string> propertyNames = propColDict.Keys.ToList();
         if (HasOwnedTypes)
         {
             foreach (string ownedTypeName in OwnedTypesDict.Keys)

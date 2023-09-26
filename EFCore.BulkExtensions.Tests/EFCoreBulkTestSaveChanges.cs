@@ -17,10 +17,10 @@ public class EFCoreBulkTestSaveChanges
     public void SaveChangesTest(SqlType dbServer)
     {
         ContextUtil.DatabaseType = dbServer;
-
         new EFCoreBatchTest().RunDeleteAll(dbServer);
         using (var context = new TestContext(ContextUtil.GetOptions()))
         {
+#pragma warning disable
             context.ItemHistories.BatchDelete();
         }
 

@@ -15,9 +15,9 @@ public class SqlQueryBuilderSqliteTests
         tableInfo.IdentityColumnName = "ItemId";
         string actual = SqliteQueryBuilder.InsertIntoTable(tableInfo, OperationType.InsertOrUpdate);
 
-        string expected = @"INSERT INTO [Item] ([ItemId], [Name]) " +
-                          @"VALUES (@ItemId, @Name) " +
-                          @"ON CONFLICT([ItemId]) DO UPDATE SET [ItemId] = @ItemId, [Name] = @Name " +
+        string expected = @"INSERT INTO [Item] ([Name]) " +
+                          @"VALUES (@Name) " +
+                          @"ON CONFLICT([ItemId]) DO UPDATE SET [Name] = @Name " +
                           @"WHERE [ItemId] = @ItemId;";
 
         Assert.Equal(expected, actual);
@@ -30,9 +30,9 @@ public class SqlQueryBuilderSqliteTests
         tableInfo.IdentityColumnName = "ItemId";
         string actual = SqliteQueryBuilder.InsertIntoTable(tableInfo, OperationType.InsertOrUpdate);
 
-        string expected = @"INSERT INTO [Item] ([ItemId], [Name]) " +
-                          @"VALUES (@ItemId, @Name) " +
-                          @"ON CONFLICT([ItemId]) DO UPDATE SET [ItemId] = @ItemId, [Name] = @Name " +
+        string expected = @"INSERT INTO [Item] ([Name]) " +
+                          @"VALUES (@Name) " +
+                          @"ON CONFLICT([ItemId]) DO UPDATE SET [Name] = @Name " +
                           @"WHERE [ItemId] = @ItemId AND excluded.ItemTimestamp > [Item].ItemTimestamp;";
 
         Assert.Equal(expected, actual);

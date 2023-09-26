@@ -5,39 +5,39 @@
 	
   <ItemGroup>
 	<PackageReference Include="Microsoft.Data.SqlClient" Version="2.1.5" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="6.0.16" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="6.0.21" />
 	<PackageReference Include="System.Diagnostics.DiagnosticSource" Version="6.0.1" />
 	<PackageReference Include="NetTopologySuite.IO.SqlServerBytes" Version="2.1.0" />
 	<PackageReference Include="EntityFrameworkCore.SqlServer.HierarchyId" Version="3.0.1" />
-	<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" Version="6.0.16" />
+	<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" Version="6.0.21" />
 	<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="6.0.8" />
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="6.0.2" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="6.0.16" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="6.0.21" />
 	<PackageReference Include="NetTopologySuite.IO.SpatiaLite" Version="2.0.0" />
   </ItemGroup>
 
   <ItemGroup>
 	<PackageReference Include="EntityFrameworkCore.SqlServer.HierarchyId" Version="3.0.1" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" Version="6.0.16" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" Version="6.0.21" />
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="6.0.2" />
   </ItemGroup>
   
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.SqlClient" Version="2.1.5" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="6.0.16" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="6.0.21" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="6.0.8" />
   </ItemGroup>
   
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.SqlClient" Version="2.1.5" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="6.0.16" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="6.0.16" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="6.0.21" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="6.0.21" />
 	<PackageReference Include="NetTopologySuite.IO.SpatiaLite" Version="2.0.0" />
   </ItemGroup>
   
   <ItemGroup>
 	<PackageReference Include="Microsoft.Data.SqlClient" Version="2.1.5" />
-	<PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="6.0.16" />
+	<PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="6.0.21" />
 	<PackageReference Include="EntityFrameworkCore.SqlServer.HierarchyId" Version="3.0.1" />
 	<PackageReference Include="NetTopologySuite.IO.SqlServerBytes" Version="2.1.0" />
 	<PackageReference Include="System.Diagnostics.DiagnosticSource" Version="6.0.1" />
@@ -46,8 +46,8 @@
   <ItemGroup>
     <PackageReference Include="DelegateDecompiler.EntityFrameworkCore5" Version="0.32.0" />
 	<PackageReference Include="EntityFrameworkCore.SqlServer.HierarchyId" Version="3.0.1" />
-	<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="6.0.16" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" Version="6.0.16" />
+	<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="6.0.21" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" Version="6.0.21" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="6.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.5.0" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="6.0.8" />
