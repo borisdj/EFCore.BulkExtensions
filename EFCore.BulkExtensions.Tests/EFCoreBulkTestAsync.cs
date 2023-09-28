@@ -108,7 +108,7 @@ public class EFCoreBulkTestAsync
         {
             var entity = new Item
             {
-                ItemId = isBulk ? i : 0,
+                //ItemId = isBulk ? i : 0,
                 Name = "name " + i,
                 Description = string.Concat("info ", Guid.NewGuid().ToString().AsSpan(0, 3)),
                 Quantity = i % 10,
