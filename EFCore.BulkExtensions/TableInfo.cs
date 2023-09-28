@@ -18,10 +18,10 @@ using System.Threading.Tasks;
 
 namespace EFCore.BulkExtensions;
 
-/// <summary>
-/// Provides a list of information for EFCore.BulkExtensions that is used internally to know what to do with the data source received
-/// </summary>
-public class TableInfo
+    /// <summary>
+    /// Provides a list of information for EFCore.BulkExtensions that is used internally to know what to do with the data source received
+    /// </summary>
+    public class TableInfo
 {
 #pragma warning disable CS1591 // No XML comments required here.
     public string? Schema { get; set; }
@@ -1131,7 +1131,6 @@ public class TableInfo
         }
         else // Clears entityList and then refills it with loaded entites from Db
         {
-            //entities.Clear();
             entities = new List<T>();
 
             if (typeof(T) == entitiesWithOutputIdentity.FirstOrDefault()?.GetType())
@@ -1420,4 +1419,19 @@ internal class PrimaryKeysPropertyColumnNameValues
             return hash;
         }
     }
+}
+
+
+/// <summary>
+/// Provides a list of information for EFCore.BulkExtensions that is used internally to know what to do with the data source received
+/// Currently not yet used
+/// </summary>
+public class PropertyColumnInfo
+{
+#pragma warning disable CS1591 // No XML comments required here.
+    public string PropertyName { get; set; } = null!;
+
+    public string ColumnName { get; set; } = null!;
+
+    public bool IsForOutput { get; set; }
 }
