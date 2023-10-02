@@ -2,7 +2,7 @@
 using System.Runtime.Serialization;
 
 namespace EFCore.BulkExtensions;
-
+// TEST 02-10-2023 10:59
 /// <summary>
 /// Provides a list of static exception messages
 /// </summary>
