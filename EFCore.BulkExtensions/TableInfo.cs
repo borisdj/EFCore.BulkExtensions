@@ -1131,7 +1131,7 @@ namespace EFCore.BulkExtensions;
         }
         else // Clears entityList and then refills it with loaded entites from Db
         {
-            entities = new List<T>();
+            ((List<T>)entities).Clear();
 
             if (typeof(T) == entitiesWithOutputIdentity.FirstOrDefault()?.GetType())
             {
