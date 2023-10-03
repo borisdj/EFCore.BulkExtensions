@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net8.0;net7.0;net6.0;</TargetFrameworks>
+    <TargetFrameworks>net8.0</TargetFrameworks>
     <Title>EFCore.BulkExtensions</Title>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <Version>8.0.0-rc.1</Version>
@@ -27,6 +27,7 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
+  
   <!-- net 8.0 -->
   <ItemGroup Condition=" '$(TargetFramework)' == 'net8.0' ">
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.0-preview3.23201.1" />
@@ -35,41 +36,14 @@
 	<PackageReference Include="NetTopologySuite.IO.SqlServerBytes" Version="2.1.0" />
 	<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.HierarchyId" Version="8.0.0-rc.1.23419.6" />
 	<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" Version="8.0.0-rc.1.23419.6" />
-	<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.0-preview.7" />
-    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="7.0.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="8.0.0-preview.7.23375.4" />
+	<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.0-rc.1" />
+    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.0-beta.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="8.0.0-rc.1.23419.6" />
 	<PackageReference Include="NetTopologySuite.IO.SpatiaLite" Version="2.0.0" />
 	<PackageReference Include="MedallionTopologicalSort" Version="1.0.0" />
 	<PackageReference Include="StrongNamer" Version="0.2.5" />
   </ItemGroup>
-  <!-- net 7.0 -->
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net7.0' ">
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.1" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="7.0.10" />
-	<PackageReference Include="System.Diagnostics.DiagnosticSource" Version="7.0.2" />
-	<PackageReference Include="NetTopologySuite.IO.SqlServerBytes" Version="2.1.0" />
-	<PackageReference Include="EntityFrameworkCore.SqlServer.HierarchyId" Version="4.0.0" />
-	<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" Version="7.0.10" />
-	<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="7.0.4" />
-    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="7.0.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="7.0.10" />
-	<PackageReference Include="NetTopologySuite.IO.SpatiaLite" Version="2.0.0" />
-	<PackageReference Include="MedallionTopologicalSort" Version="1.0.0" />
-	<PackageReference Include="StrongNamer" Version="0.2.5" />
-  </ItemGroup>
-  <!-- net 6.0 -->
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net6.0' ">
-  	<PackageReference Include="Microsoft.Data.SqlClient" Version="2.1.6" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="6.0.21" />
-	<PackageReference Include="System.Diagnostics.DiagnosticSource" Version="6.0.1" />
-	<PackageReference Include="NetTopologySuite.IO.SqlServerBytes" Version="2.1.0" />
-	<PackageReference Include="EntityFrameworkCore.SqlServer.HierarchyId" Version="3.0.1" />
-	<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" Version="6.0.21" />
-	<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="6.0.8" />
-    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="6.0.2" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="6.0.21" />
-	<PackageReference Include="NetTopologySuite.IO.SpatiaLite" Version="2.0.0" />
-  </ItemGroup>
+
   <ItemGroup>
     <None Remove="EFCoreBulk.png" />
   </ItemGroup>

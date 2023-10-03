@@ -772,7 +772,7 @@ public class EFCoreBulkTest
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
-        var entities = AllItemsQuery(context).ToList();
+        var entities = context.Items.ToList();
         // ItemHistories will also be deleted because of Relationship - ItemId (Delete Rule: Cascade)
         if (isBulk)
         {
