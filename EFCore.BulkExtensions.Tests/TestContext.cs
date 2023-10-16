@@ -89,18 +89,18 @@ public class TestContext : DbContext
 
     public DbSet<GraphQLModel> GraphQLModels { get; set; } = null!;
 
-    public static bool UseTopologyPostgres { get; set; } = true; // needed for object Address with Geo. props
+    public static bool UseTopologyPostgres { get; set; } = false; // needed for object Address with Geo. props
 
     public TestContext(DbContextOptions options) : base(options)
     {
-        Database.EnsureCreated();
+        //Database.EnsureCreated();
         // if for Postgres on test run get Npgsql Ex:[could not open .../postgis.control] then either install the plugin it or set UseTopologyPostgres to False;
 
-        if (Database.IsSqlServer())
+        /*if (Database.IsSqlServer())
         {
             Database.ExecuteSqlRaw(@"if exists(select 1 from systypes where name='UdttIntInt') drop type UdttIntInt");
             Database.ExecuteSqlRaw(@"create type UdttIntInt AS TABLE(C1 int not null, C2 int not null)");
-        }
+        }*/
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
