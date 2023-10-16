@@ -3,7 +3,7 @@
     <TargetFrameworks>net8.0</TargetFrameworks>
     <Title>EFCore.BulkExtensions</Title>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <Version>8.0.0-rc.1.2</Version>
+    <Version>8.0.0-rc.2</Version>
 	<Nullable>enable</Nullable>	  
     <Authors>borisdj</Authors>
     <Description>EntityFramework .Net EFCore EF Core Bulk Batch Extensions for Insert Update Delete Read (CRUD) operations on SQL Server, PostgreSQL, MySQL, SQLite</Description>
