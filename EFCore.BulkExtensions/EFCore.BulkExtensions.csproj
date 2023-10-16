@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>net8.0</TargetFrameworks>
     <Title>EFCore.BulkExtensions</Title>
@@ -38,7 +38,7 @@
 	<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" Version="8.0.0-rc.1.23419.6" />
 	<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.0-rc.1" />
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.0-beta.1" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="8.0.0-rc.1.23419.6" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="8.0.0-rc.2.23480.1" />
 	<PackageReference Include="NetTopologySuite.IO.SpatiaLite" Version="2.0.0" />
 	<PackageReference Include="MedallionTopologicalSort" Version="1.0.0" />
 	<PackageReference Include="StrongNamer" Version="0.2.5" />
