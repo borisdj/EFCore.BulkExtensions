@@ -696,6 +696,18 @@ public class EFCoreBulkTest
         var list = context.Items.Take(2).ToList();
         Assert.True(list[0].Quantity != 0);
         Assert.True(list[1].Quantity == 0);
+
+        // TEST Alias
+        context.Entries.Add(new Entry { Name = "Entry_InsertOrUpdateOrDelete" });
+        context.SaveChanges();
+
+        int entriesCount = context.Entries.Count();
+        
+        bulkConfigSoftDel.SetSynchronizeSoftDelete<Entry>(a => new Entry { Name = "Entry_InsertOrUpdateOrDelete_Deleted" });
+        context.BulkInsertOrUpdateOrDelete(new List<Entry> { new Entry { Name = "Entry_InsertOrUpdateOrDelete_2" } }, bulkConfigSoftDel);
+
+        Assert.Equal(entriesCount + 1,  context.Entries.Count());
+        Assert.True(context.Entries.Any(e => e.Name == "Entry_InsertOrUpdateOrDelete_Deleted"));
     }
 
     private static void RunUpdate(bool isBulk, SqlType sqlType)

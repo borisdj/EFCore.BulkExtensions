@@ -280,7 +280,7 @@ public class EFCoreBulkTestAsync
             await context.BulkInsertOrUpdateOrDeleteAsync(entities, bulkConfig);
             Assert.Equal(0, bulkConfig.StatsInfo?.StatsNumberInserted);
             Assert.Equal(EntitiesNumber / 2, bulkConfig.StatsInfo?.StatsNumberUpdated);
-            Assert.Equal((EntitiesNumber / 2) -1, bulkConfig.StatsInfo?.StatsNumberDeleted);
+            Assert.Equal((EntitiesNumber / 2) - 1, bulkConfig.StatsInfo?.StatsNumberDeleted);
         }
         else
         {
@@ -305,11 +305,23 @@ public class EFCoreBulkTestAsync
 
         var bulkConfigSoftDel = new BulkConfig();
         bulkConfigSoftDel.SetSynchronizeSoftDelete<Item>(a => new Item { Quantity = 0 }); // Instead of Deleting from DB it updates Quantity to 0 (usual usecase would be: IsDeleted to True)
-        context.BulkInsertOrUpdateOrDelete(new List<Item> { entities[1] }, bulkConfigSoftDel);
+        await context.BulkInsertOrUpdateOrDeleteAsync(new List<Item> { entities[1] }, bulkConfigSoftDel);
 
         var list = await context.Items.Take(2).ToListAsync();
         Assert.True(list[0].Quantity != 0);
         Assert.True(list[1].Quantity == 0);
+
+        // TEST Alias
+        await context.Entries.AddAsync(new Entry { Name = "Entry_InsertOrUpdateOrDelete" });
+        await context.SaveChangesAsync();
+
+        int entriesCount = await contextRead.Entries.CountAsync();
+        
+        bulkConfigSoftDel.SetSynchronizeSoftDelete<Entry>(a => new Entry { Name = "Entry_InsertOrUpdateOrDelete_Deleted" });
+        await context.BulkInsertOrUpdateOrDeleteAsync(new List<Entry> { new Entry { Name = "Entry_InsertOrUpdateOrDelete_2" } }, bulkConfigSoftDel);
+
+        Assert.Equal(entriesCount + 1, await contextRead.Entries.CountAsync());
+        Assert.True(await context.Entries.AnyAsync(e => e.Name == "Entry_InsertOrUpdateOrDelete_Deleted"));
     }
 
     private static async Task RunUpdateAsync(bool isBulk, SqlType sqlType)
@@ -359,7 +371,7 @@ public class EFCoreBulkTestAsync
             entities.Add(new Item { Name = "name " + i });
         }
 
-        var bulkConfig = new BulkConfig { UpdateByProperties = new List<string> { nameof(Item.Name) }};
+        var bulkConfig = new BulkConfig { UpdateByProperties = new List<string> { nameof(Item.Name) } };
         await context.BulkReadAsync(entities, bulkConfig).ConfigureAwait(false);
 
         Assert.Equal(1, entities[0].ItemId);
