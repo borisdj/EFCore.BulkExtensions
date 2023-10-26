@@ -12,11 +12,11 @@ Also you can look into others authored packages(.Net):
 | №  | .Net library             | Description                                              |
 | -  | ------------------------ | -------------------------------------------------------- |
 | 1  | [EFCore.BulkExtensions](https://github.com/borisdj/EFCore.BulkExtensions){:target="_blank"} | EF Core Bulk CRUD Ops|
-| 1  | [EFCore.UtilExtensions](https://github.com/borisdj/EFCore.BulkExtensions){:target="_blank"} | EF Core Custom Annotations and AuditInfo |
-| 1  | [EFCore.FluentApiToAnnotation](https://github.com/borisdj/EFCore.FluentApiToAnnotation){:target="_blank"} | converting FluentApi configuration to Annotations |
-| 2  | [FixedWidthParserWriter](https://github.com/borisdj/FixedWidthParserWriter){:target="_blank"} | Reading & Writing fixed-width/flat data files |
-| 3  | [CsCodeGenerator](https://github.com/borisdj/CsCodeGenerator){:target="_blank"} | C# code generation based on Classes and elements |
-| 4  | [CsCodeExample](https://github.com/borisdj/CsCodeExample){:target="_blank"} | Examples of c# code in form of a simple tutorial |
+| 2  | [EFCore.UtilExtensions](https://github.com/borisdj/EFCore.BulkExtensions){:target="_blank"} | EF Core Custom Annotations and AuditInfo |
+| 3  | [EFCore.FluentApiToAnnotation](https://github.com/borisdj/EFCore.FluentApiToAnnotation){:target="_blank"} | converting FluentApi configuration to Annotations |
+| 4  | [FixedWidthParserWriter](https://github.com/borisdj/FixedWidthParserWriter){:target="_blank"} | Reading & Writing fixed-width/flat data files |
+| 5  | [CsCodeGenerator](https://github.com/borisdj/CsCodeGenerator){:target="_blank"} | C# code generation based on Classes and elements |
+| 6  | [CsCodeExample](https://github.com/borisdj/CsCodeExample){:target="_blank"} | Examples of c# code in form of a simple tutorial |
 
 ## License
 *BulkExtensions [licensed](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE.txt) under [**Dual License v1.0**](https://www.codis.tech/efcorebulk/) (solution to OpenSource funding, cFOSS: conditionallyFree OSS).  
