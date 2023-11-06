@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>    
     <TargetFramework>net8.0</TargetFramework>
@@ -14,7 +14,7 @@
     <PackageReference Include="FastMember" Version="1.5.0" />
     <PackageReference Include="GraphQL" Version="7.6.1" />
     <PackageReference Include="HotChocolate.Abstractions" Version="13.6.0-preview.31" />
-    <PackageReference Include="HotChocolate.Types" Version="13.6.0-preview.31" />
+    <PackageReference Include="HotChocolate.Types" Version="13.7.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.NetTopologySuite" Version="8.0.0-rc.2.23480.1" />
 	<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.0-rc.2.23480.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" Version="8.0.0-rc.2.23480.1" />
