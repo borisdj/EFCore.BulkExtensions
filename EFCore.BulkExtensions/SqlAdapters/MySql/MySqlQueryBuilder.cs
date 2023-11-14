@@ -23,9 +23,7 @@ public class MySqlQueryBuilder : SqlQueryBuilder
         useTempDb = false;
         string keywordTemp = useTempDb ? "TEMPORARY " : "";
 
-        var query = $"CREATE {keywordTemp}TABLE {newTableName} " +
-                    $"SELECT * FROM {existingTableName} " +
-                    $"LIMIT 0;";
+        var query = $"CREATE {keywordTemp}TABLE {newTableName} LIKE {existingTableName};";
         query = query.Replace("[", "`").Replace("]", "`");
         return query;
     }
