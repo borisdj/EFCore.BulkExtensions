@@ -402,7 +402,7 @@ public abstract class SqlQueryBuilder
 
                 var sql = sqlOriginal.Replace("[i]", "T");
                 int indexFrom = sql.IndexOf(".") - 1;
-                int indexTo = sql.IndexOf("\r\n") - indexFrom;
+                int indexTo = sql.IndexOf(Environment.NewLine) - indexFrom;
                 softDeleteAssignment = sql.Substring(indexFrom, indexTo);
                 softDeleteAssignment = softDeleteAssignment.TrimEnd();
                 parameters.AddRange(sqlParameters);
