@@ -18,10 +18,10 @@ using System.Threading.Tasks;
 
 namespace EFCore.BulkExtensions;
 
-    /// <summary>
-    /// Provides a list of information for EFCore.BulkExtensions that is used internally to know what to do with the data source received
-    /// </summary>
-    public class TableInfo
+/// <summary>
+/// Provides a list of information for EFCore.BulkExtensions that is used internally to know what to do with the data source received
+/// </summary>
+public class TableInfo
 {
 #pragma warning disable CS1591 // No XML comments required here.
     public string? Schema { get; set; }
@@ -381,8 +381,8 @@ namespace EFCore.BulkExtensions;
         OutputPropertyColumnNamesDict = outputProperties.ToDictionary(a => a.Name, b => b.GetColumnName(ObjectIdentifier)?.Replace("]", "]]") ?? string.Empty); // square brackets have to be escaped
         if (HasTemporalColumns)
         {
-            foreach(var temporalColumns in BulkConfig.TemporalColumns)
-            OutputPropertyColumnNamesDict.Add(temporalColumns, temporalColumns);
+            foreach (var temporalColumns in BulkConfig.TemporalColumns)
+                OutputPropertyColumnNamesDict.Add(temporalColumns, temporalColumns);
         }
 
         bool AreSpecifiedPropertiesToInclude = BulkConfig.PropertiesToInclude?.Count > 0;
@@ -811,14 +811,14 @@ namespace EFCore.BulkExtensions;
     }
     #endregion
 
-        /// <summary>
-        /// Returns the unique property values
-        /// </summary>
-        /// <param name="entity"></param>
-        /// <param name="propertiesNames"></param>
-        /// <param name="fastPropertyDict"></param>
-        /// <returns></returns>
-        public static string GetUniquePropertyValues(object entity, List<string> propertiesNames, Dictionary<string, FastProperty> fastPropertyDict)
+    /// <summary>
+    /// Returns the unique property values
+    /// </summary>
+    /// <param name="entity"></param>
+    /// <param name="propertiesNames"></param>
+    /// <param name="fastPropertyDict"></param>
+    /// <returns></returns>
+    public static string GetUniquePropertyValues(object entity, List<string> propertiesNames, Dictionary<string, FastProperty> fastPropertyDict)
     {
         StringBuilder uniqueBuilder = new(1024);
         string delimiter = "_"; // TODO: Consider making it Config-urable
@@ -839,7 +839,7 @@ namespace EFCore.BulkExtensions;
 
             uniqueBuilder.Append(delimiter);
         }
-        string result = uniqueBuilder.ToString();
+        string result = uniqueBuilder.ToString() == "null" ? "" : uniqueBuilder.ToString();
         result = result[0..^1]; // removes last delimiter
         return result;
     }
@@ -908,7 +908,7 @@ namespace EFCore.BulkExtensions;
                     }
                     else
                     {
-                       //TODO: Shadow FK property update
+                        //TODO: Shadow FK property update
                     }
                 }
             }
@@ -1271,7 +1271,7 @@ namespace EFCore.BulkExtensions;
         var parameter = Expression.Parameter(typeof(DbContext), "ctx");
         var expression = Expression.Call(parameter, "Set", new Type[] { entityType });
         expression = Expression.Call(typeof(RelationalQueryableExtensions), "FromSqlRaw", new Type[] { entityType }, expression, Expression.Constant(sqlQuery), Expression.Constant(Array.Empty<object>()));
-        
+
         if (!BulkConfig.TrackingEntities) // If Else can not be replaced with Ternary operator for Expression
         {
             expression = Expression.Call(typeof(EntityFrameworkQueryableExtensions), "AsNoTracking", new Type[] { entityType }, expression);
@@ -1293,7 +1293,7 @@ namespace EFCore.BulkExtensions;
             var identityPropName = PropertyColumnNamesDict.Where(a => a.Value == IdentityColumnName).Select(a => a.Key).ToList();
             expression = Select(entityType, expression, identityPropName);
         }
-        
+
         var expressionResult = Expression.Lambda<Func<DbContext, IEnumerable>>(expression, parameter);
 
         return expressionResult;
