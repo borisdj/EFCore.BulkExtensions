@@ -50,17 +50,17 @@ Only single specific can be installed in a project, if need more then use main o
 Package manager console command for installation: *Install-Package EFCore.BulkExtensions*  
 Specific ones have adapter sufix: MainNuget + *.SqlServer/PostgreSql/MySql/Sqlite*  
 Its assembly is [Strong-Named](https://docs.microsoft.com/en-us/dotnet/standard/library-guidance/strong-naming) and [Signed](https://github.com/borisdj/EFCore.BulkExtensions/issues/161) with a key.
-| Nuget | Target          | Used EF v.  | For projects targeting          |
-| ----- | --------------- | ----------- | ------------------------------- |
-| 8.x   | Net 8.0/7.0/6.0 | EF Core 6-8 | Net 8, 7, 6 - multitarget       |
-| 7.x   | Net 6.0         | EF Core 7.0 | Net 7.0+ or 6.0+                |
-| 6.x   | Net 6.0         | EF Core 6.0 | Net 6.0+                        |
-| 5.x   | NetStandard 2.1 | EF Core 5.0 | Net 5.0+                        |
-| 3.x   | NetStandard 2.0 | EF Core 3.n | NetCore(3.0+) or NetFrm(4.6.1+) [MoreInfo](https://github.com/borisdj/EFCore.BulkExtensions/issues/271#issuecomment-567117488)|
-| 2.x   | NetStandard 2.0 | EF Core 2.n | NetCore(2.0+) or NetFrm(4.6.1+) |
-| 1.x   | NetStandard 1.4 | EF Core 1.0 | NetCore(1.0+)                   |
+| Nuget | Target          | Used EF v.| For projects targeting          |
+| ----- | --------------- | --------- | ------------------------------- |
+| 8.x   | Net 8.0         | EF Core 8 | Net 8.0+                        |
+| 7.x   | Net 6.0         | EF Core 7 | Net 7.0+ or 6.0+                |
+| 6.x   | Net 6.0         | EF Core 6 | Net 6.0+                        |
+| 5.x   | NetStandard 2.1 | EF Core 5 | Net 5.0+                        |
+| 3.x   | NetStandard 2.0 | EF Core 3 | NetCore(3.0+) or NetFrm(4.6.1+) [MoreInfo](https://github.com/borisdj/EFCore.BulkExtensions/issues/271#issuecomment-567117488)|
+| 2.x   | NetStandard 2.0 | EF Core 2 | NetCore(2.0+) or NetFrm(4.6.1+) |
+| 1.x   | NetStandard 1.4 | EF Core 1 | NetCore(1.0+)                   |
 
-Supports follows official [.Net lifecycle](https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core), currently v.7 as latest (+ v.8 preview) and v.6 as LTS.
+Supports follows official [.Net lifecycle](https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core), currently v.8(LTS) as latest and v.7 and v.6(LTS).
 
 ## Usage
 It's pretty simple and straightforward.  
