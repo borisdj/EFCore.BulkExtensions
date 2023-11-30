@@ -52,7 +52,7 @@ Specific ones have adapter sufix: MainNuget + *.SqlServer/PostgreSql/MySql/Sqlit
 Its assembly is [Strong-Named](https://docs.microsoft.com/en-us/dotnet/standard/library-guidance/strong-naming) and [Signed](https://github.com/borisdj/EFCore.BulkExtensions/issues/161) with a key.
 | Nuget | Target          | Used EF v.  | For projects targeting          |
 | ----- | --------------- | ----------- | ------------------------------- |
-| 8.rc  | Net 8.0/7.0/6.0 | EF Core 6-8 | Net 8, 7, 6 - multitarget       |
+| 8.x   | Net 8.0/7.0/6.0 | EF Core 6-8 | Net 8, 7, 6 - multitarget       |
 | 7.x   | Net 6.0         | EF Core 7.0 | Net 7.0+ or 6.0+                |
 | 6.x   | Net 6.0         | EF Core 6.0 | Net 6.0+                        |
 | 5.x   | NetStandard 2.1 | EF Core 5.0 | Net 5.0+                        |
