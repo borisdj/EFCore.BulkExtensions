@@ -23,4 +23,4 @@ Once granted, You must reference the granted license only in all documentation.
 - You are consuming the PACKAGE as a For-profit company/individual with less than 1 million USD annual gross revenue.
 
 (2) For all other scenarios, Packages in source code or binary form are licensed to You under the Commercial License which may be purchased by visiting:
-https://www.codis.tech/efcorebulk/
+https://codis.tech/efcorebulk/
