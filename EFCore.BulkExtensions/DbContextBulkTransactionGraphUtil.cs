@@ -25,9 +25,9 @@ internal static class DbContextBulkTransactionGraphUtil
     private static async Task ExecuteWithGraphAsync(DbContext context, IEnumerable<object> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken)
     {
         if (operationType != OperationType.Insert
-                   && operationType != OperationType.InsertOrUpdate
-                   && operationType != OperationType.InsertOrUpdateOrDelete
-                   && operationType != OperationType.Update)
+            && operationType != OperationType.InsertOrUpdate
+            && operationType != OperationType.InsertOrUpdateOrDelete
+            && operationType != OperationType.Update)
             throw new InvalidBulkConfigException($"{nameof(BulkConfig)}.{nameof(BulkConfig.IncludeGraph)} only supports Insert or Update operations.");
 
         // Sqlite bulk merge adapter does not support multiple objects of the same type with a zero value primary key
@@ -51,6 +51,7 @@ internal static class DbContextBulkTransactionGraphUtil
 
         try
         {
+            StatsInfo? stats = bulkConfig.CalculateStats ? new() : null;
             // Group the graph nodes by entity type so we can merge them into the database in batches, in the correct order of dependency (topological order)
             var graphNodesGroupedByType = graphNodes.GroupBy(y => y.Entity.GetType());
 
@@ -78,6 +79,8 @@ internal static class DbContextBulkTransactionGraphUtil
                     SqlBulkOperation.Merge(context, entityClrType, entitiesToAction, tableInfo, operationType, progress);
                 }
 
+                UpdateStats(stats, bulkConfig);
+
                 // Set the foreign keys for dependents so they may be inserted on the next loop
                 var dependentsOfSameType = SetForeignKeysForDependentsAndYieldSameTypeDependents(context, entityClrType, graphNodeGroup).ToList();
 
@@ -94,7 +97,14 @@ internal static class DbContextBulkTransactionGraphUtil
                     {
                         SqlBulkOperation.Merge(context, entityClrType, dependentsOfSameType, dependentTableInfo, operationType, progress);
                     }
+
+                    UpdateStats(stats, bulkConfig);
                 }
+            }
+
+            if (bulkConfig.CalculateStats)
+            {
+                bulkConfig.StatsInfo = stats;
             }
 
             if (hasExistingTransaction == false)
@@ -122,6 +132,16 @@ internal static class DbContextBulkTransactionGraphUtil
                     transaction!.Dispose();
                 }
             }
+        }
+    }
+
+    private static void UpdateStats(StatsInfo? stats, BulkConfig bulkConfig)
+    {
+        if (bulkConfig.CalculateStats && stats is not null)
+        {
+            stats.StatsNumberInserted += bulkConfig.StatsInfo!.StatsNumberInserted;
+            stats.StatsNumberUpdated += bulkConfig.StatsInfo.StatsNumberUpdated;
+            stats.StatsNumberDeleted += bulkConfig.StatsInfo.StatsNumberDeleted;
         }
     }
 
