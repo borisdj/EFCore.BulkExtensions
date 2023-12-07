@@ -107,10 +107,12 @@ public class IncludeGraphTests : IDisposable
         WorkOrder2.Asset.ChildAssets.Add(WorkOrder1.Asset);
 
         var testData = GetTestData().ToList();
-        await db.BulkInsertOrUpdateAsync(testData, new BulkConfig
+        var bulkConfig = new BulkConfig
         {
-            IncludeGraph = true
-        });
+            IncludeGraph = true,
+            CalculateStats = true,
+        };
+        await db.BulkInsertOrUpdateAsync(testData, bulkConfig);
 
         var workOrderQuery = db.WorkOrderSpares
             .Include(y => y.WorkOrder)
@@ -123,6 +125,9 @@ public class IncludeGraphTests : IDisposable
             Assert.NotNull(wos.WorkOrder.Asset);
             Assert.NotNull(wos.Spare);
         }
+
+        Assert.NotNull(bulkConfig.StatsInfo);
+        Assert.Equal(12, bulkConfig.StatsInfo.StatsNumberInserted);
     }
 
     private static IEnumerable<WorkOrder> GetTestData()
