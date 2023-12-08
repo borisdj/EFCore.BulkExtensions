@@ -71,7 +71,7 @@ internal static class DbContextBulkTransactionSaveChanges
         var deleted = entriesGroupedByEntity.Where(x => x.State == EntityState.Deleted);
         var deletedLookup = deleted.ToLookup(x => x.EntityType);
 #if NET8_0
-        var sortedDeleted = deleted.OrderTopologicallyBy(g => getFks(g.EntityType).SelectMany(x => deletedLookup[x]).Reverse());
+        var sortedDeleted = deleted.OrderTopologicallyBy(g => getFks(g.EntityType).SelectMany(x => deletedLookup[x])).Reverse();
 #else
         var sortedDeleted = deleted;
 #endif
