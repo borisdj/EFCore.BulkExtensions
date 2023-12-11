@@ -100,6 +100,28 @@ internal static class DbContextBulkTransactionGraphUtil
 
                     UpdateStats(stats, bulkConfig);
                 }
+
+                // We also have to set the foreign keys of potential dependents of owned types that are in the same table as this one
+                foreach (var ng in graphNodesGroupedByType.Where(ng => 
+                    context.Model.FindEntityType(ng.Key) is { } entityType 
+                    && OwnedTypeUtil.IsOwnedInSameTableAsOwner(entityType)))
+                {
+                    foreach(var dependentOfSameType in SetForeignKeysForDependentsAndYieldSameTypeDependents(context, ng.Key, ng))
+                    {
+                        var dependentTableInfo = TableInfo.CreateInstance(context, entityClrType, dependentsOfSameType, operationType, bulkConfig);
+
+                        if (isAsync)
+                        {
+                            await SqlBulkOperation.MergeAsync(context, entityClrType, dependentsOfSameType, dependentTableInfo, operationType, progress, cancellationToken).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            SqlBulkOperation.Merge(context, entityClrType, dependentsOfSameType, dependentTableInfo, operationType, progress);
+                        }
+
+                        UpdateStats(stats, bulkConfig);
+                    }
+                }
             }
 
             if (bulkConfig.CalculateStats)

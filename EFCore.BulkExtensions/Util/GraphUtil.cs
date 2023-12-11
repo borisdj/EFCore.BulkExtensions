@@ -110,7 +110,11 @@ internal class GraphUtil
             graphDependency.DependsOn.Add((navigationValue, navigation));
             nestedDependency.Dependents.Add((graphEntity, navigation.Inverse ?? navigation));
         }
-        else
+
+        // Not sure this is the right thing to do here, but this way the "owned types in same table as owner"
+        // also get added to dependents, which is necessary to be able to set foreign keys of potential dependents of this owned type
+        // (See the change in DbContextBulkTransactionGraphUtil ExecuteWithGraphAsync)
+        if (!navigation.IsOnDependent)
         {
             graphDependency.Dependents.Add((navigationValue, navigation));
             nestedDependency.DependsOn.Add((graphEntity, navigation.Inverse ?? navigation));
