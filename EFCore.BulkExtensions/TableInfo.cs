@@ -556,73 +556,86 @@ public class TableInfo
 
             if (HasOwnedTypes)  // Support owned entity property update. TODO: Optimize
             {
-                var ownedTypes = OwnedRegularTypesDict.Values.ToList();
-                foreach (var navigationProperty in ownedTypes)
+                foreach (var navigationProperty in OwnedRegularTypesDict.Values.ToList())
                 {
-                    var property = navigationProperty.PropertyInfo;
-                    FastPropertyDict.Add(property!.Name, FastProperty.GetOrCreate(property));
+                    AddOwnedType(navigationProperty);
 
-                    // If the OwnedType is mapped to the separate table, don't try merge it into its owner
-                    if (OwnedTypeUtil.IsOwnedInSameTableAsOwner(navigationProperty) == false)
-                        continue;
-
-                    //Type navOwnedType = type?.Assembly.GetType(property.PropertyType.FullName!) ?? throw new ArgumentException("Unable to determine Type"); // was not used
-                    var ownedEntityType = context.Model.FindEntityType(property.PropertyType);
-                    if (ownedEntityType == null) // when entity has more then one ownedType (e.g. Address HomeAddress, Address WorkAddress) or one ownedType is in multiple Entities like Audit is usually.
+                    void AddOwnedType(INavigation navigationProperty, string prefix = "")
                     {
-                        ownedEntityType = context.Model.GetEntityTypes().SingleOrDefault(x => x.ClrType == property.PropertyType && x.Name.StartsWith(entityType.Name + "." + property.Name + "#"));
-                    }
-                    var ownedEntityProperties = ownedEntityType?.GetProperties().ToList() ?? new();
-                    var ownedEntityPropertyNameColumnNameDict = new Dictionary<string, string>();
+                        // Add it to the dictionary if it doesn't exist already
+                        OwnedRegularTypesDict.TryAdd(prefix + navigationProperty.Name, navigationProperty);
 
-                    foreach (var ownedEntityProperty in ownedEntityProperties)
-                    {
-                        string columnName = ownedEntityProperty.GetColumnName(ObjectIdentifier) ?? string.Empty;
+                        var property = navigationProperty.PropertyInfo;
+                        FastPropertyDict.Add(prefix + property!.Name, FastProperty.GetOrCreate(property));
 
-                        if (!ownedEntityProperty.IsPrimaryKey())
+                        // If the OwnedType is mapped to the separate table, don't try merge it into its owner
+                        if (OwnedTypeUtil.IsOwnedInSameTableAsOwner(navigationProperty) == false)
+                            return;
+
+                        prefix += $"{property.Name}_";
+
+                        //Type navOwnedType = type?.Assembly.GetType(property.PropertyType.FullName!) ?? throw new ArgumentException("Unable to determine Type"); // was not used
+                        var ownedEntityType = context.Model.FindEntityType(property.PropertyType);
+                        if (ownedEntityType == null) // when entity has more then one ownedType (e.g. Address HomeAddress, Address WorkAddress) or one ownedType is in multiple Entities like Audit is usually.
                         {
-                            ownedEntityPropertyNameColumnNameDict.Add(ownedEntityProperty.Name, columnName);
-                            var ownedEntityPropertyFullName = property.Name + "_" + ownedEntityProperty.Name;
-                            if (!FastPropertyDict.ContainsKey(ownedEntityPropertyFullName) && ownedEntityProperty.PropertyInfo is not null)
+                            ownedEntityType = context.Model.GetEntityTypes().SingleOrDefault(x => x.ClrType == property.PropertyType && x.Name.StartsWith(entityType.Name + "." + property.Name + "#"));
+                        }
+                        var ownedEntityProperties = ownedEntityType?.GetProperties().ToList() ?? [];
+                        var ownedEntityPropertyNameColumnNameDict = new Dictionary<string, string>();
+
+                        foreach (var ownedEntityProperty in ownedEntityProperties)
+                        {
+                            string columnName = ownedEntityProperty.GetColumnName(ObjectIdentifier) ?? string.Empty;
+
+                            if (!ownedEntityProperty.IsPrimaryKey())
                             {
-                                FastPropertyDict.Add(ownedEntityPropertyFullName, FastProperty.GetOrCreate(ownedEntityProperty.PropertyInfo));
+                                ownedEntityPropertyNameColumnNameDict.Add(ownedEntityProperty.Name, columnName);
+                                var ownedEntityPropertyFullName = prefix + ownedEntityProperty.Name;
+                                if (!FastPropertyDict.ContainsKey(ownedEntityPropertyFullName) && ownedEntityProperty.PropertyInfo is not null)
+                                {
+                                    FastPropertyDict.Add(ownedEntityPropertyFullName, FastProperty.GetOrCreate(ownedEntityProperty.PropertyInfo));
+                                }
+                            }
+
+                            var converter = ownedEntityProperty.GetValueConverter();
+                            if (converter != null)
+                            {
+                                ConvertibleColumnConverterDict.Add($"{prefix}{ownedEntityProperty.Name}", converter);
+                            }
+
+                            ColumnNamesTypesDict[columnName] = ownedEntityProperty.GetColumnType();
+                        }
+                        foreach (var ownedProperty in property.PropertyType.GetProperties())
+                        {
+                            if (ownedEntityPropertyNameColumnNameDict.TryGetValue(ownedProperty.Name, out string? columnName))
+                            {
+                                string ownedPropertyFullName = prefix.Replace('_', '.') + ownedProperty.Name;
+                                var ownedPropertyType = Nullable.GetUnderlyingType(ownedProperty.PropertyType) ?? ownedProperty.PropertyType;
+
+                                bool doAddProperty = true;
+                                if (AreSpecifiedPropertiesToInclude && !(BulkConfig.PropertiesToInclude?.Contains(ownedPropertyFullName) ?? false))
+                                {
+                                    doAddProperty = false;
+                                }
+                                if (AreSpecifiedPropertiesToExclude && (BulkConfig.PropertiesToExclude?.Contains(ownedPropertyFullName) ?? false))
+                                {
+                                    doAddProperty = false;
+                                }
+
+                                if (doAddProperty)
+                                {
+                                    PropertyColumnNamesDict.Add(ownedPropertyFullName, columnName);
+                                    PropertyColumnNamesCompareDict.Add(ownedPropertyFullName, columnName);
+                                    PropertyColumnNamesUpdateDict.Add(ownedPropertyFullName, columnName);
+                                    OutputPropertyColumnNamesDict.Add(ownedPropertyFullName, columnName);
+                                }
                             }
                         }
-
-                        var converter = ownedEntityProperty.GetValueConverter();
-                        if (converter != null)
+                        // add nested owned types recursively
+                        foreach (var ownedNavigationProperty in ownedEntityType?.GetNavigations()
+                            .Where(a => a.TargetEntityType.IsOwned() && !a.TargetEntityType.IsMappedToJson()) ?? [])
                         {
-                            ConvertibleColumnConverterDict.Add($"{navigationProperty.Name}_{ownedEntityProperty.Name}", converter);
-                        }
-
-                        ColumnNamesTypesDict[columnName] = ownedEntityProperty.GetColumnType();
-                    }
-                    var ownedProperties = property.PropertyType.GetProperties();
-                    foreach (var ownedProperty in ownedProperties)
-                    {
-                        if (ownedEntityPropertyNameColumnNameDict.ContainsKey(ownedProperty.Name))
-                        {
-                            string ownedPropertyFullName = property.Name + "." + ownedProperty.Name;
-                            var ownedPropertyType = Nullable.GetUnderlyingType(ownedProperty.PropertyType) ?? ownedProperty.PropertyType;
-
-                            bool doAddProperty = true;
-                            if (AreSpecifiedPropertiesToInclude && !(BulkConfig.PropertiesToInclude?.Contains(ownedPropertyFullName) ?? false))
-                            {
-                                doAddProperty = false;
-                            }
-                            if (AreSpecifiedPropertiesToExclude && (BulkConfig.PropertiesToExclude?.Contains(ownedPropertyFullName) ?? false))
-                            {
-                                doAddProperty = false;
-                            }
-
-                            if (doAddProperty)
-                            {
-                                string columnName = ownedEntityPropertyNameColumnNameDict[ownedProperty.Name];
-                                PropertyColumnNamesDict.Add(ownedPropertyFullName, columnName);
-                                PropertyColumnNamesCompareDict.Add(ownedPropertyFullName, columnName);
-                                PropertyColumnNamesUpdateDict.Add(ownedPropertyFullName, columnName);
-                                OutputPropertyColumnNamesDict.Add(ownedPropertyFullName, columnName);
-                            }
+                            AddOwnedType(ownedNavigationProperty, prefix);
                         }
                     }
                 }
