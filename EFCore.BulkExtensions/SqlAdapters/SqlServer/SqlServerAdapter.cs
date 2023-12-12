@@ -500,9 +500,8 @@ public class SqlServerAdapter : ISqlOperationsAdapter
                 && !tableInfo.BulkConfig.SetOutputIdentity
                 && tableInfo.DefaultValueProperties.Contains(property.Name);
 
-            if (entityPropertiesDict.ContainsKey(property.Name))
+            if (entityPropertiesDict.TryGetValue(property.Name, out var propertyEntityType))
             {
-                var propertyEntityType = entityPropertiesDict[property.Name];
                 string columnName = propertyEntityType.GetColumnName(objectIdentifier) ?? string.Empty;
 
                 var isConvertible = tableInfo.ConvertibleColumnConverterDict.ContainsKey(columnName);
@@ -518,7 +517,7 @@ public class SqlServerAdapter : ISqlOperationsAdapter
                 {
                     propertyType = typeof(byte[]);
                     tableInfo.HasSpatialType = true;
-                    if (tableInfo.BulkConfig.PropertiesToIncludeOnCompare != null || tableInfo.BulkConfig.PropertiesToIncludeOnCompare != null)
+                    if (tableInfo.BulkConfig.PropertiesToIncludeOnCompare != null)
                     {
                         throw new InvalidOperationException("OnCompare properties Config can not be set for Entity with Spatial types like 'Geometry'");
                     }
@@ -537,10 +536,8 @@ public class SqlServerAdapter : ISqlOperationsAdapter
                     columnsDict.Add(property.Name, null);
                 }
             }
-            else if (entityShadowFkPropertiesDict.ContainsKey(property.Name))
+            else if (entityShadowFkPropertiesDict.TryGetValue(property.Name, out var fk))
             {
-                var fk = entityShadowFkPropertiesDict[property.Name];
-
                 entityPropertiesDict.TryGetValue(fk.GetColumnName(objectIdentifier) ?? string.Empty, out var entityProperty);
                 if (entityProperty == null) // BulkRead
                     continue;
@@ -572,71 +569,74 @@ public class SqlServerAdapter : ISqlOperationsAdapter
                     columnsDict.Add(columnName, null);
                 }
             }
-            else if (entityNavigationOwnedDict.ContainsKey(property.Name) && !tableInfo.OwnedJsonTypesDict.ContainsKey(property.Name)) // isOWned
+            else if (entityNavigationOwnedDict.ContainsKey(property.Name) && !tableInfo.OwnedJsonTypesDict.ContainsKey(property.Name)) // is owned
             {
-                //Type? navOwnedType = type.Assembly.GetType(property.PropertyType.FullName!); // was not used
+                AddOwnedType(property);
 
-                var ownedEntityType = context.Model.FindEntityType(property.PropertyType);
-                if (ownedEntityType == null)
+                void AddOwnedType(PropertyInfo property, string prefix = "")
                 {
-                    ownedEntityType = context.Model.GetEntityTypes().SingleOrDefault(x => x.ClrType == property.PropertyType && x.Name.StartsWith(entityType.Name + "." + property.Name + "#"));
-                }
+                    var ownedEntityType = context.Model.FindEntityType(property.PropertyType);
+                    ownedEntityType ??= context.Model.GetEntityTypes().SingleOrDefault(x => x.ClrType == property.PropertyType && x.Name.StartsWith(entityType.Name + "." + property.Name + "#"));
 
-                var ownedEntityProperties = ownedEntityType?.GetProperties().ToList() ?? new();
-                var ownedEntityPropertyNameColumnNameDict = new Dictionary<string, string>();
+                    prefix += $"{property.Name}_";
 
-                foreach (var ownedEntityProperty in ownedEntityProperties)
-                {
-                    if (!ownedEntityProperty.IsPrimaryKey())
+                    var ownedEntityProperties = ownedEntityType?.GetProperties().ToList() ?? new();
+                    var ownedEntityPropertyNameColumnNameDict = new Dictionary<string, string>();
+
+                    foreach (var ownedEntityProperty in ownedEntityProperties)
                     {
-                        string? columnName = ownedEntityProperty.GetColumnName(objectIdentifier);
-                        if (columnName is not null && tableInfo.PropertyColumnNamesDict.ContainsValue(columnName))
+                        if (!ownedEntityProperty.IsPrimaryKey())
                         {
-                            ownedEntityPropertyNameColumnNameDict.Add(ownedEntityProperty.Name, columnName);
-                            ownedEntitiesMappedProperties.Add(property.Name + "_" + ownedEntityProperty.Name);
+                            string? columnName = ownedEntityProperty.GetColumnName(objectIdentifier);
+                            if (columnName is not null && tableInfo.PropertyColumnNamesDict.ContainsValue(columnName))
+                            {
+                                ownedEntityPropertyNameColumnNameDict.Add(ownedEntityProperty.Name, columnName);
+                                ownedEntitiesMappedProperties.Add(prefix + ownedEntityProperty.Name);
+                            }
                         }
                     }
-                }
 
-                var innerProperties = property.PropertyType.GetProperties();
-                if (!tableInfo.LoadOnlyPKColumn)
-                {
-                    foreach (var innerProperty in innerProperties)
+                    if (!tableInfo.LoadOnlyPKColumn)
                     {
-                        if (ownedEntityPropertyNameColumnNameDict.ContainsKey(innerProperty.Name))
+                        foreach (var innerProperty in property.PropertyType.GetProperties())
                         {
-                            var columnName = ownedEntityPropertyNameColumnNameDict[innerProperty.Name];
-                            var propertyName = $"{property.Name}_{innerProperty.Name}";
+                            var propertyName = $"{prefix}{innerProperty.Name}";
 
-                            if (tableInfo.ConvertibleColumnConverterDict.ContainsKey(propertyName))
+                            if (ownedEntityPropertyNameColumnNameDict.TryGetValue(innerProperty.Name, out var columnName))
                             {
-                                var convertor = tableInfo.ConvertibleColumnConverterDict[propertyName];
-                                var underlyingType = Nullable.GetUnderlyingType(convertor.ProviderClrType) ?? convertor.ProviderClrType;
-          
-                                dataTable.Columns.Add(columnName, underlyingType);
-                            }
-                            else
-                            {
-                                var ownedPropertyType = Nullable.GetUnderlyingType(innerProperty.PropertyType) ?? innerProperty.PropertyType;
-                                
-                                if (isSqlServer && (ownedPropertyType == typeof(Geometry) || ownedPropertyType.IsSubclassOf(typeof(Geometry))))
+                                if (tableInfo.ConvertibleColumnConverterDict.TryGetValue(propertyName, out var convertor))
                                 {
-                                    ownedPropertyType = typeof(byte[]);
-                                    tableInfo.HasSpatialType = true;
-                                    if (tableInfo.BulkConfig.PropertiesToIncludeOnCompare != null || tableInfo.BulkConfig.PropertiesToIncludeOnCompare != null)
+                                    var underlyingType = Nullable.GetUnderlyingType(convertor.ProviderClrType) ?? convertor.ProviderClrType;
+
+                                    dataTable.Columns.Add(columnName, underlyingType);
+                                }
+                                else
+                                {
+                                    var ownedPropertyType = Nullable.GetUnderlyingType(innerProperty.PropertyType) ?? innerProperty.PropertyType;
+
+                                    if (isSqlServer && (ownedPropertyType == typeof(Geometry) || ownedPropertyType.IsSubclassOf(typeof(Geometry))))
                                     {
-                                        throw new InvalidOperationException("OnCompare properties Config can not be set for Entity with Spatial types like 'Geometry'");
+                                        ownedPropertyType = typeof(byte[]);
+                                        tableInfo.HasSpatialType = true;
+                                        if (tableInfo.BulkConfig.PropertiesToIncludeOnCompare != null)
+                                        {
+                                            throw new InvalidOperationException("OnCompare properties Config can not be set for Entity with Spatial types like 'Geometry'");
+                                        }
                                     }
-                                }
 
-                                if (isSqlServer && (ownedPropertyType == typeof(HierarchyId) || ownedPropertyType.IsSubclassOf(typeof(HierarchyId))))
-                                {
-                                    ownedPropertyType = typeof(byte[]);
-                                }
+                                    if (isSqlServer && (ownedPropertyType == typeof(HierarchyId) || ownedPropertyType.IsSubclassOf(typeof(HierarchyId))))
+                                    {
+                                        ownedPropertyType = typeof(byte[]);
+                                    }
 
-                                dataTable.Columns.Add(columnName, ownedPropertyType);
+                                    dataTable.Columns.Add(columnName, ownedPropertyType);
+                                }
+                                columnsDict.Add(propertyName, null);
                             }
-                            columnsDict.Add(property.Name + "_" + innerProperty.Name, null);
+                            else if (tableInfo.OwnedRegularTypesDict.TryGetValue(propertyName, out var navigation) && navigation.PropertyInfo is not null)
+                            {
+                                AddOwnedType(navigation.PropertyInfo, prefix);
+                            }
                         }
                     }
                 }
@@ -778,31 +778,44 @@ public class SqlServerAdapter : ISqlOperationsAdapter
                 }
                 else if (entityNavigationOwnedDict.ContainsKey(property.Name) && !tableInfo.OwnedJsonTypesDict.ContainsKey(property.Name) && !tableInfo.LoadOnlyPKColumn)
                 {
-                    var ownedProperties = property.PropertyType.GetProperties().Where(a => ownedEntitiesMappedProperties.Contains(property.Name + "_" + a.Name));
-                    foreach (var ownedProperty in ownedProperties)
+                    FillOwnedType(property, propertyValue);
+
+                    void FillOwnedType(PropertyInfo property, object? propertyValue, string prefix = "")
                     {
-                        var columnName = $"{property.Name}_{ownedProperty.Name}";
-                        var ownedPropertyValue = propertyValue == null ? null : tableInfo.FastPropertyDict[columnName].Get(propertyValue);
-
-                        if (tableInfo.ConvertibleColumnConverterDict.ContainsKey(columnName))
+                        prefix += $"{property.Name}_";
+                        foreach (var ownedProperty in property.PropertyType.GetProperties())
                         {
-                            var converter = tableInfo.ConvertibleColumnConverterDict[columnName];
-                            columnsDict[columnName] = ownedPropertyValue == null ? null : converter.ConvertToProvider.Invoke(ownedPropertyValue);
-                        }
-                        else if(tableInfo.HasSpatialType && ownedPropertyValue is Geometry ownedGeometryValue)
-                        {
-                            ownedGeometryValue.SRID = tableInfo.BulkConfig.SRID;
-
-                            if (tableInfo.PropertyColumnNamesDict.ContainsKey(property.Name))
+                            var propertyName = $"{prefix}{ownedProperty.Name}";
+                            if (ownedEntitiesMappedProperties.Contains(propertyName))
                             {
-                                sqlServerBytesWriter.IsGeography = tableInfo.ColumnNamesTypesDict[tableInfo.PropertyColumnNamesDict[property.Name]] == "geography"; // "geography" type is default, otherwise it's "geometry" type
-                            }
+                                var ownedPropertyValue = propertyValue == null ? null : tableInfo.FastPropertyDict[propertyName].Get(propertyValue);
 
-                            columnsDict[columnName] = sqlServerBytesWriter.Write(ownedGeometryValue);
-                        }
-                        else
-                        {
-                            columnsDict[columnName] = ownedPropertyValue;
+                                if (tableInfo.ConvertibleColumnConverterDict.TryGetValue(propertyName, out var converter))
+                                {
+                                    columnsDict[propertyName] = ownedPropertyValue == null ? null : converter.ConvertToProvider.Invoke(ownedPropertyValue);
+                                }
+                                else if (tableInfo.HasSpatialType && ownedPropertyValue is Geometry ownedGeometryValue)
+                                {
+                                    ownedGeometryValue.SRID = tableInfo.BulkConfig.SRID;
+
+                                    if (tableInfo.PropertyColumnNamesDict.TryGetValue(property.Name, out string? colName))
+                                    {
+                                        sqlServerBytesWriter.IsGeography = tableInfo.ColumnNamesTypesDict[colName] == "geography"; // "geography" type is default, otherwise it's "geometry" type
+                                    }
+
+                                    columnsDict[propertyName] = sqlServerBytesWriter.Write(ownedGeometryValue);
+                                }
+                                else
+                                {
+                                    columnsDict[propertyName] = ownedPropertyValue;
+                                }
+                            }
+                            else if (tableInfo.OwnedRegularTypesDict.TryGetValue(propertyName, out var navigation) && navigation.PropertyInfo is not null)
+                            {
+                                // recurse for nested owned types
+                                var ownedPropertyValue = propertyValue == null ? null : tableInfo.FastPropertyDict[propertyName].Get(propertyValue);
+                                FillOwnedType(navigation.PropertyInfo, ownedPropertyValue, prefix);
+                            }
                         }
                     }
                 }
@@ -833,9 +846,9 @@ public class SqlServerAdapter : ISqlOperationsAdapter
                         propertyValue = tableInfo.BulkConfig.ShadowPropertyValue(entity!, shadowPropertyName);
                     }
 
-                    if (tableInfo.ConvertibleColumnConverterDict.ContainsKey(columnName))
+                    if (tableInfo.ConvertibleColumnConverterDict.TryGetValue(columnName, out var convertor))
                     {
-                        propertyValue = tableInfo.ConvertibleColumnConverterDict[columnName].ConvertToProvider.Invoke(propertyValue);
+                        propertyValue = convertor.ConvertToProvider.Invoke(propertyValue);
                     }
 
                     columnsDict[shadowPropertyName] = propertyValue;
