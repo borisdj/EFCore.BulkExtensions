@@ -683,7 +683,7 @@ public static class BatchUtil
             return null;
 
         var relationalTypeMapping = propertyInfo?.GetRelationalTypeMapping();
-        using var dbCommand = new SqlCommand(); int x = 1;
+        using var dbCommand = new SqlCommand();
         try
         {
             return relationalTypeMapping?.CreateParameter(dbCommand, parameterName, value, propertyInfo?.IsNullable);
