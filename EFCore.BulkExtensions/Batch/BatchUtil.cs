@@ -640,6 +640,7 @@ public static class BatchUtil
 
         if (columnName != null && (tableInfo?.ConvertibleColumnConverterDict.TryGetValue(columnName, out var valueConverter) ?? false))
         {
+            // should enter this segment when using NodaTime.Instant, but does not
             value = valueConverter.ConvertToProvider.Invoke(value);
         }
 
