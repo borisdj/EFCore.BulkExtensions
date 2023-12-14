@@ -1,11 +1,11 @@
 @echo off 
     setlocal enableextensions disabledelayedexpansion
 	
-    set "search=^>7.1.6"
-    set "replace=^>8.0.0"
+    set "search=^>8.0.0"
+    set "replace=^>8.0.1"
 	
-	set "search2=Minor fixes"
-    set "replace2=EF 8"
+	set "search2=EF 8"
+    set "replace2=updates"
 	
     set "textFile1=..\EFCore.BulkExtensions.PerProvider\EFCore.BulkExtensions.MySql\EFCore.BulkExtensions.MySql.csproj"
 	set "textFile2=..\EFCore.BulkExtensions.PerProvider\EFCore.BulkExtensions.PostgreSql\EFCore.BulkExtensions.PostgreSql.csproj"
