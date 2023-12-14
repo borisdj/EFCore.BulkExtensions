@@ -361,10 +361,10 @@ public static class BatchUtil
                     sql += $"[{columnName}] = @{columnName}, ";
                     var parameterName = $"@{columnName}";
                     IDbDataParameter? param = TryCreateRelationalMappingParameter(
+                        tableInfo,
                         columnName,
                         parameterName,
-                        propertyUpdateValue,
-                        tableInfo);
+                        propertyUpdateValue);
 
                     if (param == null)
                     {
@@ -638,14 +638,14 @@ public static class BatchUtil
     {
         var paramName = $"@param_{sqlParameters.Count}";
 
+        var valueOrig = value;
         if (columnName != null && (tableInfo?.ConvertibleColumnConverterDict.TryGetValue(columnName, out var valueConverter) ?? false))
         {
-            // should enter this segment when using NodaTime.Instant, but does not
             value = valueConverter.ConvertToProvider.Invoke(value);
         }
 
         // will rely on SqlClientHelper.CorrectParameterType to fix the type before executing
-        var sqlParameter = TryCreateRelationalMappingParameter(columnName, paramName, value, tableInfo);
+        var sqlParameter = TryCreateRelationalMappingParameter(tableInfo, columnName, paramName, value, valueOrig);
         if (sqlParameter == null)
         {
             sqlParameter = new SqlParameter(paramName, value ?? DBNull.Value);
@@ -673,7 +673,7 @@ public static class BatchUtil
     /// Attempt to create a DbParameter using the 'RelationalTypeMapping.CreateParameter(DbCommand, string, object, bool?)'
     /// call for the specified column name.
     /// </summary>
-    public static DbParameter? TryCreateRelationalMappingParameter(string? columnName, string parameterName, object? value, TableInfo? tableInfo)
+    public static DbParameter? TryCreateRelationalMappingParameter(TableInfo? tableInfo, string? columnName, string parameterName, object? value, object? valueOrig = null)
     {
         if (columnName == null)
             return null;
@@ -682,14 +682,20 @@ public static class BatchUtil
         if (!tableInfo?.ColumnToPropertyDictionary.TryGetValue(columnName, out propertyInfo) ?? false)
             return null;
 
+        var relationalTypeMapping = propertyInfo?.GetRelationalTypeMapping();
+        using var dbCommand = new SqlCommand(); int x = 1;
         try
         {
-            var relationalTypeMapping = propertyInfo?.GetRelationalTypeMapping();
-
-            using var dbCommand = new SqlCommand();
             return relationalTypeMapping?.CreateParameter(dbCommand, parameterName, value, propertyInfo?.IsNullable);
         }
-        catch (Exception) { }
+        catch (Exception)
+        {
+            try
+            {
+                return relationalTypeMapping?.CreateParameter(dbCommand, parameterName, valueOrig, propertyInfo?.IsNullable); // fix for EnumToStringValue or NodaTime.Instant
+            }
+            catch (Exception) { }
+        }
 
         return null;
     }

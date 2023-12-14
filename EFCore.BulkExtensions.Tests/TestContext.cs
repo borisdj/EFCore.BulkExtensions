@@ -1026,3 +1026,13 @@ public class GraphQLModel
 
     public string? Name { get; set; }
 }
+
+public class Article
+{
+    [Key]
+    [GraphQLType(typeof(IdType))]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    public virtual System.Guid Id { get; set; }
+
+    public string? Name { get; set; }
+}

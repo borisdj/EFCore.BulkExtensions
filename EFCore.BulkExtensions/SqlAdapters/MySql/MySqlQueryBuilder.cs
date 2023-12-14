@@ -124,9 +124,13 @@ public class MySqlQueryBuilder : SqlQueryBuilder
                 if (operationType == OperationType.Insert || operationType == OperationType.InsertOrUpdate)
                 {
                     q += $"INSERT INTO {tableInfo.FullTempOutputTableName} " +
-                         $"SELECT * FROM {tableInfo.FullTableName} " +
-                         $"WHERE {firstPrimaryKey} >= LAST_INSERT_ID() " +
-                         $"AND {firstPrimaryKey} < LAST_INSERT_ID() + row_count(); ";
+                    $"SELECT * FROM {tableInfo.FullTableName} ";
+                    if (tableInfo.HasIdentity)
+                    {
+                        q += $"WHERE {firstPrimaryKey} >= LAST_INSERT_ID() " +
+                        $"AND {firstPrimaryKey} < LAST_INSERT_ID() + row_count(); ";
+                    }
+                    q += "; ";
                 }
                 else if (operationType == OperationType.Update)
                 {
