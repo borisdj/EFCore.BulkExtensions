@@ -415,16 +415,6 @@ public static class ModelBuilderExtensions
     }
 }
 
-public class GraphQLModel
-{
-    [Key]
-    [GraphQLType(typeof(IdType))]
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    public virtual System.Guid Id { get; set; }
-
-    public string? Name { get; set; }
-}
-
 public class Item
 {
     public Item()
@@ -1025,4 +1015,14 @@ public class Partner
     [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
     [Column("xmin", TypeName = "xid")]
     public uint RowVersion { get; set; }
+}
+
+public class GraphQLModel
+{
+    [Key]
+    [GraphQLType(typeof(IdType))]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    public virtual System.Guid Id { get; set; }
+
+    public string? Name { get; set; }
 }
