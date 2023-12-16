@@ -90,7 +90,7 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
                         columnType = "character";             // 'character' is like 'string'
                     else if (columnType.StartsWith("varchar"))
                         columnType = "varchar";
-                    else if (columnType.StartsWith("numeric"))
+                    else if (columnType.StartsWith("numeric") && columnType != "numeric[]")
                         columnType = "numeric";
 
                     if (columnType.StartsWith("timestamp(")) // timestamp(n) | len:12 // TEST: TimeStamp2PGTest
