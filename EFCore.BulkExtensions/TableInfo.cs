@@ -1,5 +1,6 @@
 using EFCore.BulkExtensions.SqlAdapters;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
@@ -631,9 +632,13 @@ public class TableInfo
                                 }
                             }
                         }
-                        // add nested owned types recursively
-                        foreach (var ownedNavigationProperty in ownedEntityType?.GetNavigations()
-                            .Where(a => a.TargetEntityType.IsOwned() && !a.TargetEntityType.IsMappedToJson()) ?? [])
+                        IEnumerable<INavigation>? ownedTypes;
+#if NET6_0
+                        ownedTypes = ownedEntityType?.GetNavigations().Where(a => a.TargetEntityType.IsOwned() && !a.TargetEntityType.IsMappedToJson());
+#else
+                        ownedTypes = ownedEntityType?.GetNavigations().Where(a => a.TargetEntityType.IsOwned() && !a.TargetEntityType.IsMappedToJson());
+#endif
+                        foreach (var ownedNavigationProperty in ownedTypes ?? [])
                         {
                             AddOwnedType(ownedNavigationProperty, prefix);
                         }
