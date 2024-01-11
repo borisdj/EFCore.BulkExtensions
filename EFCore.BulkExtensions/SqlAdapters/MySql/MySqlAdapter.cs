@@ -489,7 +489,7 @@ public class MySqlAdapter : ISqlOperationsAdapter
 
                 if (isMySql && (propertyType == typeof(Geometry) || propertyType.IsSubclassOf(typeof(Geometry))))
                 {
-                    propertyType = typeof(byte[]);
+                    propertyType = typeof(MySqlGeometry);
                     tableInfo.HasSpatialType = true;
                     if (tableInfo.BulkConfig.PropertiesToIncludeOnCompare != null || tableInfo.BulkConfig.PropertiesToIncludeOnCompare != null)
                     {
@@ -686,7 +686,15 @@ public class MySqlAdapter : ISqlOperationsAdapter
                     string columnName = tableInfo.ConvertiblePropertyColumnDict[property.Name];
                     propertyValue = tableInfo.ConvertibleColumnConverterDict[columnName].ConvertToProvider.Invoke(propertyValue);
                 }
+
                 //TODO: Hamdling special types
+
+                if (tableInfo.HasSpatialType && propertyValue is Geometry geometryValue)
+                {
+                    geometryValue.SRID = tableInfo.BulkConfig.SRID;
+                    var wkb = geometryValue.ToBinary();
+                    propertyValue = MySqlGeometry.FromWkb(geometryValue.SRID, wkb);
+                }
 
                 if (propertyValue is HierarchyId hierarchyValue && isMySql)
                 {
