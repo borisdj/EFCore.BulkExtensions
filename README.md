@@ -25,7 +25,7 @@ If eligible for free usage but still need  active support, consider purchasing S
 
 ## Support
 If you find this project useful you can mark it by leaving a Github **Star** :star:  
-Even with community license, if you want help development, you can make a DONATION:  
+And even with community license, if you want help development, you can make a DONATION:  
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/yellow_img.png)](https://www.buymeacoffee.com/boris.dj) _ or _ 
 [![Button](https://img.shields.io/badge/donate-Bitcoin-orange.svg?logo=bitcoin):zap:](https://borisdj.net/donation/donate-btc.html)  
 
