@@ -4,7 +4,7 @@ EntityFrameworkCore extensions:
 -Batch ops: **Delete, Update** - Deprecated from EF8 since EF7+ has native Execute-Up/Del; and **Truncate**.  
 Library is Lightweight and very Efficient, having all mostly used [CRUD](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete) operation.  
 Was selected in top 20 [EF Core Extensions](https://docs.microsoft.com/en-us/ef/core/extensions/) recommended by Microsoft.  
-Latest version is using EF Core 7.  
+Latest version is using EF Core 8.  
 Supports all 4 mayor sql databases: **SQLServer, PostgreSQL, MySQL, SQLite.**  
 Check out [Testimonials](https://docs.google.com/spreadsheets/d/e/2PACX-1vShdv2sTm3oQfowm9kVIx-PLBCk1lGQEa9E6n92-dX3pni7-XQUEp6taVcMSZVi9BaSAizv1YanWTy3/pubhtml?gid=801420190&single=true) from the Community and User Comments.
 
