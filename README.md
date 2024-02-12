@@ -20,12 +20,12 @@ Also you can look into others authored packages:
 
 ## License
 *BulkExtensions [licensed](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE.txt) under [**Dual License v1.0**](https://codis.tech/efcorebulk/) (solution to OpenSource funding, cFOSS: conditionallyFree OSS).  
-If you do not meet criteria for free usage with community license then you have to buy commercial one.  
-If eligible for free usage but still want to help development and have active support, consider purchasing Starter Lic.  
+If you do not meet criteria for free usage of software with community license then you have to buy commercial one.  
+If eligible for free usage but still need  active support, consider purchasing Starter Lic.  
 
 ## Support
 If you find this project useful you can mark it by leaving a Github **Star** :star:  
-And even with community license you can make a DONATION:  
+And even with community license, if you want help with development, you can make a DONATION:  
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/yellow_img.png)](https://www.buymeacoffee.com/boris.dj) _ or _ 
 [![Button](https://img.shields.io/badge/donate-Bitcoin-orange.svg?logo=bitcoin):zap:](https://borisdj.net/donation/donate-btc.html)  
 
