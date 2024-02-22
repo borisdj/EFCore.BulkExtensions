@@ -652,7 +652,6 @@ public class TableInfo
                 foreach (var jsonProperty in jsonTypes)
                 {
                     var property = jsonProperty.PropertyInfo;
-                    FastPropertyDict.Add(property!.Name, FastProperty.GetOrCreate(property));
 
                     //var value = FastPropertyDict[property?.Name!].Get(jsonProperty);
                     //var jsonValue = System.Text.Json.JsonSerializer.Serialize(value);
@@ -660,10 +659,18 @@ public class TableInfo
 
                     string columnName = property?.Name!;
                     string propertyName = property?.Name!;
-                    PropertyColumnNamesDict.Add(propertyName, columnName);
-                    PropertyColumnNamesCompareDict.Add(propertyName, columnName);
-                    PropertyColumnNamesUpdateDict.Add(propertyName, columnName);
-                    OutputPropertyColumnNamesDict.Add(propertyName, columnName);
+
+                    bool skipColumn = (BulkConfig.PropertiesToInclude != null && !BulkConfig.PropertiesToInclude.Contains(propertyName)) ||
+                                      (BulkConfig.PropertiesToExclude != null && BulkConfig.PropertiesToExclude.Contains(propertyName));
+
+                    if (!skipColumn)
+                    {
+                        FastPropertyDict.Add(property!.Name, FastProperty.GetOrCreate(property));
+                        PropertyColumnNamesDict.Add(propertyName, columnName);
+                        PropertyColumnNamesCompareDict.Add(propertyName, columnName);
+                        PropertyColumnNamesUpdateDict.Add(propertyName, columnName);
+                        OutputPropertyColumnNamesDict.Add(propertyName, columnName);
+                    }
                 }
             }
         }

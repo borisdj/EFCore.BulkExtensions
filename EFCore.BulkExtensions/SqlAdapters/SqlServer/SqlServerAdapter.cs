@@ -641,7 +641,11 @@ public class SqlServerAdapter : ISqlOperationsAdapter
                     }
                 }
             }
-            else if (tableInfo.OwnedJsonTypesDict.ContainsKey(property.Name) && tableInfo.BulkConfig.OperationType != OperationType.Read) // isJson
+            else if (
+                tableInfo.OwnedJsonTypesDict.ContainsKey(property.Name) && // isJson
+                tableInfo.FastPropertyDict.ContainsKey(property.Name) &&
+                tableInfo.BulkConfig.OperationType != OperationType.Read
+                )
             {
                 dataTable.Columns.Add(property.Name, typeof(string));
                 columnsDict.Add(property.Name, null);
@@ -819,7 +823,10 @@ public class SqlServerAdapter : ISqlOperationsAdapter
                         }
                     }
                 }
-                else if (tableInfo.OwnedJsonTypesDict.ContainsKey(property.Name) && !tableInfo.LoadOnlyPKColumn && tableInfo.BulkConfig.OperationType != OperationType.Read) // isJson
+                else if (tableInfo.OwnedJsonTypesDict.ContainsKey(property.Name) && // isJson
+                         tableInfo.FastPropertyDict.ContainsKey(property.Name) &&
+                         tableInfo.BulkConfig.OperationType != OperationType.Read &&
+                        !tableInfo.LoadOnlyPKColumn)
                 {
                     var columnName = property.Name; // TODO if Diff
                     var jsonPropertyValue = tableInfo.FastPropertyDict[columnName].Get(entity!);

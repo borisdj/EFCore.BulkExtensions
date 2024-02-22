@@ -1398,6 +1398,19 @@ public class EFCoreBulkTestAtypical
         };
         context.BulkRead(list2);
         Assert.Equal("At2", list2.FirstOrDefault()?.Name);
+
+        var list3 = new List<Author>
+        {
+            new Author
+            {
+                Id = 1,
+                Name = "At3",
+            }
+        };
+        var bulkConfig = new BulkConfig { PropertiesToInclude = new List<string> { "Name" } };
+        context.BulkUpdate(list3, bulkConfig);
+        var authorReloaded = context.Authors.FirstOrDefault()!;
+        Assert.NotNull(authorReloaded.Contact);
     }
 
     [Theory]

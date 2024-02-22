@@ -20,7 +20,6 @@ namespace EFCore.BulkExtensions.Tests;
 
 public class TestContext : DbContext
 {
-
     public DbSet<Item> Items { get; set; } = null!;
     public DbSet<ItemHistory> ItemHistories { get; set; } = null!;
 
