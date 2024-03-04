@@ -93,10 +93,11 @@ internal static class DbContextBulkTransactionSaveChanges
         var connection = context.GetUnderlyingConnection(bulkConfig);
 
         var hasExistingTransaction = context.Database.CurrentTransaction != null || Transaction.Current != null;
-        var transaction = hasExistingTransaction ? null : context.Database.CurrentTransaction ?? context.Database.BeginTransaction();
 
         try
         {
+
+            var transaction = hasExistingTransaction ? null : context.Database.CurrentTransaction ?? context.Database.BeginTransaction();
 
             if (option == 1)
             {
