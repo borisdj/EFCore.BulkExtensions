@@ -134,11 +134,63 @@ public static class BatchUtil
 
         sqlParameters = ReloadSqlParameters(context, sqlParameters); // Sqlite requires SqliteParameters
 
-        var resultQuery = $"{leadingComments}UPDATE {topStatement}{tableAlias}{tableAliasSufixAs} {sqlSET}{sql}";
+        var (resultQuery, sqlParametersResult) = PrepareSqlUpdate(type, sqlParameters, sql, sqlSET, tableAlias, tableAliasSufixAs, topStatement, leadingComments, null);
+        return (resultQuery, sqlParametersResult);
+    }
+
+    /// <summary>
+    /// get Update Sql
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="query"></param>
+    /// <param name="expression"></param>
+    /// <param name="context"></param>
+    /// <param name="type"></param>
+    /// <returns></returns>
+    public static (string, List<object>) GetSqlUpdate<T>(IQueryable<T> query, DbContext context, Type type, Expression<Func<T, T>> expression) where T : class
+    {
+        (string sql, string tableAlias, string tableAliasSufixAs, string topStatement, string leadingComments, IEnumerable<object> innerParameters) = GetBatchSql(query, context, isUpdate: true);
+
+        var createUpdateBodyData = new BatchUpdateCreateBodyData(sql, context, innerParameters, query, type, tableAlias, expression);
+
+        CreateUpdateBody(createUpdateBodyData, expression.Body);
+
+        var sqlParameters = ReloadSqlParameters(context, createUpdateBodyData.SqlParameters); // Sqlite requires SqliteParameters
+        var sqlColumns = (createUpdateBodyData.DatabaseType == SqlType.SqlServer) 
+            ? createUpdateBodyData.UpdateColumnsSql
+            : createUpdateBodyData.UpdateColumnsSql.Replace($"[{tableAlias}].", "");
+
+        string sqlSET = $"SET {sqlColumns}";
+
+        var (resultQuery, sqlParametersResult) = PrepareSqlUpdate(type, sqlParameters, sql, sqlSET, tableAlias, tableAliasSufixAs, topStatement, leadingComments, sqlColumns);
+        return (resultQuery, sqlParametersResult);
+    }
+
+    /// <summary>
+    /// PrepareSqlUpdate
+    /// </summary>
+    /// <param name="type"></param>
+    /// <param name="sqlParameters"></param>
+    /// <param name="sql"></param>
+    /// <param name="sqlSET"></param>
+    /// <param name="tableAlias"></param>
+    /// <param name="tableAliasSufixAs"></param>
+    /// <param name="topStatement"></param>
+    /// <param name="leadingComments"></param>
+    /// <param name="sqlColumns"></param>
+    /// <returns></returns>
+    public static (string, List<object>) PrepareSqlUpdate(Type type, List<object> sqlParameters, string sql, string sqlSET, string tableAlias, string tableAliasSufixAs, string topStatement, string leadingComments, StringBuilder? sqlColumns)
+    {
+        var resultQuery = $"{leadingComments}UPDATE {topStatement}{tableAlias}{tableAliasSufixAs} {sqlSET} {sql}";
 
         if (resultQuery.Contains("ORDER") && resultQuery.Contains("TOP"))
         {
-            resultQuery = $"WITH C AS (SELECT {topStatement}*{sql}) UPDATE C {sqlSET}";
+            if (sqlColumns != null) // CHECK : remove if so Replace to be always called
+            {
+                string tableAliasPrefix = "[" + tableAlias + "].";
+                sqlSET = sqlSET.Replace(tableAliasPrefix, "");
+            }
+            resultQuery = $"WITH C AS (SELECT {topStatement}*{sql}) UPDATE C SET {sqlSET}";
         }
         if (resultQuery.Contains("ORDER") && !resultQuery.Contains("TOP")) // When query has ORDER only without TOP(Take) then it is removed since not required and to avoid invalid Sql
         {
@@ -187,65 +239,6 @@ public static class BatchUtil
                 mysqlParameters.Add(mysqlParam);
             }
             sqlParameters = mysqlParameters;
-        }
-
-        return (resultQuery, sqlParameters);
-    }
-
-    /// <summary>
-    /// get Update Sql
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="query"></param>
-    /// <param name="expression"></param>
-    /// <param name="context"></param>
-    /// <param name="type"></param>
-    /// <returns></returns>
-    public static (string, List<object>) GetSqlUpdate<T>(IQueryable<T> query, DbContext context, Type type, Expression<Func<T, T>> expression) where T : class
-    {
-        (string sql, string tableAlias, string tableAliasSufixAs, string topStatement, string leadingComments, IEnumerable<object> innerParameters) = GetBatchSql(query, context, isUpdate: true);
-
-        var createUpdateBodyData = new BatchUpdateCreateBodyData(sql, context, innerParameters, query, type, tableAlias, expression);
-
-        CreateUpdateBody(createUpdateBodyData, expression.Body);
-
-        var sqlParameters = ReloadSqlParameters(context, createUpdateBodyData.SqlParameters); // Sqlite requires SqliteParameters
-        var sqlColumns = (createUpdateBodyData.DatabaseType == SqlType.SqlServer) 
-            ? createUpdateBodyData.UpdateColumnsSql
-            : createUpdateBodyData.UpdateColumnsSql.Replace($"[{tableAlias}].", "");
-
-        var resultQuery = $"{leadingComments}UPDATE {topStatement}{tableAlias}{tableAliasSufixAs} SET {sqlColumns} {sql}";
-
-        if (resultQuery.Contains("ORDER") && resultQuery.Contains("TOP"))
-        {
-            string tableAliasPrefix = "[" + tableAlias + "].";
-            resultQuery = $"WITH C AS (SELECT {topStatement}*{sql}) UPDATE C SET {sqlColumns.Replace(tableAliasPrefix, "")}";
-        }
-        if (resultQuery.Contains("ORDER") && !resultQuery.Contains("TOP")) // When query has ORDER only without TOP(Take) then it is removed since not required and to avoid invalid Sql
-        {
-            resultQuery = resultQuery.Split("ORDER", StringSplitOptions.None)[0];
-        }
-
-        var databaseType = SqlAdaptersMapping.GetDatabaseType();
-        if (databaseType == SqlType.PostgreSql)
-        {
-            resultQuery = SqlAdaptersMapping.DbServer!.QueryBuilder.RestructureForBatch(resultQuery);
-
-            var npgsqlParameters = new List<object>();
-            foreach (var param in sqlParameters)
-            {
-                dynamic npgsqlParam = SqlAdaptersMapping.DbServer!.QueryBuilder.CreateParameter((SqlParameter)param);
-
-                string paramName = npgsqlParam.ParameterName.Replace("@", "");
-                var propertyType = type.GetProperties().SingleOrDefault(a => a.Name == paramName)?.PropertyType;
-                if (propertyType == typeof(System.Text.Json.JsonElement) || propertyType == typeof(System.Text.Json.JsonElement?))
-                {
-                    npgsqlParam.NpgsqlDbType = SqlAdaptersMapping.DbServer!.QueryBuilder.Dbtype();
-                }
-
-                npgsqlParameters.Add(npgsqlParam);
-            }
-            sqlParameters = npgsqlParameters;
         }
 
         return (resultQuery, sqlParameters);
