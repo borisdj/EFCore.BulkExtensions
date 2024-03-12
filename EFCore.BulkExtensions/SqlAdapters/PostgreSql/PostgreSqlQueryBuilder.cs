@@ -264,7 +264,7 @@ public class PostgreSqlQueryBuilder : SqlQueryBuilder
         bool usePG_Catalog = true; // PG_Catalog used instead of Information_Schema
         if (usePG_Catalog)
         {
-            q = @"SELECT COUNT(*)
+            q = @"SELECT COUNT(distinct c.conname)
                   FROM pg_catalog.pg_namespace nr,
                       pg_catalog.pg_class r,
                       pg_catalog.pg_attribute a,
