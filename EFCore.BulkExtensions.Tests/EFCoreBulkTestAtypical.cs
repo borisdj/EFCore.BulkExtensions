@@ -853,7 +853,8 @@ public class EFCoreBulkTestAtypical
                     Street = "Some Street nn",
                     LocationGeography = new Point(52, 13),
                     LocationGeometry = new Point(52, 13),
-                    GeoLine = new LineString(new List<Coordinate> { new Coordinate(52, 13), new Coordinate(50, 12) }.ToArray())
+                    GeoLine = new LineString(new List<Coordinate> { new Coordinate(52, 13), new Coordinate(50, 12) }.ToArray()) { SRID = 4326 },
+                    GeoPoint = new Point(52, 13) { SRID = 4326 }
                 }
             };
 

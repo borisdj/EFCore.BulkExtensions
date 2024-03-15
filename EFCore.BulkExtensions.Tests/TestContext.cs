@@ -203,7 +203,13 @@ public class TestContext : DbContext
 
             modelBuilder.Entity<ItemHistory>().ToTable(nameof(ItemHistory));
 
-            modelBuilder.Entity<Address>().Ignore(p => p.GeoLine); // throws: SQLite Error 19: 'Address.GeoLine violates Geometry constraint [geom-type or SRID 
+            modelBuilder.Entity<Address>()
+                .Property(p => p.GeoLine)
+                .HasSrid(4326);
+
+            modelBuilder.Entity<Address>()
+                .Property(p => p.GeoPoint)
+                .HasSrid(4326);
         }
 
         if (Database.IsMySql())
@@ -594,6 +600,7 @@ public class Address
     public Geometry LocationGeography { get; set; } = null!;
     public Geometry LocationGeometry { get; set; } = null!;
     public LineString? GeoLine { get; set; }
+    public Point? GeoPoint { get; set; }
 }
 
 public class Category

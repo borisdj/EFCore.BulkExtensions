@@ -492,16 +492,10 @@ public class SqliteAdapter : ISqlOperationsAdapter
 
             string columnName = propertyColumn.Value;
             string typeName = tableInfo.ColumnNamesTypesDict[columnName];
-            if (value != null && typeName == nameof(Geometry).ToUpper()) // spatial types
+
+            if (value is Geometry geo) // spatial types
             {
-                param.Value = new GaiaGeoWriter().Write((Geometry)value);
-            }
-            else if (value != null && typeName == nameof(LineString).ToUpper())
-            {
-                LineString lineString = (LineString)value;
-                if (lineString.SRID == 0)
-                    lineString.SRID = tableInfo.BulkConfig.SRID;
-                param.Value = new GaiaGeoWriter().Write(lineString);
+                param.Value = CreateWriter(typeName).Write(geo);
             }
             else
             {
@@ -541,6 +535,63 @@ public class SqliteAdapter : ISqlOperationsAdapter
 
             counter--;
         }
+    }
+
+    private static GaiaGeoWriter CreateWriter(string storeType)
+    {
+        Ordinates handleOrdinates;
+
+        switch (storeType.ToUpperInvariant())
+        {
+            case "POINT":
+            case "LINESTRING":
+            case "POLYGON":
+            case "MULTIPOINT":
+            case "MULTILINESTRING":
+            case "MULTIPOLYGON":
+            case "GEOMETRYCOLLECTION":
+            case "GEOMETRY":
+                handleOrdinates = Ordinates.XY;
+                break;
+
+            case "POINTZ":
+            case "LINESTRINGZ":
+            case "POLYGONZ":
+            case "MULTIPOINTZ":
+            case "MULTILINESTRINGZ":
+            case "MULTIPOLYGONZ":
+            case "GEOMETRYCOLLECTIONZ":
+            case "GEOMETRYZ":
+                handleOrdinates = Ordinates.XYZ;
+                break;
+
+            case "POINTM":
+            case "LINESTRINGM":
+            case "POLYGONM":
+            case "MULTIPOINTM":
+            case "MULTILINESTRINGM":
+            case "MULTIPOLYGONM":
+            case "GEOMETRYCOLLECTIONM":
+            case "GEOMETRYM":
+                handleOrdinates = Ordinates.XYM;
+                break;
+
+            case "POINTZM":
+            case "LINESTRINGZM":
+            case "POLYGONZM":
+            case "MULTIPOINTZM":
+            case "MULTILINESTRINGZM":
+            case "MULTIPOLYGONZM":
+            case "GEOMETRYCOLLECTIONZM":
+            case "GEOMETRYZM":
+                handleOrdinates = Ordinates.XYZM;
+                break;
+
+            default:
+                throw new ArgumentException("Invalid GeometryType", nameof(storeType));
+        }
+
+        return new GaiaGeoWriter { HandleOrdinates = handleOrdinates };
     }
     #endregion
 }
