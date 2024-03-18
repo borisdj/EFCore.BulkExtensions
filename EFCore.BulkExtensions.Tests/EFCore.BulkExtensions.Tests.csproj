@@ -16,7 +16,7 @@
     <PackageReference Include="HotChocolate.Abstractions" Version="13.8.1" />
     <PackageReference Include="HotChocolate.Types" Version="13.8.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.NetTopologySuite" Version="8.0.2" />
-	<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.2" />
+	<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.3" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" Version="8.0.2" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
