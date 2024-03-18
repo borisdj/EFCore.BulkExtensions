@@ -20,7 +20,6 @@ public class MySqlQueryBuilder : SqlQueryBuilder
     /// <param name="useTempDb"></param>
     public static string CreateTableCopy(string existingTableName, string newTableName, bool useTempDb)
     {
-        useTempDb = false;
         string keywordTemp = useTempDb ? "TEMPORARY " : "";
 
         //var query = $"CREATE {keywordTemp}TABLE {newTableName} " +
@@ -39,7 +38,6 @@ public class MySqlQueryBuilder : SqlQueryBuilder
     /// <returns></returns>
     public override string DropTable(string tableName, bool isTempTable)
     {
-        isTempTable = false;
         string keywordTemp = isTempTable ? "TEMPORARY " : "";
         var query = $"DROP {keywordTemp}TABLE IF EXISTS {tableName}";
         query = query.Replace("[", "`").Replace("]", "`");

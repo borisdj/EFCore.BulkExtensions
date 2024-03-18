@@ -127,7 +127,7 @@ public class MySqlAdapter : ISqlOperationsAdapter
             {
                 tableInfo.InsertToTempTable = true;
 
-                var sqlCreateTableCopy = MySqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo.InsertToTempTable);
+                var sqlCreateTableCopy = MySqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
                 if (isAsync)
                 {
                     await context.Database.ExecuteSqlRawAsync(sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
@@ -242,11 +242,11 @@ public class MySqlAdapter : ISqlOperationsAdapter
                 }
             }
 
-            if (!tableInfo.BulkConfig.UseTempDB)
+            if (!tableInfo.BulkConfig.UseTempDB) // Temp tables are automatically dropped by the database
             {
                 if (outputTableCreated)
                 {
-                    var sqlDropOutputTable = ProviderSqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName, tableInfo.InsertToTempTable);
+                    var sqlDropOutputTable = ProviderSqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName, tableInfo.BulkConfig.UseTempDB);
                     if (isAsync)
                     {
                         await context.Database.ExecuteSqlRawAsync(sqlDropOutputTable, cancellationToken).ConfigureAwait(false);
@@ -259,7 +259,7 @@ public class MySqlAdapter : ISqlOperationsAdapter
                 }
                 if (tempTableCreated)
                 {
-                    var sqlDropTable = ProviderSqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.InsertToTempTable);
+                    var sqlDropTable = ProviderSqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
                     if (isAsync)
                     {
                         await context.Database.ExecuteSqlRawAsync(sqlDropTable, cancellationToken).ConfigureAwait(false);
