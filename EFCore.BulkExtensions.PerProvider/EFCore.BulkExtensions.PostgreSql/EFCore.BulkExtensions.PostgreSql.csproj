@@ -45,4 +45,8 @@
     </None>
 	<Content Include="..\..\LICENSE.txt" Link="LICENSE.txt" Pack="true" PackagePath="LICENSE.txt" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\EFCore.BulkExtensions\**\*.cs" Exclude="**\bin\**;**\obj\**;..\..\EFCore.BulkExtensions\SqlAdapters\*\**" />
+    <Compile Include="..\..\EFCore.BulkExtensions\SqlAdapters\PostgreSql\*.cs" Link="SqlAdapters\PostgreSql\%(Filename)%(Extension)" />
+  </ItemGroup>
 </Project>
