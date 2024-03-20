@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <Title>EFCore.BulkExtensions.SqlServer</Title>
@@ -28,7 +28,7 @@
 	<PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.5" />
+	<PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.5" />
 	<PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.2" />
 	<PackageReference Include="System.Diagnostics.DiagnosticSource" Version="8.0.0" />
 	<PackageReference Include="NetTopologySuite.IO.SqlServerBytes" Version="2.1.0" />
@@ -46,5 +46,9 @@
       <PackagePath>\</PackagePath>
     </None>
 	<Content Include="..\..\LICENSE.txt" Link="LICENSE.txt" Pack="true" PackagePath="LICENSE.txt" />
-  </ItemGroup> 
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\EFCore.BulkExtensions\**\*.cs" Exclude="**\bin\**;**\obj\**;..\..\EFCore.BulkExtensions\SqlAdapters\*\**" />
+    <Compile Include="..\..\EFCore.BulkExtensions\SqlAdapters\SqlServer\*.cs" Link="SqlAdapters\SqlServer\%(Filename)%(Extension)" />
+  </ItemGroup>
 </Project>
