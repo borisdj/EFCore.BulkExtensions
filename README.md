@@ -16,7 +16,7 @@ Also you can look into others authored packages:
 | 3  | [EFCore.FluentApiToAnnotation](https://github.com/borisdj/EFCore.FluentApiToAnnotation) | Converting FluentApi configuration to Annotations |
 | 4  | [FixedWidthParserWriter](https://github.com/borisdj/FixedWidthParserWriter) | Reading & Writing fixed-width/flat data files |
 | 5  | [CsCodeGenerator](https://github.com/borisdj/CsCodeGenerator) | C# code generation based on Classes and elements |
-| 6  | [CsCodeExample](https://github.com/borisdj/CsCodeExample) | Examples of c# code in form of a simple tutorial |
+| 6  | [CsCodeExample](https://github.com/borisdj/CsCodeExample) | Examples of C# code in form of a simple tutorial |
 
 ## License
 *BulkExtensions [licensed](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE.txt) under [**Dual License v1.0**](https://codis.tech/efcorebulk/) (solution to OpenSource funding, cFOSS: conditionallyFree OSS).  
