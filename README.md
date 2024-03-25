@@ -8,7 +8,8 @@ Latest version is using EF Core 8.
 Supports all 4 mayor sql databases: **SQLServer, PostgreSQL, MySQL, SQLite.**  
 Check out [Testimonials](https://docs.google.com/spreadsheets/d/e/2PACX-1vShdv2sTm3oQfowm9kVIx-PLBCk1lGQEa9E6n92-dX3pni7-XQUEp6taVcMSZVi9BaSAizv1YanWTy3/pubhtml?gid=801420190&single=true) from the Community and User Comments.
 
-Also you can look into others packages:
+Also you can look into others packages:</br>
+-Open source authored [.Net libraries](https://infopedia.io/dot-net-libraries/) (@ **Infopedia.io** blog post)
 | №  | .Net library             | Description                                              |
 | -  | ------------------------ | -------------------------------------------------------- |
 | 1  | [EFCore.BulkExtensions](https://github.com/borisdj/EFCore.BulkExtensions) | EF Core Bulk CRUD Ops (Flagship Lib)|
@@ -17,8 +18,6 @@ Also you can look into others packages:
 | 4  | [FixedWidthParserWriter](https://github.com/borisdj/FixedWidthParserWriter) | Reading & Writing fixed-width/flat data files |
 | 5  | [CsCodeGenerator](https://github.com/borisdj/CsCodeGenerator) | C# code generation based on Classes and elements |
 | 6  | [CsCodeExample](https://github.com/borisdj/CsCodeExample) | Examples of C# code in form of a simple tutorial |
-
-**Infopedia.io** blog post: Open source authored [.Net libraries](https://infopedia.io/dot-net-libraries/)
 
 ## License
 *BulkExtensions [licensed](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE.txt) under [**Dual License v1.0**](https://codis.tech/efcorebulk/) (solution to OpenSource funding, cFOSS: conditionallyFree OSS).  
