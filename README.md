@@ -68,8 +68,8 @@ It's pretty simple and straightforward.
 **Bulk** Extensions are made on *DbContext* and are used with entities List (supported both regular and Async methods):
 ```C#
 context.BulkInsert(entities);                 context.BulkInsertAsync(entities);
-context.BulkInsertOrUpdate(entities);         context.BulkInsertOrUpdateAsync(entities);         // Upsert
-context.BulkInsertOrUpdateOrDelete(entities); context.BulkInsertOrUpdateOrDeleteAsync(entities); // Sync
+context.BulkInsertOrUpdate(entities);         context.BulkInsertOrUpdateAsync(entities);       //Upsert
+context.BulkInsertOrUpdateOrDelete(entities); context.BulkInsertOrUpdateOrDeleteAsync(entities); //Sync
 context.BulkUpdate(entities);                 context.BulkUpdateAsync(entities);
 context.BulkDelete(entities);                 context.BulkDeleteAsync(entities);
 context.BulkRead(entities);                   context.BulkReadAsync(entities);
@@ -89,17 +89,17 @@ context.Items.Where(a => a.ItemId >  500).BatchDelete();
 context.Items.Where(a => a.ItemId >  500).BatchDeleteAsync();
 
 // Update (using Expression arg.) supports Increment/Decrement 
-context.Items.Where(a => a.ItemId <= 500).BatchUpdate(a => new Item { Quantity = a.Quantity + 100 });
-context.Items.Where(a => a.ItemId <= 500).BatchUpdateAsync(a => new Item { Quantity = a.Quantity + 100});
+context.Items.Where(a => a.ItemId <= 500).BatchUpdate(a => new Item { Quantity = a.Quantity + 100});
+context.Items.Where(a => a.ItemId <= 500).BatchUpdateAsync(a => new Item {Quantity=a.Quantity+100});
   // can be as value '+100' or as variable '+incrementStep' (int incrementStep = 100;)
   
 // Update (via simple object)
 context.Items.Where(a => a.ItemId <= 500).BatchUpdate(new Item { Description = "Updated" });
 context.Items.Where(a => a.ItemId <= 500).BatchUpdateAsync(new Item { Description = "Updated" });
 // Update (via simple object) - requires additional Argument for setting to Property default value
-var updateCols = new List<string> { nameof(Item.Quantity) }; //Update 'Quantity' to default value('0')
+var updateCols = new List<string> { nameof(Item.Quantity) }; //Update 'Quantity' to default val:'0'
 var q = context.Items.Where(a => a.ItemId <= 500);
-int affected = q.BatchUpdate(new Item { Description="Updated" }, updateCols); //result assigned to aff.
+int affected = q.BatchUpdate(new Item { Description="Updated" }, updateCols); //result assigned aff
 
 // Batch iteration (useful in same cases to avoid lock escalation)
 do {
