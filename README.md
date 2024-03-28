@@ -97,9 +97,9 @@ context.Items.Where(a => a.ItemId <= 500).BatchUpdateAsync(a => new Item { Quant
 context.Items.Where(a => a.ItemId <= 500).BatchUpdate(new Item { Description = "Updated" });
 context.Items.Where(a => a.ItemId <= 500).BatchUpdateAsync(new Item { Description = "Updated" });
 // Update (via simple object) - requires additional Argument for setting to Property default value
-var updateCols = new List<string> { nameof(Item.Quantity) }; // Update 'Quantity' to default value ('0')
+var updateCols = new List<string> { nameof(Item.Quantity) }; //Update 'Quantity' to default value('0')
 var q = context.Items.Where(a => a.ItemId <= 500);
-int affected = q.BatchUpdate(new Item { Description="Updated" }, updateCols); // result assigned to aff.
+int affected = q.BatchUpdate(new Item { Description="Updated" }, updateCols); //result assigned to aff.
 
 // Batch iteration (useful in same cases to avoid lock escalation)
 do {
@@ -153,9 +153,9 @@ Not supported for SQLite (Lite has only UPSERT statement) nor currently for Post
 Used when need to Select from big List based on Unique Prop./Columns specified in config `UpdateByProperties`  
 ```C#
 // instead of WhereIN which will TimeOut for List with over around 40 K records
-var entities = context.Items.Where(a => itemsNames.Contains(a.Name)).AsNoTracking().ToList(); // SQL IN
+var entities = context.Items.Where(a => itemsNames.Contains(a.Name)).AsNoTracking().ToList(); //SQL IN
 // or JOIN in Memory that loads entire table
-var entities = context.Items.Join(itemsNames, a => a.Name, p => p, (a, p) => a).AsNoTracking().ToList();
+var entities = context.Items.Join(itemsNames, a => a.Name, p => p, (a,p) => a).AsNoTracking().ToList();
 
 // USE
 var items = itemsNames.Select(a => new Item { Name = a }).ToList(); // Items list with only Name set
@@ -230,7 +230,7 @@ Also Tables with Composite Keys have no Identity column so no functionality for 
 var bulkConfig = new BulkConfig { SetOutputIdentity = true, BatchSize = 4000 };
 context.BulkInsert(entities, bulkConfig);
 context.BulkInsertOrUpdate(entities, new BulkConfig { SetOutputIdentity = true });
-context.BulkInsertOrUpdate(entities, b => b.SetOutputIdentity = true); // e.g. BulkConfig with Action arg.
+context.BulkInsertOrUpdate(entities, b => b.SetOutputIdentity = true); //e.g. BulkConfig with Action arg.
 ```
 
 **PreserveInsertOrder** is **true** by default and makes sure that entities are inserted to Db as ordered in entitiesList.  
@@ -272,7 +272,7 @@ using (var transaction = context.Database.BeginTransaction())
     context.BulkInsert(entities, new BulkConfig { SetOutputIdentity = true });
     foreach (var entity in entities) {
         foreach (var subEntity in entity.ItemHistories) {
-            subEntity.ItemId = entity.ItemId; // sets FK to match its linked PK that was generated in DB
+            subEntity.ItemId = entity.ItemId; // sets FK to match linked PK that was generated in DB
         }
         subEntities.AddRange(entity.ItemHistories);
     }
@@ -357,7 +357,7 @@ And second is to explicitly define Discriminator property in Entity and configur
 Important remark regarding the first case is that since we can not set directly Discriminator to certain value we need first to add list of entities to DbSet where it will be set and after that we can call Bulk operation. Note that SaveChanges are not called and we could optionally turn off TrackingChanges for performance. Example:
 ```C#
 public class Student : Person { ... }
-context.Students.AddRange(entities); // adding to Context so that Shadow property 'Discriminator' gets set
+context.Students.AddRange(entities); // adding to Context so Shadow property 'Discriminator' gets set
 context.BulkInsert(entities);
 ```
 **TPT** (Table-Per-Type) way it is [supported](https://github.com/borisdj/EFCore.BulkExtensions/issues/493).
