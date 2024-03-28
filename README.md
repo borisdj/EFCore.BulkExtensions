@@ -76,8 +76,8 @@ context.BulkRead(entities);                   context.BulkReadAsync(entities);
 context.BulkSaveChanges();                    context.BulkSaveChangesAsync();
 ```
 
+**-MySQL** when running its Test for the first time execute sql command ([local-data](https://stackoverflow.com/questions/59993844/error-loading-local-data-is-disabled-this-must-be-enabled-on-both-the-client)): `SET GLOBAL local_infile = true;`  
 **-SQLite** requires package: [*SQLitePCLRaw.bundle_e_sqlite3*](https://docs.microsoft.com/en-us/dotnet/standard/data/sqlite/custom-versions?tabs=netcore-cli) with call to `SQLitePCL.Batteries.Init()`  
-**-MySQL** when running its Test for the first time execute sql command ([local-data](https://stackoverflow.com/questions/59993844/error-loading-local-data-is-disabled-this-must-be-enabled-on-both-the-client)): `SET GLOBAL local_infile = true;`
 
 **Batch** Extensions are made on *IQueryable* DbSet and can be used as in the following code segment.  
 They are done as pure sql and no check is done whether some are prior loaded in memory and are being Tracked.  
