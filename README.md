@@ -68,8 +68,8 @@ It's pretty simple and straightforward.
 **Bulk** Extensions are made on *DbContext* and are used with entities List (supported both regular and Async methods):
 ```C#
 context.BulkInsert(entities);                 context.BulkInsertAsync(entities);
-context.BulkInsertOrUpdate(entities);         context.BulkInsertOrUpdateAsync(entities);     //Upsert
-context.BulkInsertOrUpdateOrDelete(entities); context.BulkInsertOrUpdateOrDeleteAsync(entities);/Sync
+context.BulkInsertOrUpdate(entities);         context.BulkInsertOrUpdateAsync(entities);    //Upsert
+context.BulkInsertOrUpdateOrDelete(entities); context.BulkInsertOrUpdateOrDeleteAsync(entiti);//Sync
 context.BulkUpdate(entities);                 context.BulkUpdateAsync(entities);
 context.BulkDelete(entities);                 context.BulkDeleteAsync(entities);
 context.BulkRead(entities);                   context.BulkReadAsync(entities);
@@ -153,14 +153,14 @@ Not supported for SQLite (Lite has only UPSERT statement) nor currently for Post
 Used when need to Select from big List based on Unique Prop./Columns specified in config `UpdateByProperties`  
 ```C#
 // instead of WhereIN which will TimeOut for List with over around 40 K records
-var entities = context.Items.Where(a => itemsNames.Contains(a.Name)).AsNoTracking().ToList();//SQL IN
+var entities = context.Items.Where(a=> itemsNames.Contains(a.Name)).AsNoTracking().ToList();//SQL IN
 // or JOIN in Memory that loads entire table
-var entities = context.Items.Join(itemsNames, a => a.Name, p => p, (a,p)=>a).AsNoTracking().ToList();
+var entities = context.Items.Join(itemsNames, a => a.Name, p => p,(a,p)=>a).AsNoTracking().ToList();
 
 // USE
 var items = itemsNames.Select(a => new Item { Name = a }).ToList(); // Items list with only Name set
 var bulkConfig = new BulkConfig { UpdateByProperties = new List<string> { nameof(Item.Name) } };
-context.BulkRead(items, bulkConfig); // Items list will be loaded from Db with data(other properties)
+context.BulkRead(items, bulkConfig); //Items list will be loaded from Db with data(other properties)
 ```
 Useful config **ReplaceReadEntities** that works as *Contains/IN* and returns all which match the criteria (not unique).  
 [Example](https://github.com/borisdj/EFCore.BulkExtensions/issues/733) of special use case when need to BulkRead child entities after BulkReading parent list. 
