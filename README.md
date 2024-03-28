@@ -68,8 +68,8 @@ It's pretty simple and straightforward.
 **Bulk** Extensions are made on *DbContext* and are used with entities List (supported both regular and Async methods):
 ```C#
 context.BulkInsert(entities);                 context.BulkInsertAsync(entities);
-context.BulkInsertOrUpdate(entities);         context.BulkInsertOrUpdateAsync(entities);       //Upsert
-context.BulkInsertOrUpdateOrDelete(entities); context.BulkInsertOrUpdateOrDeleteAsync(entities); //Sync
+context.BulkInsertOrUpdate(entities);         context.BulkInsertOrUpdateAsync(entities);      //Upsert
+context.BulkInsertOrUpdateOrDelete(entities); context.BulkInsertOrUpdateOrDeleteAsync(entities);//Sync
 context.BulkUpdate(entities);                 context.BulkUpdateAsync(entities);
 context.BulkDelete(entities);                 context.BulkDeleteAsync(entities);
 context.BulkRead(entities);                   context.BulkReadAsync(entities);
@@ -99,7 +99,7 @@ context.Items.Where(a => a.ItemId <= 500).BatchUpdateAsync(new Item { Descriptio
 // Update (via simple object) - requires additional Argument for setting to Property default value
 var updateCols = new List<string> { nameof(Item.Quantity) }; //Update 'Quantity' to default val:'0'
 var q = context.Items.Where(a => a.ItemId <= 500);
-int affected = q.BatchUpdate(new Item { Description="Updated" }, updateCols); //result assigned aff
+int affected = q.BatchUpdate(new Item { Description="Updated" }, updateCols); //result assigned aff.
 
 // Batch iteration (useful in same cases to avoid lock escalation)
 do {
@@ -155,7 +155,7 @@ Used when need to Select from big List based on Unique Prop./Columns specified i
 // instead of WhereIN which will TimeOut for List with over around 40 K records
 var entities = context.Items.Where(a => itemsNames.Contains(a.Name)).AsNoTracking().ToList(); //SQL IN
 // or JOIN in Memory that loads entire table
-var entities = context.Items.Join(itemsNames, a => a.Name, p => p, (a,p) => a).AsNoTracking().ToList();
+var entities = context.Items.Join(itemsNames, a => a.Name, p => p, (a,p) =>a).AsNoTracking().ToList();
 
 // USE
 var items = itemsNames.Select(a => new Item { Name = a }).ToList(); // Items list with only Name set
@@ -229,8 +229,8 @@ Also Tables with Composite Keys have no Identity column so no functionality for 
 ```C#
 var bulkConfig = new BulkConfig { SetOutputIdentity = true, BatchSize = 4000 };
 context.BulkInsert(entities, bulkConfig);
-context.BulkInsertOrUpdate(entities, new BulkConfig { SetOutputIdentity = true });
-context.BulkInsertOrUpdate(entities, b => b.SetOutputIdentity = true); //e.g. BulkConfig with Action arg.
+context.BulkInsertOrUpdate(entities, new BulkConfig { SetOutputIdentity = true }); //e.g.
+context.BulkInsertOrUpdate(entities, b => b.SetOutputIdentity = true); //BulkConfig with Action arg.
 ```
 
 **PreserveInsertOrder** is **true** by default and makes sure that entities are inserted to Db as ordered in entitiesList.  
@@ -357,7 +357,7 @@ And second is to explicitly define Discriminator property in Entity and configur
 Important remark regarding the first case is that since we can not set directly Discriminator to certain value we need first to add list of entities to DbSet where it will be set and after that we can call Bulk operation. Note that SaveChanges are not called and we could optionally turn off TrackingChanges for performance. Example:
 ```C#
 public class Student : Person { ... }
-context.Students.AddRange(entities); // adding to Context so Shadow property 'Discriminator' gets set
+context.Students.AddRange(entities); //adding to Context so Shadow property 'Discriminator' gets set
 context.BulkInsert(entities);
 ```
 **TPT** (Table-Per-Type) way it is [supported](https://github.com/borisdj/EFCore.BulkExtensions/issues/493).
