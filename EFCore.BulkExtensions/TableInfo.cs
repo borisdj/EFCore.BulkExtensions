@@ -194,7 +194,8 @@ public class TableInfo
                 customTableName = tableNameSplitList[1];
             }
         }
-        Schema = customSchema ?? entityType.GetSchema() ?? defaultSchema;
+
+        Schema = customTableName != null ? customSchema : entityType.GetSchema() ?? defaultSchema;
 
         var entityTableName = entityType.GetTableName();
         TableName = customTableName ?? entityTableName;
