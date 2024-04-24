@@ -282,7 +282,7 @@ using (var transaction = context.Database.BeginTransaction())
     transaction.Commit();
 }
 
-// Option 2 using Graph (only for SQL Server)
+// Option 2 using Graph (only for SQL Server and only for simple relationship parent-child)
 // - all entities in relationship with main ones in list are BulkInsertUpdated
 context.BulkInsert(entities, b => b.IncludeGraph = true);
   
