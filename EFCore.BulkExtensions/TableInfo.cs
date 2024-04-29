@@ -9,7 +9,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Data;
-using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -1081,6 +1080,15 @@ public class TableInfo
     {
         var identifierPropertyName = IdentityColumnName != null ? OutputPropertyColumnNamesDict.SingleOrDefault(a => a.Value == IdentityColumnName).Key // it Identity autoincrement 
                                                                 : PrimaryKeysPropertyColumnNameDict.FirstOrDefault().Key;                               // or PK with default sql value
+
+        var fastProperty = FastPropertyDict[identifierPropertyName];
+
+        if (fastProperty.Property.PropertyType == typeof(string) ||
+            fastProperty.Property.PropertyType == typeof(Guid))
+        {
+            entities = entities.OrderBy(p => fastProperty.Property!.GetValue(p, null)).ToList();
+            entitiesWithOutputIdentity = entitiesWithOutputIdentity.OrderBy(p => fastProperty.Property!.GetValue(p, null)).ToList();
+        }
 
         if (BulkConfig.PreserveInsertOrder) // Updates Db changed Columns in entityList
         {
