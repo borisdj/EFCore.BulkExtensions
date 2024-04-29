@@ -3,7 +3,7 @@
     <TargetFrameworks>net8.0</TargetFrameworks>
     <Title>EFCore.BulkExtensions</Title>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <Version>8.0.2</Version>
+    <Version>8.0.3</Version>
 	<Nullable>enable</Nullable>	  
     <Authors>borisdj</Authors>
     <Description>EntityFramework .Net EFCore EF Core Bulk Batch Extensions for Insert Update Delete Read (CRUD) operations on SQL Server, PostgreSQL, MySQL, SQLite</Description>
@@ -11,14 +11,14 @@
     <Company>CODIS LLC</Company>
     <PackageIcon>EFCoreBulk.png</PackageIcon>
 	<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
-	<PackageReleaseNotes>nugets</PackageReleaseNotes>
+	<PackageReleaseNotes>nugets update</PackageReleaseNotes>
     <PackageTags>EntityFrameworkCore Entity Framework Core .Net EFCore EF Core SQL Server PostgreSQL MySQL SQLite Bulk Batch Copy SqlBulkCopy Extensions Insert Update Delete Read Truncate SaveChanges</PackageTags>
 	<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
     <RepositoryUrl>https://github.com/borisdj/EFCore.BulkExtensions</RepositoryUrl>
     <RepositoryType>Git</RepositoryType>
     <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
-    <AssemblyVersion>8.0.2.0</AssemblyVersion>
-    <FileVersion>8.0.2.0</FileVersion>
+    <AssemblyVersion>8.0.3.0</AssemblyVersion>
+    <FileVersion>8.0.3.0</FileVersion>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>..\Keys\EFCore.BulkExtensions.snk</AssemblyOriginatorKeyFile>
     <DelaySign>false</DelaySign>
@@ -31,14 +31,14 @@
   <!-- net 8.0 -->
   <ItemGroup Condition=" '$(TargetFramework)' == 'net8.0' ">
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.2" />
-	<PackageReference Include="System.Diagnostics.DiagnosticSource" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.4" />
+	<PackageReference Include="System.Diagnostics.DiagnosticSource" Version="8.0.1" />
 	<PackageReference Include="NetTopologySuite.IO.SqlServerBytes" Version="2.1.0" />
-	<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.HierarchyId" Version="8.0.2" />
-	<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" Version="8.0.2" />
+	<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.HierarchyId" Version="8.0.4" />
+	<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" Version="8.0.4" />
 	<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.2" />
-    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="8.0.2" />
+    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="8.0.4" />
 	<PackageReference Include="NetTopologySuite.IO.SpatiaLite" Version="2.0.0" />
 	<PackageReference Include="MedallionTopologicalSort" Version="1.0.0" />
 	<PackageReference Include="StrongNamer" Version="0.2.5" />
