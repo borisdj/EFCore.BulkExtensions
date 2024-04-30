@@ -315,7 +315,7 @@ Return info will be in *BulkConfig.**TimeStampInfo*** object within field `Numbe
 **UseOptionLoopJoin** when set it appends 'OPTION (LOOP JOIN)' for SqlServer, to reduce potential deadlocks on tables that have FKs. Use this [sql hint](https://learn.microsoft.com/en-us/sql/t-sql/queries/hints-transact-sql-query?view=sql-server-ver16) as a last resort for experienced devs and db admins.  
 **ApplySubqueryLimit** Default is zero '0'. When set to larger value it appends: LIMIT 'N', to generated query. Used only with PostgreSql.
 
-**DataReader** can be used when DataReader ia also configured and when set it is propagated to SqlBulkCopy util object.
+**DataReader** can be used when DataReader ia also configured and when set it is propagated to SqlBulkCopy util object.  
 **EnableStreaming** can be set to True if want to have tracking of entities from BulkRead or when SetOutputIdentity is set, useful for big field like blob, binary column.
 
 **SqlBulkCopyOptions** is Enum (only for SqlServer) with [[Flags]](https://stackoverflow.com/questions/8447/what-does-the-flags-enum-attribute-mean-in-c) attribute which enables specifying one or more options:  
