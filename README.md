@@ -1,13 +1,13 @@
 # EFCore.BulkExtensions
 EntityFrameworkCore extensions (performance improvement):  
--Bulk operations (very fast-forward): **Insert, Update, Delete, Read, Upsert, Sync, SaveChanges.**  
+-Bulk operations (warp fast): **Insert, Update, Delete, Read, Upsert, Sync, SaveChanges.**  
 -Batch ops: **Delete, Update** - Deprecated from EF8 since EF7+ has native Execute-Up/Del; and **Truncate**.  
 Library is Lightweight and very Efficient, having all mostly used [CRUD](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete) operation.  
 Was selected in top 20 [EF Core Extensions](https://docs.microsoft.com/en-us/ef/core/extensions/) recommended by Microsoft.  
 Latest version is using EF Core 8.  
 Supports all 4 mayor sql databases: **SQLServer, PostgreSQL, MySQL, SQLite.**  
 Check out [Testimonials](https://docs.google.com/spreadsheets/d/e/2PACX-1vShdv2sTm3oQfowm9kVIx-PLBCk1lGQEa9E6n92-dX3pni7-XQUEp6taVcMSZVi9BaSAizv1YanWTy3/pubhtml?gid=801420190&single=true) from the Community and User Comments.  
-Icon___ and Logo___:  
+Icon (f.forward) & Logo (rocket time):  
 <img src="/EFCore.BulkExtensions/EFCoreBulk.png" height=60> & <img src="EFCoreBulkLogo_small.png" height=60>
 
 Also take a look into others packages:</br>
