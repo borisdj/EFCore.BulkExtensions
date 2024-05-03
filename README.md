@@ -48,7 +48,7 @@ Bulk Tests can not have UseInMemoryDb because InMemoryProvider does not support 
 Instead Test options are  SqlServer(Developer or Express), LocalDb(if alongside [Developer v.](https://stackoverflow.com/questions/42885377/sql-server-2016-developer-version-can-not-connect-to-localdb-mssqllocaldb?noredirect=1&lq=1)), or with  other adapters.
 
 ## Installation
-<!--[![Button](https://img.shields.io/nuget/v/EFCore.BulkExtensions.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions)-->
+<!--[![](https://img.shields.io/nuget/v/EFCore.BulkExtensions.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions)-->
 Available on <a href="https://www.nuget.org/packages/EFCore.BulkExtensions/"><img src="https://buildstats.info/nuget/EFCore.BulkExtensions" /></a>  
 That is main nuget for all Databases, there are also specific ones with single provider for those who need small packages.  
 Only single specific can be installed in a project, if need more then use main one with all providers.  
