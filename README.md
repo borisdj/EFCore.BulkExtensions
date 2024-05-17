@@ -345,7 +345,7 @@ context.BulkInsert(entitiesList, null, (a) => WriteProgress(a));
 For **parallelism** important notes are:  
 -SqlBulk [in Parallel](https://www.adathedev.co.uk/2011/01/sqlbulkcopy-to-sql-server-in-parallel.html)  
 -Concurrent operations not run on [same Context instance](https://learn.microsoft.com/en-us/ef/core/miscellaneous/async)  
--Import data to single unindexed table with [tabel level lock](https://learn.microsoft.com/en-us/previous-versions/sql/sql-server-2005/ms186341(v=sql.90))  
+-Import data to single unindexed table with [table level lock](https://learn.microsoft.com/en-us/previous-versions/sql/sql-server-2005/ms186341(v=sql.90))  
 
 Library supports [Global Query Filters](https://docs.microsoft.com/en-us/ef/core/querying/filters) and [Value Conversions](https://docs.microsoft.com/en-us/ef/core/modeling/value-conversions) as well  
 Additionally BatchUpdate and named Property works with [EnumToString Conversion](https://github.com/borisdj/EFCore.BulkExtensions/issues/397)  
