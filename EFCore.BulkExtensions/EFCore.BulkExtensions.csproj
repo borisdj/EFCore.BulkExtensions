@@ -11,7 +11,7 @@
     <Company>CODIS LLC</Company>
     <PackageIcon>EFCoreBulk.png</PackageIcon>
 	<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
-	<PackageReleaseNotes>nugets update</PackageReleaseNotes>
+	<PackageReleaseNotes>nugets update 4</PackageReleaseNotes>
     <PackageTags>EntityFrameworkCore Entity Framework Core .Net EFCore EF Core SQL Server PostgreSQL MySQL SQLite Bulk Batch Copy SqlBulkCopy Extensions Insert Update Delete Read Truncate SaveChanges</PackageTags>
 	<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
     <RepositoryUrl>https://github.com/borisdj/EFCore.BulkExtensions</RepositoryUrl>
