@@ -54,6 +54,7 @@ public abstract class SqlQueryBuilder
 
     /// <summary>
     /// Generates SQL query to create a table copy
+    /// 生成SQL查询以创建表副本
     /// </summary>
     /// <param name="existingTableName"></param>
     /// <param name="newTableName"></param>

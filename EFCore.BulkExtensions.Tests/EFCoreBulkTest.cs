@@ -21,7 +21,7 @@ public class EFCoreBulkTest
     private static readonly Func<TestContext, IEnumerable<Item>> AllItemsQuery = EF.CompileQuery<TestContext, IEnumerable<Item>>(ctx => ctx.Items.AsNoTracking());
 
     [Theory]
-    [InlineData(SqlType.PostgreSql)]
+    [InlineData(SqlType.SqlServer)]
     public void InsertEnumStringValue(SqlType sqlType)
     {
         ContextUtil.DatabaseType = sqlType;
@@ -57,6 +57,7 @@ public class EFCoreBulkTest
             {
                 Name = "Abcd",
                 Type = TimeRecordSourceType.Operator // for PG required Converter explicitly configured in OnModelCreating
+                                                     // 对于在OnModelCreating中显式配置的PG所需转换器
             },
         };
 

@@ -41,7 +41,7 @@ public static class BatchUtil
     {
         var (sql, tableAlias, _, topStatement, leadingComments, innerParameters) = GetBatchSql(query, context, isUpdate: false);
 
-        innerParameters = ReloadSqlParameters(context, innerParameters.ToList()); // Sqlite requires SqliteParameters
+        innerParameters = ReloadSqlParameters(context, innerParameters.ToList()); // Sqlite requires SqliteParameters Sqlite需要SqliteParameters
         var databaseType = SqlAdaptersMapping.GetDatabaseType();
 
         string resultQuery;
@@ -246,6 +246,7 @@ public static class BatchUtil
 
     /// <summary>
     /// Reloads SQL paramaters
+    /// 重新加载SQL参数
     /// </summary>
     /// <param name="context"></param>
     /// <param name="sqlParameters"></param>
@@ -257,6 +258,7 @@ public static class BatchUtil
 
     /// <summary>
     /// Generates SQL queries for batch operations
+    /// 为批处理操作生成SQL查询
     /// </summary>
     /// <param name="query"></param>
     /// <param name="context"></param>
@@ -265,6 +267,7 @@ public static class BatchUtil
     public static (string Sql, string TableAlias, string TableAliasSufixAs, string TopStatement, string LeadingComments, IEnumerable<object> InnerParameters) GetBatchSql(IQueryable query, DbContext context, bool isUpdate)
     {
         SqlAdaptersMapping.ProviderName = context.Database.ProviderName;
+        //
         var sqlQueryBuilder = SqlAdaptersMapping.GetAdapterDialect();
         var (fullSqlQuery, innerParameters) = query.ToParametrizedSql();
 
@@ -571,6 +574,7 @@ public static class BatchUtil
 
     /// <summary>
     /// Splits the leading comments from the main sql query
+    /// 从主sql查询中拆分前导注释
     /// </summary>
     /// <param name="sqlQuery"></param>
     /// <returns></returns>

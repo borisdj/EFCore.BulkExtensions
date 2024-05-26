@@ -18,6 +18,7 @@ public static class IQueryableExtensions
 {
     /// <summary>
     /// Extension method to paramatize sql query
+    /// sql查询参数化的扩展方法
     /// </summary>
     /// <param name="query"></param>
     /// <returns></returns>
