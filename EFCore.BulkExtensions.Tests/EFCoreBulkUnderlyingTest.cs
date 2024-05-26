@@ -10,6 +10,9 @@ using Xunit;
 
 namespace EFCore.BulkExtensions.Tests;
 
+/// <summary>
+/// EFCoreBulk»ù´¡²âÊÔ
+/// </summary>
 public class EFCoreBulkUnderlyingTest
 {
     protected static int EntitiesNumber => 1000;

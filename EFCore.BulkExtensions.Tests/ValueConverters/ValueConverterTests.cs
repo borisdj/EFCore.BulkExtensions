@@ -7,6 +7,9 @@ using Xunit;
 
 namespace EFCore.BulkExtensions.Tests.ValueConverters;
 
+/// <summary>
+/// 值转换器测试
+/// </summary>
 public class ValueConverterTests: IDisposable
 {
     [Theory]

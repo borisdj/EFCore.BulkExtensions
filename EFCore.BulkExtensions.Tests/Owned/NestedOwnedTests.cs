@@ -4,6 +4,9 @@ using Xunit;
 
 namespace EFCore.BulkExtensions.Tests.Owned;
 
+/// <summary>
+/// 拥有嵌套的测试
+/// </summary>
 public class NestedOwnedTests
 {
     [Fact]

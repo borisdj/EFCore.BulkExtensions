@@ -7,6 +7,9 @@ using Xunit;
 
 namespace EFCore.BulkExtensions.Tests.ShadowProperties;
 
+/// <summary>
+/// 阴影特性测试
+/// </summary>
 public class ShadowPropertyTests : IDisposable
 {
     [Theory]

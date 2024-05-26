@@ -11,6 +11,9 @@ using Xunit;
 
 namespace EFCore.BulkExtensions.Tests;
 
+/// <summary>
+/// EFCoreBulk≤‚ ‘_∑«µ‰–Õ
+/// </summary>
 public class EFCoreBulkTestAtypical
 {
     protected static int EntitiesNumber => 1000;

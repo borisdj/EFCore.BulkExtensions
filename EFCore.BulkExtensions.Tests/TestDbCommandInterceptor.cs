@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace EFCore.BulkExtensions.Tests;
 
+/// <summary>
+/// TestDbCommand拦截器
+/// </summary>
 public class TestDbCommandInterceptor : DbCommandInterceptor
 {
     /// <summary>
