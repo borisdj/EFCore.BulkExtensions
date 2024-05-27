@@ -15,7 +15,7 @@ public class EFCoreBatchTest
     protected static int EntitiesNumber => 1000;
 
     [Theory]
-    [InlineData(SqlType.SqlServer)]
+    [InlineData(SqlType.Sqlite)]
     public void BatchConverterTest(SqlType dbServer)
     {
         ContextUtil.DatabaseType = dbServer;

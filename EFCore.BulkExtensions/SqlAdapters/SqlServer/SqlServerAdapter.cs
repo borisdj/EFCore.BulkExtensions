@@ -456,6 +456,7 @@ public class SqlServerAdapter : ISqlOperationsAdapter
 
     /// <summary>
     /// Common logic for two versions of GetDataTable
+    /// 两个版本的GetDataTable的公共逻辑
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="context"></param>

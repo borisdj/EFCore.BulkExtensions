@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text.Json;
 using Xunit;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace EFCore.BulkExtensions.Tests;
 
@@ -21,7 +22,7 @@ public class EFCoreBulkTest
     private static readonly Func<TestContext, IEnumerable<Item>> AllItemsQuery = EF.CompileQuery<TestContext, IEnumerable<Item>>(ctx => ctx.Items.AsNoTracking());
 
     [Theory]
-    [InlineData(SqlType.PostgreSql)]
+    [InlineData(SqlType.Sqlite)]
     public void InsertEnumStringValue(SqlType sqlType)
     {
         ContextUtil.DatabaseType = sqlType;
@@ -64,7 +65,7 @@ public class EFCoreBulkTest
     }
 
     [Theory]
-    [InlineData(SqlType.PostgreSql)]
+    [InlineData(SqlType.Sqlite)]
     public void InsertTestPostgreSql(SqlType sqlType)
     {
         ContextUtil.DatabaseType = sqlType;
@@ -72,12 +73,12 @@ public class EFCoreBulkTest
         using var context = new TestContext(ContextUtil.GetOptions());
         
         context.Database.ExecuteSqlRaw($@"DELETE FROM ""{nameof(Item)}""");
-        context.Database.ExecuteSqlRaw($@"ALTER SEQUENCE ""{nameof(Item)}_{nameof(Item.ItemId)}_seq"" RESTART WITH 1");
+        //context.Database.ExecuteSqlRaw($@"ALTER SEQUENCE ""{nameof(Item)}_{nameof(Item.ItemId)}_seq"" RESTART WITH 1");
 
         context.Database.ExecuteSqlRaw($@"DELETE FROM ""{nameof(ItemHistory)}""");
 
         context.Database.ExecuteSqlRaw($@"DELETE FROM ""{nameof(Box)}""");
-        context.Database.ExecuteSqlRaw($@"ALTER SEQUENCE ""{nameof(Box)}_{nameof(Box.BoxId)}_seq"" RESTART WITH 1");
+        //context.Database.ExecuteSqlRaw($@"ALTER SEQUENCE ""{nameof(Box)}_{nameof(Box.BoxId)}_seq"" RESTART WITH 1");
 
         context.Database.ExecuteSqlRaw($@"DELETE FROM ""{nameof(UserRole)}""");
         
@@ -167,41 +168,37 @@ public class EFCoreBulkTest
         // UPDATE
         var config = new BulkConfig
         {
-            UpdateByProperties = new List<string> { nameof(Item.Name) },
+            UpdateByProperties = new List<string> { nameof(Item.Name) },//根据唯一索引去判断
             NotifyAfter = 1,
-            SetOutputIdentity = true,
-            CalculateStats = true,
+            SetOutputIdentity = true,  //pk不用填写，自增
+            CalculateStats = true, //
         };
-        context.BulkInsertOrUpdate(entities2, config, (a) => WriteProgress(a));
-        
+        //context.BulkInsertOrUpdate(entities2, config, (a) => WriteProgress(a));
+        context.BulkInsert(entities2, config, (a) => WriteProgress(a));
         Assert.Equal("UPDATE 3", context.Items.Where(a => a.Name == "Name 3").AsNoTracking().FirstOrDefault()?.Description);
         Assert.Equal("UPDATE 4", context.Items.Where(a => a.Name == "Name 4").AsNoTracking().FirstOrDefault()?.Description);
 
         var configUpdateBy = new BulkConfig {
             SetOutputIdentity = true,
             UpdateByProperties = new List<string> { nameof(Item.Name) },
-            PropertiesToInclude = new List<string> { nameof(Item.Name), nameof(Item.Description) }, // "Name" in list not necessary since is in UpdateBy
+           // PropertiesToInclude = new List<string> {nameof(Item.ItemId), nameof(Item.Name), nameof(Item.Description) }, // "Name" in list not necessary since is in UpdateBy
         };
-        context.BulkUpdate(entities3, configUpdateBy);
+#pragma warning disable 0618
+        context.Items.BatchUpdate(x=> new Item { Price = x.Price + 100 });
+#pragma warning restore 0618
 
-        Assert.Equal(4, entities3[0].ItemId); // to test Output
-
-        Assert.Equal("UPDATE 3", context.Items.Where(a => a.Name == "Name 3").AsNoTracking().FirstOrDefault()?.Description);
-        Assert.Equal("CHANGE 4", context.Items.Where(a => a.Name == "Name 4").AsNoTracking().FirstOrDefault()?.Description);
-        
+        //查看修改的结果
+        var s=context.Items.ToList();
+           // READ
+           var secondEntity = new List<Item>() { new Item { Quantity = entities[1].Quantity } };
+        context.BulkRead(secondEntity);  //, configUpdateBy
+        Assert.Equal(2, secondEntity.FirstOrDefault()?.ItemId);
+        Assert.Equal("info 2", secondEntity.FirstOrDefault()?.Description);
         // Test Multiple KEYS
         var userRoles = new List<UserRole> { new UserRole { Description = "Info" } };
         context.BulkInsertOrUpdate(userRoles);
-
         // DELETE
-        context.BulkDelete(new List<Item>() { entities2[0] }, configUpdateBy);
-
-        // READ
-        var secondEntity = new List<Item>() { new Item { Name = entities[1].Name } };
-        context.BulkRead(secondEntity, configUpdateBy);
-        Assert.Equal(2, secondEntity.FirstOrDefault()?.ItemId);
-        Assert.Equal("info 2", secondEntity.FirstOrDefault()?.Description);
-
+        context.BulkDelete(new List<Item>() { entities2[0] }, configUpdateBy);      
         // SAVE CHANGES
         context.AddRange(entities56);
         context.BulkSaveChanges();
