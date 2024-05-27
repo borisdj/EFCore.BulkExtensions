@@ -353,6 +353,7 @@ public static class DbContextBulkExtensions
 
     /// <summary>
     /// Extension method to bulk read data
+    /// 大容量读取数据的扩展方法
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="context"></param>

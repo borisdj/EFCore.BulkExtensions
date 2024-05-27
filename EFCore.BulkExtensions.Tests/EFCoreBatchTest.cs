@@ -97,6 +97,11 @@ public class EFCoreBatchTest
         }
     }
 
+    /// <summary>
+    /// 所有删除方式
+    /// </summary>
+    /// <param name="dbServer"></param>
+    /// <exception cref="ArgumentException"></exception>
     internal void RunDeleteAll(SqlType dbServer)
     {
         using var context = new TestContext(ContextUtil.GetOptions());
@@ -171,6 +176,7 @@ public class EFCoreBatchTest
 
         var updateValues = new Source() { StatusId = Status.Changed };
         var updateColumns = new List<string>() { nameof(updateValues.StatusId) };
+        //这种方式是只更新指定的字段吗？
         context.Sources.Where(e => e.StatusId == Status.Init).BatchUpdate(updateValues, updateColumns);
 
         Assert.Equal(Type.Type2, context.Sources.FirstOrDefault()?.TypeId); // Should remain 'Type.Type2' and not be changed to default 'Type.Undefined'
@@ -262,7 +268,7 @@ WHERE [p].[ParentId] = 1";
             entities.Add(entity);
         }
 
-        context.Items.AddRange(entities); // does not guarantee insert order for SqlServer
+        context.Items.AddRange(entities); // does not guarantee insert order for SqlServer  不保证SqlServer的插入顺序
         context.SaveChanges();
     }
 

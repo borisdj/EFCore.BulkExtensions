@@ -16,7 +16,7 @@ namespace EFCore.BulkExtensions.Tests;
 public class EFCoreBulkTest
 {
     protected static int EntitiesNumber => 10000;
-
+    
     private static readonly Func<TestContext, int> ItemsCountQuery = EF.CompileQuery<TestContext, int>(ctx => ctx.Items.Count());
     private static readonly Func<TestContext, Item?> LastItemQuery = EF.CompileQuery<TestContext, Item?>(ctx => ctx.Items.LastOrDefault());
     private static readonly Func<TestContext, IEnumerable<Item>> AllItemsQuery = EF.CompileQuery<TestContext, IEnumerable<Item>>(ctx => ctx.Items.AsNoTracking());
@@ -58,6 +58,7 @@ public class EFCoreBulkTest
             {
                 Name = "Abcd",
                 Type = TimeRecordSourceType.Operator // for PG required Converter explicitly configured in OnModelCreating
+                                                     // 对于在OnModelCreating中显式配置的PG所需转换器
             },
         };
 
@@ -329,7 +330,8 @@ public class EFCoreBulkTest
         query.BatchUpdate(new Item { Description = "UPDATE N", Price = 1.5m }); //, updateColumns);
 
         // INSERT Or UPDATE
-        //mysql automatically detects unique or primary key
+        //mysql automatically detects unique or primary key mysql自动检测唯一密钥或主键
+        //用于指定自定义属性，我们希望通过该属性进行更新。
         context.BulkInsertOrUpdate(entities2, new BulkConfig { UpdateByProperties  = new List<string> { nameof(Item.ItemId) } });
         Assert.Equal("info 5", context.Items.Where(a => a.Name == "Name 5").AsNoTracking().FirstOrDefault()?.Description);
         Assert.Equal("v2 info 6", context.Items.Where(a => a.Name == "Name 6").AsNoTracking().FirstOrDefault()?.Description);
