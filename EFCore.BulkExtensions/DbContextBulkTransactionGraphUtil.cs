@@ -34,7 +34,9 @@ internal static class DbContextBulkTransactionGraphUtil
         if (SqlAdaptersMapping.GetDatabaseType() == SqlType.Sqlite)
             throw new NotSupportedException("Sqlite is not currently supported due to its BulkInsert implementation.");
 
+        //需要SetOutputIdentity属性， “true”是默认值，但此处再次显式分配，以防在BulkConfing中将其更改为“false”
         bulkConfig.PreserveInsertOrder = true; // Required for SetOutputIdentity ('true' is default but here explicitly assigned again in case it was changed to 'false' in BulkConfing)
+        //如果设置为false，将无法为关系提供新的主键
         bulkConfig.SetOutputIdentity = true; // If this is set to false, won't be able to propogate new primary keys to the relationships
 
         // If this is set to false, wont' be able to support some code first model types as EFCore uses shadow properties when a relationship's foreign keys arent explicitly defined

@@ -97,7 +97,7 @@ public class EFCoreBulkUnderlyingTest
             {
                 foreach (var subEntity in entity.ItemHistories)
                 {
-                    subEntity.ItemId = entity.ItemId; // setting FK to match its linked PK that was generated in DB
+                    subEntity.ItemId = entity.ItemId; // 将FK设置为与其在DB中生成的链接PK相匹配
                 }
                 subEntities.AddRange(entity.ItemHistories);
             }

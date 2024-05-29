@@ -1233,7 +1233,7 @@ public class TableInfo
     }
 
     /// <summary>
-    /// Queries the output table data
+    /// 查询输出表数据
     /// </summary>
     /// <param name="context"></param>
     /// <param name="type"></param>

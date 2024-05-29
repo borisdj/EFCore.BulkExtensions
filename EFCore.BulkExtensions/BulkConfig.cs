@@ -62,13 +62,13 @@ public class BulkConfig
 
     /// <summary>
     ///     Propagated to SqlBulkCopy util object. When not set will have same value of BatchSize, each batch one notification.
-    ///     已传播到SqlBulkCopy util对象。如果未设置，则将具有相同的BatchSize值，每个批次一个通知。
+    ///     已传播到SqlBulkCopy util对象。如果未设置，则将具有相同的BatchSize值，如果非零，则指定在生成通知事件之前要处理的行数。     
     /// </summary>
     public int? NotifyAfter { get; set; }
 
     /// <summary>
     ///     Propagated to SqlBulkCopy util object. When not set has SqlBulkCopy default which is 30 seconds and if set to 0 it indicates no limit.
-    ///     已传播到SqlBulkCopy util对象。如果未设置，则SqlBulkCopy默认值为30秒，如果设置为0，则表示没有限制。
+    ///     已传播到SqlBulkCopy util对象。如果未设置，则SqlBulkCopy的超时时间默认值为30秒，如果设置为0，则表示没有限制。
     /// </summary>
     public int? BulkCopyTimeout { get; set; }
 

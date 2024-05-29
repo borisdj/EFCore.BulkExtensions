@@ -61,6 +61,7 @@ public class SqlServerAdapter : ISqlOperationsAdapter
 
             using var sqlBulkCopy = GetSqlBulkCopy((SqlConnection)connection, transaction, tableInfo.BulkConfig);
             bool setColumnMapping = false;
+            //设置bulkconfig配置
             SetSqlBulkCopyConfig(sqlBulkCopy, tableInfo, entities, setColumnMapping, progress);
             try
             {
