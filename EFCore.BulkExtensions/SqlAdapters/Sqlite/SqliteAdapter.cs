@@ -416,7 +416,8 @@ public class SqliteAdapter : ISqlOperationsAdapter
             object? value = null;
             if (!isShadowProperty)
             {
-                if (propertyColumn.Key.Contains('.')) // ToDo: change IF clause to check for NavigationProperties, optimise, integrate with same code segment from LoadData method
+                if (propertyColumn.Key.Contains('.')) // ToDo: change IF clause to check for NavigationProperties, optimise,
+                                                      //       integrate with same code segment from LoadData method
                 {
                     var ownedPropertyNameList = propertyColumn.Key.Split('.');
                     var ownedPropertyName = ownedPropertyNameList[0];

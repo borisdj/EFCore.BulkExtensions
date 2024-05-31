@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text.Json;
 using Xunit;
+using static Azure.Core.HttpHeader;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace EFCore.BulkExtensions.Tests;
@@ -23,10 +24,96 @@ public class EFCoreBulkTest
 
     [Theory]
     [InlineData(SqlType.Sqlite)]
+    public void InsertCourseTables(SqlType sqlType)
+    {
+        ContextUtil.DatabaseType = sqlType;
+        using var context = new TestContext(ContextUtil.GetOptions());
+
+        Console.WriteLine($"before insert bulk 课程:{context.Courses.Count()}条");
+        List<Course> Courses = new List<Course>();
+        List<Instructor> subEntities = new List<Instructor>();
+        foreach (var i in Enumerable.Range(1, 500))
+        {
+            //这门课下的3个老师
+            List<Instructor> instructors = new List<Instructor>();
+            foreach (var j in Enumerable.Range(1, 3))
+            {
+                instructors.Add(new Instructor
+                {
+                    FirstMidName = "bulkKim" + i.ToString() + "-" + j.ToString(),
+                    LastName = "Abercrombie" + i.ToString() + "-" + j.ToString(),
+                    HireDate = DateTime.Parse("1995-03-11"),
+                });
+            }
+            var emodel = new Course
+            {
+                Title = "bulkLiterature" + i.ToString(),
+                Credits = 5,
+            };
+            emodel.Instructors = instructors;
+            //这门课
+            Courses.Add(emodel);
+        }
+        var bulkConfig = new BulkConfig() { SetOutputIdentity = true }; //从数据库中返回id
+        context.BulkInsert(Courses, bulkConfig);
+        foreach (var entity in Courses)
+        {
+            foreach (var subEntity in entity.Instructors!)
+            {
+                subEntity.CourseID = entity.CourseID; // 设置外键
+            }
+            subEntities.AddRange(entity.Instructors);
+        }
+        bulkConfig.SetOutputIdentity = false;
+        context.BulkInsert(subEntities, bulkConfig);
+
+        Console.WriteLine($"after insert bulk 课程:{context.Courses.Count()}条");
+        //查询
+        var courses = context.Courses.Include(x => x.Instructors).Where(x => x.CourseID < 10000);//.Take(10);
+        foreach (var cource in courses)
+        {
+            Console.WriteLine($"课程:{cource.CourseID},{cource.Title}");
+            foreach (var instructor in cource.Instructors!)
+            {
+                Console.WriteLine($"----教师 :{instructor.ID}-{instructor.FullName}");
+            }
+        }
+    }
+
+
+    [Theory]
+    [InlineData(SqlType.Sqlite)]
+    public void InsertTables(SqlType sqlType)
+    {
+        ContextUtil.DatabaseType = sqlType;
+        using var context = new TestContext(ContextUtil.GetOptions());
+        List<Order> orderInfos = new List<Order>();
+        foreach (var i in Enumerable.Range(1, 50000))
+        {
+            Order orderInfo = new Order();
+            var image = new ImageTB() { MainImage = "www.baidu.com" + i.ToString(), Images = new List<string>() { "www.baidu.com1", "www.baidu.com2", "www.baidu.com3" } };
+            var product = new Product() { ProductName = "凉席" + i.ToString(), Description = "2024夏季新款", Price = 19.9M, Count = 3000, Images = image };
+            var address = new AddressTB() { Name = "小明" + i.ToString(), Phone = "15996478657", City = "南京", Province = "江苏省", District = "雨花区", Street = "郁金香16号", PostalCode = "21000" };
+            var orderdetail = new OrderDetail() { product = product, ProductID = product.Id, Count = 1, Price = 16.98M, Description = "时尚单品", ProductName = "凉席" + i.ToString(), Amount = 16.98M, order = orderInfo };
+            orderInfo = new Order()
+            {
+                CreateTime = DateTime.Now,
+                IsPay = true,
+                PayTime = DateTime.Now,
+                Address = address,
+                AddressID = address.Id,
+                OrderDetails = new List<OrderDetail>() { orderdetail }
+            };
+            orderInfos.Add(orderInfo);
+        }
+        context.BulkInsert(orderInfos);
+    }
+
+    [Theory]
+    [InlineData(SqlType.Sqlite)]
     public void InsertEnumStringValue(SqlType sqlType)
     {
         ContextUtil.DatabaseType = sqlType;
-
         using var context = new TestContext(ContextUtil.GetOptions());
         context.Database.ExecuteSqlRaw($@"DELETE FROM ""{nameof(Wall)}""");
         context.Database.ExecuteSqlRaw($@"DELETE FROM ""{nameof(TimeRecord)}""");
@@ -557,6 +644,17 @@ public class EFCoreBulkTest
                 var bulkConfig = new BulkConfig() { SetOutputIdentity = true };
                 context.BulkInsert(entities, bulkConfig);
 
+                var courses = context.Items.Include(x => x.ItemHistories).Take(10);
+                foreach (var cource in courses)
+                {
+                    Console.WriteLine($":{cource.Name},{cource.ItemId}");
+
+                    foreach (var instructor in cource.ItemHistories!)
+                    {
+                        Console.WriteLine($"----教师 :{instructor.ItemId}-{instructor.ItemHistoryId}");
+                    }
+                }
+
                 foreach (var entity in entities)
                 {
                     foreach (var subEntity in entity.ItemHistories)
@@ -569,6 +667,16 @@ public class EFCoreBulkTest
                 context.BulkInsert(subEntities, bulkConfig);
 
                 transaction.Commit();
+                var courses2 = context.Items.Include(x => x.ItemHistories).Take(10);
+                foreach (var cource in courses2)
+                {
+                    Console.WriteLine($":{cource.Name},{cource.ItemId}");
+
+                    foreach (var instructor in cource.ItemHistories!)
+                    {
+                        Console.WriteLine($"----教师 :{instructor.ItemId}-{instructor.ItemHistoryId}");
+                    }
+                }
             }
         }
         else

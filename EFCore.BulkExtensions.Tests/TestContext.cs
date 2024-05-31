@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Microsoft.Extensions.Configuration;
+using Mono.Reflection;
 using NetTopologySuite.Geometries;
 using System;
 using System.Collections.Generic;
@@ -90,8 +91,23 @@ public class TestContext : DbContext
 
     public static bool UseTopologyPostgres { get; set; } = false; // needed for object Address with Geo. props
 
+    public DbSet<Order> Orders { get; set; }
+    public DbSet<OrderDetail> OrderDetails { get; set; }
+    public DbSet<AddressTB> Addresss { get; set; }
+
+    public DbSet<Product> Products { get; set; }
+
+    public DbSet<ImageTB> Images { get; set; }
+
+    public DbSet<Course> Courses { get; set; }
+
+    public DbSet<Instructor> Instructors { get; set; }
+
+    public DbSet<DepartmentTB> departmentTBs { get; set; }
+
     public TestContext(DbContextOptions options) : base(options)
     {
+        Database.EnsureDeleted();
         Database.EnsureCreated();
         // if for Postgres on test run get Npgsql Ex:[could not open .../postgis.control] then either install the plugin it or set UseTopologyPostgres to False;
 
@@ -421,6 +437,181 @@ public static class ModelBuilderExtensions
 }
 
 #region test models
+
+public class Order
+{
+    public Order()
+    {
+            
+    }
+    public Order(DateTime createTime, bool isPay, DateTime payTime, int addressID, AddressTB address, ICollection<OrderDetail> orderDetails)
+    {
+        CreateTime = createTime;
+        IsPay = isPay;
+        PayTime = payTime;
+        AddressID = addressID;
+        Address = address;
+        OrderDetails = orderDetails;
+    }
+
+    [Key]
+    public int Id { get; set; }
+
+    public DateTime? CreateTime { get; set; }
+
+    public bool IsPay { get; set; } = false;
+
+    public DateTime? PayTime { get; set; }
+
+    public int AddressID { get; set; }
+
+    public AddressTB? Address { get; set; }
+
+    public ICollection<OrderDetail>? OrderDetails { get; set; }
+
+}
+
+
+public class OrderDetail
+{
+    public OrderDetail()
+    {
+            
+    }
+    public OrderDetail(int orderId, Order order, string productName, string description, int count, decimal price, decimal amount, int productID, Product product)
+    {
+        OrderId = orderId;
+        this.order = order;
+        ProductName = productName;
+        Description = description;
+        Count = count;
+        Price = price;
+        Amount = amount;
+        ProductID = productID;
+        this.product = product;
+    }
+
+    [Key]
+    public int Id { get; set; }
+    public int OrderId { get; set; }
+
+    public Order? order { get; set; }
+    public string? ProductName { get; set; }
+    public string? Description { get; set; }
+
+    public int Count { get; set; }
+    public decimal Price { get; set; }
+
+    public decimal Amount { get; set; }
+
+    public int ProductID { get; set; }
+
+    public Product? product { get; set; }
+}
+
+public class Product
+{
+    public Product()
+    {
+            
+    }
+    public Product(string productName, string description, int count, decimal price, ImageTB images)
+    {
+        ProductName = productName;
+        Description = description;
+        Count = count;
+        Price = price;
+        Images = images;
+    }
+
+    [Key]
+    public int Id { get; set; }
+
+    public string? ProductName { get; set; }
+
+    public string? Description { get; set; }
+
+    public int Count { get; set; }
+
+    public decimal Price { get; set; }
+
+    public ImageTB? Images { get; set; }
+}
+
+public class ImageTB
+{
+    public ImageTB()
+    {
+            
+    }
+    public ImageTB(string mainImage, List<string> images)
+    {
+        MainImage = mainImage;
+        Images = images;
+    }
+
+    [Key]
+    public int Id { get; set; }
+
+    public string? MainImage { get; set; }
+
+    public List<string>? Images { get; set; }
+}
+
+public class AddressTB
+{
+    public AddressTB()
+    {
+            
+    }
+    public AddressTB(string name, string phone, string province, string city, string district, string street, string postalCode)
+    {      
+        Name = name;
+        Phone = phone;
+        Province = province;
+        City = city;
+        District = district;
+        Street = street;
+        PostalCode = postalCode;
+    }
+
+    [Key]
+    public int Id { get; set; }
+
+    public string Name { get; set; } = string.Empty;
+
+    public string Phone { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 省份
+    /// </summary>
+    public string Province { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 城市
+    /// </summary>
+    public string City { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 区县
+    /// </summary>
+    public string District { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 街道
+    /// </summary>
+    public string Street { get; set; } = string.Empty;
+    /// <summary>
+    /// 邮编
+    /// </summary>
+    public string PostalCode { get; set; } = string.Empty;
+
+    public override string ToString()
+    {
+        return $"{Name}-{Province}-{City}-{District}-{Street}";
+    }
+}
+
 public class Item
 {
     public Item()
@@ -1043,4 +1234,98 @@ public class Article
 
     public string? Name { get; set; }
 }
+
+/// <summary>
+/// 课程
+/// </summary>
+public class Course
+{
+    [Key]
+    public int CourseID { get; set; }
+
+    [StringLength(50, MinimumLength = 3)]
+    public string Title { get; set; } = string.Empty;
+
+    [Range(0, 5)]
+    public int? Credits { get; set; }
+    public ICollection<Instructor>? Instructors { get; set; }
+}
+public class Instructor
+{
+    public int ID { get; set; }
+
+    [Required]
+    [Display(Name = "Last Name")]
+    [StringLength(50)]
+    public string LastName { get; set; } = string.Empty;
+
+    [Required]
+    [Column("FirstName")]
+    [Display(Name = "First Name")]
+    [StringLength(50)]
+    public string FirstMidName { get; set; } = string.Empty;
+
+    [DataType(DataType.Date)]
+    [DisplayFormat(DataFormatString = "{0:yyyy-MM-dd}", ApplyFormatInEditMode = true)]
+    [Display(Name = "Hire Date")]
+    public DateTime HireDate { get; set; }
+
+    [Display(Name = "Full Name")]
+    public string FullName
+    {
+        get { return LastName + ", " + FirstMidName; }
+    }
+
+    public int CourseID { get; set; }
+    public Course course { get; set; } = null!;
+
+    public int? DepartmentTBID { get; set; }
+
+    public DepartmentTB? DepartmentTB { get; set; }
+
+}
+
+public class DepartmentTB
+{
+    public DepartmentTB()
+    {
+
+    }
+    public DepartmentTB(string name, decimal budget, DateTime startDate, 
+        //int? instructorID, Instructor administrator, 
+        ICollection<Instructor> instructors)
+    {
+        this.Name = name;
+        Budget = budget;
+        StartDate = startDate;
+        //InstructorID = instructorID;
+        //Administrator = administrator;
+        Instructors = instructors;
+    }
+    [Key]
+    public int DepartmentID { get; set; }
+
+    [StringLength(50, MinimumLength = 3)]
+    public string Name { get; set; } = string.Empty;
+
+    [DataType(DataType.Currency)]
+    [Column(TypeName = "money")]
+    public decimal Budget { get; set; }
+
+    [DataType(DataType.Date)]
+    [DisplayFormat(DataFormatString = "{0:yyyy-MM-dd}",
+                   ApplyFormatInEditMode = true)]
+    [Display(Name = "Start Date")]
+    public DateTime StartDate { get; set; }
+
+    //[Display(Name = "主任")]
+    //public int? InstructorID { get; set; }
+
+    //public Instructor Administrator { get; set; } = null!;
+
+    [Display(Name = "所属该部门的老师")]
+    public ICollection<Instructor> Instructors { get; set; } =new  List<Instructor>();
+        
+}
+
 #endregion
