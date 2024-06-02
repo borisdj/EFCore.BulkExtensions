@@ -23,7 +23,7 @@ public class EFCoreBulkTest
     private static readonly Func<TestContext, IEnumerable<Item>> AllItemsQuery = EF.CompileQuery<TestContext, IEnumerable<Item>>(ctx => ctx.Items.AsNoTracking());
 
     [Theory]
-    [InlineData(SqlType.Sqlite)]
+    [InlineData(SqlType.SqlServer)]
     public void InsertCourseTables(SqlType sqlType)
     {
         ContextUtil.DatabaseType = sqlType;
@@ -32,7 +32,7 @@ public class EFCoreBulkTest
         Console.WriteLine($"before insert bulk 课程:{context.Courses.Count()}条");
         List<Course> Courses = new List<Course>();
         List<Instructor> subEntities = new List<Instructor>();
-        foreach (var i in Enumerable.Range(1, 500))
+        foreach (var i in Enumerable.Range(1, 5))
         {
             //这门课下的3个老师
             List<Instructor> instructors = new List<Instructor>();
@@ -69,7 +69,7 @@ public class EFCoreBulkTest
 
         Console.WriteLine($"after insert bulk 课程:{context.Courses.Count()}条");
         //查询
-        var courses = context.Courses.Include(x => x.Instructors).Where(x => x.CourseID < 10000);//.Take(10);
+        var courses = context.Courses.Include(x => x.Instructors);//.Take(10);
         foreach (var cource in courses)
         {
             Console.WriteLine($"课程:{cource.CourseID},{cource.Title}");
@@ -78,7 +78,38 @@ public class EFCoreBulkTest
                 Console.WriteLine($"----教师 :{instructor.ID}-{instructor.FullName}");
             }
         }
+        var oldCoures = context.Courses.ToList();
+        List<Course> newCourses = new List<Course>();
+        foreach (var i in Enumerable.Range(1, 5))
+        {
+            //这门课
+            newCourses.Add(new Course
+            {
+                Title = "add new bulkLiterature" + i.ToString(),
+                Credits = 4,
+            });
+        }
+        oldCoures.AddRange(newCourses);
+        var configUpdateBy = new BulkConfig
+        {
+            SetOutputIdentity = true,
+            CalculateStats=true,
+        };
+        context.BulkInsertOrUpdate(courses, configUpdateBy);
+        Assert.Equal(EntitiesNumber - 1, configUpdateBy.StatsInfo?.StatsNumberInserted);
+        Assert.Equal(0, configUpdateBy.StatsInfo?.StatsNumberUpdated);
+        Assert.Equal(0, configUpdateBy.StatsInfo?.StatsNumberDeleted);
+        foreach (var cource in oldCoures)
+        {
+            Console.WriteLine($"课程:{cource.CourseID},{cource.Title}");
+            foreach (var instructor in cource.Instructors!)
+            {
+                Console.WriteLine($"----教师 :{instructor.ID}-{instructor.FullName}");
+            }
+        }
     }
+
+
 
 
     [Theory]
