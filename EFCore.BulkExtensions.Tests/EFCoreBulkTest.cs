@@ -24,6 +24,103 @@ public class EFCoreBulkTest
 
     [Theory]
     [InlineData(SqlType.SqlServer)]
+    public void insertorupdateordeleteDemo(SqlType sqlType)
+    {
+        ContextUtil.DatabaseType = sqlType;
+        using var context = new TestContext(ContextUtil.GetOptions());
+        var count = context.Courses.Count();
+        List<Course> Courses = new List<Course>();
+        foreach (var i in Enumerable.Range(1, 10))
+        {
+            var emodel = new Course
+            {
+                Title = "bulkLiterature" + i.ToString(),
+                Credits = i,
+            };
+            //这门课
+            Courses.Add(emodel);
+        }
+        var bulkConfig = new BulkConfig() { SetOutputIdentity = true }; //从数据库中返回id
+        context.BulkInsert(Courses, bulkConfig);
+        List<Course> newCourses = context.Courses.ToList();
+        foreach (var c in newCourses.Take(5))
+        {
+            c.Title = "update new bulkLiterature";
+        }
+        foreach (var i in Enumerable.Range(1, 6))
+        {
+            //这门课
+            newCourses.Add(new Course
+            {
+                Title = "add new bulkLiterature" + i.ToString(),
+                Credits = 4,
+            });
+        }
+        var bulkConfigSoftDel = new BulkConfig();
+        bulkConfigSoftDel.SetOutputIdentity = true;
+        bulkConfigSoftDel.CalculateStats = true;
+        bulkConfigSoftDel.SetSynchronizeSoftDelete<Course>(a => new Course {Credits=0 }); // 它没有从数据库中删除，而是将Quantity更新为0（通常的用例是：IsDeleted为True）
+        context.BulkInsertOrUpdateOrDelete(newCourses, bulkConfigSoftDel);
+        Console.WriteLine($"after insert bulk 课程:{context.Courses.Count()}条");
+        //查询
+        var list = context.Courses.ToList();//.Take(10);
+        foreach (var cource in list)
+        {
+            Console.WriteLine($"课程:{cource.CourseID},{cource.Title}");
+        }
+        Console.WriteLine(bulkConfigSoftDel.StatsInfo?.StatsNumberInserted);
+        Console.WriteLine(bulkConfigSoftDel.StatsInfo?.StatsNumberUpdated);
+        Console.WriteLine(bulkConfigSoftDel.StatsInfo?.StatsNumberDeleted);
+
+    }
+
+        [Theory]
+    [InlineData(SqlType.SqlServer)]
+    public void WeiYi(SqlType sqlType)
+    {
+        ContextUtil.DatabaseType = sqlType;
+        using var context = new TestContext(ContextUtil.GetOptions());
+        var entities = new List<Course>();
+        for (int i = 1; i < 10; i++)
+        {
+            var emodel = new Course
+            {
+                Title = "bulkLiterature"+i,
+                Credits = 5,
+            };
+            entities.Add(emodel);
+        }
+        context.BulkInsert(entities);
+        var dbEntities = context.Courses.AsNoTracking().ToList();
+        foreach (var entity in dbEntities)
+        {
+            Console.WriteLine($"Course:{entity.CourseID},Title:{entity.Title}");
+        }
+        var updateEntities = new List<Course>();
+        for (int i = 1; i < 6; i++)
+        {
+            var emodel = new Course
+            {
+                Title = "bulkLiterature" + i,
+                Credits = 4,
+            };
+            entities.Add(emodel);
+        }
+        context.BulkInsertOrUpdate(updateEntities,
+            new BulkConfig
+            {
+                UpdateByProperties = new List<string> { nameof(Course.Title) }
+            }
+        );
+        var dbEntities2 = context.Courses.AsNoTracking().ToList();
+        foreach (var entity in dbEntities2)
+        {
+            Console.WriteLine($"Course:{entity.CourseID},Title:{entity.Title}");
+        }
+    }
+
+    [Theory]
+    [InlineData(SqlType.SqlServer)]
     public void InsertCourseTables(SqlType sqlType)
     {
         ContextUtil.DatabaseType = sqlType;
@@ -799,7 +896,9 @@ public class EFCoreBulkTest
             var bulkConfig = new BulkConfig() { SetOutputIdentity = true, CalculateStats = true };
             keepEntityItemId = 3;
             bulkConfig.SetSynchronizeFilter<Item>(e => e.ItemId != keepEntityItemId.Value);
-            bulkConfig.OnConflictUpdateWhereSql = (existing, inserted) => $"{inserted}.{nameof(Item.TimeUpdated)} > {existing}.{nameof(Item.TimeUpdated)}"; // can use nameof bacause in this case property name is same as column name 
+            //可以使用名称bacause在这种情况下属性名称与列名相同
+            // can use nameof bacause in this case property name is same as column name 
+            bulkConfig.OnConflictUpdateWhereSql = (existing, inserted) => $"{inserted}.{nameof(Item.TimeUpdated)} > {existing}.{nameof(Item.TimeUpdated)}";
 
             context.BulkInsertOrUpdateOrDelete(entities, bulkConfig, (a) => WriteProgress(a));
 

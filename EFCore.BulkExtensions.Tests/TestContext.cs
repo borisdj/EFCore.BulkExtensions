@@ -1248,6 +1248,8 @@ public class Course
 
     [Range(0, 5)]
     public int? Credits { get; set; }
+
+    public bool IsDeleted { set; get; } = false;
     public ICollection<Instructor>? Instructors { get; set; }
 }
 public class Instructor

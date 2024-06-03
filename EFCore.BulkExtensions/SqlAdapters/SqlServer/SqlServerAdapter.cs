@@ -66,21 +66,30 @@ public class SqlServerAdapter : ISqlOperationsAdapter
             try
             {
                 var dataTable = GetDataTable(context, type, entities, sqlBulkCopy, tableInfo);
-                IDataReader? dataReader = tableInfo.BulkConfig.DataReader;
-
+                IDataReader? dataReader = tableInfo.BulkConfig.DataReader;               
                 if (isAsync)
                 {
                     if(dataReader == null)
+                    { 
+                        //将所有行从数据源复制到 SqlBulkCopy 对象的 DestinationTableName 属性指定的目标表中
                         await sqlBulkCopy.WriteToServerAsync(dataTable, cancellationToken).ConfigureAwait(false);
+                    }                        
                     else
+                    {
                         await sqlBulkCopy.WriteToServerAsync(dataReader, cancellationToken).ConfigureAwait(false);
+                    }                        
                 }
                 else
                 {
                     if (dataReader == null)
+                    {
+                        //将所有行从数据源复制到 SqlBulkCopy 对象的 DestinationTableName 属性指定的目标表中
                         sqlBulkCopy.WriteToServer(dataTable);
+                    }                       
                     else
+                    {
                         sqlBulkCopy.WriteToServer(dataReader);
+                    }                        
                 }
             }
             catch (Exception ex)
