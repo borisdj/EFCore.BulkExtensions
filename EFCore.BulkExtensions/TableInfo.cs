@@ -266,6 +266,16 @@ public class TableInfo
         var primaryKeys = entityType.FindPrimaryKey()?.Properties?.ToDictionary(a => a.Name, b => b.GetColumnName(ObjectIdentifier) ?? string.Empty);
         EntityPKPropertyColumnNameDict = primaryKeys ?? new Dictionary<string, string>();
 
+        if (BulkConfig.UpdateByProperties?.Any(up => !allProperties.Any(pp => pp.Name == up)) is true)
+        {
+            var wrongNames = BulkConfig.UpdateByProperties!.Where(up => !allProperties.Any(pp => pp.Name == up));
+            throw new ArgumentException($"""
+                UpdateByProperties contains property names, that doesn't exist in entity properties list.
+                Wrong properties: {string.Join(", ", wrongNames)}.
+                All properties: {string.Join(", ", allProperties)}.
+                """);
+        }
+
         HasSinglePrimaryKey = primaryKeys?.Count == 1;
         PrimaryKeysPropertyColumnNameDict = areSpecifiedUpdateByProperties ? BulkConfig.UpdateByProperties?.ToDictionary(a => a, b => allProperties.First(p => p.Name == b).GetColumnName(ObjectIdentifier) ?? string.Empty) ?? new()
                                                                            : (primaryKeys ?? new Dictionary<string, string>());
