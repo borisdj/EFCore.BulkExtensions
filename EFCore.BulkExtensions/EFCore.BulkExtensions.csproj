@@ -60,4 +60,7 @@
       <PackagePath></PackagePath>
     </EmbeddedResource>
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql.NetTopologySuite" Version="8.0.2" />
+  </ItemGroup>
 </Project>

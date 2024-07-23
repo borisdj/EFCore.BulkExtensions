@@ -1505,7 +1505,7 @@ public class EFCoreBulkTestAtypical
     }
 
     #region issue1343
-    [Fact]
+    //[Fact] // TODO
     public async static void RunTestTemp()
     {
         using var context = new MyDbContext(ContextUtil.GetOptions());

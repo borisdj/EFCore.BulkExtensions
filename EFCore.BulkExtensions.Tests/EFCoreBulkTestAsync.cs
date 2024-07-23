@@ -15,9 +15,10 @@ public class EFCoreBulkTestAsync
 {
     protected static int EntitiesNumber => 10000;
 
-    private static readonly Func<TestContext, int> ItemsCountQuery = EF.CompileQuery<TestContext, int>(ctx => ctx.Items.Count());
-    private static readonly Func<TestContext, Item?> LastItemQuery = EF.CompileQuery<TestContext, Item?>(ctx => ctx.Items.LastOrDefault());
-    private static readonly Func<TestContext, IEnumerable<Item>> AllItemsQuery = EF.CompileQuery<TestContext, IEnumerable<Item>>(ctx => ctx.Items.AsNoTracking());
+    // NOT USED - when running multiple async tests throws: The compiled query ctx => ctx.Items was executed with a different model than it was compiled against
+    //private static readonly Func<TestContext, int> ItemsCountQuery = EF.CompileQuery<TestContext, int>(ctx => ctx.Items.Count());
+    //private static readonly Func<TestContext, Item?> LastItemQuery = EF.CompileQuery<TestContext, Item?>(ctx => ctx.Items.LastOrDefault());
+    //private static readonly Func<TestContext, IEnumerable<Item>> AllItemsQuery = EF.CompileQuery<TestContext, IEnumerable<Item>>(ctx => ctx.Items.AsNoTracking());
 
     [Theory]
     [InlineData(SqlType.SqlServer, true)]
@@ -59,9 +60,10 @@ public class EFCoreBulkTestAsync
         await context.Database.EnsureDeletedAsync().ConfigureAwait(false);
     }
 
-    private static void WriteProgress(decimal percentage)
+    private static void WriteProgress(decimal percentage, bool writeOnConsole = false)
     {
-        Debug.WriteLine(percentage);
+        if(writeOnConsole)
+            Debug.WriteLine(percentage);
     }
 
     private static async Task BulkOperationShouldNotCloseOpenConnectionAsync(SqlType sqlType, Func<TestContext, Task> bulkOperation, string tableSufix)
@@ -329,7 +331,7 @@ public class EFCoreBulkTestAsync
         using var context = new TestContext(ContextUtil.GetOptions());
 
         int counter = 1;
-        var entities = AllItemsQuery(context).ToList();
+        var entities = context.Items.AsNoTracking().ToList();
         foreach (var entity in entities)
         {
             entity.Description = "Desc Update " + counter++;
@@ -384,7 +386,7 @@ public class EFCoreBulkTestAsync
     {
         using var context = new TestContext(ContextUtil.GetOptions());
 
-        var entities = AllItemsQuery(context).ToList();
+        var entities = context.Items.AsNoTracking().ToList();
         // ItemHistories will also be deleted because of Relationship - ItemId (Delete Rule: Cascade)
         if (isBulk)
         {

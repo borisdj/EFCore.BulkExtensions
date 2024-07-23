@@ -320,6 +320,7 @@ public class EFCoreBulkTest
         }
         var entities3 = new List<Item>();
         var entities4 = new List<Item>();
+        var entities5 = new List<Item>();
 
         // INSERT
 
@@ -360,12 +361,9 @@ public class EFCoreBulkTest
         context.BulkDelete(new List<Item> { new Item { ItemId = 11 } });
         Assert.False(context.Items.Where(a => a.Name == "Name 11").AsNoTracking().Any());
 
-        var entities5 = context.Items.Where(a => a.ItemId == 15).AsNoTracking().ToList();
-        entities5[0].Description = "SaveCh upd";
-        entities5.Add(new Item { ItemId = 16, Name = "Name 16", Description = "info 16" }); // when BulkSaveChanges with Upsert 'ItemId' has to be set(EX.My1), and with Insert only it skips one number, Id becomes 17 instead of 16
+        entities5.Add(new Item { ItemId = 16, Name = "Name 16", Description = "info 16" });
         context.AddRange(entities5);
-        context.BulkSaveChanges();
-        //Assert.Equal(16, entities5[1].ItemId); // TODO Check Id is 2 instead of 16
+        context.BulkSaveChanges(); // can only be used for multiple Insert with one or more tables, can not combine it with Upsert, since 'ItemId' would had to be set for a subset only and no way to distinguish it.
         Assert.Equal("info 16", context.Items.Where(a => a.Name == "Name 16").AsNoTracking().FirstOrDefault()?.Description);
 
         var entities6 = new List<Item>();
@@ -479,9 +477,10 @@ public class EFCoreBulkTest
         Assert.Equal(0, compiledQueryCache.Count);
     }
 
-    private static void WriteProgress(decimal percentage)
+    private static void WriteProgress(decimal percentage, bool writeOnConsole = false)
     {
-        Debug.WriteLine(percentage);
+        if(writeOnConsole)
+            Debug.WriteLine(percentage);
     }
 
     private static void RunInsert(bool isBulk)

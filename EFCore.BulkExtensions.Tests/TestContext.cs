@@ -88,7 +88,9 @@ public class TestContext : DbContext
 
     public DbSet<GraphQLModel> GraphQLModels { get; set; } = null!;
 
-    public static bool UseTopologyPostgres { get; set; } = false; // needed for object Address with Geo. props
+    public static bool UseTopologyPostgres { get; set; } = true; // needed for object Address with Geo. props
+    // 'No suitable constructor was found for entity type 'LineString'. The following constructors had parameters that could not be bound to properties of the entity type: 
+    // Cannot bind 'points' in 'LineString(Coordinate[] points)'  Cannot bind 'points', 'factory' in 'LineString(CoordinateSequence points, GeometryFactory factory)'
 
     public TestContext(DbContextOptions options) : base(options)
     {
@@ -353,7 +355,7 @@ public static class ContextUtil
         else if (DatabaseType == SqlType.MySql)
         {
             string connectionString = GetMySqlConnectionString(databaseName);
-            optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
+            optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString), opt => opt.UseNetTopologySuite());
         }
         else
         {

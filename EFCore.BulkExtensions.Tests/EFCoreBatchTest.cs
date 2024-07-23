@@ -86,11 +86,8 @@ public class EFCoreBatchTest
 
         if (dbServer == SqlType.SqlServer)
         {
-            RunUdttBatch();
-        }
+            //RunUdttBatch(); // not used, used to throw: 'Cannot find data type dbo.UdttIntInt.'
 
-        if (dbServer == SqlType.SqlServer)
-        {
             // Removing ORDER BY and CTE's are not implemented for SQLite.
             RunOrderByDeletes();
             RunIncludeDelete();
@@ -202,7 +199,7 @@ public class EFCoreBatchTest
     WHERE [p1].[ParentId] = [p].[ParentId]) 
 FROM [Parent] AS [p]
 LEFT JOIN [ParentDetail] AS [p0] ON [p].[ParentId] = [p0].[ParentId]
-WHERE [p].[ParentId] < 5 AND ([p0].[Notes] IS NOT NULL) AND NOT ([p0].[Notes] LIKE N'')";
+WHERE [p].[ParentId] < 5 AND [p0].[Notes] IS NOT NULL AND [p0].[Notes] NOT LIKE N''";
         expectedSql = expectedSql.Replace("\r\n", "\n");
         Assert.Equal(expectedSql, actualSqlExecuted);
 

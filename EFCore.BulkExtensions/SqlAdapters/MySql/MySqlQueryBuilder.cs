@@ -99,8 +99,8 @@ public class MySqlQueryBuilder : SqlQueryBuilder
         else
         {
             var commaSeparatedColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsList).Replace("[", "`").Replace("]", "`");
-            var columnsListEquals = GetColumnList(tableInfo, OperationType.Insert);
-            var columnsToUpdate = columnsListEquals.Where(c => tableInfo.PropertyColumnNamesUpdateDict.ContainsValue(c)).ToList();
+            var columnsListEquals = GetColumnList(tableInfo, OperationType.InsertOrUpdate);
+            var columnsToUpdate = columnsListEquals.Where(c => tableInfo.PropertyColumnNamesDict.ContainsValue(c)).ToList();
             var equalsColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsToUpdate, equalsTable: "EXCLUDED").Replace("[", "`").Replace("]", "`");
 
             q = $"INSERT INTO {tableInfo.FullTableName} ({commaSeparatedColumns}) " +
