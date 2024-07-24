@@ -286,7 +286,9 @@ public class PostgreSqlQueryBuilder : SqlQueryBuilder
                       AND NOT a.attisdropped
                       AND (c.contype = ANY (ARRAY ['p'::""char"", 'u'::""char""]))
                       AND (r.relkind = ANY (ARRAY ['r'::""char"", 'p'::""char""]))" +
-                $" AND r.relname = '{tableInfo.TableName}' AND nr.nspname = '{tableInfo.Schema}' AND a.attname IN('{string.Join("','", primaryKeysColumns)}')";
+                $" AND r.relname = '{tableInfo.TableName}'" + 
+                $" AND nr.nspname = '{tableInfo.Schema}'" + 
+                $" AND a.attname IN('{string.Join("','", primaryKeysColumns)}')";
         }
         else // Deprecated - Information_Schema no longer used (is available only in default database)
         {
