@@ -609,7 +609,7 @@ public class EFCoreBulkTest
             var bulkConfig = new BulkConfig() {
                 SetOutputIdentity = true,
                 CalculateStats = true,
-                SqlBulkCopyOptions = Microsoft.Data.SqlClient.SqlBulkCopyOptions.KeepIdentity
+                SqlBulkCopyOptions = SqlBulkCopyOptions.KeepIdentity
             };
             context.BulkInsertOrUpdate(entities, bulkConfig, (a) => WriteProgress(a));
             if (sqlType == SqlType.SqlServer)

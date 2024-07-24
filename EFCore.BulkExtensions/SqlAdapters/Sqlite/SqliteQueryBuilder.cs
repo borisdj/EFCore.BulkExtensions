@@ -1,7 +1,9 @@
-﻿using Microsoft.Data.SqlClient;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Data;
+using System.Data.Common;
 using System.Linq;
+using Microsoft.Data.Sqlite;
 
 namespace EFCore.BulkExtensions.SqlAdapters.Sqlite;
 
@@ -134,26 +136,32 @@ public class SqliteQueryBuilder : SqlQueryBuilder
     }
 
     /// <inheritdoc/>
-    public override object CreateParameter(SqlParameter sqlParameter)
+    public override DbParameter CreateParameter(string parameterName, object? parameterValue = null)
     {
-        throw new NotImplementedException();
+        return new SqliteParameter();
     }
 
     /// <inheritdoc/>
-    public override object Dbtype()
+    public override DbCommand CreateCommand()
     {
-        throw new NotImplementedException();
+        return new SqliteCommand();
+    }
+
+    /// <inheritdoc/>
+    public override DbType Dbtype()
+    {
+        throw new NotSupportedException();
     }
 
     /// <inheritdoc/>
     public override string RestructureForBatch(string sql, bool isDelete = false)
     {
-        throw new NotImplementedException();
+        throw new NotSupportedException();
     }
 
     /// <inheritdoc/>
-    public override void SetDbTypeParam(object npgsqlParameter, object dbType)
+    public override void SetDbTypeParam(DbParameter parameter, DbType dbType)
     {
-        throw new NotImplementedException();
+        throw new NotSupportedException();
     }
 }

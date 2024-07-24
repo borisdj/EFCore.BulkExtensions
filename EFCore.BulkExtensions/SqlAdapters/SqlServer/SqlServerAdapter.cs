@@ -392,11 +392,11 @@ public class SqlServerAdapter : ISqlOperationsAdapter
     private static SqlBulkCopy GetSqlBulkCopy(SqlConnection sqlConnection, IDbContextTransaction? transaction, BulkConfig config)
     {
         var sqlTransaction = transaction == null ? null : (SqlTransaction)transaction.GetUnderlyingTransaction(config);
-        var sqlBulkCopy = new SqlBulkCopy(sqlConnection, config.SqlBulkCopyOptions, sqlTransaction);
+        var sqlBulkCopy = new SqlBulkCopy(sqlConnection, (Microsoft.Data.SqlClient.SqlBulkCopyOptions)config.SqlBulkCopyOptions, sqlTransaction);
         if (config.SqlBulkCopyColumnOrderHints != null)
         {
             foreach(var hint in config.SqlBulkCopyColumnOrderHints)
-                sqlBulkCopy.ColumnOrderHints.Add(hint);
+                sqlBulkCopy.ColumnOrderHints.Add(new Microsoft.Data.SqlClient.SqlBulkCopyColumnOrderHint(hint.Column, (Microsoft.Data.SqlClient.SortOrder)hint.SortOrder));
         }
         return sqlBulkCopy;
     }

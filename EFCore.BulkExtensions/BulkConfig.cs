@@ -1,4 +1,3 @@
-using Microsoft.Data.SqlClient;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -310,7 +309,7 @@ public class BulkConfig
     /// <value>
     ///     <c>Default, KeepIdentity, CheckConstraints, TableLock, KeepNulls, FireTriggers, UseInternalTransaction</c>
     /// </value>
-    public Microsoft.Data.SqlClient.SqlBulkCopyOptions SqlBulkCopyOptions { get; set; } // is superset of System.Data.SqlClient.SqlBulkCopyOptions, gets converted to the desired type
+    public SqlBulkCopyOptions SqlBulkCopyOptions { get; set; } // is superset of System.Data.SqlClient.SqlBulkCopyOptions, gets converted to the desired type
 
     /// <summary>
     ///     List of column order hints for improving performance.
@@ -399,4 +398,83 @@ public class TimeStampInfo
     /// Output the entities.
     /// </summary>
     public List<object> EntitiesOutput { get; set; } = null!;
+}
+
+/// <summary>
+/// Bitwise flag that specifies one or more options to use with an instance of <see cref="T:Microsoft.Data.SqlClient.SqlBulkCopy"/>.
+/// </summary>
+[Flags]
+public enum SqlBulkCopyOptions
+{
+    /// <summary>
+    /// Use the default values for all options.
+    /// </summary>
+    Default = 0,
+    /// <summary>
+    /// Preserve source identity values. When not specified, identity values are assigned by the destination.
+    /// </summary>
+    KeepIdentity = 1 << 0,
+    /// <summary>
+    /// Check constraints while data is being inserted. By default, constraints are not checked.
+    /// </summary>
+    CheckConstraints = 1 << 1,
+    /// <summary>
+    /// Obtain a bulk update lock for the duration of the bulk copy operation. When not specified, row locks are used.
+    /// </summary>
+    TableLock = 1 << 2,
+    /// <summary>
+    /// Preserve null values in the destination table regardless of the settings for default values.
+    /// When not specified, null values are replaced by default values where applicable.
+    /// </summary>
+    KeepNulls = 1 << 3,
+    /// <summary>
+    /// When specified, cause the server to fire the insert triggers for the rows being inserted into the database.
+    /// </summary>
+    FireTriggers = 1 << 4,
+    /// <summary>
+    /// When specified, each batch of the bulk-copy operation will occur within a transaction.
+    /// If you indicate this option and also provide a <see cref="T:Microsoft.Data.SqlClient.SqlTransaction" />object to the constructor,
+    /// an <see cref="T:System.ArgumentException" /> occurs.
+    /// </summary>
+    UseInternalTransaction = 1 << 5,
+    /// <summary>
+    /// When specified, **AllowEncryptedValueModifications** enables bulk copying of encrypted data between tables or databases, without decrypting the data.
+    /// </summary>
+    AllowEncryptedValueModifications = 1 << 6
+}
+
+/// <summary>
+/// Defines the sort order for a column in a <see cref="T:Microsoft.Data.SqlClient.SqlBulkCopy" /> instance's destination table,
+/// according to the clustered index on the table.
+/// </summary>
+public class SqlBulkCopyColumnOrderHint
+{
+    /// <summary>
+    /// The name of the destination column within the destination table.
+    /// </summary>
+    public required string Column { get; set; }
+
+    /// <summary>
+    /// The sort order of the corresponding destination column.
+    /// </summary>
+    public SortOrder SortOrder { get; set; } = SortOrder.Unspecified;
+}
+
+/// <summary>
+/// Specifies how rows of data are sorted.
+/// </summary>
+public enum SortOrder
+{
+    /// <summary>
+    /// The default. No sort order is specified.
+    /// </summary>
+    Unspecified = -1,
+    /// <summary>
+    /// Rows are sorted in ascending order.
+    /// </summary>
+    Ascending = 0,
+    /// <summary>
+    /// Rows are sorted in descending order.
+    /// </summary>
+    Descending = 1
 }

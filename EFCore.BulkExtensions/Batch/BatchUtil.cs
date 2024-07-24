@@ -1,5 +1,4 @@
 using EFCore.BulkExtensions.SqlAdapters;
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -37,7 +36,7 @@ public static class BatchUtil
     /// <param name="query"></param>
     /// <param name="context"></param>
     /// <returns></returns>
-    public static (string, List<object>) GetSqlDelete(IQueryable query, DbContext context)
+    public static (string, List<DbParameter>) GetSqlDelete(IQueryable query, DbContext context)
     {
         var (sql, tableAlias, _, topStatement, leadingComments, innerParameters) = GetBatchSql(query, context, isUpdate: false);
 
@@ -96,17 +95,17 @@ public static class BatchUtil
 
         if (databaseType == SqlType.PostgreSql)
         {
-            resultQuery = SqlAdaptersMapping.DbServer!.QueryBuilder.RestructureForBatch(resultQuery, isDelete: true);
+            resultQuery = SqlAdaptersMapping.DbServer.QueryBuilder.RestructureForBatch(resultQuery, isDelete: true);
 
-            var npgsqlParameters = new List<object>();
+            var npgsqlParameters = new List<DbParameter>();
             foreach (var param in innerParameters)
             {
-                npgsqlParameters.Add(SqlAdaptersMapping.DbServer!.QueryBuilder.CreateParameter((SqlParameter)param));
+                npgsqlParameters.Add(SqlAdaptersMapping.DbServer.QueryBuilder.CreateParameter(param.ParameterName, param.Value));
             }
             innerParameters = npgsqlParameters;
         }
 
-        return (resultQuery, new List<object>(innerParameters));
+        return (resultQuery, new List<DbParameter>(innerParameters));
     }
 
     // SELECT [a].[Column1], [a].[Column2], .../r/n
@@ -125,10 +124,10 @@ public static class BatchUtil
     /// <param name="updateValues"></param>
     /// <param name="updateColumns"></param>
     /// <returns></returns>
-    public static (string, List<object>) GetSqlUpdate(IQueryable query, DbContext context, Type type, object? updateValues, List<string>? updateColumns)
+    public static (string, List<DbParameter>) GetSqlUpdate(IQueryable query, DbContext context, Type type, object? updateValues, List<string>? updateColumns)
     {
         var (sql, tableAlias, tableAliasSufixAs, topStatement, leadingComments, innerParameters) = GetBatchSql(query, context, isUpdate: true);
-        var sqlParameters = new List<object>(innerParameters);
+        var sqlParameters = new List<DbParameter>(innerParameters);
 
         string sqlSET = GetSqlSetSegment(context, updateValues?.GetType(), updateValues, updateColumns, sqlParameters);
 
@@ -147,9 +146,9 @@ public static class BatchUtil
     /// <param name="context"></param>
     /// <param name="type"></param>
     /// <returns></returns>
-    public static (string, List<object>) GetSqlUpdate<T>(IQueryable<T> query, DbContext context, Type type, Expression<Func<T, T>> expression) where T : class
+    public static (string, List<DbParameter>) GetSqlUpdate<T>(IQueryable<T> query, DbContext context, Type type, Expression<Func<T, T>> expression) where T : class
     {
-        (string sql, string tableAlias, string tableAliasSufixAs, string topStatement, string leadingComments, IEnumerable<object> innerParameters) = GetBatchSql(query, context, isUpdate: true);
+        (string sql, string tableAlias, string tableAliasSufixAs, string topStatement, string leadingComments, IEnumerable<DbParameter> innerParameters) = GetBatchSql(query, context, isUpdate: true);
 
         var createUpdateBodyData = new BatchUpdateCreateBodyData(sql, context, innerParameters, query, type, tableAlias, expression);
 
@@ -179,7 +178,7 @@ public static class BatchUtil
     /// <param name="leadingComments"></param>
     /// <param name="sqlColumns"></param>
     /// <returns></returns>
-    public static (string, List<object>) PrepareSqlUpdate(Type type, List<object> sqlParameters, string sql, string sqlSET, string tableAlias, string tableAliasSufixAs, string topStatement, string leadingComments, StringBuilder? sqlColumns)
+    public static (string, List<DbParameter>) PrepareSqlUpdate(Type type, List<DbParameter> sqlParameters, string sql, string sqlSET, string tableAlias, string tableAliasSufixAs, string topStatement, string leadingComments, StringBuilder? sqlColumns)
     {
         var resultQuery = $"{leadingComments}UPDATE {topStatement}{tableAlias}{tableAliasSufixAs} {sqlSET} {sql}";
 
@@ -200,19 +199,19 @@ public static class BatchUtil
         var databaseType = SqlAdaptersMapping.GetDatabaseType();
         if (databaseType == SqlType.PostgreSql)
         {
-            resultQuery = SqlAdaptersMapping.DbServer!.QueryBuilder.RestructureForBatch(resultQuery);
+            resultQuery = SqlAdaptersMapping.DbServer.QueryBuilder.RestructureForBatch(resultQuery);
 
-            var npgsqlParameters = new List<object>();
+            var npgsqlParameters = new List<DbParameter>();
             foreach (var param in sqlParameters)
             {
-                dynamic npgsqlParam = SqlAdaptersMapping.DbServer!.QueryBuilder.CreateParameter((SqlParameter)param);
+                dynamic npgsqlParam = SqlAdaptersMapping.DbServer.QueryBuilder.CreateParameter(param.ParameterName, param.Value);
 
                 string paramName = npgsqlParam.ParameterName.Replace("@", "");
                 var propertyType = type.GetProperties().SingleOrDefault(a => a.Name == paramName)?.PropertyType;
                 if (propertyType == typeof(System.Text.Json.JsonElement) || propertyType == typeof(System.Text.Json.JsonElement?)) // for JsonDocument works without fix
                 {
-                    var dbtypeJsonb = SqlAdaptersMapping.DbServer!.QueryBuilder.Dbtype();
-                    SqlAdaptersMapping.DbServer!.QueryBuilder.SetDbTypeParam(npgsqlParam, dbtypeJsonb);
+                    var dbtypeJsonb = SqlAdaptersMapping.DbServer.QueryBuilder.Dbtype();
+                    SqlAdaptersMapping.DbServer.QueryBuilder.SetDbTypeParam(npgsqlParam, dbtypeJsonb);
                 }
 
                 npgsqlParameters.Add(npgsqlParam);
@@ -221,19 +220,19 @@ public static class BatchUtil
         }
         else if (databaseType == SqlType.MySql)
         {
-            resultQuery = SqlAdaptersMapping.DbServer!.QueryBuilder.RestructureForBatch(resultQuery);
+            resultQuery = SqlAdaptersMapping.DbServer.QueryBuilder.RestructureForBatch(resultQuery);
 
-            var mysqlParameters = new List<object>();
+            var mysqlParameters = new List<DbParameter>();
             foreach (var param in sqlParameters)
             {
-                dynamic mysqlParam = SqlAdaptersMapping.DbServer!.QueryBuilder.CreateParameter((SqlParameter)param);
+                dynamic mysqlParam = SqlAdaptersMapping.DbServer.QueryBuilder.CreateParameter(param.ParameterName, param.Value);
 
                 string paramName = mysqlParam.ParameterName.Replace("@", "");
                 var propertyType = type.GetProperties().SingleOrDefault(a => a.Name == paramName)?.PropertyType;
                 if (propertyType == typeof(System.Text.Json.JsonElement) || propertyType == typeof(System.Text.Json.JsonElement?)) // for JsonDocument works without fix
                 {
-                    var dbtypeJsonb = SqlAdaptersMapping.DbServer!.QueryBuilder.Dbtype();
-                    SqlAdaptersMapping.DbServer!.QueryBuilder.SetDbTypeParam(mysqlParam, dbtypeJsonb);
+                    var dbtypeJsonb = SqlAdaptersMapping.DbServer.QueryBuilder.Dbtype();
+                    SqlAdaptersMapping.DbServer.QueryBuilder.SetDbTypeParam(mysqlParam, dbtypeJsonb);
                 }
 
                 mysqlParameters.Add(mysqlParam);
@@ -250,7 +249,7 @@ public static class BatchUtil
     /// <param name="context"></param>
     /// <param name="sqlParameters"></param>
     /// <returns></returns>
-    public static List<object> ReloadSqlParameters(DbContext context, List<object> sqlParameters)
+    public static List<DbParameter> ReloadSqlParameters(DbContext context, List<DbParameter> sqlParameters)
     {
         return SqlAdaptersMapping.GetAdapterDialect().ReloadSqlParameters(context,sqlParameters);
     }
@@ -262,7 +261,7 @@ public static class BatchUtil
     /// <param name="context"></param>
     /// <param name="isUpdate"></param>
     /// <returns></returns>
-    public static (string Sql, string TableAlias, string TableAliasSufixAs, string TopStatement, string LeadingComments, IEnumerable<object> InnerParameters) GetBatchSql(IQueryable query, DbContext context, bool isUpdate)
+    public static (string Sql, string TableAlias, string TableAliasSufixAs, string TopStatement, string LeadingComments, IEnumerable<DbParameter> InnerParameters) GetBatchSql(IQueryable query, DbContext context, bool isUpdate)
     {
         SqlAdaptersMapping.ProviderName = context.Database.ProviderName;
         var sqlQueryBuilder = SqlAdaptersMapping.GetAdapterDialect();
@@ -304,13 +303,13 @@ public static class BatchUtil
     /// <param name="updateColumns"></param>
     /// <param name="parameters"></param>
     /// <returns></returns>
-    public static string GetSqlSetSegment(DbContext context, Type? updateValuesType, object? updateValues, List<string>? updateColumns, List<object> parameters)
+    public static string GetSqlSetSegment(DbContext context, Type? updateValuesType, object? updateValues, List<string>? updateColumns, List<DbParameter> parameters)
     {
         var tableInfo = TableInfo.CreateInstance(context, updateValuesType, new List<object>(), OperationType.Read, new BulkConfig());
         return GetSqlSetSegment(tableInfo, updateValuesType, updateValues, updateValuesType is null ? null : Activator.CreateInstance(updateValuesType), updateColumns, parameters);
     }
 
-    private static string GetSqlSetSegment(TableInfo tableInfo, Type? updateValuesType, object? updateValues, object? defaultValues, List<string>? updateColumns, List<object> parameters)
+    private static string GetSqlSetSegment(TableInfo tableInfo, Type? updateValuesType, object? updateValues, object? defaultValues, List<string>? updateColumns, List<DbParameter> parameters)
     {
         string sql = string.Empty;
         foreach (var propertyNameColumnName in tableInfo.PropertyColumnNamesDict)
@@ -353,7 +352,7 @@ public static class BatchUtil
                 {
                     sql += $"[{columnName}] = @{columnName}, ";
                     var parameterName = $"@{columnName}";
-                    IDbDataParameter? param = TryCreateRelationalMappingParameter(
+                    DbParameter? param = TryCreateRelationalMappingParameter(
                         tableInfo,
                         columnName,
                         parameterName,
@@ -363,11 +362,8 @@ public static class BatchUtil
                     {
                         propertyUpdateValue ??= DBNull.Value;
 
-                        param = new SqlParameter
-                        {
-                            ParameterName = $"@{columnName}",
-                            Value = propertyUpdateValue
-                        };
+                        param = SqlAdaptersMapping.DbServer.QueryBuilder.CreateParameter($"@{columnName}", propertyUpdateValue);
+
                         if (!isDifferentFromDefault && propertyUpdateValue == DBNull.Value
                             && property?.PropertyType == typeof(byte[])) // needed only when having complex type property to be updated to default 'null'
                         {
@@ -627,7 +623,7 @@ public static class BatchUtil
         return (leadingCommentsBuilder.ToString(), mainSqlQuery);
     }
 
-    private static void AddSqlParameter(StringBuilder sqlColumns, List<object> sqlParameters, TableInfo? tableInfo, string? columnName, object? value)
+    private static void AddSqlParameter(StringBuilder sqlColumns, List<DbParameter> sqlParameters, TableInfo? tableInfo, string? columnName, object? value)
     {
         var paramName = $"@param_{sqlParameters.Count}";
 
@@ -641,7 +637,7 @@ public static class BatchUtil
         var sqlParameter = TryCreateRelationalMappingParameter(tableInfo, columnName, paramName, value, valueOrig);
         if (sqlParameter == null)
         {
-            sqlParameter = new SqlParameter(paramName, value ?? DBNull.Value);
+            sqlParameter = SqlAdaptersMapping.DbServer.QueryBuilder.CreateParameter(paramName, value ?? DBNull.Value);
             var columnType = columnName is null ? null : tableInfo?.ColumnNamesTypesDict[columnName];
             if (value == null
                 && (columnType?.Contains(DbType.Binary.ToString(), StringComparison.OrdinalIgnoreCase) ?? false)) //"varbinary(max)".Contains("binary")
@@ -676,7 +672,7 @@ public static class BatchUtil
             return null;
 
         var relationalTypeMapping = propertyInfo?.GetRelationalTypeMapping();
-        using var dbCommand = new SqlCommand();
+        using var dbCommand = SqlAdaptersMapping.DbServer.QueryBuilder.CreateCommand();
         try
         {
             return relationalTypeMapping?.CreateParameter(dbCommand, parameterName, value, propertyInfo?.IsNullable);

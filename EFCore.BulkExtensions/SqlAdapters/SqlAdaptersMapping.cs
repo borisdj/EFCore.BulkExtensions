@@ -40,7 +40,7 @@ public static class SqlAdaptersMapping
     /// <summary>
     /// Contains a list of methods to generate Adapters and helpers instances
     /// </summary>
-    public static IDbServer? DbServer {
+    public static IDbServer DbServer {
         get
         {
             // Context.Database. methods:
@@ -92,7 +92,7 @@ public static class SqlAdaptersMapping
                 var dbServerInstance = Activator.CreateInstance(dbServerType ?? typeof(int));
                 _dbServer = dbServerInstance as IDbServer;
             }
-            return _dbServer;
+            return _dbServer ?? throw new InvalidOperationException("Failed to create DbServer");
         }
     }
 
@@ -104,7 +104,7 @@ public static class SqlAdaptersMapping
     /// <returns></returns>
     public static ISqlOperationsAdapter CreateBulkOperationsAdapter()
     {
-        return DbServer!.Adapter;
+        return DbServer.Adapter;
     }
 
     /// <summary>
@@ -113,7 +113,7 @@ public static class SqlAdaptersMapping
     /// <returns></returns>
     public static IQueryBuilderSpecialization GetAdapterDialect()
     {
-        return DbServer!.Dialect;
+        return DbServer.Dialect;
     }
 
     /// <summary>
@@ -122,7 +122,7 @@ public static class SqlAdaptersMapping
     /// <returns></returns>
     public static SqlType GetDatabaseType()
     {
-        return DbServer!.Type;
+        return DbServer.Type;
     }
 
     /// <summary>
@@ -131,6 +131,6 @@ public static class SqlAdaptersMapping
     /// <returns></returns>
     public static SqlQueryBuilder GetQueryBuilder()
     {
-        return DbServer!.QueryBuilder;
+        return DbServer.QueryBuilder;
     }
 }

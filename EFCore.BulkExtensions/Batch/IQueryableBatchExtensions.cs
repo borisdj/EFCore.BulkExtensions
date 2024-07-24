@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
@@ -40,7 +41,7 @@ public static class IQueryableBatchExtensions
         return await context.Database.ExecuteSqlRawAsync(sql, sqlParameters, cancellationToken).ConfigureAwait(false);
     }
 
-    private static (DbContext, string, List<object>) GetBatchDeleteArguments(IQueryable query)
+    private static (DbContext, string, List<DbParameter>) GetBatchDeleteArguments(IQueryable query)
     {
         var context = BatchUtil.GetDbContext(query);
         if (context is null)
@@ -115,7 +116,7 @@ public static class IQueryableBatchExtensions
         return await context.Database.ExecuteSqlRawAsync(sql, sqlParameters, cancellationToken).ConfigureAwait(false);
     }
 
-    private static (DbContext, string, List<object>) GetBatchUpdateArguments<T>(IQueryable<T> query, object? updateValues = null, List<string>? updateColumns = null, Expression<Func<T, T>>? updateExpression = null, Type? type = null) where T : class
+    private static (DbContext, string, List<DbParameter>) GetBatchUpdateArguments<T>(IQueryable<T> query, object? updateValues = null, List<string>? updateColumns = null, Expression<Func<T, T>>? updateExpression = null, Type? type = null) where T : class
     {
         type ??= typeof(T);
         var context = BatchUtil.GetDbContext(query);

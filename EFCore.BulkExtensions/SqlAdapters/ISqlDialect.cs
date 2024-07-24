@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Linq.Expressions;
 
 namespace EFCore.BulkExtensions.SqlAdapters;
@@ -27,7 +28,7 @@ public interface IQueryBuilderSpecialization
     /// </summary>
     /// <param name="context"></param>
     /// <param name="sqlParameters"></param>
-    List<object> ReloadSqlParameters(DbContext context, List<object> sqlParameters);
+    List<DbParameter> ReloadSqlParameters(DbContext context, List<DbParameter> sqlParameters);
 
     /// <summary>
     /// Returns the binary expression add operation

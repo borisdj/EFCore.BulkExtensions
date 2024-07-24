@@ -1,7 +1,8 @@
-﻿using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
 
@@ -20,23 +21,26 @@ public abstract class SqlQueryBuilder
     public abstract string RestructureForBatch(string sql, bool isDelete = false);
 
     /// <summary>
-    /// Returns a DbParameters intanced per provider
+    /// Returns a DbParameter instantiated per provider
     /// </summary>
-    /// <param name="sqlParameter"></param>
-    /// <returns></returns>
-    public abstract object CreateParameter(SqlParameter sqlParameter);
+    public abstract DbParameter CreateParameter(string parameterName, object? parameterValue = null);
+
+    /// <summary>
+    /// Returns a DbCommand instantiated per provider
+    /// </summary>
+    public abstract DbCommand CreateCommand();
 
     /// <summary>
     /// Returns NpgsqlDbType for PostgreSql parameters. Throws <see cref="NotImplementedException"/> for anothers providers
     /// </summary>
     /// <returns></returns>
-    public abstract object Dbtype();
+    public abstract DbType Dbtype();
 
     /// <summary>
     /// Returns void. Throws <see cref="NotImplementedException"/> for anothers providers
     /// </summary>
     /// <exception cref="NotImplementedException"></exception>
-    public abstract void SetDbTypeParam(object npgsqlParameter, object dbType);
+    public abstract void SetDbTypeParam(DbParameter parameter, DbType dbType);
 
     /// <summary>
     /// Generates SQL query to select output from a table

@@ -227,7 +227,7 @@ public class EFCoreBulkTestAsync
             {
                 SetOutputIdentity = true,
                 CalculateStats = true,
-                SqlBulkCopyOptions = Microsoft.Data.SqlClient.SqlBulkCopyOptions.KeepIdentity
+                SqlBulkCopyOptions = SqlBulkCopyOptions.KeepIdentity
             };
             await context.BulkInsertOrUpdateAsync(entities, bulkConfig);
             if (sqlType == SqlType.SqlServer)
