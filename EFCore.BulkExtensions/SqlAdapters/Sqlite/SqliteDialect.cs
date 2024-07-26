@@ -1,7 +1,7 @@
 ﻿using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
-using System.Data;
+using System.Data.Common;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -12,12 +12,12 @@ namespace EFCore.BulkExtensions.SqlAdapters.Sqlite;
 public class SqliteDialect : IQueryBuilderSpecialization
 {
     /// <inheritdoc/>
-    public List<object> ReloadSqlParameters(DbContext context, List<object> sqlParameters)
+    public List<DbParameter> ReloadSqlParameters(DbContext context, List<DbParameter> sqlParameters)
     {
-        var sqlParametersReloaded = new List<object>();
+        var sqlParametersReloaded = new List<DbParameter>();
         foreach (var parameter in sqlParameters)
         {
-            var sqlParameter = (IDbDataParameter) parameter;
+            var sqlParameter = parameter;
             sqlParametersReloaded.Add(new SqliteParameter(sqlParameter.ParameterName, sqlParameter.Value));
         }
 

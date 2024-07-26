@@ -1,7 +1,9 @@
-﻿using Microsoft.Data.SqlClient;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Data;
+using System.Data.Common;
 using System.Linq;
+using Npgsql;
 
 namespace EFCore.BulkExtensions.SqlAdapters.PostgreSql;
 
@@ -436,14 +438,16 @@ public class PostgreSqlQueryBuilder : SqlQueryBuilder
         return sql;
     }
 
-    /// <summary>
-    /// Returns a DbParameters intanced per provider
-    /// </summary>
-    /// <param name="sqlParameter"></param>
-    /// <returns></returns>
-    public override object CreateParameter(SqlParameter sqlParameter)
+    /// <inheritdoc/>
+    public override DbParameter CreateParameter(string parameterName, object? parameterValue = null)
     {
-        return new Npgsql.NpgsqlParameter(sqlParameter.ParameterName, sqlParameter.Value);
+        return new NpgsqlParameter(parameterName, parameterValue);
+    }
+
+    /// <inheritdoc/>
+    public override DbCommand CreateCommand()
+    {
+        return new NpgsqlCommand();
     }
 
     /// <summary>
@@ -461,17 +465,17 @@ public class PostgreSqlQueryBuilder : SqlQueryBuilder
     /// </summary>
     /// <returns></returns>
     /// <exception cref="NotImplementedException"></exception>
-    public override object Dbtype()
+    public override DbType Dbtype()
     {
-        return NpgsqlTypes.NpgsqlDbType.Jsonb;
+        return (DbType)NpgsqlTypes.NpgsqlDbType.Jsonb;
     }
 
     /// <summary>
     /// Returns void. Throws <see cref="NotImplementedException"/> for anothers providers
     /// </summary>
     /// <exception cref="NotImplementedException"></exception>
-    public override void SetDbTypeParam(object npgsqlParameter, object dbType)
+    public override void SetDbTypeParam(DbParameter parameter, DbType dbType)
     {
-        ((Npgsql.NpgsqlParameter)npgsqlParameter).NpgsqlDbType = (NpgsqlTypes.NpgsqlDbType)dbType;
+        ((NpgsqlParameter)parameter).NpgsqlDbType = (NpgsqlTypes.NpgsqlDbType)dbType;
     }
 }

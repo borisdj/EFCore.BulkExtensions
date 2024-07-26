@@ -1,5 +1,7 @@
-﻿using Microsoft.Data.SqlClient;
-using System;
+﻿using System;
+using System.Data;
+using System.Data.Common;
+using Microsoft.Data.SqlClient;
 
 namespace EFCore.BulkExtensions.SqlAdapters.SqlServer;
 
@@ -9,26 +11,32 @@ namespace EFCore.BulkExtensions.SqlAdapters.SqlServer;
 public class SqlServerQueryBuilder : SqlQueryBuilder
 {
     /// <inheritdoc/>
-    public override object CreateParameter(SqlParameter sqlParameter)
+    public override DbParameter CreateParameter(string parameterName, object? parameterValue = null)
     {
-        throw new NotImplementedException();
+        return new SqlParameter(parameterName, parameterValue);
     }
 
     /// <inheritdoc/>
-    public override object Dbtype()
+    public override DbCommand CreateCommand()
     {
-        throw new NotImplementedException();
+        return new SqlCommand();
+    }
+
+    /// <inheritdoc/>
+    public override DbType Dbtype()
+    {
+        throw new NotSupportedException();
     }
 
     /// <inheritdoc/>
     public override string RestructureForBatch(string sql, bool isDelete = false)
     {
-        throw new NotImplementedException();
+        throw new NotSupportedException();
     }
 
     /// <inheritdoc/>
-    public override void SetDbTypeParam(object npgsqlParameter, object dbType)
+    public override void SetDbTypeParam(DbParameter parameter, DbType dbType)
     {
-        throw new NotImplementedException();
+        throw new NotSupportedException();
     }
 }

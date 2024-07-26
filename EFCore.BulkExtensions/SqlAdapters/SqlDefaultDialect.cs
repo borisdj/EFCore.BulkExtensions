@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Linq.Expressions;
 
 namespace EFCore.BulkExtensions.SqlAdapters;
@@ -12,12 +13,12 @@ public class SqlDefaultDialect : IQueryBuilderSpecialization
     private static readonly int SelectStatementLength = "SELECT".Length;
 
     /// <inheritdoc/>
-    public virtual List<object> ReloadSqlParameters(DbContext context, List<object> sqlParameters)
+    public virtual List<DbParameter> ReloadSqlParameters(DbContext context, List<DbParameter> sqlParameters)
     {
-        var sqlParametersReloaded = new List<object>();
+        var sqlParametersReloaded = new List<DbParameter>();
         foreach (var parameter in sqlParameters)
         {
-            var sqlParameter = (IDbDataParameter)parameter;
+            var sqlParameter = parameter;
 
             try
             {

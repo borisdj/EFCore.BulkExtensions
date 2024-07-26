@@ -1,5 +1,4 @@
-﻿using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using System;
 using System.Collections.Generic;
@@ -35,7 +34,7 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
     protected static async Task InsertAsync<T>(DbContext context, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress, bool isAsync,
         CancellationToken cancellationToken)
     {
-        NpgsqlConnection? connection = (NpgsqlConnection?)SqlAdaptersMapping.DbServer!.DbConnection; // TODO refactor
+        NpgsqlConnection? connection = (NpgsqlConnection?)SqlAdaptersMapping.DbServer.DbConnection; // TODO refactor
         bool closeConnectionInternally = false;
         if (connection == null)
         {

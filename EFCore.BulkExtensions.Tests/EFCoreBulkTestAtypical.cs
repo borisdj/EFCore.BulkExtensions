@@ -1071,7 +1071,7 @@ public class EFCoreBulkTestAtypical
 
         var bulkConfigBase = new BulkConfig
         {
-            SqlBulkCopyOptions = Microsoft.Data.SqlClient.SqlBulkCopyOptions.KeepIdentity, // OPTION 1. - to ensure insert order is kept the same since SqlBulkCopy does not guarantee it.
+            SqlBulkCopyOptions = SqlBulkCopyOptions.KeepIdentity, // OPTION 1. - to ensure insert order is kept the same since SqlBulkCopy does not guarantee it.
             PropertiesToInclude = new List<string>
                 {
                     nameof(LogPersonReport.LogId),

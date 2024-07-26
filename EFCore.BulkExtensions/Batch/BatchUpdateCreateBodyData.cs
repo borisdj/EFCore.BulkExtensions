@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
@@ -30,7 +31,7 @@ public class BatchUpdateCreateBodyData
     public BatchUpdateCreateBodyData(
         string baseSql,
         DbContext dbContext,
-        IEnumerable<object> innerParameters,
+        IEnumerable<DbParameter> innerParameters,
         IQueryable query,
         Type rootType,
         string tableAlias,
@@ -53,7 +54,7 @@ public class BatchUpdateCreateBodyData
         var tableInfo = TableInfo.CreateInstance(dbContext, rootType, Array.Empty<object>(), OperationType.Read, _tableInfoBulkConfig);
         _tableInfoLookup.Add(rootType, tableInfo);
 
-        SqlParameters = new List<object>(innerParameters);
+        SqlParameters = new List<DbParameter>(innerParameters);
 
         foreach (Match match in BatchUtil.TableAliasPattern.Matches(baseSql))
         {
@@ -68,7 +69,7 @@ public class BatchUpdateCreateBodyData
     public IQueryable Query { get; }
     public string? RootInstanceParameterName { get; }
     public Type RootType { get; }
-    public List<object> SqlParameters { get; }
+    public List<DbParameter> SqlParameters { get; }
     public string TableAlias { get; }
     public List<string> TableAliasesInUse { get; }
     public StringBuilder UpdateColumnsSql { get; }

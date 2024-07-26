@@ -1,9 +1,11 @@
-﻿using Microsoft.Data.SqlClient;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using MySqlConnector;
 
 namespace EFCore.BulkExtensions.SqlAdapters.MySql;
 
@@ -311,26 +313,28 @@ public class MySqlQueryBuilder : SqlQueryBuilder
         return q;
     }
 
-    /// <summary>
-    /// Returns a DbParameters intanced per provider
-    /// </summary>
-    /// <param name="sqlParameter"></param>
-    /// <returns></returns>
-    public override object CreateParameter(SqlParameter sqlParameter)
+    /// <inheritdoc/>
+    public override DbParameter CreateParameter(string parameterName, object? parameterValue = null)
     {
-        return new MySqlConnector.MySqlParameter(sqlParameter.ParameterName, sqlParameter.Value);
+        return new MySqlParameter(parameterName, parameterValue);
     }
 
     /// <inheritdoc/>
-    public override object Dbtype()
+    public override DbCommand CreateCommand()
     {
-        throw new NotImplementedException();
+        return new MySqlCommand();
     }
 
     /// <inheritdoc/>
-    public override void SetDbTypeParam(object npgsqlParameter, object dbType)
+    public override DbType Dbtype()
     {
-        throw new NotImplementedException();
+        throw new NotSupportedException();
+    }
+
+    /// <inheritdoc/>
+    public override void SetDbTypeParam(DbParameter parameter, DbType dbType)
+    {
+        throw new NotSupportedException();
     }
 
     private static string Md5Hash(string value)

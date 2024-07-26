@@ -314,7 +314,7 @@ public class TableInfo
 
         if (isSqlServer || isNpgsql || isMySql)
         {
-            var strategyName = SqlAdaptersMapping.DbServer!.ValueGenerationStrategy;
+            var strategyName = SqlAdaptersMapping.DbServer.ValueGenerationStrategy;
             if (!strategyName.Contains(":Value"))
             {
                 strategyName = strategyName.Replace("Value", ":Value"); //example 'SqlServer:ValueGenerationStrategy'
@@ -326,7 +326,7 @@ public class TableInfo
                 bool hasIdentity = false;
                 if (annotation != null)
                 {
-                    hasIdentity = SqlAdaptersMapping.DbServer!.PropertyHasIdentity(annotation);
+                    hasIdentity = SqlAdaptersMapping.DbServer.PropertyHasIdentity(annotation);
                 }
                 if (hasIdentity)
                 {
@@ -813,12 +813,11 @@ public class TableInfo
         {
             sqlQueryCounts.Add(sqlQueryCountBase + $"'{actionCode}'");
 
-            var resultParameter = (IDbDataParameter?)Activator.CreateInstance(typeof(Microsoft.Data.SqlClient.SqlParameter));
+            var resultParameter = SqlAdaptersMapping.DbServer.QueryBuilder.CreateParameter("@result" + actionCode, null);
             if (resultParameter is null)
             {
                 throw new ArgumentException("Unable to create an instance of IDbDataParameter");
             }
-            resultParameter.ParameterName = "@result" + actionCode;
             resultParameter.DbType = DbType.Int32;
             resultParameter.Direction = ParameterDirection.Output;
 
@@ -1213,7 +1212,7 @@ public class TableInfo
         if (BulkConfig.SetOutputIdentity && (hasIdentity || tableInfo.TimeStampColumnName == null))
         {
             var databaseType = SqlAdaptersMapping.GetDatabaseType();
-            string sqlQuery = SqlAdaptersMapping.DbServer!.QueryBuilder.SelectFromOutputTable(this);
+            string sqlQuery = SqlAdaptersMapping.DbServer.QueryBuilder.SelectFromOutputTable(this);
             //var entitiesWithOutputIdentity = await QueryOutputTableAsync<T>(context, sqlQuery).ToListAsync(cancellationToken).ConfigureAwait(false); // TempFIX
             var entitiesWithOutputIdentity = QueryOutputTable(context, type, sqlQuery).Cast<object>().ToList();
             //var entitiesWithOutputIdentity = (typeof(T) == type) ? QueryOutputTable<object>(context, sqlQuery).ToList() : QueryOutputTable(context, type, sqlQuery).Cast<object>().ToList();

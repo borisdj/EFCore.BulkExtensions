@@ -2,8 +2,6 @@
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
 using MySqlConnector;
-using NetTopologySuite.Algorithm;
-using NetTopologySuite.Geometries;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -15,6 +13,7 @@ using System.Reflection;
 using System.Security.AccessControl;
 using System.Threading;
 using System.Threading.Tasks;
+using NetTopologySuite.Geometries;
 
 namespace EFCore.BulkExtensions.SqlAdapters.MySql;
 
@@ -496,10 +495,6 @@ public class MySqlAdapter : ISqlOperationsAdapter
                         throw new InvalidOperationException("OnCompare properties Config can not be set for Entity with Spatial types like 'Geometry'");
                     }
                 }
-                if (isMySql && (propertyType == typeof(HierarchyId) || propertyType.IsSubclassOf(typeof(HierarchyId))))
-                {
-                    propertyType = typeof(byte[]);
-                }
 
                 if (!columnsDict.ContainsKey(property.Name) && !hasDefaultVauleOnInsert)
                 {
@@ -528,11 +523,6 @@ public class MySqlAdapter : ISqlOperationsAdapter
                 }
 
                 if (propertyType == typeof(Geometry) && isMySql)
-                {
-                    propertyType = typeof(byte[]);
-                }
-
-                if (propertyType == typeof(HierarchyId) && isMySql)
                 {
                     propertyType = typeof(byte[]);
                 }
@@ -625,11 +615,6 @@ public class MySqlAdapter : ISqlOperationsAdapter
                     propertyType = typeof(byte[]);
                 }
 
-                if (isMySql && (propertyType == typeof(HierarchyId) || propertyType.IsSubclassOf(typeof(HierarchyId))))
-                {
-                    propertyType = typeof(byte[]);
-                }
-
                 dataTable.Columns.Add(columnName, propertyType);
                 columnsDict.Add(shadowProperty.Name, null);
             }
@@ -696,14 +681,6 @@ public class MySqlAdapter : ISqlOperationsAdapter
                     propertyValue = MySqlGeometry.FromWkb(geometryValue.SRID, wkb);
                 }
 
-                if (propertyValue is HierarchyId hierarchyValue && isMySql)
-                {
-                    using MemoryStream memStream = new();
-                    using BinaryWriter binWriter = new(memStream);
-
-                    //hierarchyValue.Write(binWriter); // removed as of EF8 (throws: Error CS1061  'HierarchyId' does not contain a definition for 'Write' and no accessible extension method 'Write' accepting a first argument of type 'HierarchyId' could be found.
-                    propertyValue = memStream.ToArray();
-                }
                 if (entityPropertiesDict.ContainsKey(property.Name) && !hasDefaultVauleOnInsert)
                 {
                     columnsDict[property.Name] = propertyValue;
