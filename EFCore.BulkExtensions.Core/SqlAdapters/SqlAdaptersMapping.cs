@@ -74,19 +74,19 @@ public static class SqlAdaptersMapping
 
                 if (databaseType == SqlType.SqlServer)
                 {
-                    dbServerType = Type.GetType(namespaceSqlAdaptersTEXT + ".SqlServer.SqlServerDbServer");
+                    dbServerType = Type.GetType(namespaceSqlAdaptersTEXT + ".SqlServer.SqlServerDbServer,EFCore.BulkExtensions.SqlServer");
                 }
                 else if (databaseType == SqlType.PostgreSql)
                 {
-                    dbServerType = Type.GetType(namespaceSqlAdaptersTEXT + ".PostgreSql.PostgreSqlDbServer");
+                    dbServerType = Type.GetType(namespaceSqlAdaptersTEXT + ".PostgreSql.PostgreSqlDbServer,,EFCore.BulkExtensions.PostgreSql");
                 }
                 else if (databaseType == SqlType.MySql)
                 {
-                    dbServerType = Type.GetType(namespaceSqlAdaptersTEXT + ".MySql.MySqlDbServer");
+                    dbServerType = Type.GetType(namespaceSqlAdaptersTEXT + ".MySql.MySqlDbServer,EFCore.BulkExtensions.MySql");
                 }
                 else if (databaseType == SqlType.Sqlite)
                 {
-                    dbServerType = Type.GetType(namespaceSqlAdaptersTEXT + ".Sqlite.SqliteDbServer");
+                    dbServerType = Type.GetType(namespaceSqlAdaptersTEXT + ".Sqlite.SqliteDbServer,EFCore.BulkExtensions.Sqlite");
                 }
 
                 var dbServerInstance = Activator.CreateInstance(dbServerType ?? typeof(int));
