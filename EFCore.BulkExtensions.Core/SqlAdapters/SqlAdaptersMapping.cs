@@ -78,7 +78,7 @@ public static class SqlAdaptersMapping
                 }
                 else if (databaseType == SqlType.PostgreSql)
                 {
-                    dbServerType = Type.GetType(namespaceSqlAdaptersTEXT + ".PostgreSql.PostgreSqlDbServer,,EFCore.BulkExtensions.PostgreSql");
+                    dbServerType = Type.GetType(namespaceSqlAdaptersTEXT + ".PostgreSql.PostgreSqlDbServer,EFCore.BulkExtensions.PostgreSql");
                 }
                 else if (databaseType == SqlType.MySql)
                 {
