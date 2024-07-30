@@ -255,7 +255,7 @@ public class PostgreSqlQueryBuilder : SqlQueryBuilder
     }
 
     /// <summary>
-    /// Generates SQL query to count the unique constranints
+    /// Generates SQL query to count the unique constranints -  Not used, insted used only: CountUniqueIndex
     /// </summary>
     /// <param name="tableInfo"></param>
     public static string CountUniqueConstrain(TableInfo tableInfo)
@@ -308,6 +308,31 @@ public class PostgreSqlQueryBuilder : SqlQueryBuilder
     }
 
     /// <summary>
+    /// Generates SQL query to count the unique index
+    /// </summary>
+    /// <param name="tableInfo"></param>
+    public static string CountUniqueIndex(TableInfo tableInfo)
+    {
+        var primaryKeysColumns = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList();
+        string q;
+        q = @"SELECT COUNT(idx.relname)
+              FROM pg_catalog.pg_index pgi
+                JOIN pg_catalog.pg_class idx ON idx.oid = pgi.indexrelid
+                JOIN pg_catalog.pg_namespace insp ON insp.oid = idx.relnamespace
+                JOIN pg_catalog.pg_class tbl ON tbl.oid = pgi.indrelid
+                JOIN pg_catalog.pg_namespace tnsp ON tnsp.oid = tbl.relnamespace
+                JOIN pg_catalog.pg_attribute at ON at.attrelid = idx.oid
+              WHERE pgi.indisunique
+                AND not pgi.indisprimary" +
+             $" AND tnsp.nspname = '{tableInfo.Schema}'" +
+             $" AND tbl.relname = '{tableInfo.TableName}'" +
+             $" AND at.attname IN('{string.Join("','", primaryKeysColumns)}')" +
+            " GROUP BY idx.relname" +
+            " HAVING COUNT(idx.relname) = " + primaryKeysColumns.Count + ";";
+        return q;
+    }
+
+    /// <summary>
     /// Generate SQL query to create a unique index
     /// </summary>
     /// <param name="tableInfo"></param>
@@ -317,12 +342,12 @@ public class PostgreSqlQueryBuilder : SqlQueryBuilder
         var schemaFormated = tableInfo.Schema == null ? "" : $@"""{tableInfo.Schema}"".";
         var fullTableNameFormated = $@"{schemaFormated}""{tableName}""";
 
-        var uniqueConstrainName = GetUniqueConstrainName(tableInfo);
+        var uniqueIndexName = GetUniqueIndexName(tableInfo);
 
         var uniqueColumnNames = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList();
         var uniqueColumnNamesFormated = @"""" + string.Join(@""", """, uniqueColumnNames) + @"""";
 
-        var q = $@"CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS ""{uniqueConstrainName}"" " +
+        var q = $@"CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS ""{uniqueIndexName}"" " +
                 $@"ON {fullTableNameFormated} ({uniqueColumnNamesFormated})";
         return q;
     }
@@ -337,11 +362,23 @@ public class PostgreSqlQueryBuilder : SqlQueryBuilder
         var schemaFormated = tableInfo.Schema == null ? "" : $@"""{tableInfo.Schema}"".";
         var fullTableNameFormated = $@"{schemaFormated}""{tableName}""";
 
-        var uniqueConstrainName = GetUniqueConstrainName(tableInfo);
+        var uniqueConstrainName = GetUniqueIndexName(tableInfo);
 
         var q = $@"ALTER TABLE {fullTableNameFormated} " +
                 $@"ADD CONSTRAINT ""{uniqueConstrainName}"" " +
                 $@"UNIQUE USING INDEX ""{uniqueConstrainName}""";
+        return q;
+    }
+
+    /// <summary>
+    /// Generates SQL query to drop a unique index
+    /// </summary>
+    /// <param name="tableInfo"></param>
+    public static string DropUniqueIndex(TableInfo tableInfo)
+    {
+        var uniqueIndexName = GetUniqueIndexName(tableInfo);
+
+        var q = $@"DROP INDEX ""{uniqueIndexName}"";";
         return q;
     }
 
@@ -355,10 +392,10 @@ public class PostgreSqlQueryBuilder : SqlQueryBuilder
         var schemaFormated = tableInfo.Schema == null ? "" : $@"""{tableInfo.Schema}"".";
         var fullTableNameFormated = $@"{schemaFormated}""{tableName}""";
 
-        var uniqueConstrainName = GetUniqueConstrainName(tableInfo);
+        var uniqueIndexName = GetUniqueIndexName(tableInfo);
 
         var q = $@"ALTER TABLE {fullTableNameFormated} " +
-                $@"DROP CONSTRAINT ""{uniqueConstrainName}"";";
+                $@"DROP CONSTRAINT ""{uniqueIndexName}"";";
         return q;
     }
 
@@ -366,16 +403,16 @@ public class PostgreSqlQueryBuilder : SqlQueryBuilder
     /// Creates UniqueConstrainName
     /// </summary>
     /// <param name="tableInfo"></param>
-    public static string GetUniqueConstrainName(TableInfo tableInfo)
+    public static string GetUniqueIndexName(TableInfo tableInfo)
     {
         var tableName = tableInfo.TableName;
 
         var uniqueColumnNames = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList();
         var uniqueColumnNamesDash = string.Join("_", uniqueColumnNames);
         var schemaDash = tableInfo.Schema == null ? "" : $"{tableInfo.Schema}_";
-        var uniqueConstrainName = $"tempUniqueIndex_{schemaDash}{tableName}_{uniqueColumnNamesDash}";
+        var uniqueIndexName = $"tempUniqueIndex_{schemaDash}{tableName}_{uniqueColumnNamesDash}";
 
-        return uniqueConstrainName;
+        return uniqueIndexName;
     }
 
     /// <summary>

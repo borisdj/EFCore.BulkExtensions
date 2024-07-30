@@ -237,7 +237,7 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
     {
         bool tempTableCreated = false;
         bool outputTableCreated = false;
-        bool uniqueConstrainCreated = false;
+        bool uniqueIndexCreated = false;
         bool connectionOpenedInternally = false;
         try
         {
@@ -271,33 +271,33 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
                 outputTableCreated = true;
             }
 
-            bool hasUniqueConstrain = false;
+            bool hasUniqueIndex = false;
             string joinedEntityPK = string.Join("_", tableInfo.EntityPKPropertyColumnNameDict.Keys.ToList());
             string joinedPrimaryKeys = string.Join("_", tableInfo.PrimaryKeysPropertyColumnNameDict.Keys.ToList());
             if (joinedEntityPK == joinedPrimaryKeys)
             {
-                hasUniqueConstrain = true; // Explicit Constrain not required for PK
+                hasUniqueIndex = true; // Explicit Constrain not required for PK
             }
             else
             {
-                (hasUniqueConstrain, connectionOpenedInternally) = await CheckHasExplicitUniqueConstrainAsync(context, tableInfo, isAsync, cancellationToken).ConfigureAwait(false);
+                (hasUniqueIndex, connectionOpenedInternally) = await CheckHasExplicitUniqueConstrainAsync(context, tableInfo, isAsync, cancellationToken).ConfigureAwait(false);
             }
 
-            if (!hasUniqueConstrain)
+            if (!hasUniqueIndex)
             {
                 string createUniqueIndex = PostgreSqlQueryBuilder.CreateUniqueIndex(tableInfo);
                 string createUniqueConstrain = PostgreSqlQueryBuilder.CreateUniqueConstrain(tableInfo);
                 if (isAsync)
                 {
                     await context.Database.ExecuteSqlRawAsync(createUniqueIndex, cancellationToken).ConfigureAwait(false);
-                    await context.Database.ExecuteSqlRawAsync(createUniqueConstrain, cancellationToken).ConfigureAwait(false);
+                    //await context.Database.ExecuteSqlRawAsync(createUniqueConstrain, cancellationToken).ConfigureAwait(false); // UniqueConstrain Not needed
                 }
                 else
                 {
                     context.Database.ExecuteSqlRaw(createUniqueIndex);
-                    context.Database.ExecuteSqlRaw(createUniqueConstrain);
+                    //context.Database.ExecuteSqlRaw(createUniqueConstrain); // UniqueConstrain Not needed
                 }
-                uniqueConstrainCreated = true;
+                uniqueIndexCreated = true;
             }
 
             if (tableInfo.BulkConfig.CustomSourceTableName == null)
@@ -353,16 +353,16 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
         {
             try
             {
-                if (uniqueConstrainCreated)
+                if (uniqueIndexCreated)
                 {
-                    string dropUniqueConstrain = PostgreSqlQueryBuilder.DropUniqueConstrain(tableInfo);
+                    string dropUniqueIndex = PostgreSqlQueryBuilder.DropUniqueIndex(tableInfo);
                     if (isAsync)
                     {
-                        await context.Database.ExecuteSqlRawAsync(dropUniqueConstrain, cancellationToken).ConfigureAwait(false);
+                        await context.Database.ExecuteSqlRawAsync(dropUniqueIndex, cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {
-                        context.Database.ExecuteSqlRaw(dropUniqueConstrain);
+                        context.Database.ExecuteSqlRaw(dropUniqueIndex);
                     }
                 }
 
