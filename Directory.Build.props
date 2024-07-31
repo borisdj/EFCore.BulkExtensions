@@ -26,6 +26,9 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="StrongNamer" Version="0.2.5" PrivateAssets="All" />
+  </ItemGroup>
+  <ItemGroup>
     <None Include="..\README.md" Pack="true" PackagePath="" />
     <None Include="..\LICENSE.txt" Pack="true" PackagePath="" />
     <None Include="EFCoreBulk.png" Pack="true" PackagePath="" />
