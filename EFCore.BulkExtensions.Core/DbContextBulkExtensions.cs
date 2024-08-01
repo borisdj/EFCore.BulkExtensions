@@ -283,6 +283,7 @@ public static class DbContextBulkExtensions
 
     // Delete methods
     #region BulkDelete
+
     /// <summary>
     /// Extension method to bulk delete data
     /// </summary>
@@ -418,15 +419,17 @@ public static class DbContextBulkExtensions
 
     // Truncate methods
     #region Truncate
+
     /// <summary>
     /// Extension method to truncate table
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="context"></param>
+    /// <param name="bulkConfig"></param>
     /// <param name="type"></param>
-    public static void Truncate<T>(this DbContext context, Type? type = null) where T : class
+    public static void Truncate<T>(this DbContext context, BulkConfig? bulkConfig = null, Type? type = null) where T : class
     {
-        DbContextBulkTransaction.Execute(context, type, new List<T>(), OperationType.Truncate, null, null);
+        DbContextBulkTransaction.Execute(context, type, new List<T>(), OperationType.Truncate, bulkConfig, null);
     }
 
     /// <summary>
@@ -435,11 +438,42 @@ public static class DbContextBulkExtensions
     /// <typeparam name="T"></typeparam>
     /// <param name="context"></param>
     /// <param name="type"></param>
+    /// <param name="bulkConfig"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public static Task TruncateAsync<T>(this DbContext context, Type? type = null, CancellationToken cancellationToken = default) where T : class
+    public static Task TruncateAsync<T>(this DbContext context, BulkConfig? bulkConfig = null, Type? type = null, CancellationToken cancellationToken = default) where T : class
     {
-        return DbContextBulkTransaction.ExecuteAsync(context, type, new List<T>(), OperationType.Truncate, null, null, cancellationToken);
+        return DbContextBulkTransaction.ExecuteAsync(context, type, new List<T>(), OperationType.Truncate, bulkConfig, null, cancellationToken);
+    }
+
+    /// <summary>
+    /// Extension method to truncate table
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="context"></param>
+    /// <param name="bulkAction"></param>
+    /// <param name="type"></param>
+    public static void Truncate<T>(this DbContext context, Action<BulkConfig>? bulkAction, Type? type = null) where T : class
+    {
+        BulkConfig bulkConfig = new();
+        bulkAction?.Invoke(bulkConfig);
+        DbContextBulkTransaction.Execute(context, type, new List<T>(), OperationType.Truncate, bulkConfig, null);
+    }
+
+    /// <summary>
+    /// Extension method to truncate table
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="context"></param>
+    /// <param name="type"></param>
+    /// <param name="bulkAction"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public static Task TruncateAsync<T>(this DbContext context, Action<BulkConfig>? bulkAction, Type? type = null, CancellationToken cancellationToken = default) where T : class
+    {
+        BulkConfig bulkConfig = new();
+        bulkAction?.Invoke(bulkConfig);
+        return DbContextBulkTransaction.ExecuteAsync(context, type, new List<T>(), OperationType.Truncate, bulkConfig, null, cancellationToken);
     }
     #endregion
 
