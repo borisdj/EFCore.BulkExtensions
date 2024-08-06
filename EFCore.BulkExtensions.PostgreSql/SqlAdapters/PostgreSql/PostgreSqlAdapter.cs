@@ -121,7 +121,16 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
                             }
                             else
                             {
-                                propertyValue = converter.ConvertToProvider.Invoke(propertyValue);
+                                try
+                                {
+                                    propertyValue = converter.ConvertToProvider.Invoke(propertyValue);
+                                }
+                                catch (InvalidCastException ex)
+                                {
+                                    // fix for case when PK(Id) if String type with converter and is encapsulated to private sealed class with constructor; Test: ConverterStringPKTest [issue: #1343]
+                                    if (!ex.Message.StartsWith("Invalid cast from 'System.String'"))
+                                        throw;
+                                }
                             }
                         }
                     }
