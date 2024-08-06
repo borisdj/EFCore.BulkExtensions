@@ -412,6 +412,7 @@ public class EFCoreBulkTestAtypical
     [Theory]
     [InlineData(SqlType.SqlServer)]
     [InlineData(SqlType.Sqlite)]
+    [InlineData(SqlType.PostgreSql)]
     private void DiscriminatorShadowTest(SqlType sqlType)
     {
         ContextUtil.DatabaseType = sqlType;

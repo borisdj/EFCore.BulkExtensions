@@ -319,7 +319,7 @@ public class TestContext : DbContext
             c.HasKey("Id");
         });
 
-        //modelBuilder.Entity<Person>().HasDiscriminator<string>("Discriminator").HasValue<Student>("Student").HasValue<Teacher>("Teacher"); // name of classes are default values
+        //modelBuilder.Entity<Person>().HasDiscriminator<string>("Discriminator2").HasValue<Student>("Student").HasValue<Teacher>("Teacher"); // name of classes are default values
 
         // [Timestamp] alternative:
         //modelBuilder.Entity<Document>().Property(x => x.RowVersion).HasColumnType("timestamp").ValueGeneratedOnAddOrUpdate().HasConversion(new NumberToBytesConverter<ulong>()).IsConcurrencyToken();
@@ -633,6 +633,8 @@ public abstract class Person
     public int PersonId { get; set; }
 
     public string Name { get; set; } = null!;
+
+    //public string Discriminator { get; set; } = null!;
 }
 
 public class Wall
