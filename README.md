@@ -138,6 +138,7 @@ Probably good advice would be to use **Bulk ops for sets greater than 1000**.
 
 ## Bulk info
 If Windows Authentication is used then in ConnectionString there should be *Trusted_Connection=True;* because Sql credentials are required to stay in connection.  
+Another Conn.Str. config that can useful for operations with extrely large data sets is [*ConnectionTimeout*](https://learn.microsoft.com/en-us/dotnet/api/system.data.sqlclient.sqlconnection.connectiontimeout?view=netframework-4.8.1&redirectedfrom=MSDN#System_Data_SqlClient_SqlConnection_ConnectionTimeout) that can be increased from default 15 s to 60 or more to avoid '*Execution Timeout*' if it were to occur.
 
 When used directly each of these operations are separate transactions and are automatically committed.  
 And if we need multiple operations in single procedure then explicit transaction should be used, for example:  
@@ -362,7 +363,7 @@ Bulk Extension methods can be [Overridden](https://github.com/borisdj/EFCore.Bul
 If having problems with Deadlock there is useful info in [issue/46](https://github.com/borisdj/EFCore.BulkExtensions/issues/46).
 
 **TPH** ([Table-Per-Hierarchy](https://docs.microsoft.com/en-us/aspnet/core/data/ef-mvc/inheritance)) inheritance model can  can be set in 2 ways.  
-First is automatically by Convention in which case Discriminator column is not directly in Entity but is [Shadow](http://www.learnentityframeworkcore.com/model/shadow-properties) Property.  
+First is automatically by Convention in which case Discriminator column is not directly in Entity but is [Shadow](https://learn.microsoft.com/en-us/ef/core/modeling/shadow-properties) Property.  
 And second is to explicitly define Discriminator property in Entity and configure it with `.HasDiscriminator()`.  
 Important remark regarding the first case is that since we can not set directly Discriminator to certain value we need first to add list of entities to DbSet where it will be set and after that we can call Bulk operation. Note that SaveChanges are not called and we could optionally turn off TrackingChanges for performance. Example:
 ```C#
