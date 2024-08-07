@@ -471,73 +471,6 @@ public static class ModelBuilderExtensions
     }
 }
 
-
-public sealed class Mod
-{
-    public ModId Id { get; private set; }
-    public PlayerId PlayerId { get; private set; }
-    public IReadOnlyCollection<ModStat> Stats => _stats;
-    private readonly List<ModStat> _stats = [];
-
-    private Mod(ModId id, PlayerId playerId)
-    {
-        Id = id;
-        PlayerId = playerId;
-    }
-
-    public static Mod Create(string id, PlayerId playerId, IEnumerable<ModStat> modStat)
-    {
-        var modId = ModId.Create(id);
-        var mod = new Mod(modId, playerId);
-
-        mod.AddStats(modStat);
-        return mod;
-    }
-    private void AddStats(IEnumerable<ModStat> modStats)
-    {
-        _stats.AddRange(modStats);
-    }
-}
-
-public sealed class ModStat
-{
-    public ModId ModId { get; init; }
-    public PlayerId PlayerId { get; init; }
-
-    private ModStat(ModId modId, PlayerId playerId)
-    {
-        ModId = modId;
-        PlayerId = playerId;
-    }
-
-    public static ModStat Create(string modId, PlayerId playerId)
-    {
-        var mId = ModId.Create(modId);
-        return new ModStat(mId, playerId);
-    }
-}
-public sealed class PlayerId
-{
-    public string Value;
-    private PlayerId(string value)
-        => Value = value;
-
-    public static PlayerId Create(string value)
-        => new PlayerId(value);
-}
-
-public sealed class ModId
-{
-    public string Value;
-    private ModId(string value)
-        => Value = value;
-
-    public static ModId Create(string value)
-        => new ModId(value);
-}
-
-
-
 public class Item
 {
     public Item()
@@ -1162,3 +1095,67 @@ public class Article
 
     public string? Name { get; set; }
 }
+//--------------------------------------------------------
+public sealed class Mod
+{
+    public ModId Id { get; private set; }
+    public PlayerId PlayerId { get; private set; }
+    public IReadOnlyCollection<ModStat> Stats => _stats;
+    private readonly List<ModStat> _stats = [];
+
+    private Mod(ModId id, PlayerId playerId)
+    {
+        Id = id;
+        PlayerId = playerId;
+    }
+
+    public static Mod Create(string id, PlayerId playerId, IEnumerable<ModStat> modStat)
+    {
+        var modId = ModId.Create(id);
+        var mod = new Mod(modId, playerId);
+
+        mod.AddStats(modStat);
+        return mod;
+    }
+    private void AddStats(IEnumerable<ModStat> modStats)
+    {
+        _stats.AddRange(modStats);
+    }
+}
+
+public sealed class ModStat
+{
+    public ModId ModId { get; init; }
+    public PlayerId PlayerId { get; init; }
+
+    private ModStat(ModId modId, PlayerId playerId)
+    {
+        ModId = modId;
+        PlayerId = playerId;
+    }
+
+    public static ModStat Create(string modId, PlayerId playerId)
+    {
+        var mId = ModId.Create(modId);
+        return new ModStat(mId, playerId);
+    }
+}
+public sealed class PlayerId
+{
+    public string Value;
+    private PlayerId(string value)
+        => Value = value;
+
+    public static PlayerId Create(string value)
+        => new PlayerId(value);
+}
+public sealed class ModId
+{
+    public string Value;
+    private ModId(string value)
+        => Value = value;
+
+    public static ModId Create(string value)
+        => new ModId(value);
+}
+//--------------------------------------------------------
