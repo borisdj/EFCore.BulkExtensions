@@ -575,8 +575,7 @@ public class SqlServerAdapter : ISqlOperationsAdapter
 
                 void AddOwnedType(PropertyInfo property, string prefix = "")
                 {
-                    var ownedEntityType = context.Model.FindEntityType(property.PropertyType);
-                    ownedEntityType ??= context.Model.GetEntityTypes().SingleOrDefault(x => x.ClrType == property.PropertyType && x.Name.StartsWith(entityType.Name + "." + property.Name + "#"));
+                    var ownedEntityType = context.Model.FindEntityTypes(property.PropertyType).SingleOrDefault(x => x.IsInOwnershipPath(entityType));
 
                     prefix += $"{property.Name}_";
 
