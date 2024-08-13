@@ -575,7 +575,11 @@ public class SqlServerAdapter : ISqlOperationsAdapter
 
                 void AddOwnedType(PropertyInfo property, string prefix = "")
                 {
-                    var ownedEntityType = context.Model.FindEntityTypes(property.PropertyType).SingleOrDefault(x => x.IsInOwnershipPath(entityType));
+                    var ownedList = context.Model.FindEntityTypes(property.PropertyType).Where(x => x.IsInOwnershipPath(entityType)).ToList();
+                    var ownedEntityType = ownedList.Count() == 1
+                         ? ownedList[0] // IsInOwnershipPath fix for with multiple parents (issue #1149)
+                         : context.Model.GetEntityTypes().SingleOrDefault(x => x.ClrType == property.PropertyType && x.Name.StartsWith(entityType.Name + "." + property.Name + "#"));
+                           // fix when entity has more then one ownedType (e.g. Address HomeAddress, Address WorkAddress) or one ownedType is in multiple Entities like Audit is usually.
 
                     prefix += $"{property.Name}_";
 

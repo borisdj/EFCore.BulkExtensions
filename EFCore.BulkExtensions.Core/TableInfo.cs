@@ -585,8 +585,12 @@ public class TableInfo
 
                         prefix += $"{property.Name}_";
 
-                        //Type navOwnedType = type?.Assembly.GetType(property.PropertyType.FullName!) ?? throw new ArgumentException("Unable to determine Type"); // was not used
-                        var ownedEntityType = context.Model.FindEntityTypes(property.PropertyType).SingleOrDefault(x => x.IsInOwnershipPath(entityType));
+                        var ownedList = context.Model.FindEntityTypes(property.PropertyType).Where(x => x.IsInOwnershipPath(entityType)).ToList();
+                        var ownedEntityType = ownedList.Count() == 1
+                             ? ownedList[0] // IsInOwnershipPath fix for with multiple parents (issue #1149)
+                             : context.Model.GetEntityTypes().SingleOrDefault(x => x.ClrType == property.PropertyType && x.Name.StartsWith(entityType.Name + "." + property.Name + "#"));
+                               // fix when entity has more then one ownedType (e.g. Address HomeAddress, Address WorkAddress) or one ownedType is in multiple Entities like Audit is usually.
+
                         var ownedEntityProperties = ownedEntityType?.GetProperties().ToList() ?? [];
                         var ownedEntityPropertyNameColumnNameDict = new Dictionary<string, string>();
 
