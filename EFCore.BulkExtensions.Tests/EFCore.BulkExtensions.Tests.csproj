@@ -14,7 +14,7 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.NetTopologySuite" Version="8.0.7" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" Version="8.0.7" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.10.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.0" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite" Version="8.0.4" />
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql.NetTopologySuite" Version="8.0.2" />
     <PackageReference Include="RT.Comb" Version="4.0.1" />
