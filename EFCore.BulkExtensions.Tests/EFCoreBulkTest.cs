@@ -388,7 +388,7 @@ public class EFCoreBulkTest
         };
         context.BulkInsertOrUpdate(entities6, bulkConfig);
     }
-    
+
     [Theory]
     [InlineData(SqlType.SqlServer, true)]
     [InlineData(SqlType.Sqlite, true)]

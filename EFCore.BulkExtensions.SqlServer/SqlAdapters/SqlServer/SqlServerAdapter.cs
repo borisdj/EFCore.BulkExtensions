@@ -200,6 +200,18 @@ public class SqlServerAdapter : ISqlOperationsAdapter
                         context.Database.ExecuteSqlRaw(sqlAlterTableColumnsToNullable);
                     }
                 }
+
+                if (tableInfo.BulkConfig.CustomSqlPostProcess != null)
+                {
+                    if (isAsync)
+                    {
+                        await context.Database.ExecuteSqlRawAsync(tableInfo.BulkConfig.CustomSqlPostProcess, cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        context.Database.ExecuteSqlRaw(tableInfo.BulkConfig.CustomSqlPostProcess);
+                    }
+                }
             }
 
             if (keepIdentity && tableInfo.HasIdentity)
