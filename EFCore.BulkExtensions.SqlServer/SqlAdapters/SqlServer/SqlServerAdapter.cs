@@ -200,18 +200,6 @@ public class SqlServerAdapter : ISqlOperationsAdapter
                         context.Database.ExecuteSqlRaw(sqlAlterTableColumnsToNullable);
                     }
                 }
-
-                if (tableInfo.BulkConfig.CustomSqlPostProcess != null)
-                {
-                    if (isAsync)
-                    {
-                        await context.Database.ExecuteSqlRawAsync(tableInfo.BulkConfig.CustomSqlPostProcess, cancellationToken).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        context.Database.ExecuteSqlRaw(tableInfo.BulkConfig.CustomSqlPostProcess);
-                    }
-                }
             }
 
             if (keepIdentity && tableInfo.HasIdentity)
@@ -249,6 +237,18 @@ public class SqlServerAdapter : ISqlOperationsAdapter
                 else
                 {
                     tableInfo.LoadOutputDataAsync(context, type, entities, tableInfo, isAsync: false, cancellationToken).GetAwaiter().GetResult();
+                }
+            }
+
+            if (tableInfo.BulkConfig.CustomSqlPostProcess != null)
+            {
+                if (isAsync)
+                {
+                    await context.Database.ExecuteSqlRawAsync(tableInfo.BulkConfig.CustomSqlPostProcess, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    context.Database.ExecuteSqlRaw(tableInfo.BulkConfig.CustomSqlPostProcess);
                 }
             }
         }
