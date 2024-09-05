@@ -213,6 +213,19 @@ public class MySqlAdapter : ISqlOperationsAdapter
                     tableInfo.LoadOutputDataAsync(context, type, entities, tableInfo, isAsync: false, cancellationToken).GetAwaiter().GetResult();
                 }
             }
+
+            if (tableInfo.BulkConfig.CustomSqlPostProcess != null)
+            {
+                if (isAsync)
+                {
+                    await context.Database.ExecuteSqlRawAsync(tableInfo.BulkConfig.CustomSqlPostProcess, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    context.Database.ExecuteSqlRaw(tableInfo.BulkConfig.CustomSqlPostProcess);
+                }
+            }
+
             if (hasExistingTransaction == false && !tableInfo.BulkConfig.IncludeGraph)
             {
                 if (isAsync)

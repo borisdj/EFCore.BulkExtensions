@@ -167,6 +167,18 @@ public class SqliteAdapter : ISqlOperationsAdapter
                 }
             }
 
+            if (tableInfo.BulkConfig.CustomSqlPostProcess != null)
+            {
+                if (isAsync)
+                {
+                    await context.Database.ExecuteSqlRawAsync(tableInfo.BulkConfig.CustomSqlPostProcess, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    context.Database.ExecuteSqlRaw(tableInfo.BulkConfig.CustomSqlPostProcess);
+                }
+            }
+
             if (doExplicitCommit)
             {
                 transaction?.Commit();

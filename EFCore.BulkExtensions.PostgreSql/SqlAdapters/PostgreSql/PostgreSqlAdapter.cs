@@ -35,15 +35,16 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
     {
         if (entities == null || !entities.Any()) return;
 
-        var (connection, closeConnectionInternally) = await GetOrCreateConnection(context, isAsync, cancellationToken);
+        var (connection, closeConnectionInternally) = await GetOrCreateConnection(context, isAsync, cancellationToken).ConfigureAwait(false);
 
         try
         {
             var operationType = tableInfo.InsertToTempTable ? OperationType.InsertOrUpdate : OperationType.Insert;
             var sqlCopy = PostgreSqlQueryBuilder.InsertIntoTable(tableInfo, operationType);
 
-            await using var writer = isAsync ? await connection.BeginBinaryImportAsync(sqlCopy, cancellationToken).ConfigureAwait(false)
-                                                               : connection.BeginBinaryImport(sqlCopy);
+            // when code is: await using var = ... it needs entire code to be encapsulated in ConfigureAwait but then writer.StartRowAsync does not build
+            using var writer = isAsync ? await connection.BeginBinaryImportAsync(sqlCopy, cancellationToken).ConfigureAwait(false)
+                                             : connection.BeginBinaryImport(sqlCopy);
 
             var uniqueColumnName = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList().FirstOrDefault();
 
@@ -334,6 +335,18 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
                 var sqlMergeTableOutput = sqlMergeTable.TrimEnd(';');                                         // When ends with ';' test OwnedTypes throws ex at LoadOutputEntities:
                 List<T> outputEntities = tableInfo.LoadOutputEntities<T>(context, type, sqlMergeTableOutput); // postgresql '42601: syntax error at or near ";"
                 tableInfo.UpdateReadEntities(entities, outputEntities, context);
+            }
+
+            if (tableInfo.BulkConfig.CustomSqlPostProcess != null)
+            {
+                if (isAsync)
+                {
+                    await context.Database.ExecuteSqlRawAsync(tableInfo.BulkConfig.CustomSqlPostProcess, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    context.Database.ExecuteSqlRaw(tableInfo.BulkConfig.CustomSqlPostProcess);
+                }
             }
 
             if (tableInfo.BulkConfig.CalculateStats)

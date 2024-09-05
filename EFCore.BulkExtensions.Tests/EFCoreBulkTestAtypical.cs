@@ -19,12 +19,29 @@ public class EFCoreBulkTestAtypical
     [InlineData(SqlType.SqlServer)]
     //[InlineData(SqlType.PostgreSql)]
     //[InlineData(SqlType.Sqlite)]
+    private void CustomSqlPostProcessTest(SqlType sqlType)
+    {
+        ContextUtil.DatabaseType = sqlType;
+        using var context = new TestContext(ContextUtil.GetOptions());
+
+        var entries = new List<Entry> { new() { /*EntryId = 1,*/ Name = "Custom Info" } };
+        BulkConfig bulkConfig = new() { CustomSqlPostProcess = "UPDATE Entry SET Name = Name + ' 2'" };
+        context.BulkInsertOrUpdate(entries, bulkConfig);
+
+        Assert.Equal("Custom Info 2", context.Entries.OrderBy(a => a.EntryId).LastOrDefault()?.Name);
+
+    }
+
+    [Theory]
+    [InlineData(SqlType.SqlServer)]
+    //[InlineData(SqlType.PostgreSql)]
+    //[InlineData(SqlType.Sqlite)]
     private void CalcStatsTest(SqlType sqlType)
     {
         ContextUtil.DatabaseType = sqlType;
         using var context = new TestContext(ContextUtil.GetOptions());
 
-        List<Entry> entries = new() { new Entry() { /*EntryId = 1,*/ Name = "Some Info" } };
+        var entries = new List<Entry> { new() { /*EntryId = 1,*/ Name = "Some Info" } };
         BulkConfig bulkConfig = new() { CalculateStats = true, SetOutputIdentity = true, /*SetOutputNonIdentityColumns = false, SqlBulkCopyOptions = SqlBulkCopyOptions.KeepIdentity*/ };
         context.BulkInsert(entries, bulkConfig);
     }
