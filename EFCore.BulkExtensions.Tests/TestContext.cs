@@ -12,17 +12,13 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Data;
 using System.Linq;
 using System.Text.Json;
-using static EFCore.BulkExtensions.Tests.EFCoreBulkTestAtypical;
 
 namespace EFCore.BulkExtensions.Tests;
 
 public class TestContext : DbContext
 {
-    public virtual DbSet<Mod> Mods { get; set; } = default!;
-
     public DbSet<Item> Items { get; set; } = null!;
     public DbSet<ItemHistory> ItemHistories { get; set; } = null!;
 
@@ -90,6 +86,8 @@ public class TestContext : DbContext
     public DbSet<Partner> Partners { get; set; } = null!;
 
     public DbSet<GraphQLModel> GraphQLModels { get; set; } = null!;
+
+    public virtual DbSet<Mod> Mods { get; set; } = default!;
 
     public static bool UseTopologyPostgres { get; set; } = true; // needed for object Address with Geo. props
     // 'No suitable constructor was found for entity type 'LineString'. The following constructors had parameters that could not be bound to properties of the entity type: 

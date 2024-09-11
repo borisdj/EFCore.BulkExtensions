@@ -1522,9 +1522,8 @@ public class EFCoreBulkTestAtypical
         );
     }
 
-    #region issue1343
-    [Fact] // TODO
-    public async static void ConverterStringPKTest()
+    [Fact]
+    public async static void ConverterStringPKTest() //for issue1343
     {
         ContextUtil.DatabaseType = SqlType.PostgreSql;
         using var context = new TestContext(ContextUtil.GetOptions());
@@ -1540,5 +1539,4 @@ public class EFCoreBulkTestAtypical
         await context.Mods.AddAsync(mod);
         await context.BulkSaveChangesAsync();
     }
-    #endregion
 }
