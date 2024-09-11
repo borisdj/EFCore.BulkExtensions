@@ -310,7 +310,7 @@ _ Setting it False can optionally be used to solve deadlock issue Insert.
 **CustomSourceTableName** when set enables source data from specified table already in Db, so input list not used and can be empty.  
 **CustomSourceDestinationMappingColumns** dict can be set only if CustomSourceTableName is configured and it is used for specifying Source-Destination column names when they are not the same. Example in test `DestinationAndSourceTableNameTest`.  
 **EnableShadowProperties** to add (normal) Shadow Property and persist value. Disables automatic discriminator, use manual method.  
-**CustomSqlPostProcess** If used, should be set to valid pure Sql syntax, that would be run after main operation but before deleting temporary tables. One practical use case would be to move data from TempOutput table (set UniqueTableNameTempDb to know the name) into a some Log table, optionally using FOR JSON PATH.  
+**CustomSqlPostProcess** If used, should be set to valid pure Sql syntax, that would be run after main operation but before deleting temporary tables. One practical use case would be to move data from TempOutput table (set UniqueTableNameTempDb to know the name) into a some Log table, optionally using FOR JSON PATH (example test: *CustomSqlPostProcessTest*).  
 **IncludeGraph** when set all entities that have relations with main ones from the list are also merged into theirs tables.  
 **OmitClauseExistsExcept** removes the clause from Merge statement, required when having noncomparable types like XML, and useful when need to activate triggers even for same data.  
 _ Also in some [sql collation](https://github.com/borisdj/EFCore.BulkExtensions/issues/641), small and capital letters are considered same (case-insensitive) so for BulkUpdate set it false.  
