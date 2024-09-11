@@ -44,6 +44,7 @@ public class TestContext : DbContext
     public DbSet<Info> Infos { get; set; } = null!;
     public DbSet<ChangeLog> ChangeLogs { get; set; } = null!;
     public DbSet<Tracker> Trackers { get; set; } = null!;
+    public DbSet<AuditData> AuditData { get; set; } = null!;
     public DbSet<ItemLink> ItemLinks { get; set; } = null!;
     public DbSet<Address> Addresses { get; set; } = null!;
     public DbSet<Category> Categories { get; set; } = null!;
@@ -890,6 +891,23 @@ public class TrackerLocation
 {
     public string LocationName { get; set; } = null!;
     public Point Location { get; set; } = null!;
+}
+
+public class AuditData // used for CustomSqlPostProcessTest
+{
+    public int AuditDataId { get; set; }
+
+    public int OriginalTableId { get; set; }
+    public string TableName { get; set; } = null!;
+
+    public string PrimaryKeyName { get; set; } = null!;
+
+    public string JsonData { get; set; } = null!;
+
+    public DateTime AuditDate { get; set; }
+    public string AuditBy { get; set; } = null!;
+    public string AuditAction { get; set; } = null!;
+
 }
 
 // For testing BatchUpdate expressions that use nested queries

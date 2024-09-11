@@ -30,6 +30,25 @@ public class EFCoreBulkTestAtypical
 
         Assert.Equal("Custom Info 2", context.Entries.OrderBy(a => a.EntryId).LastOrDefault()?.Name);
 
+        // Sample for Audit Json on Item:
+        /*
+        var customSqlPostProcessOnITEM = @"
+            DECLARE @NowDt DATETIME = GETDATE();
+
+            INSERT INTO [AuditData] (OriginalTableId, JsonData, TableName, PrimaryKeyName, AuditDate, AuditAction)
+            SELECT mo.ItemId AS OriginalTableId,
+            (SELECT mo.ItemId, mo.TimeUpdated
+                FOR JSON PATH, ROOT('Item'))
+            AS JsonData,
+            'Item' AS TableName,
+            'ItemId' AS PrimaryKeyName,
+            @NowDt AS AuditDate,
+            mo.SqlActionIUD AS AuditAction
+            FROM ItemTemp3c851b08Output mo
+            WHERE SqlActionIUD IN ('I', 'U');
+        ";
+        */
+
     }
 
     [Theory]
