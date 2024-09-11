@@ -305,7 +305,7 @@ public class BulkConfig
 
     /// <summary>
     ///     If used, should be set to valid pure Sql syntax, that would be run after main operation but before deleting temporary tables.
-    ///     One practical use case would be to move data from TempOutput table (set UniqueTableNameTempDb to know the name) into a some Log table, optionally using FOR JSON PATH.
+    ///     One practical use case would be to move data from TempOutput table (set UniqueTableNameTempDb to know the name) into a some Log table, optionally using FOR JSON PATH (Test: CustomSqlPostProcessTest).
     /// </summary>
     public string? CustomSqlPostProcess { get; set; }
 
