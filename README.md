@@ -195,26 +195,26 @@ Note: Bulk ops have optional argument *Type type* that can be set to type of Ent
 ```C#
 PROPERTY : DEFAULTvalue
 ----------------------------------------------------------------------------------------------
-PreserveInsertOrder: true,                    PropertiesToInclude: null,
-SetOutputIdentity: false,                     PropertiesToIncludeOnCompare: null,
-SetOutputNonIdentityColumns: true,            PropertiesToIncludeOnUpdate: null,
-LoadOnlyIncludedColumns: false,               PropertiesToExclude: null,
-BatchSize: 2000,                              PropertiesToExcludeOnCompare: null,
-NotifyAfter: null,                            PropertiesToExcludeOnUpdate: null,
-BulkCopyTimeout: null,                        UpdateByProperties: null,
-TrackingEntities: false,                      ReplaceReadEntities: false,
-UseTempDB: false,                             EnableShadowProperties: false,
-UniqueTableNameTempDb: true,                  CustomSqlPostProcess: null,
-CustomDestinationTableName: null,             IncludeGraph: false,
-CustomSourceTableName: null,                  OmitClauseExistsExcept: false,
-CustomSourceDestinationMappingColumns: null,  DoNotUpdateIfTimeStampChanged: false,
-OnConflictUpdateWhereSql: null,               SRID: 4326,
-WithHoldlock: true,                           DateTime2PrecisionForceRound: false,
-CalculateStats: false,                        TemporalColumns: { "PeriodStart", "PeriodEnd" },
-SqlBulkCopyOptions: Default,                  OnSaveChangesSetFK: true,
-SqlBulkCopyColumnOrderHints: null,            IgnoreGlobalQueryFilters: false,
-DataReader: null,                             EnableStreaming: false,
-UseOptionLoopJoin:false,                      ApplySubqueryLimit: 0
+ 1 PreserveInsertOrder: true,                   21 PropertiesToInclude: null,
+ 2 SetOutputIdentity: false,                    22 PropertiesToIncludeOnCompare: null,
+ 3 SetOutputNonIdentityColumns: true,           23 PropertiesToIncludeOnUpdate: null,
+ 4 LoadOnlyIncludedColumns: false,              24 PropertiesToExclude: null,
+ 5 BatchSize: 2000,                             25 PropertiesToExcludeOnCompare: null,
+ 6 NotifyAfter: null,                           26 PropertiesToExcludeOnUpdate: null,
+ 7 BulkCopyTimeout: null,                       27 UpdateByProperties: null,
+ 8 TrackingEntities: false,                     28 ReplaceReadEntities: false,
+ 9 UseTempDB: false,                            29 EnableShadowProperties: false,
+10 UniqueTableNameTempDb: true,                 30 CustomSqlPostProcess: null,
+11 CustomDestinationTableName: null,            31 IncludeGraph: false,
+12 CustomSourceTableName: null,                 32 OmitClauseExistsExcept: false,
+13 CustomSourceDestinationMappingColumns: null, 33 DoNotUpdateIfTimeStampChanged: false,
+14 OnConflictUpdateWhereSql: null,              34 SRID: 4326,
+15 WithHoldlock: true,                          35 DateTime2PrecisionForceRound: false,
+16 CalculateStats: false,                       36 TemporalColumns: { "PeriodStart", "PeriodEnd" },
+17 SqlBulkCopyOptions: Default,                 37 OnSaveChangesSetFK: true,
+18 SqlBulkCopyColumnOrderHints: null,           38 IgnoreGlobalQueryFilters: false,
+19 DataReader: null,                            39 EnableStreaming: false,
+20 UseOptionLoopJoin:false,                     40 ApplySubqueryLimit: 0
 ----------------------------------------------------------------------------------------------
 METHOD: SetSynchronizeFilter<T>
         SetSynchronizeSoftDelete<T>
