@@ -7,7 +7,7 @@ using System.Linq.Expressions;
 namespace EFCore.BulkExtensions;
 
 /// <summary>
-/// Provides configration for EFCore BulkExtensions
+/// Provides configuration for EFCore BulkExtensions
 /// </summary>
 public class BulkConfig
 {
