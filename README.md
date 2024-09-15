@@ -302,7 +302,7 @@ context.BulkSaveChanges();
 When **CalculateStats** set to True the result returned in `BulkConfig.StatsInfo` (*StatsNumber-Inserted/Updated/Deleted*).  
 If used for pure Insert (with Batching) then SetOutputIdentity should also be configured because Merge is required.  
 **TrackingEntities** can be set to True if we want to have tracking of entities from BulkRead or if SetOutputIdentity is set.  
-**WithHoldlock** means [Serializable isolation](https://github.com/borisdj/EFCore.BulkExtensions/issues/41) level that locks the table (can have negative effect on concurrency).  
+**WithHoldlock** means [Serializable isolation](https://github.com/borisdj/EFCore.BulkExtensions/issues/41) level that locks the table (can have negative effect on [concurrency](https://www.linkedin.com/posts/milan-jovanovic_ef-core-doesnt-support-pessimistic-locking-activity-7184445256870825984-QSLU/)).  
 _ Setting it False can optionally be used to solve deadlock issue Insert.  
 **UseTempDB** when set then BulkOperation has to be [inside Transaction](https://github.com/borisdj/EFCore.BulkExtensions/issues/49).  
 **UniqueTableNameTempDb** when changed to false temp table name will be only 'Temp' without random numbers.  
