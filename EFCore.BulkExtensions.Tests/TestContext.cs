@@ -4,6 +4,7 @@ using HotChocolate.Types;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Microsoft.Extensions.Configuration;
 using NetTopologySuite.Geometries;
@@ -106,15 +107,14 @@ public class TestContext : DbContext
         }*/
     }
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
-        //optionsBuilder.UseSnakeCaseNamingConvention(); // for testing all lower cases, required nuget: EFCore.NamingConventions
+        configurationBuilder.Conventions.Remove(typeof(TableNameFromDbSetConvention));
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.RemovePluralizingTableNameConvention();
-
+        // modelBuilder.RemovePluralizingTableNameConvention(); // instead used ConfigureConventions
 
         modelBuilder.Entity<Mod>()
             .ToTable("Mods");
