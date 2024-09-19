@@ -1,7 +1,7 @@
 # EFCore.BulkExtensions
 EntityFrameworkCore extensions (performance improvement - into overdrive):  
 -Bulk operations (super fast): **Insert, Update, Delete, Read, Upsert, Sync, SaveChanges.**  
--Batch ops: **Delete, Update** - Deprecated from EF8 since EF7+ has native Execute-Up/Del.  
+-Batch ops: **Update, Delete** - Deprecated from EF8 since EF7+ has native Execute-Up/Del.  
 -AddOps (additional): **Truncate.**  
 Library is Lightweight and very Efficient (warp speed), having all mostly used [CRUD](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete) operation.  
 Was selected in top 20 [EF Core Extensions](https://docs.microsoft.com/en-us/ef/core/extensions/) recommended by Microsoft.  
