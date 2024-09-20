@@ -204,7 +204,7 @@ PROPERTY : DEFAULTvalue
  7 BulkCopyTimeout: null,                       27 UpdateByProperties: null,
  8 TrackingEntities: false,                     28 ReplaceReadEntities: false,
  9 UseTempDB: false,                            29 EnableShadowProperties: false,
-10 : true,                 30 CustomSqlPostProcess: null,
+10 UniqueTableNameTempDb: true,                 30 CustomSqlPostProcess: null,
 11 CustomDestinationTableName: null,            31 IncludeGraph: false,
 12 CustomSourceTableName: null,                 32 OmitClauseExistsExcept: false,
 13 CustomSourceDestinationMappingColumns: null, 33 DoNotUpdateIfTimeStampChanged: false,
