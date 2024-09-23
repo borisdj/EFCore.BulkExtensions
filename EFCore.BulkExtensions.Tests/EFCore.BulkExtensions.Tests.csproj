@@ -9,7 +9,7 @@
   <ItemGroup>
     <PackageReference Include="DelegateDecompiler.EntityFrameworkCore5" Version="0.34.0" />
     <PackageReference Include="FastMember" Version="1.5.0" />
-    <PackageReference Include="Google.OrTools" Version="9.10.4067" />
+    <PackageReference Include="Google.OrTools" Version="9.11.4210" />
     <PackageReference Include="HotChocolate.Abstractions" Version="13.9.12" />
     <PackageReference Include="HotChocolate.Types" Version="13.9.12" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.NetTopologySuite" Version="8.0.8" />
