@@ -191,7 +191,7 @@ Note: Bulk ops have optional argument *Type type* that can be set to type of Ent
 
 ## BulkConfig arguments
 
-**Bulk** methods can have optional argument **BulkConfig** with properties (bool, int, object, List<string>):  
+**Bulk** methods can have optional argument **BulkConfig** with properties (bool, int, string, object, List<string>):  
 ```C#
 PROPERTY : DEFAULTvalue
 ----------------------------------------------------------------------------------------------
