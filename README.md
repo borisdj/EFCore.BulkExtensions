@@ -48,8 +48,7 @@ Bulk Tests can not have UseInMemoryDb because InMemoryProvider does not support 
 Instead Test options are  SqlServer(Developer or Express), LocalDb(if alongside [Developer v.](https://stackoverflow.com/questions/42885377/sql-server-2016-developer-version-can-not-connect-to-localdb-mssqllocaldb?noredirect=1&lq=1)), or with  other adapters.
 
 ## Installation
-<!--[![](https://img.shields.io/nuget/v/EFCore.BulkExtensions.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions)-->
-Available on <a href="https://www.nuget.org/packages/EFCore.BulkExtensions/"><img src="https://buildstats.info/nuget/EFCore.BulkExtensions" /></a>  
+Available on [![NuGet](https://img.shields.io/nuget/v/EFCore.BulkExtensions.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/)  
 That is main nuget for all Databases, there are also specific ones with single provider for those who need small packages.  
 Only single specific can be installed in a project, if need more then use main one with all providers.  
 Package manager console command for installation: *Install-Package EFCore.BulkExtensions*  
@@ -67,7 +66,7 @@ Its assembly is [Strong-Named](https://docs.microsoft.com/en-us/dotnet/standard/
 | 7.x   | Net 6.0         | EF Core 7 | Net 7.0+ or 6.0+                |
 | 6.x   | Net 6.0         | EF Core 6 | Net 6.0+                        |
 | 5.x   | NetStandard 2.1 | EF Core 5 | Net 5.0+                        |
-| 3.x   | NetStandard 2.0 | EF Core 3 | NetCore(3.0+) or NetFrm(4.6.1+) [MoreInfo](https://github.com/borisdj/EFCore.BulkExtensions/issues/271#issuecomment-567117488)|
+| 3.x   | NetStandard 2.0 | EF Core 3 | NetCore(3.0+) or NetFrm(4.6.1+) [info](https://github.com/borisdj/EFCore.BulkExtensions/issues/271#issuecomment-567117488)|
 | 2.x   | NetStandard 2.0 | EF Core 2 | NetCore(2.0+) or NetFrm(4.6.1+) |
 | 1.x   | NetStandard 1.4 | EF Core 1 | NetCore(1.0+)                   |
 
