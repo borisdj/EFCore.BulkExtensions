@@ -12,8 +12,8 @@ Icon>> and Logo (__):
 <img src="/EFCore.BulkExtensions/EFCoreBulk.png" height=60> & <img src="EFCoreBulkLogo_small.png" height=60>  
 (f.forward | rocket time)
 
-Also take a look into others packages:</br>
--Open source (MIT or cFOSS) authored [.Net libraries](https://infopedia.io/dot-net-libraries/) (@**Infopedia.io** personal blog post)
+**Also take a look into others packages:</br>
+Open source (MIT or cFOSS) authored [.Net libraries](https://infopedia.io/dot-net-libraries/) (@**Infopedia.io** personal blog post)
 | №  | .Net library             | Description                                              |
 | -  | ------------------------ | -------------------------------------------------------- |
 | 1* | [EFCore.BulkExtensions](https://github.com/borisdj/EFCore.BulkExtensions) | EF Core Bulk CRUD Ops (**Flagship** Lib) |
