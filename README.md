@@ -37,6 +37,7 @@ And even with community license, if you want help development, you can make a DO
 ## Contributing
 Please read [CONTRIBUTING](CONTRIBUTING.md) for details on code of conduct, and the process for submitting pull requests.  
 When opening issues do write detailed explanation of the problem or feature with reproducible example.  
+Want to **Contact** for Development & Consulting: [www.codis.tech](http://www.codis.tech)  (*Quality Delivery*)  
 
 ## Description
 Supported databases:  
