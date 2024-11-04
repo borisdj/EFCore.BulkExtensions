@@ -1,5 +1,5 @@
 EFCore.BulkExtensions DUAL LICENSE AGREEMENT
-Version 1.0, January 2023
+Version 1.0, January 2024
 AUTHOR: Copyright (c) 2017-present: borisdj (Boris Djurdjevic)
 PUBLISHER: CODIS LLC
 
