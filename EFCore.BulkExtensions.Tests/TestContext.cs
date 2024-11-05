@@ -312,7 +312,7 @@ public class TestContext : DbContext
 
         modelBuilder.Entity<Parent>().Property(parent => parent.PhoneNumber)
             .HasColumnType("varchar(12)").HasMaxLength(12).HasField("_phoneNumber").IsRequired();
-        
+
         modelBuilder.Entity<PrivateKey>(c =>
         {
             c.HasKey("Id");
@@ -395,7 +395,7 @@ public static class ContextUtil
         {
             string connectionString = GetPostgreSqlConnectionString(databaseName);
 
-            if(TestContext.UseTopologyPostgres)
+            if (TestContext.UseTopologyPostgres)
                 optionsBuilder.UseNpgsql(connectionString, opt => opt.UseNetTopologySuite());
             else
                 optionsBuilder.UseNpgsql(connectionString);
