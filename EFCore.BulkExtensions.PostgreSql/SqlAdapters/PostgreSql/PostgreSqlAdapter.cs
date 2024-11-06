@@ -534,20 +534,20 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
         sqlQuery = sqlQuery.Replace("[", @"""").Replace("]", @"""");
 
         var connection = (NpgsqlConnection)context.Database.GetDbConnection();
-        bool doExplicitCommit = false;
+        bool isExtenalTransaction = false;
         long counter = 0;
 
         try
         {
             var command = connection.CreateCommand();
 
-            if (context.Database.CurrentTransaction == null)
+            if (context.Database.CurrentTransaction != null)
             {
-                doExplicitCommit = true;
+                isExtenalTransaction = true;
             }
 
-            var dbTransaction = doExplicitCommit ? connection.BeginTransaction()
-                                                 : context.Database.CurrentTransaction?.GetUnderlyingTransaction(tableInfo.BulkConfig);
+            var dbTransaction = isExtenalTransaction ? context.Database.CurrentTransaction?.GetUnderlyingTransaction(tableInfo.BulkConfig) 
+                                                     : connection.BeginTransaction();
             var transaction = (NpgsqlTransaction?)dbTransaction;
 
             command.CommandText = sqlQuery;
@@ -556,21 +556,13 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
                                            : command.ExecuteScalar();
             counter = (long?)scalar ?? 0;
 
-            if (doExplicitCommit)
+            if (!isExtenalTransaction)
             {
                 transaction?.Commit();
             }
         }
         finally
         {
-            if (isAsync)
-            {
-                await context.Database.CloseConnectionAsync().ConfigureAwait(false);
-            }
-            else
-            {
-                context.Database.CloseConnection();
-            }
         }
         return (int)counter;
     }
