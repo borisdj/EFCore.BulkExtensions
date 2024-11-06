@@ -464,7 +464,10 @@ public class TableInfo
             {
                 var columnName = property.GetColumnName(ObjectIdentifier) ?? string.Empty;
                 ConvertiblePropertyColumnDict.Add(property.Name, columnName);
-                ConvertibleColumnConverterDict.Add(columnName, converter);
+                if (!ConvertibleColumnConverterDict.ContainsKey(columnName))
+                {
+                    ConvertibleColumnConverterDict.Add(columnName, converter);
+                }
 
                 if (columnName == IdentityColumnName)
                     IdentityColumnConverter = converter;
