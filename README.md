@@ -257,6 +257,7 @@ Also for SQLite combination of BulkInsertOrUpdate and IdentityId automatic set w
 After Insert is done to first table, we need Id-s (if using Option 1) that were generated in Db because they are FK(ForeignKey) in second table.  
 It is implemented with [OUTPUT](https://docs.microsoft.com/en-us/sql/t-sql/queries/output-clause-transact-sql) as part of MERGE Query, so in this case even the Insert is not done directly to TargetTable but to TempTable and then Merged with TargetTable.  
 When used Id-s will be updated in entitiesList, and if *PreserveInsertOrder* is set to *false* then entitiesList will be cleared and reloaded.  
+If Entity has Json column with null value and we set OutputIdentity then set also OutputNonIdentity to false, because [JsonNull](https://github.com/borisdj/EFCore.BulkExtensions/issues/1572) mapping throws exception.  
 **SetOutputNonIdentityColumns** used only when *SetOutputIdentity* is set to true, and if this remains True (which is default) all columns are reloaded from Db.  
 When changed to false only Identity column is loaded to reduce load back from DB for efficiency.  
   
