@@ -569,6 +569,16 @@ public abstract class Person
     //public string Discriminator { get; set; } = null!;
 }
 
+public class Student : Person
+{
+    public string Subject { get; set; } = null!;
+}
+
+public class Teacher : Person
+{
+    public string Class { get; set; } = null!;
+}
+
 public class Wall
 {
     public long Id { get; set; }
@@ -618,11 +628,6 @@ public enum TimeRecordSourceType
     Operator,
 }
 
-public class Student : Person
-{
-    public string Subject { get; set; } = null!;
-}
-
 // To Test custom Destination and Source tables
 public class Entry
 {
@@ -660,11 +665,6 @@ public class Category
     public int CategoryId { get; set; }
     public string Name { get; set; } = null!;
     public HierarchyId HierarchyDescription { get; set; } = null!;
-}
-
-public class Teacher : Person
-{
-    public string Class { get; set; } = null!;
 }
 
 // For testing Computed columns Default values
