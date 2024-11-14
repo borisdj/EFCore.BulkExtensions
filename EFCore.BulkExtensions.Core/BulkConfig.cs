@@ -81,7 +81,7 @@ public class BulkConfig
     /// <remarks>
     ///     UNLOGGED is appended only when UseTempDB is False, since Temporary created tables are not logged by default.
     /// </remarks>
-    public bool Unlogged { get; set; }
+    public bool UseUnlogged { get; set; }
 
     /// <summary>
     ///     When set it appends 'OPTION (LOOP JOIN)' for SqlServer, to reduce potential deadlocks on tables that have FKs.
