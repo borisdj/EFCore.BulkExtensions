@@ -1,9 +1,9 @@
-﻿using System;
+﻿using Npgsql;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Linq;
-using Npgsql;
 
 namespace EFCore.BulkExtensions.SqlAdapters.PostgreSql;
 
@@ -18,10 +18,19 @@ public class PostgreSqlQueryBuilder : SqlQueryBuilder
     /// </summary>
     /// <param name="newTableName"></param>
     /// <param name="useTempDb"></param>
-    public static string CreateOutputStatsTable(string newTableName, bool useTempDb)
+    /// <param name="unlogged"></param>
+    public static string CreateOutputStatsTable(string newTableName, bool useTempDb, bool unlogged)
     {
-        string keywordTEMP = useTempDb ? "TEMP " : ""; // "TEMP " or "TEMPORARY "
-        var q = @$"CREATE {keywordTEMP}TABLE IF NOT EXISTS {newTableName} (""xmaxNumber"" xid)"; // col name can't be just 'xmax' - conflicts with system column
+        string keywordPrefix = "";
+        if (unlogged == true)
+        {
+            keywordPrefix = "TEMP "; // "TEMP " or "TEMPORARY "
+        }
+        else if(unlogged) // can not be combined with TEMP since Temporary tables are not logged by default.
+        {
+            keywordPrefix = "UNLOGGED ";
+        }
+        var q = @$"CREATE {keywordPrefix}TABLE IF NOT EXISTS {newTableName} (""xmaxNumber"" xid)"; // col name can't be just 'xmax' - conflicts with system column
         q = q.Replace("[", @"""").Replace("]", @"""");
         return q;
     }
@@ -32,10 +41,18 @@ public class PostgreSqlQueryBuilder : SqlQueryBuilder
     /// <param name="existingTableName"></param>
     /// <param name="newTableName"></param>
     /// <param name="useTempDb"></param>
-    public static string CreateTableCopy(string existingTableName, string newTableName, bool useTempDb)
+    public static string CreateTableCopy(string existingTableName, string newTableName, bool useTempDb, bool unlogged)
     {
-        string keywordTEMP = useTempDb ? "TEMP " : ""; // "TEMP " or "TEMPORARY "
-        var q = $"CREATE {keywordTEMP}TABLE {newTableName} " +
+        string keywordPrefix = "";
+        if (unlogged == true)
+        {
+            keywordPrefix = "TEMP "; // "TEMP " or "TEMPORARY "
+        }
+        else if (unlogged) // can not be combined with TEMP since Temporary tables are not logged by default.
+        {
+            keywordPrefix = "UNLOGGED ";
+        }
+        var q = $"CREATE {keywordPrefix}TABLE {newTableName} " +
                 $"AS TABLE {existingTableName} " +
                 $"WITH NO DATA;";
         q = q.Replace("[", @"""").Replace("]", @"""");

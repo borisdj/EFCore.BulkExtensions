@@ -60,7 +60,7 @@ public class BulkConfig
     public int? BulkCopyTimeout { get; set; }
 
     /// <summary>
-    ///     When set to <c>true</c> Temp tables are created as #Temporary. More info: <c>https://www.sqlservertutorial.net/sql-server-basics/sql-server-temporary-tables/</c>
+    ///     When set to <c>true</c> temp tables are created as #Temporary. More info: <c>https://www.sqlservertutorial.net/sql-server-basics/sql-server-temporary-tables/</c>
     /// </summary>
     /// <remarks>
     ///     If used then BulkOperation has to be inside Transaction, otherwise destination table gets dropped too early because transaction ends before operation is finished.
@@ -74,6 +74,14 @@ public class BulkConfig
     ///     Default value is <c>true</c>.
     /// </value>
     public bool UniqueTableNameTempDb { get; set; } = true;
+
+    /// <summary>
+    ///     When set to <c>true</c> helper(temp) tables are created as #UNLOGGED - only for Postgres. More info: <c>https://www.postgresql.org/docs/current/sql-createtable.html</c>
+    /// </summary>
+    /// <remarks>
+    ///     UNLOGGED is appended only when UseTempDB is False, since Temporary created tables are not logged by default.
+    /// </remarks>
+    public bool Unlogged { get; set; }
 
     /// <summary>
     ///     When set it appends 'OPTION (LOOP JOIN)' for SqlServer, to reduce potential deadlocks on tables that have FKs.

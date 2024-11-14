@@ -251,7 +251,7 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
             {
                 tableInfo.InsertToTempTable = true;
 
-                var sqlCreateTableCopy = PostgreSqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
+                var sqlCreateTableCopy = PostgreSqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB, tableInfo.BulkConfig.Unlogged);
                 if (isAsync)
                 {
                     await context.Database.ExecuteSqlRawAsync(sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
@@ -265,7 +265,7 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
 
             if (tableInfo.BulkConfig.CalculateStats)
             {
-                var sqlCreateOutputTableCopy = PostgreSqlQueryBuilder.CreateOutputStatsTable(tableInfo.FullTempOutputTableName, tableInfo.BulkConfig.UseTempDB);
+                var sqlCreateOutputTableCopy = PostgreSqlQueryBuilder.CreateOutputStatsTable(tableInfo.FullTempOutputTableName, tableInfo.BulkConfig.UseTempDB, tableInfo.BulkConfig.Unlogged);
                 if (isAsync)
                 {
                     await context.Database.ExecuteSqlRawAsync(sqlCreateOutputTableCopy, cancellationToken).ConfigureAwait(false);
