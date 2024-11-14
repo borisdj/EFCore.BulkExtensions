@@ -845,8 +845,7 @@ public class SqlServerAdapter : ISqlOperationsAdapter
                 {
                     var columnName = property.Name; // TODO if Diff
                     var jsonPropertyValue = tableInfo.FastPropertyDict[columnName].Get(entity!);
-                    string jsonValue = System.Text.Json.JsonSerializer.Serialize(jsonPropertyValue);
-                    columnsDict[columnName] = jsonValue;
+                    columnsDict[columnName] = (jsonPropertyValue is null) ? null : System.Text.Json.JsonSerializer.Serialize(jsonPropertyValue);
                 }
             }
 
