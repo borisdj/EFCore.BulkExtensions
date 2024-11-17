@@ -133,7 +133,7 @@ Following are performances (in seconds)
 TestTable has 6 columns (Guid, string x2, int, decimal?, DateTime), all inserted and 2 were updated.  
 Test done locally on configuration: INTEL i7-10510U CPU 2.30GHz, DDR3 16 GB, SSD SAMSUNG 512 GB.  
 For small data sets there is an overhead since most Bulk ops need to create Temp table and also Drop it after finish.  
-Probably good advice would be to use **Bulk ops for sets greater than 1000**.
+Probably good advice would be to use **Bulk ops for sets greater than 1000** (condition in DbContext or Repository).
 
 ## Bulk info
 If Windows Authentication is used then in ConnectionString there should be *Trusted_Connection=True;* because Sql credentials are required to stay in connection.  
