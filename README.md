@@ -148,6 +148,12 @@ using (var transaction = context.Database.BeginTransaction())
     context.BulkInsert(entities2List);
     transaction.Commit();
 }
+
+// or with newer synax as of C# 8.0 (auto disposable objects)
+using var transaction = context.Database.BeginTransaction();
+context.BulkInsert(entities1List);
+context.BulkInsert(entities2List);
+transaction.Commit();
 ```
 
 **BulkInsertOrUpdate** method can be used when there is need for both operations but in one connection to database.  
