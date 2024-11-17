@@ -137,7 +137,7 @@ Probably good advice would be to use **Bulk ops for sets greater than 1000**.
 
 ## Bulk info
 If Windows Authentication is used then in ConnectionString there should be *Trusted_Connection=True;* because Sql credentials are required to stay in connection.  
-Another Conn.Str. config that can useful for operations with extrely large data sets is [*ConnectionTimeout*](https://learn.microsoft.com/en-us/dotnet/api/system.data.sqlclient.sqlconnection.connectiontimeout?view=netframework-4.8.1&redirectedfrom=MSDN#System_Data_SqlClient_SqlConnection_ConnectionTimeout) that can be increased from default 15 s to 60 or more to avoid '*Execution Timeout*' if it were to occur.
+Another Conn.Str. config that can be useful for operations with extremely large data sets is [*ConnectionTimeout*](https://learn.microsoft.com/en-us/dotnet/api/system.data.sqlclient.sqlconnection.connectiontimeout?view=netframework-4.8.1&redirectedfrom=MSDN#System_Data_SqlClient_SqlConnection_ConnectionTimeout) that can be increased from default 15 s to 60 or more to avoid '*Execution Timeout*' if it were to occur.
 
 When used directly each of these operations are separate transactions and are automatically committed.  
 And if we need multiple operations in single procedure then explicit transaction should be used, for example:  
