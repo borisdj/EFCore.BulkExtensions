@@ -182,7 +182,7 @@ Useful config **ReplaceReadEntities** that works as *Contains/IN* and returns al
 [Example](https://github.com/borisdj/EFCore.BulkExtensions/issues/733) of special use case when need to BulkRead child entities after BulkReading parent list. 
 
 **SaveChanges** uses Change Tracker to find all modified(CUD) entities and call proper BulkOperations for each table.  
-Because it needs tracking it is slower then pure BulkOps but still much faster then regular SaveChanges.  
+Because it needs tracking it is slower than pure BulkOps but still much faster than regular SaveChanges.  
 With config *OnSaveChangesSetFK* setting FKs can be controlled depending on whether PKs are generated in Db or in memory.  
 Support for this method was added in version 6 of the library.  
 Before calling this method newly created should be added into Range:
