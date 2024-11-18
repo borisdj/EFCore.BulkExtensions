@@ -233,15 +233,15 @@ Another option that may be used in the same scenario are the **PropertiesToInclu
 If we want Insert only new and skip existing ones in Db (Insert_if_not_Exist) then use *BulkInsertOrUpdate* with config
 `PropertiesToIncludeOnUpdate = new List<string> { "" }`
 
-Additionally there is **UpdateByProperties** for specifying custom properties, by which we want update to be done.  
-When setting multiple props in UpdateByProps then match done by columns combined, like unique constrain based on those cols.  
+Additionally, there is **UpdateByProperties** for specifying custom properties, by which we want update to be done.  
+When setting multiple props in UpdateByProps then match done by columns combined, like unique constrains based on those cols.  
 Using UpdateByProperties while also having Identity column requires that Id property be [Excluded](https://github.com/borisdj/EFCore.BulkExtensions/issues/131).  
-Also with PostgreSQL when matching is done it requires UniqueIndex so for custom UpdateByProperties that do not have Un.Ind., it is temporarily created in which case method can not be in transaction (throws: *current transaction is aborted; CREATE INDEX CONCURRENTLY cannot run inside a transaction block*).  
+Also, with PostgreSQL when matching is done it requires UniqueIndex so for custom UpdateByProperties that do not have Un.Ind., it is temporarily created in which case method can not be in transaction (throws: *current transaction is aborted; CREATE INDEX CONCURRENTLY cannot run inside a transaction block*).  
 Similar is done with MySQL by temporarily adding UNIQUE CONSTRAINT.  
 
-If **NotifyAfter** is not set it will have same value as _BatchSize_ while **BulkCopyTimeout** when not set has SqlBulkCopy default which is 30 seconds and if set to 0 it indicates no limit.    
-_SetOutputIdentity_ have purpose only when PK has Identity (usually *int* type with AutoIncrement), while if PK is Guid(sequential) created in Application there is no need for them.  
-Also Tables with Composite Keys have no Identity column so no functionality for them in that case either.
+If **NotifyAfter** is not set it will have same value as _BatchSize_ while **BulkCopyTimeout** when not set, has SqlBulkCopy default, which is 30 seconds and if set to 0 it indicates no limit.    
+_SetOutputIdentity_ have a purpose only when PK has Identity (usually *int* type with AutoIncrement), while if PK is Guid(sequential) created in Application there is no need for them.  
+Also, Tables with Composite Keys have no Identity column, so no functionality for them in that case either.
 ```C#
 var bulkConfig = new BulkConfig { SetOutputIdentity = true, BatchSize = 4000 };
 context.BulkInsert(entities, bulkConfig);
@@ -250,7 +250,7 @@ context.BulkInsertOrUpdate(entities, b => b.SetOutputIdentity = true); //BulkCon
 ```
 
 **PreserveInsertOrder** is **true** by default and makes sure that entities are inserted to Db as ordered in entitiesList.  
-When table has Identity column (int autoincrement) with 0 values in list they will temporary be automatically changed from 0s into range -N:-1.  
+When a table has Identity column (int autoincrement) with 0 values in list, they will temporarily be automatically changed from 0s into range -N:-1.  
 Or it can be manually set with proper values for order (Negative values used to skip conflict with existing ones in Db).  
 Here single Id value itself doesn't matter, db will change it to next in sequence, what matters is their mutual relationship for sorting.  
 Insertion order is implemented with [TOP](https://docs.microsoft.com/en-us/sql/t-sql/queries/top-transact-sql) in conjunction with ORDER BY. [so/merge-into-insertion-order](https://stackoverflow.com/questions/884187/merge-into-insertion-order).  
@@ -259,13 +259,13 @@ When using **SetOutputIdentity** Id values will be updated to new ones from data
 With BulkInsertOrUpdate on SQLServer for those that will be updated it has to match with Id column, or other unique column(s) if using UpdateByProperties in which case  [orderBy done with those props](https://github.com/borisdj/EFCore.BulkExtensions/issues/806) instead of ID, due to how Sql MERGE works. To preserve insert order by Id in this case alternative would be first to use BulkRead and find which records already exist, then split the list into 2 lists entitiesForUpdate and entitiesForInsert without configuring UpdateByProps).  
 Also for SQLite combination of BulkInsertOrUpdate and IdentityId automatic set will not work properly since it does [not have full MERGE](https://github.com/borisdj/EFCore.BulkExtensions/issues/556) capabilities like SqlServer. Instead list can be split into 2 lists, and call separately BulkInsert and BulkUpdate.  
   
-**SetOutputIdentity** is useful when BulkInsert is done to multiple related tables, that have Identity column.  
-After Insert is done to first table, we need Id-s (if using Option 1) that were generated in Db because they are FK(ForeignKey) in second table.  
-It is implemented with [OUTPUT](https://docs.microsoft.com/en-us/sql/t-sql/queries/output-clause-transact-sql) as part of MERGE Query, so in this case even the Insert is not done directly to TargetTable but to TempTable and then Merged with TargetTable.  
-When used Id-s will be updated in entitiesList, and if *PreserveInsertOrder* is set to *false* then entitiesList will be cleared and reloaded.  
-If Entity has Json column with null value and we set OutputIdentity then set also OutputNonIdentity to false, because [JsonNull](https://github.com/borisdj/EFCore.BulkExtensions/issues/1572) mapping throws exception.  
+**SetOutputIdentity** is useful when BulkInsert is done to multiple related tables that have Identity column.  
+After Insert is done to the first table, we need Id-s (if using Option 1) that were generated in Db because they are FK(ForeignKey) in second table.  
+It is implemented with [OUTPUT](https://docs.microsoft.com/en-us/sql/t-sql/queries/output-clause-transact-sql) as part of MERGE Query, so in this case, even the Insert is not done directly to TargetTable but to TempTable and then Merged with TargetTable.  
+When used Id-s will be updated on entitiesList, and if *PreserveInsertOrder* is set to *false* then entitiesList will be cleared and reloaded.  
+If Entity has Json column with null value and we set OutputIdentity then also set OutputNonIdentity to false, because [JsonNull](https://github.com/borisdj/EFCore.BulkExtensions/issues/1572) mapping throws an exception.  
 **SetOutputNonIdentityColumns** used only when *SetOutputIdentity* is set to true, and if this remains True (which is default) all columns are reloaded from Db.  
-When changed to false only Identity column is loaded to reduce load back from DB for efficiency.  
+When changed to false, only the Identity column is loaded to reduce load back from DB for efficiency.  
   
 Example of *SetOutputIdentity* with parent-child FK related tables:
 ```C#
@@ -362,17 +362,17 @@ It can map [OwnedTypes](https://docs.microsoft.com/en-us/ef/core/modeling/owned-
 [OwnedInSeparateTable](https://github.com/borisdj/EFCore.BulkExtensions/issues/114#issuecomment-803462928)  
 On PG when Enum is in OwnedType it needs to have [Converter explicitly](https://github.com/borisdj/EFCore.BulkExtensions/issues/1108) configured in *OnModelCreating*  
 
-Table splitting are somewhat specific but could be configured in way [Set TableSplit](https://github.com/borisdj/EFCore.BulkExtensions/issues/352#issuecomment-803674404)  
-With [Computed](https://docs.microsoft.com/en-us/ef/core/modeling/relational/computed-columns) and [Timestamp](https://docs.microsoft.com/en-us/ef/core/modeling/concurrency) Columns it will work in a way that they are automatically excluded from Insert. And when combined with *SetOutputIdentity* they will be Selected.  
-[Spatial](https://docs.microsoft.com/en-us/sql/relational-databases/spatial/spatial-data-types-overview?view=sql-server-ver15) types, like Geometry, also supported and if  Entity has one, clause *EXIST ... EXCEPT* is skipped because it's not comparable.  
+Table splitting is somewhat specific but could be configured in the way [Set TableSplit](https://github.com/borisdj/EFCore.BulkExtensions/issues/352#issuecomment-803674404)  
+With [Computed](https://docs.microsoft.com/en-us/ef/core/modeling/relational/computed-columns) and [Timestamp](https://docs.microsoft.com/en-us/ef/core/modeling/concurrency) Columns, it will work in a way that they are automatically excluded from Insert. And when combined with *SetOutputIdentity* they will be Selected.  
+[Spatial](https://docs.microsoft.com/en-us/sql/relational-databases/spatial/spatial-data-types-overview?view=sql-server-ver15) types, like Geometry, are also supported and if an Entity has one, clause *EXIST ... EXCEPT* is skipped because it's not comparable.  
 Performance for bulk ops measured with `ActivitySources` named: '*BulkExecute*' (tags: '*operationType*', '*entitiesCount*')  
 Bulk Extension methods can be [Overridden](https://github.com/borisdj/EFCore.BulkExtensions/issues/56) if required, for example to set AuditInfo.  
-If having problems with Deadlock there is useful info in [issue/46](https://github.com/borisdj/EFCore.BulkExtensions/issues/46).
+If having problems with Deadlock, there is useful info in [issue/46](https://github.com/borisdj/EFCore.BulkExtensions/issues/46).
 
-**TPH** ([Table-Per-Hierarchy](https://docs.microsoft.com/en-us/aspnet/core/data/ef-mvc/inheritance)) inheritance model can  can be set in 2 ways.  
-First is automatically by Convention in which case Discriminator column is not directly in Entity but is [Shadow](https://learn.microsoft.com/en-us/ef/core/modeling/shadow-properties) Property.  
+**TPH** ([Table-Per-Hierarchy](https://docs.microsoft.com/en-us/aspnet/core/data/ef-mvc/inheritance)) inheritance model can be set in 2 ways.  
+First is automatically by Convention, in which case the Discriminator column is not directly in the Entity but is [Shadow](https://learn.microsoft.com/en-us/ef/core/modeling/shadow-properties) Property.  
 And second is to explicitly define Discriminator property in Entity and configure it with `.HasDiscriminator()`.  
-Important remark regarding the first case is that since we can not set directly Discriminator to certain value we need first to add list of entities to DbSet where it will be set and after that we can call Bulk operation. Note that SaveChanges are not called and we could optionally turn off TrackingChanges for performance. Example:
+An important remark regarding the first case is that since we can not directly set a Discriminator to certain value we need first to add list of entities to DbSet where it will be set and after that we can call Bulk operation. Note that SaveChanges are not called, and we could optionally turn off TrackingChanges for performance. Example:
 ```C#
 public class Student : Person { ... }
 context.Students.AddRange(entities); //adding to Context so Shadow property 'Discriminator' gets set
