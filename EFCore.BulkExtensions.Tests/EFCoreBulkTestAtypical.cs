@@ -1541,6 +1541,87 @@ public class EFCoreBulkTestAtypical
         );
     }
 
+    [Theory]
+    [InlineData(SqlType.SqlServer)]
+    public void UpdateOrderGraphTest(SqlType sqlType)
+    {
+        ContextUtil.DatabaseType = sqlType;
+
+        using var context = new TestContext(ContextUtil.GetOptions());
+
+        Console.WriteLine("Remove any data from tables to start.");
+        context.Database.ExecuteSql($"delete from dbo.ParentType;");
+
+        Console.WriteLine("Adding starting data to the database!");
+        // Add the starting objects to the database
+        List<ParentType> startingItems =
+        [
+            new ParentType
+            {
+                ParentTypeKey = 1,
+                ParentLabel = "ParentLabel_1",
+                Children =
+                [
+                    new ChildType() { ChildTypeKey = 1, ParentTypeKey = 1, ChildLabel = "Child_1_Label" }
+                ]
+            },
+            new ParentType
+            {
+                ParentTypeKey = 2,
+                ParentLabel = "ParentLabel_2",
+                Children =
+                [
+                    new ChildType() { ChildTypeKey = 2, ParentTypeKey = 2, ChildLabel = "Child_2_Label" }
+                ]
+            }
+        ];
+
+        context.ParentTypes.AddRange(startingItems);
+        context.SaveChangesAsync();
+        // Display starting data
+        Console.WriteLine("Initial data:");
+        foreach (var p in context.ParentTypes.Include(p => p.Children).AsNoTracking())
+        {
+            Console.WriteLine(p.ToString());
+            foreach (var c in p.Children) { Console.WriteLine(c.ToString()); }
+        }
+
+        // Issue manifests only if all items of a type have edits
+        // Only change to data from starting items is ParentLabel property edited to "..._Updated" for all ParentItems.
+        // Note - Order of incoming (or edited) items is not ParentTypeKey ASC
+        List<ParentType> editedItems =
+        [
+            new ParentType
+            {
+                ParentTypeKey = 2,
+                ParentLabel = "ParentLabel_2_Updated",
+                Children =
+                [
+                    new ChildType() { ChildTypeKey = 2, ParentTypeKey = 2, ChildLabel = "Child_2_Label" }
+                ]
+            },
+            new ParentType
+            {
+                ParentTypeKey = 1,
+                ParentLabel = "ParentLabel_1_Updated",
+                Children =
+                [
+                    new ChildType() { ChildTypeKey = 1, ParentTypeKey = 1, ChildLabel = "Child_1_Label" }
+                ]
+            }
+        ];
+        context.BulkUpdate<ParentType>(editedItems, new BulkConfig { UseTempDB = true, IncludeGraph = true });
+
+        // Show new results
+        // Notice now the child items foreign key values are incorrect.
+        Console.WriteLine("Results:");
+        foreach (var p in context.ParentTypes.Include(p => p.Children).AsNoTracking())
+        {
+            Console.WriteLine(p.ToString());
+            foreach (var c in p.Children) { Console.WriteLine(c.ToString()); }
+        }
+    }
+
     [Fact]
     public async static void ConverterStringPKTest() //for issue1343
     {

@@ -1109,16 +1109,27 @@ public class TableInfo
     /// <param name="entitiesWithOutputIdentity"></param>
     public void UpdateEntitiesIdentity<T>(TableInfo tableInfo, IEnumerable<T> entities, IEnumerable<object> entitiesWithOutputIdentity)
     {
-        var identifierPropertyName = IdentityColumnName != null ? OutputPropertyColumnNamesDict.SingleOrDefault(a => a.Value == IdentityColumnName).Key // it Identity autoincrement 
-                                                                : PrimaryKeysPropertyColumnNameDict.FirstOrDefault().Key;                               // or PK with default sql value
-
-        var fastProperty = FastPropertyDict[identifierPropertyName];
-
-        if (fastProperty.Property.PropertyType == typeof(string) ||
-            fastProperty.Property.PropertyType == typeof(Guid))
+        string? identifierPropertyName = null;
+        if (IdentityColumnName != null)
         {
-            entities = entities.OrderBy(p => fastProperty.Property!.GetValue(p, null)).ToList();
-            entitiesWithOutputIdentity = entitiesWithOutputIdentity.OrderBy(p => fastProperty.Property!.GetValue(p, null)).ToList();
+            identifierPropertyName = OutputPropertyColumnNamesDict.SingleOrDefault(a => a.Value == IdentityColumnName).Key; // is Identity autoincrement 
+        }
+        else if (PrimaryKeysPropertyColumnNameDict.Count() == 1 && 
+                 DefaultValueProperties.Contains(PrimaryKeysPropertyColumnNameDict.FirstOrDefault().Key))                   // or PK with default sql value
+        {
+            identifierPropertyName = PrimaryKeysPropertyColumnNameDict.FirstOrDefault().Key;
+        }
+
+        if (identifierPropertyName != null)
+        {
+            var fastProperty = FastPropertyDict[identifierPropertyName];
+
+            if (fastProperty.Property.PropertyType == typeof(string) ||
+                fastProperty.Property.PropertyType == typeof(Guid))
+            {
+                entities = entities.OrderBy(p => fastProperty.Property!.GetValue(p, null)).ToList();
+                entitiesWithOutputIdentity = entitiesWithOutputIdentity.OrderBy(p => fastProperty.Property!.GetValue(p, null)).ToList();
+            }
         }
 
         if (BulkConfig.PreserveInsertOrder) // Updates Db changed Columns in entityList
