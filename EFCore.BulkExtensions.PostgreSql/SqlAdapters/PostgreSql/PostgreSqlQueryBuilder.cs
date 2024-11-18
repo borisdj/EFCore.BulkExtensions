@@ -41,6 +41,7 @@ public class PostgreSqlQueryBuilder : SqlQueryBuilder
     /// <param name="existingTableName"></param>
     /// <param name="newTableName"></param>
     /// <param name="useTempDb"></param>
+    /// <param name="unlogged"></param>
     public static string CreateTableCopy(string existingTableName, string newTableName, bool useTempDb, bool unlogged)
     {
         string keywordPrefix = "";
