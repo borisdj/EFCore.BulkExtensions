@@ -311,13 +311,13 @@ If used for pure Insert (with Batching) then SetOutputIdentity should also be co
 **WithHoldlock** means [Serializable isolation](https://github.com/borisdj/EFCore.BulkExtensions/issues/41) level that locks the table (can have negative effect on [concurrency](https://www.linkedin.com/posts/milan-jovanovic_ef-core-doesnt-support-pessimistic-locking-activity-7184445256870825984-QSLU/)).  
 _ Setting it False can optionally be used to solve deadlock issue Insert.  
 **UseTempDB** when set then BulkOperation has to be [inside Transaction](https://github.com/borisdj/EFCore.BulkExtensions/issues/49).  
-**UniqueTableNameTempDb** when changed to false temp table name will be only 'Temp' without random numbers.  
+**UniqueTableNameTempDb** when changed to false, temp table name will be only 'Temp' without random numbers.  
 **CustomDestinationTableName** can be set with 'TableName' only or with 'Schema.TableName'.  
 **CustomSourceTableName** when set enables source data from specified table already in Db, so input list not used and can be empty.  
 **CustomSourceDestinationMappingColumns** dict can be set only if CustomSourceTableName is configured and it is used for specifying Source-Destination column names when they are not the same. Example in test `DestinationAndSourceTableNameTest`.  
-**EnableShadowProperties** to add (normal) Shadow Property and persist value. Disables automatic discriminator, use manual method.  
+**EnableShadowProperties** to add (normal) Shadow Property and to persist value. Disables automatic discriminator, use manual method.  
 **CustomSqlPostProcess** If used, should be set to valid pure Sql syntax, that would be run after main operation but before deleting temporary tables. One practical use case would be to move data from TempOutput table (set UniqueTableNameTempDb to False know the name) into a some Log table, optionally using FOR JSON PATH (example test: *CustomSqlPostProcessTest*).  
-**IncludeGraph** when set all entities that have relations with main ones from the list are also merged into theirs tables.  
+**IncludeGraph** when set, all entities that have relations with main ones from the list are also merged into theirs tables.  
 **OmitClauseExistsExcept** removes the clause from Merge statement, required when having noncomparable types like XML, and useful when need to activate triggers even for same data.  
 _ Also in some [sql collation](https://github.com/borisdj/EFCore.BulkExtensions/issues/641), small and capital letters are considered same (case-insensitive) so for BulkUpdate set it false.  
 **DoNotUpdateIfTimeStampChanged** if set checks TimeStamp for Concurrency, ones with conflict will [not be updated](https://github.com/borisdj/EFCore.BulkExtensions/issues/469#issuecomment-803662721).  
@@ -330,7 +330,7 @@ Return info will be in *BulkConfig.**TimeStampInfo*** object within field `Numbe
 **UseOptionLoopJoin** when set it appends 'OPTION (LOOP JOIN)' for SqlServer, to reduce potential deadlocks on tables that have FKs. Use this [sql hint](https://learn.microsoft.com/en-us/sql/t-sql/queries/hints-transact-sql-query?view=sql-server-ver16) as a last resort for experienced devs and db admins.  
 **ApplySubqueryLimit** Default is zero '0'. When set to larger value it appends: LIMIT 'N', to generated query. Used only with PostgreSql.
 
-**DataReader** can be used when DataReader ia also configured and when set it is propagated to SqlBulkCopy util object.  
+**DataReader** can be used when DataReader is also configured and when set it is propagated to SqlBulkCopy util object.  
 **EnableStreaming** can be set to True if want to have tracking of entities from BulkRead or when SetOutputIdentity is set, useful for big field like blob, binary column.
 
 **SqlBulkCopyOptions** is Enum (only for SqlServer) with [[Flags]](https://stackoverflow.com/questions/8447/what-does-the-flags-enum-attribute-mean-in-c) attribute which enables specifying one or more options:  
@@ -341,7 +341,7 @@ Useful for example when copying from one Db to another.
 
 **OnConflictUpdateWhereSql<T>** To define conditional updates on merges, receives (existingTable, insertedTable).  
 --Example: `bc.OnConflictUpdateWhereSql = (ex, in) => $"{in}.TimeUpdated > {ex}.TimeUpdated";`  
-**SetSynchronizeFilter<T>** A method that receives and sets expresion filter on entities to delete when using BulkInsertOrUpdateOrDelete. Those that are filterd out will be ignored and not deleted.  
+**SetSynchronizeFilter<T>** A method that receives and sets expression filter on entities to delete when using BulkInsertOrUpdateOrDelete. Those that are filtered out will be ignored and not deleted.  
 **SetSynchronizeSoftDelete<T>** A method that receives and sets expresion on entities to update property instead of deleting when using BulkInsertOrUpdateOrDelete.  
 `bulkConfig.SetSynchronizeSoftDelete<SomeObject>(a => new SomeObject { IsDeleted = true });`  
 
@@ -350,12 +350,12 @@ Last optional argument is **Action progress** (Example in *EfOperationTest.cs* *
 context.BulkInsert(entitiesList, null, (a) => WriteProgress(a));
 ```
 
-For **parallelism** important notes are:  
+For **parallelism**, important notes are:  
 -SqlBulk [in Parallel](https://www.adathedev.co.uk/2011/01/sqlbulkcopy-to-sql-server-in-parallel.html)  
--Concurrent operations not run on [same Context instance](https://learn.microsoft.com/en-us/ef/core/miscellaneous/async)  
--Import data to single unindexed table with [table level lock](https://learn.microsoft.com/en-us/previous-versions/sql/sql-server-2005/ms186341(v=sql.90))  
+-Concurrent operations not run in the [same Context instance](https://learn.microsoft.com/en-us/ef/core/miscellaneous/async)  
+-Import data to a single unindexed table with [table level lock](https://learn.microsoft.com/en-us/previous-versions/sql/sql-server-2005/ms186341(v=sql.90))  
 
-Library supports [Global Query Filters](https://docs.microsoft.com/en-us/ef/core/querying/filters) and [Value Conversions](https://docs.microsoft.com/en-us/ef/core/modeling/value-conversions) as well  
+Library supports [Global Query Filters](https://docs.microsoft.com/en-us/ef/core/querying/filters) and [Value Conversions](https://docs.microsoft.com/en-us/ef/core/modeling/value-conversions) as well.  
 Additionally BatchUpdate and named Property works with [EnumToString Conversion](https://github.com/borisdj/EFCore.BulkExtensions/issues/397)  
 It can map [OwnedTypes](https://docs.microsoft.com/en-us/ef/core/modeling/owned-entities), also next are links with info how to achieve 
 [NestedOwnedTypes](https://github.com/borisdj/EFCore.BulkExtensions/issues/167#issuecomment-476737959) and 
