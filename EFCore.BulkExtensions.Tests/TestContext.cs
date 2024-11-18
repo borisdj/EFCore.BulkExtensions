@@ -91,6 +91,8 @@ public class TestContext : DbContext
 
     public virtual DbSet<Mod> Mods { get; set; } = default!;
 
+    public DbSet<TrayType> TrayTypes { get; set; } = null!;
+
     public static bool UseTopologyPostgres { get; set; } = true; // needed for object Address with Geo. props
     // 'No suitable constructor was found for entity type 'LineString'. The following constructors had parameters that could not be bound to properties of the entity type: 
     // Cannot bind 'points' in 'LineString(Coordinate[] points)'  Cannot bind 'points', 'factory' in 'LineString(CoordinateSequence points, GeometryFactory factory)'
@@ -1111,6 +1113,26 @@ public class Article
 
     public string? Name { get; set; }
 }
+
+
+public abstract class Entity : Entity<int>
+{
+    public new int Id
+    {
+        get => base.Id;
+        set => base.Id = value;
+    }
+
+    public override string ToString() => $"{GetType().Name} #{Id}";
+}
+
+public abstract class Entity<TKey> where TKey: struct
+{
+    public TKey Id { get; set; }
+}
+
+public class TrayType : Entity;
+
 //--------------------------------------------------------
 public sealed class Mod
 {
