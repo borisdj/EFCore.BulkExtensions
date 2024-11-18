@@ -20,6 +20,7 @@ namespace EFCore.BulkExtensions.Tests;
 
 public class TestContext : DbContext
 {
+
     public DbSet<Item> Items { get; set; } = null!;
     public DbSet<ItemHistory> ItemHistories { get; set; } = null!;
 
@@ -93,6 +94,9 @@ public class TestContext : DbContext
 
     public DbSet<TrayType> TrayTypes { get; set; } = null!;
 
+    public virtual DbSet<ChildType> ChildTypes { get; set; } = null!;
+    public virtual DbSet<ParentType> ParentTypes { get; set; } = null!;
+
     public static bool UseTopologyPostgres { get; set; } = true; // needed for object Address with Geo. props
     // 'No suitable constructor was found for entity type 'LineString'. The following constructors had parameters that could not be bound to properties of the entity type: 
     // Cannot bind 'points' in 'LineString(Coordinate[] points)'  Cannot bind 'points', 'factory' in 'LineString(CoordinateSequence points, GeometryFactory factory)'
@@ -117,7 +121,7 @@ public class TestContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // modelBuilder.RemovePluralizingTableNameConvention(); // instead used ConfigureConventions
-
+        
         modelBuilder.Entity<Mod>()
             .ToTable("Mods");
 
@@ -320,6 +324,27 @@ public class TestContext : DbContext
             c.HasKey("Id");
         });
 
+        modelBuilder.Entity<ChildType>(entity =>
+        {
+            entity.ToTable(nameof(ChildType));
+            entity.HasKey(e => e.ChildTypeKey).HasName("PK_ChildType");
+            entity.Property(e => e.ChildTypeKey).IsRequired().ValueGeneratedNever();
+            entity.Property(e => e.ParentTypeKey).IsRequired();
+            entity.Property(e => e.ChildLabel).IsRequired().HasMaxLength(100).IsUnicode(false);
+            entity.HasOne(d => d.ParentType)
+                .WithMany(p => p.Children)
+                .HasForeignKey(d => d.ParentTypeKey)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK_ChildType_ParentType");
+        });
+        modelBuilder.Entity<ParentType>(entity =>
+        {
+            entity.ToTable(nameof(ParentType));
+            entity.HasKey(e => e.ParentTypeKey).HasName("PK_ParentType");
+            entity.Property(e => e.ParentTypeKey).IsRequired().ValueGeneratedNever();
+            entity.Property(e => e.ParentLabel).IsRequired().HasMaxLength(100).IsUnicode(false);
+        });
+
         //modelBuilder.Entity<Person>().HasDiscriminator<string>("Discriminator2").HasValue<Student>("Student").HasValue<Teacher>("Teacher"); // name of classes are default values
 
         // [Timestamp] alternative:
@@ -469,6 +494,29 @@ public static class ModelBuilderExtensions
                 entity.SetTableName(entity.ClrType.Name);
             }
         }
+    }
+}
+
+public class ChildType
+{
+    public long ChildTypeKey { get; set; }
+    public long ParentTypeKey { get; set; }
+    public string ChildLabel { get; set; } = default!;
+    public virtual ParentType? ParentType { get; set; }
+    public override string ToString()
+    {
+        return $"ChildType: ChildTypeKey={ChildTypeKey} ChildLabel={ChildLabel} ParentTypeKey={ParentTypeKey}";
+    }
+}
+
+public class ParentType
+{
+    public long ParentTypeKey { get; set; }
+    public string ParentLabel { get; set; } = default!;
+    public virtual ICollection<ChildType> Children { get; set; } = [];
+    public override string ToString()
+    {
+        return $"ParentType: ParentTypeKey={ParentTypeKey} ParentTypeLabel={ParentLabel}";
     }
 }
 
