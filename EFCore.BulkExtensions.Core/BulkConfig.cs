@@ -244,7 +244,7 @@ public class BulkConfig
     /// <summary>
     ///    Shadow columns used for Temporal table. Has defaults elements: 'PeriodStart' and 'PeriodEnd'. Can be changed if temporal columns have custom names.
     /// </summary>
-    public List<string> TemporalColumns { get; set; } = new List<string> { "PeriodStart", "PeriodEnd" };
+    public List<string> TemporalColumns { get; set; } = new List<string> { "PeriodEnd", "PeriodStart" };
     
     /// <summary>
     ///     When set all entites that have relations with main ones from the list are also merged into theirs tables.

@@ -76,10 +76,18 @@ public abstract class SqlQueryBuilder
             columnsNames.Remove(tableInfo.TimeStampColumnName);
             timeStampColumn = $", [{tableInfo.TimeStampColumnName}] = CAST('' AS {TableInfo.TimeStampOutColumnType})"; // tsType:varbinary(8)
         }
+        string temporalTableColumns = "";
+        if (tableInfo.HasTemporalColumns && isOutputTable == true)
+        {
+            tableInfo.BulkConfig.TemporalColumns.ForEach(columnName => {
+                columnsNames.Remove(columnName);
+                temporalTableColumns += $", T.[{columnName}]";
+            });
+        }
 
         string statsColumn = (tableInfo.BulkConfig.CalculateStats && isOutputTable) ? $", [{tableInfo.SqlActionIUD}] = CAST('' AS char(1))" : "";
 
-        var q = $"SELECT TOP 0 {GetCommaSeparatedColumns(columnsNames, "T")}" + timeStampColumn + statsColumn + " " +
+        var q = $"SELECT TOP 0 {GetCommaSeparatedColumns(columnsNames, "T")}" + timeStampColumn + temporalTableColumns + statsColumn + " " +
                 $"INTO {newTableName} FROM {existingTableName} AS T " +
                 $"LEFT JOIN {existingTableName} AS Source ON 1 = 0;"; // removes Identity constrain
         return q;

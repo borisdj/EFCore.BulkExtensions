@@ -566,6 +566,9 @@ public class ItemHistory
     public virtual Item Item { get; set; } = null!;
 
     public string Remark { get; set; } = null!;
+
+    [Timestamp]
+    public byte[]? RowVersion { get; set; }
 }
 
 
@@ -758,6 +761,9 @@ public class Storage
     public int StorageId { get; set; }
 
     public string Data { get; set; } = null!;
+
+    [Timestamp]
+    public byte[]? RowVersion { get; set; }
 }
 
 // For testing type 'jsonb' on Postgres

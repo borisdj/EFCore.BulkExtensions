@@ -111,7 +111,7 @@ public class EFCoreBulkTestAtypical
     {
         ContextUtil.DatabaseType = sqlType;
         using var context = new TestContext(ContextUtil.GetOptions());
-        //context.Truncate<Document>(); // Can not be used because table is Temporal, so BatchDelete used instead
+        //context.Truncate<Storage>(); // Can not be used because table is Temporal, so BatchDelete used instead
         context.Storages.BatchDelete();
         context.Database.ExecuteSqlRaw($"DBCC CHECKIDENT('{nameof(Storage)}', RESEED, 0);");
 
@@ -125,6 +125,9 @@ public class EFCoreBulkTestAtypical
         {
             SetOutputIdentity = true,
         });
+
+        var en = context.Entry(entities[0]).Property("PeriodStart").CurrentValue;
+        var en2 = context.Entry(entities[0]).Property("PeriodEnd").CurrentValue;
 
         var countDb = context.Storages.Count();
         var countEntities = entities.Count;

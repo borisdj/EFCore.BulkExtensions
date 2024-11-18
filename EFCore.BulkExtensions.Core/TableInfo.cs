@@ -1104,10 +1104,11 @@ public class TableInfo
     /// Updates the entities' identity field
     /// </summary>
     /// <typeparam name="T"></typeparam>
+    /// <param name="context"></param>
     /// <param name="tableInfo"></param>
     /// <param name="entities"></param>
     /// <param name="entitiesWithOutputIdentity"></param>
-    public void UpdateEntitiesIdentity<T>(TableInfo tableInfo, IEnumerable<T> entities, IEnumerable<object> entitiesWithOutputIdentity)
+    public void UpdateEntitiesIdentity<T>(DbContext context, TableInfo tableInfo, IEnumerable<T> entities, IEnumerable<object> entitiesWithOutputIdentity)
     {
         string? identifierPropertyName = null;
         if (IdentityColumnName != null)
@@ -1251,7 +1252,7 @@ public class TableInfo
             //var entitiesWithOutputIdentity = (typeof(T) == type) ? QueryOutputTable<object>(context, sqlQuery).ToList() : QueryOutputTable(context, type, sqlQuery).Cast<object>().ToList();
 
             //var entitiesObjects = entities.Cast<object>().ToList();
-            UpdateEntitiesIdentity(tableInfo, entities, entitiesWithOutputIdentity);
+            UpdateEntitiesIdentity(context, tableInfo, entities, entitiesWithOutputIdentity);
             totalNumber = entitiesWithOutputIdentity.Count;
         }
         if (BulkConfig.CalculateStats)
