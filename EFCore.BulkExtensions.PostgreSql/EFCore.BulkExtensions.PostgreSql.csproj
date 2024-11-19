@@ -6,7 +6,7 @@
     <PackageTags>$(PackageTags) PostgreSQL</PackageTags>
   </PropertyGroup>
   <ItemGroup>
-	<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.4" />
+	<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EFCore.BulkExtensions.Core\EFCore.BulkExtensions.Core.csproj" />
