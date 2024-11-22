@@ -13,15 +13,15 @@ Icon>> and Logo (__):
 (f.forward | rocket time)
 
 **Also take a look into others packages:</br>
-Open source (MIT or cFOSS) authored [.Net libraries](https://infopedia.io/dot-net-libraries/){:target="_blank"} (@[**Infopedia.io**](https://infopedia.io/){:target="_blank"} personal blog post)
+Open source (MIT or cFOSS) authored [.Net libraries](https://infopedia.io/dot-net-libraries/) (@[**Infopedia.io**](https://infopedia.io/) personal blog post)
 | №  | .Net library             | Description                                              |
 | -  | ------------------------ | -------------------------------------------------------- |
 | 1* | [EFCore.BulkExtensions](https://github.com/borisdj/EFCore.BulkExtensions) | EF Core Bulk CRUD Ops (**Flagship** Lib) |
-| 2  | [EFCore.UtilExtensions](https://github.com/borisdj/EFCore.UtilExtensions){:target="_blank"} | EF Core Custom Annotations and AuditInfo |
-| 3  | [EFCore.FluentApiToAnnotation](https://github.com/borisdj/EFCore.FluentApiToAnnotation){:target="_blank"} | Converting FluentApi configuration to Annotations |
-| 4  | [FixedWidthParserWriter](https://github.com/borisdj/FixedWidthParserWriter){:target="_blank"} | Reading & Writing fixed-width/flat data files |
-| 5  | [CsCodeGenerator](https://github.com/borisdj/CsCodeGenerator){:target="_blank"} | C# code generation based on Classes and elements |
-| 6  | [CsCodeExample](https://github.com/borisdj/CsCodeExample){:target="_blank"} | Examples of C# code in form of a simple tutorial |
+| 2  | [EFCore.UtilExtensions](https://github.com/borisdj/EFCore.UtilExtensions) | EF Core Custom Annotations and AuditInfo |
+| 3  | [EFCore.FluentApiToAnnotation](https://github.com/borisdj/EFCore.FluentApiToAnnotation) | Converting FluentApi configuration to Annotations |
+| 4  | [FixedWidthParserWriter](https://github.com/borisdj/FixedWidthParserWriter) | Reading & Writing fixed-width/flat data files |
+| 5  | [CsCodeGenerator](https://github.com/borisdj/CsCodeGenerator) | C# code generation based on Classes and elements |
+| 6  | [CsCodeExample](https://github.com/borisdj/CsCodeExample) | Examples of C# code in form of a simple tutorial |
 
 ## License
 BulkExtensions [licensed](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE.txt) under [**Dual License v1.0**](https://codis.tech/efcorebulk) (cFOSS: conditionallyFree OSS as a solution to OpenSource funding).  
