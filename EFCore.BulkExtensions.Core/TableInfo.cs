@@ -706,7 +706,7 @@ public class TableInfo
 
         while (type != null)
         {
-            var property = type.GetProperty(name, BindingFlags.DeclaredOnly);
+            var property = type.GetProperty(name, BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance);
 
             if (property != null)
             {

@@ -36,7 +36,7 @@ internal static class GenericsHelpers
             if (!type.IsInterface && hasParameterlessConstructor)
                 defaultValue = field.GetValue(Activator.CreateInstance(type, true));
 
-            if (temp == defaultValue ||
+            if (temp?.ToString() == defaultValue?.ToString() ||
                 (temp != null && defaultValue != null &&
                  temp.ToString() == "0" && defaultValue.ToString() == "0") || // situation for int/long prop with HasSequence (test DefaultValues: Document)
                 (temp is Guid guid && guid == Guid.Empty))
