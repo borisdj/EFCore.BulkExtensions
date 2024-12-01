@@ -13,7 +13,7 @@ Icon>> and Logo (__):
 (f.forward | rocket time)
 
 **Also take a look into others packages:</br>
-Open source (MIT or cFOSS) authored [.Net libraries](https://infopedia.io/dot-net-libraries/) (@**Infopedia.io** personal blog post)
+Open source (MIT or cFOSS) authored [.Net libraries](https://infopedia.io/dot-net-libraries/) (@[**Infopedia.io**](https://infopedia.io/) personal blog post)
 | №  | .Net library             | Description                                              |
 | -  | ------------------------ | -------------------------------------------------------- |
 | 1* | [EFCore.BulkExtensions](https://github.com/borisdj/EFCore.BulkExtensions) | EF Core Bulk CRUD Ops (**Flagship** Lib) |
@@ -30,7 +30,7 @@ If eligible for free usage but still need  active support, consider purchasing S
 
 ## Support
 If you find this project useful you can mark it by leaving a Github **Star** :star:  
-And even with community license, if you want help development, you can make a DONATION:  
+And even with Community license, if you want help Development, you can make a Donation:  
 [<img src="https://www.buymeacoffee.com/assets/img/custom_images/yellow_img.png" alt="Buy Me A Coffee" height=28>](https://www.buymeacoffee.com/boris.dj) _ or _ 
 [![Button](https://img.shields.io/badge/donate-Bitcoin-orange.svg?logo=bitcoin):zap:](https://borisdj.net/donation/donate-btc.html)
 
@@ -49,7 +49,7 @@ Bulk Tests can not have UseInMemoryDb because InMemoryProvider does not support 
 Instead Test options are  SqlServer(Developer or Express), LocalDb(if alongside [Developer v.](https://stackoverflow.com/questions/42885377/sql-server-2016-developer-version-can-not-connect-to-localdb-mssqllocaldb?noredirect=1&lq=1)), or with  other adapters.
 
 ## Installation
-Available on [![NuGet](https://img.shields.io/nuget/v/EFCore.BulkExtensions.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/)  
+Available on [![NuGet](https://img.shields.io/nuget/v/EFCore.BulkExtensions.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/)  [![Downloads](https://img.shields.io/nuget/dt/EFCore.BulkExtensions.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/)  
 That is main nuget for all Databases, there are also specific ones with single provider for those who need small packages.  
 Package manager console command for installation: *Install-Package EFCore.BulkExtensions*  
 Specific ones have adapter suffix: MainNuget + *.SqlServer/PostgreSql/MySql/Sqlite* 
