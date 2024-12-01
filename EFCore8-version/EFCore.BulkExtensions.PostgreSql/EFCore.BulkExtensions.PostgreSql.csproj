@@ -1,15 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <Title>EFCore.BulkExtensions.PostgreSql</Title>
     <Description>EntityFramework .Net EFCore EF Core Bulk Batch Extensions for Insert Update Delete Read (CRUD) operations on PostgreSQL</Description>
     <PackageTags>$(PackageTags) PostgreSQL</PackageTags>
-    <Version>9.0.0-rc.1</Version>
   </PropertyGroup>
   <ItemGroup>
-	<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.0-preview.1" />
-	<PackageReference Include="Npgsql" Version="8.0.6" />
-	<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.0" />
+	<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EFCore.BulkExtensions.Core\EFCore.BulkExtensions.Core.csproj" />
