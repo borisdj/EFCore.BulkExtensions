@@ -164,7 +164,7 @@ It makes Update when PK(PrimaryKey) is matched, otherwise does Insert.
 Those in Db that are not found in the list will be deleted.  
 Partial Sync can be done on table subset using expression set on config with method:  
 `bulkConfig.SetSynchronizeFilter<Item>(a => a.Quantity > 0);`  
-Not supported for SQLite (Lite has only UPSERT statement) nor currently for PostgreSQL. Way to achieve there sync functionality is to Select or BulkRead existing data from DB, split list into sublists and call separately Bulk methods for BulkInsertOrUpdate and Delete.
+Not supported for SQLite (Lite has only UPSERT statement) nor currently for PostgreSQL. Here way to achieve sync functionality is to Select or BulkRead existing data from DB, split list into sublists and call separately Bulk methods for BulkInsertOrUpdate and Delete.
 
 **BulkRead** (SELECT and JOIN done in Sql)  
 Used when need to Select from big List based on Unique Prop./Columns specified in config `UpdateByProperties`  
