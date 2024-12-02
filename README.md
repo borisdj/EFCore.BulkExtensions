@@ -5,7 +5,7 @@ EntityFrameworkCore extensions (performance improvement - into overdrive):
 -AddOps (additional): **Truncate.**  
 Library is Lightweight and very Efficient (warp speed), having all mostly used [CRUD](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete) operation.  
 Was selected in top 20 [EF Core Extensions](https://docs.microsoft.com/en-us/ef/core/extensions/) recommended by Microsoft.  
-Latest version is using EF Core 8.  
+Latest version is using EF Core 9.  
 Supports all 4 major sql databases: **SQLServer, PostgreSQL, MySQL, SQLite.**  
 Check out [Testimonials](https://docs.google.com/spreadsheets/d/e/2PACX-1vShdv2sTm3oQfowm9kVIx-PLBCk1lGQEa9E6n92-dX3pni7-XQUEp6taVcMSZVi9BaSAizv1YanWTy3/pubhtml?gid=801420190&single=true) from the Community and User Comments.  
 Icon>> and Logo (__):  
@@ -62,6 +62,7 @@ Specific ones have adapter suffix: MainNuget + *.SqlServer/PostgreSql/MySql/Sqli
 Its assembly is [Strong-Named](https://docs.microsoft.com/en-us/dotnet/standard/library-guidance/strong-naming) and [Signed](https://github.com/borisdj/EFCore.BulkExtensions/issues/161) with a key.
 | Nuget | Target          | Used EF v.| For projects targeting          |
 | ----- | --------------- | --------- | ------------------------------- |
+| 9.x   | Net 9.0         | EF Core 9 | Net 9.0+                        |
 | 8.x   | Net 8.0         | EF Core 8 | Net 8.0+                        |
 | 7.x   | Net 6.0         | EF Core 7 | Net 7.0+ or 6.0+                |
 | 6.x   | Net 6.0         | EF Core 6 | Net 6.0+                        |
@@ -70,7 +71,7 @@ Its assembly is [Strong-Named](https://docs.microsoft.com/en-us/dotnet/standard/
 | 2.x   | NetStandard 2.0 | EF Core 2 | NetCore(2.0+) or NetFrm(4.6.1+) |
 | 1.x   | NetStandard 1.4 | EF Core 1 | NetCore(1.0+)                   |
 
-Supports follows official [.Net lifecycle](https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core), currently v.8(LTS) as latest and v.7 and v.6(LTS).
+Supports follows official [.Net lifecycle](https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core), currently v.9 as latest and v.8(LTS).
 
 ## Usage
 It's pretty simple and straightforward.  
