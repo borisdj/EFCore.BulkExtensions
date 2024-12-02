@@ -380,3 +380,17 @@ context.Students.AddRange(entities); //adding to Context so Shadow property 'Dis
 context.BulkInsert(entities);
 ```
 **TPT** (Table-Per-Type) way it is [supported](https://github.com/borisdj/EFCore.BulkExtensions/issues/493).
+
+## Structure
+```C#
+_CLASSES:                |DbContextBulk|SqlBulk     |ISqlOperations|SqlOperations  |
+DbContextBulkExtensions: |-Transaction:|-Operation: |-Adapter:     |-ServerAdapter:|
+__METHODS:===============(=============(============(==============(===============)
+BulkInsert --------------|             |--Insert ---|--Insert -----|--Insert       |
+BulkInsertOrUpdate ------|             | \                                         |
+BulkInsertOrUpdateOrDel.-|             |  \                                        |
+BulkUpdate --------------|--Execute ---|--Merge ----|--Merge ------|--Merge        |
+BulkDelete --------------|             | /                                         |
+BulkRead ----------------|             |--Read -----|--Read -------|--Read         |
+Truncate ----------------|             |--Truncate -|--Truncate ---|--Truncate     |
+```
