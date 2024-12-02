@@ -381,7 +381,7 @@ context.BulkInsert(entities);
 ```
 **TPT** (Table-Per-Type) way it is [supported](https://github.com/borisdj/EFCore.BulkExtensions/issues/493).
 
-## Source Structure
+## Structure of SourceCode
 ```C#
 _CLASSES:                |DbContextBulk|SqlBulk     |ISqlOperations|SqlOperations  |
 DbContextBulkExtensions: |-Transaction:|-Operation: |-Adapter:     |-ServerAdapter:|
