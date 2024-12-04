@@ -381,7 +381,8 @@ context.BulkInsert(entities);
 ```
 **TPT** (Table-Per-Type) way it is [supported](https://github.com/borisdj/EFCore.BulkExtensions/issues/493).
 
-## Structure of SourceCode (action flow)
+## Structure of SourceCode
+- Action Flow
 ```C#
 _CLASSES:                |DbContextBulk|SqlBulk     |ISqlOperations|SqlOperations  |
 DbContextBulkExtensions: |-Transaction:|-Operation: |-Adapter:     |-ServerAdapter:|
@@ -394,3 +395,13 @@ BulkDelete --------------|             | /                                      
 BulkRead ----------------|             |--Read -----|--Read -------|--Read         |
 Truncate ----------------|             |--Truncate -|--Truncate ---|--Truncate     |
 ```
+- Projects Composition:
+
+| Num | Nugets                                 | Reference | Transit.dep. |
+| --- | -------------------------------------- | --------- | ------------ |
+| [0] | EFCore.BulkExtensions.Core             |           |              |
+| [1] | ***EFCore.BulkExtensions.SqlServer***  | [0]       | per provider |
+| [2] | ***EFCore.BulkExtensions.PostgreSql*** | [0]       | per provider |
+| [3] | ***EFCore.BulkExtensions.MySql***      | [0]       | per provider |
+| [4] | ***EFCore.BulkExtensions.Sqlite***     | [0]       | per provider |
+| [5] | **EFCore.BulkExtensions**              | [1,2,3,4] | [0] / all    |
