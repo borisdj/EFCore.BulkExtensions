@@ -399,9 +399,9 @@ Truncate ----------------|             |--Truncate -|--Truncate ---|--Truncate  
 
 | Num | Nugets                                 | Reference | Transit.dep. |
 | --- | -------------------------------------- | --------- | ------------ |
-| [0] | EFCore.BulkExtensions.Core             |           |              |
-| [1] | ***EFCore.BulkExtensions.SqlServer***  | [0]       | per provider |
-| [2] | ***EFCore.BulkExtensions.PostgreSql*** | [0]       | per provider |
-| [3] | ***EFCore.BulkExtensions.MySql***      | [0]       | per provider |
-| [4] | ***EFCore.BulkExtensions.Sqlite***     | [0]       | per provider |
-| [5] | **EFCore.BulkExtensions**              | [1,2,3,4] | [0] / all    |
+| [0] | EFCore.BulkExtensions.Core             |           | shared       |
+| [1] | EFCore.BulkExtensions.***SqlServer***  | [0]       | per provider |
+| [2] | EFCore.BulkExtensions.***PostgreSql*** | [0]       | per provider |
+| [3] | EFCore.BulkExtensions.***MySql***      | [0]       | per provider |
+| [4] | EFCore.BulkExtensions.***Sqlite***     | [0]       | per provider |
+| [5] | **EFCore.BulkExtensions**              | [1,2,3,4] | [0] all main |
