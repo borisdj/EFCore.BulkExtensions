@@ -26,28 +26,37 @@ public static class IQueryableExtensions
     public static (string, IEnumerable<DbParameter>) ToParametrizedSql(this IQueryable query)
     {
         string relationalQueryContextText = "_relationalQueryContext";
-        string relationalCommandCacheText = "_relationalCommandCache";
+        string relationalCommandCacheText = "_relationalCommandCache"; // used with EF 8
+        string relationalCommandResolverText = "_relationalCommandResolver"; // used with EF 9
 
         string cannotGetText = "Cannot get";
 
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
         var enumerator = query.Provider.Execute<IEnumerable>(query.Expression).GetEnumerator();
 #pragma warning restore CS8602 // Dereference of a possibly null reference.
+
         var queryContext = enumerator.Private<RelationalQueryContext>(relationalQueryContextText) ?? throw new InvalidOperationException($"{cannotGetText} {relationalQueryContextText}");
         var parameterValues = queryContext.ParameterValues;
 
 #pragma warning disable EF1001 // Internal EF Core API usage.
         var relationalCommandCache = (RelationalCommandCache?)enumerator.Private(relationalCommandCacheText);
+        var relationalCommandResolver = enumerator.Private<Delegate>(relationalCommandResolverText);
 #pragma warning restore EF1001
 
-        IRelationalCommand command;
+        IRelationalCommand? command = null;
         if (relationalCommandCache != null)
         {
 #pragma warning disable EF1001 // Internal EF Core API usage.
-            command = (IRelationalCommand)relationalCommandCache.GetRelationalCommandTemplate(parameterValues);
+            command = (IRelationalCommand?)relationalCommandCache?.GetRelationalCommandTemplate(parameterValues);
 #pragma warning restore EF1001
         }
-        else
+        if (command == null && relationalCommandResolver != null)
+        {
+#pragma warning disable EF1001 // Internal EF Core API usage.
+            command = (IRelationalCommand?)relationalCommandResolver.DynamicInvoke(parameterValues);
+#pragma warning restore EF1001
+        }
+        if (command == null)
         {
             string selectExpressionText = "_selectExpression";
             string querySqlGeneratorFactoryText = "_querySqlGeneratorFactory";
