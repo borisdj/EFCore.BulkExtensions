@@ -385,7 +385,7 @@ context.BulkInsert(entities);
 ```C#
 _CLASSES:                |DbContextBulk|SqlBulk     |ISqlOperations|SqlOperations  |
 DbContextBulkExtensions: |-Transaction:|-Operation: |-Adapter:     |-ServerAdapter:|
-__METHODS:===============(=============(============(==============(===============)
+__METHODS:==============]|[===========]|[==========]|[============]|[=============]|
 BulkInsert --------------|             |--Insert ---|--Insert -----|--Insert       |
 BulkInsertOrUpdate ------|             | \                                         |
 BulkInsertOrUpdateOrDel.-|             |  \                                        |
