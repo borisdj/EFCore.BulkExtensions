@@ -405,3 +405,6 @@ Truncate ----------------|             |--Truncate -|--Truncate ---|--Truncate  
 | [3] | EFCore.BulkExtensions.***MySql***      | [0]       | per provider |
 | [4] | EFCore.BulkExtensions.***Sqlite***     | [0]       | per provider |
 | [5] | **EFCore.BulkExtensions**              | [1,2,3,4] | [0] all main |
+
+EFCore.BulkExtensions is main Project and Nuget that references all providers.  
+Other per provider projects are empty shells (has just .csproj file) in repo and only on build common files and their adapter files are copied (with script) to the project that is then build for NuGet generation.
