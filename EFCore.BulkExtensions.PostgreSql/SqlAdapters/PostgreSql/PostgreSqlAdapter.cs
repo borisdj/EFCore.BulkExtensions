@@ -7,6 +7,7 @@ using System.Data.Common;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore.Storage.Internal;
 
 namespace EFCore.BulkExtensions.SqlAdapters.PostgreSql;
 
@@ -77,9 +78,18 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
                     }
 
                     var propertyValue = GetPropertyValue(context, tableInfo, propertyName, entity);
-                    var propertyColumnName = tableInfo.PropertyColumnNamesDict.GetValueOrDefault(propertyName, "");
-                    var columnType = tableInfo.ColumnNamesTypesDict[propertyColumnName];
-
+                    var propertyColumnName = tableInfo.PropertyColumnNamesDict.GetValueOrDefault(propertyName, "");   
+                    
+                    // NB: for JSONb columns, we write the parameter value as the raw POCO type.
+                    // User should configure JSON options on NpgsqlDataSourceBuilder
+                    // See: https://www.npgsql.org/doc/types/json.html?tabs=datasource#poco-mapping
+                    
+                    // TODO: Try get JSON options from connection (fallback to default), then serialize to JSON manually
+                    // However it doesn't seem to be possible to get the JsonSerializerSettings from the connection currently.
+                    var columnType = tableInfo.OwnedJsonTypesDict.ContainsKey(propertyColumnName) 
+                        ? "jsonb" 
+                        : tableInfo.ColumnNamesTypesDict[propertyColumnName];
+                    
                     // string is 'text' which works fine
                     if (columnType.StartsWith("character"))   // when MaxLength is defined: 'character(1)' or 'character varying'
                         columnType = "character";             // 'character' is like 'string'

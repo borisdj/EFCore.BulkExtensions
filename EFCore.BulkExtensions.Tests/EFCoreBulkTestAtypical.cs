@@ -408,6 +408,7 @@ public class EFCoreBulkTestAtypical
     [Theory]
     [InlineData(SqlType.SqlServer)]
     [InlineData(SqlType.Sqlite)]
+    [InlineData(SqlType.PostgreSql)]
     private void CompositeKeyTest(SqlType sqlType)
     {
         ContextUtil.DatabaseType = sqlType;
@@ -1395,6 +1396,7 @@ public class EFCoreBulkTestAtypical
 
     [Theory]
     [InlineData(SqlType.SqlServer)]
+    [InlineData(SqlType.PostgreSql)]
     //[InlineData(SqlType.Sqlite)] // post v 8.0
     private void JsonTest(SqlType sqlType)
     {

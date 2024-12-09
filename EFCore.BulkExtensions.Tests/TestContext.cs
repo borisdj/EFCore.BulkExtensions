@@ -15,6 +15,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text.Json;
+using Npgsql;
 
 namespace EFCore.BulkExtensions.Tests;
 
@@ -209,7 +210,17 @@ public class TestContext : DbContext
         modelBuilder.Entity<FilePG>().Ignore(p => p.Formats);
 
         modelBuilder.Entity<ItemLink>().Property<string>("Data");
-
+        
+        if (Database.IsSqlServer() || Database.IsNpgsql())
+        {
+            modelBuilder.Entity<Author>().OwnsOne(
+                author => author.Contact, ownedNavigationBuilder =>
+                {
+                    ownedNavigationBuilder.ToJson();
+                    ownedNavigationBuilder.OwnsOne(contactDetails => contactDetails.Address);
+                });
+        }
+        
         if (Database.IsSqlServer())
         {
             modelBuilder.Entity<GraphQLModel>().Property(x => x.Id).HasDefaultValueSql("NEWID()");
@@ -233,13 +244,6 @@ public class TestContext : DbContext
             //modelBuilder.HasSequence<int>("SequenceData", "dbo").StartsAt(10).IncrementsBy(5);
 
             modelBuilder.Entity<Tracker>().OwnsOne(t => t.Location);
-
-            modelBuilder.Entity<Author>().OwnsOne(
-                author => author.Contact, ownedNavigationBuilder =>
-                {
-                    ownedNavigationBuilder.ToJson();
-                    ownedNavigationBuilder.OwnsOne(contactDetails => contactDetails.Address);
-                });
         }
         else
         {
@@ -422,10 +426,14 @@ public static class ContextUtil
         {
             string connectionString = GetPostgreSqlConnectionString(databaseName);
 
+            var builder = new NpgsqlDataSourceBuilder(connectionString)
+                .EnableDynamicJson()
+                .Build();
+
             if (TestContext.UseTopologyPostgres)
-                optionsBuilder.UseNpgsql(connectionString, opt => opt.UseNetTopologySuite());
+                optionsBuilder.UseNpgsql(builder, opt => opt.UseNetTopologySuite());
             else
-                optionsBuilder.UseNpgsql(connectionString);
+                optionsBuilder.UseNpgsql(builder);
         }
         else if (DatabaseType == SqlType.MySql)
         {
