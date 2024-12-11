@@ -407,4 +407,4 @@ Truncate ----------------|             |--Truncate -|--Truncate ---|--Truncate  
 | [5] | **EFCore.BulkExtensions** - main one   | [1,2,3,4] | [0], has all |
 
 EFCore.BulkExtensions is main Project and Nuget that references all other nugets.  
-Other per provider projects have only Core dependency and specific per provider implementation with needed packages.
+Other per provider projects have only Core dependency and specific adapter implementation with needed packages.
