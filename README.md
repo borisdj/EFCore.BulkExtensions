@@ -404,7 +404,7 @@ Truncate ----------------|             |--Truncate -|--Truncate ---|--Truncate  
 | [2] | EFCore.BulkExtensions.***PostgreSql*** | [0]       | per provider |
 | [3] | EFCore.BulkExtensions.***MySql***      | [0]       | per provider |
 | [4] | EFCore.BulkExtensions.***Sqlite***     | [0]       | per provider |
-| [5] | **EFCore.BulkExtensions**              | [1,2,3,4] | [0] all main |
+| [5] | **EFCore.BulkExtensions** main one     | [1,2,3,4] | [0], has all |
 
 EFCore.BulkExtensions is main Project and Nuget that references all other nugets.  
 Other per provider projects have only Core dependency and specific per provider implementation with needed packages.
