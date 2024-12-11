@@ -397,7 +397,7 @@ Truncate ----------------|             |--Truncate -|--Truncate ---|--Truncate  
 ```
 - Projects Composition:
 
-| Num | Nugets                                 | Reference | Transit.dep. |
+| Num | Nuget                                  | Reference | Transit.dep. |
 | --- | -------------------------------------- | --------- | ------------ |
 | [0] | EFCore.BulkExtensions.Core             |           | shared       |
 | [1] | EFCore.BulkExtensions.***SqlServer***  | [0]       | per provider |
