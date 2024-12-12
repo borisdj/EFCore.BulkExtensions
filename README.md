@@ -384,9 +384,9 @@ context.BulkInsert(entities);
 ## Structure of SourceCode
 - Action Flow
 ```C#
-_CLASSES:                |DbContextBulk|SqlBulk     |ISqlOperations|SqlOperations  |
-DbContextBulkExtensions: |-Transaction:|-Operation: |-Adapter:     |-ServerAdapter:|
-__METHODS: Sync/Async===]|[===========]|[==========]|[============]|[=============]|
+_CLASSES:                  |DbContextBulk|SqlBulk     |ISqlOperations|SqlOperations  |
+DbContextBulkExtensions:   |-Transaction:|-Operation: |-Adapter:     |-ServerAdapter:|
+__METHODS: Sync/Async=====]|[===========]|[==========]|[============]|[=============]|
 [ BulkInsert --------------|             |--Insert ---|--Insert -----|--Insert       |
 / BulkInsertOrUpdate ------|             | \                                         |
 | BulkInsertOrUpdateOrDel.-|             |  \                                        |
