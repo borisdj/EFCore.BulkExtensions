@@ -387,13 +387,13 @@ context.BulkInsert(entities);
 _CLASSES:                  |DbContextBulk|SqlBulk     |ISqlOperations|SqlOperations  |
 DbContextBulkExtensions:   |-Transaction:|-Operation: |-Adapter:     |-ServerAdapter:|
 __METHODS: Sync/Async=====]|[===========]|[==========]|[============]|[=============]|
-[ BulkInsert --------------|             |--Insert ---|--Insert -----|--Insert       |
+{ BulkInsert --------------|             |--Insert ---|--Insert -----|--Insert       |
 / BulkInsertOrUpdate ------|             | \                                         |
 | BulkInsertOrUpdateOrDel.-|             |  \                                        |
 \ BulkUpdate --------------|--Execute ---|--Merge ----|--Merge ------|--Merge        |
-[ BulkDelete --------------|             | /                                         |
-[ BulkRead ----------------|             |--Read -----|--Read -------|--Read         |
-[-Truncate ----------------|             |--Truncate -|--Truncate ---|--Truncate     |
+{ BulkDelete --------------|             | /                                         |
+{ BulkRead ----------------|             |--Read -----|--Read -------|--Read         |
+{-Truncate ----------------|             |--Truncate -|--Truncate ---|--Truncate     |
 ```
 - Projects Composition:
 
