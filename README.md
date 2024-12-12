@@ -384,16 +384,16 @@ context.BulkInsert(entities);
 ## Structure of SourceCode
 - Action Flow
 ```C#
-_CLASSES:                  |DbContextBulk|SqlBulk     |ISqlOperations|SqlOperations  |
-DbContextBulkExtensions:   |-Transaction:|-Operation: |-Adapter:     |-ServerAdapter:|
-__METHODS: Sync/Async=====]|[===========]|[==========]|[============]|[=============]|
-{ BulkInsert --------------|             |--Insert ---|--Insert -----|--Insert       |
-/ BulkInsertOrUpdate ------|             | \                                         |
-| BulkInsertOrUpdateOrDel.-|             |  \                                        |
-\ BulkUpdate --------------|--Execute ---|--Merge ----|--Merge ------|--Merge        |
-{ BulkDelete --------------|             | /                                         |
-{ BulkRead ----------------|             |--Read -----|--Read -------|--Read         |
-{-Truncate ----------------|             |--Truncate -|--Truncate ---|--Truncate     |
+_CLASSES:                    |DbContextBulk|SqlBulk     |ISqlOperations|SqlOperations  |
+DbContextBulkExtensions:     |-Transaction:|-Operation: |-Adapter:     |-ServerAdapter:|
+_METHODS: Sync/Async========]|[===========]|[==========]|[============]|[=============]|
+C { BulkInsert --------------|             |--Insert ---|--Insert -----|--Insert       |
+U / BulkInsertOrUpdate ------|             | \                                         |
+U | BulkInsertOrUpdateOrDel.-|             |  \                                        |
+U \ BulkUpdate --------------|--Execute ---|--Merge ----|--Merge ------|--Merge        |
+D { BulkDelete --------------|             | /                                         |
+R { BulkRead ----------------|             |--Read -----|--Read -------|--Read         |
+- { Truncate ----------------|             |--Truncate -|--Truncate ---|--Truncate     |
 ```
 - Projects Composition:
 
