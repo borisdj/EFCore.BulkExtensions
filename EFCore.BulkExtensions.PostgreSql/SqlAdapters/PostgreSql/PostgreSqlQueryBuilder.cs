@@ -394,9 +394,11 @@ public class PostgreSqlQueryBuilder : SqlQueryBuilder
     /// <param name="tableInfo"></param>
     public static string DropUniqueIndex(TableInfo tableInfo)
     {
+        var schemaFormated = tableInfo.Schema == null ? "" : $@"""{tableInfo.Schema}"".";
         var uniqueIndexName = GetUniqueIndexName(tableInfo);
+        var fullUniqueIndexNameFormated = $@"{schemaFormated}""{uniqueIndexName}""";
 
-        var q = $@"DROP INDEX ""{uniqueIndexName}"";";
+        var q = $@"DROP INDEX {fullUniqueIndexNameFormated};";
         return q;
     }
 
@@ -429,6 +431,7 @@ public class PostgreSqlQueryBuilder : SqlQueryBuilder
         var uniqueColumnNamesDash = string.Join("_", uniqueColumnNames);
         var schemaDash = tableInfo.Schema == null ? "" : $"{tableInfo.Schema}_";
         var uniqueIndexName = $"tempUniqueIndex_{schemaDash}{tableName}_{uniqueColumnNamesDash}";
+        uniqueIndexName = uniqueIndexName.Length > 64 ? uniqueIndexName[..64] : uniqueIndexName;
 
         return uniqueIndexName;
     }

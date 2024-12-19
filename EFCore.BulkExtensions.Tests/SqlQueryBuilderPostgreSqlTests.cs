@@ -119,4 +119,27 @@ public class SqlQueryBuilderPostgreSqlTests
 
         Assert.Equal(expected, batchUpdate);
     }
+
+    [Fact]
+    public void DropUniqueIndexNameTest()
+    {
+        TableInfo tableInfo = GetTestTableInfo();
+
+        string actual = PostgreSqlQueryBuilder.DropUniqueIndex(tableInfo);
+
+        string expected = @"DROP INDEX ""dbo"".""tempUniqueIndex_dbo_Item_ItemId"";";
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void DropUniqueIndexNameWithLongTableNameTest()
+    {
+        TableInfo tableInfo = GetTestTableInfo();
+        tableInfo.TableName = "Temp1234567891011121314151617181920212223";
+
+        string actual = PostgreSqlQueryBuilder.DropUniqueIndex(tableInfo);
+
+        string expected = @"DROP INDEX ""dbo"".""tempUniqueIndex_dbo_Temp1234567891011121314151617181920212223_It"";";
+        Assert.Equal(expected, actual);
+    }
 }
