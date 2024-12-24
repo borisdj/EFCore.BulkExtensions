@@ -52,7 +52,7 @@ Instead Test options are  SqlServer(Developer or Express), LocalDb(if alongside 
 
 ## Installation
 Available on [![NuGet](https://img.shields.io/nuget/v/EFCore.BulkExtensions.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/)  [![Downloads](https://img.shields.io/nuget/dt/EFCore.BulkExtensions.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/)  
-That is main nuget for all Databases, there are also specific ones with single provider for those who need small packages.  
+Main nuget is for all Databases, and specific ones with single provider for those who need small packages.  
 Package manager console command for installation: *Install-Package EFCore.BulkExtensions*  
 Specific ones have adapter suffix: MainNuget + *.SqlServer/PostgreSql/MySql/Sqlite* 
 (
