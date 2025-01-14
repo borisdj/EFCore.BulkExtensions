@@ -409,6 +409,14 @@ public class MySqlAdapter : ISqlOperationsAdapter
 
         mySqlBulkCopy.NotifyAfter = tableInfo.BulkConfig.NotifyAfter ?? tableInfo.BulkConfig.BatchSize;
         mySqlBulkCopy.BulkCopyTimeout = tableInfo.BulkConfig.BulkCopyTimeout ?? mySqlBulkCopy.BulkCopyTimeout;
+
+        mySqlBulkCopy.ConflictOption = tableInfo.BulkConfig.ConflictOption switch
+        {
+            ConflictOption.None => MySqlBulkLoaderConflictOption.None,
+            ConflictOption.Replace => MySqlBulkLoaderConflictOption.Replace,
+            ConflictOption.Ignore => MySqlBulkLoaderConflictOption.Ignore,
+            _ => throw new InvalidEnumArgumentException(nameof(tableInfo.BulkConfig.ConflictOption))
+        };
     }
 
     #endregion
