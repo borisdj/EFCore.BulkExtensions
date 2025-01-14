@@ -410,3 +410,5 @@ R { BulkRead ----------------|             |--Read -----|--Read -------|--Read  
 
 EFCore.BulkExtensions is main Project and Nuget that references all other nugets.  
 Other per provider projects have only Core dependency and specific adapter implementation with needed packages.
+
+List of all referenced [Links](https://docs.google.com/spreadsheets/d/e/2PACX-1vRE_rO6799VGMhLAldgDZoHJAdbKI0YZ8gweN7oaBG0KCIMtqZwlaeTyB9IMoThb69Tk0bkjIdNNWl_/pubhtml?gid=2013428247&single=true)
