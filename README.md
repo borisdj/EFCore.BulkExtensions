@@ -26,7 +26,7 @@ Open source (MIT or cFOSS) authored [.Net libraries](https://infopedia.io/dot-ne
 | 7  | [CsCodeExample](https://github.com/borisdj/CsCodeExample) | Examples of C# code in form of a simple tutorial |
 
 ## License
-BulkExtensions [licensed](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE.txt) under [**Dual License v1**](https://codis.tech/efcorebulk) (**cFOSS**: conditionallyFree OSS - [OpenSource Sustainability](https://infopedia.io/solution-to-opensource-sustainability/) funding).  
+BulkExtensions [licensed](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE.txt) under [**Dual License v1**](https://codis.tech/efcorebulk) (**cFOSS**: conditionallyFree OSS - [OpenSource Sustainability](https://infopedia.io/solution-to-opensource-sustainability/) & funding).  
 If you do not meet criteria for free usage of software with community license then you have to buy commercial one.  
 If eligible for free usage but still need  active support, consider purchasing Starter Lic.  
 
