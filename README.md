@@ -37,7 +37,7 @@ And even with Community license, if you want help Development, you can make a Do
 [![Button](https://img.shields.io/badge/donate-Bitcoin-orange.svg?logo=bitcoin):zap:](https://borisdj.net/donation/donate-btc.html)
 
 ## Contributing
-Please read [CONTRIBUTING](CONTRIBUTING.md) for details on code of conduct, and the process for submitting pull requests.  
+Please read [CONTRIBUTING](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/CONTRIBUTING.md) for details on code of conduct, and the process for submitting pull requests. <!-- valid link short also (CONTRIBUTING.md) -->   
 When opening issues do write detailed explanation of the problem or feature with reproducible example.  
 Want to **Contact** for Development & Consulting: [www.codis.tech](http://www.codis.tech) (*Quality Delivery*)  
 
