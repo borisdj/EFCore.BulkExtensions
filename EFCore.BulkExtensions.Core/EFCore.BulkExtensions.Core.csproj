@@ -8,7 +8,7 @@
 	<Version>9.0.0-rc.1</Version>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.0-preview.1.24081.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.1" />
     <PackageReference Include="MedallionTopologicalSort" Version="1.0.0" />
     <PackageReference Include="NetTopologySuite" Version="2.5.0" />
   </ItemGroup>
