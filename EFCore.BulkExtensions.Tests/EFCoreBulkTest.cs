@@ -443,6 +443,7 @@ public class EFCoreBulkTest
             {
                 SqlType.Sqlite => $"CREATE TEMPORARY {createTableSql}",
                 SqlType.SqlServer => $"CREATE {createTableSql}",
+                SqlType.Oracle => $"CREATE GLOBAL TEMPORARY {createTableSql}",
                 _ => throw new ArgumentException($"Unknown database type: '{sqlType}'.", nameof(sqlType)),
             };
 
