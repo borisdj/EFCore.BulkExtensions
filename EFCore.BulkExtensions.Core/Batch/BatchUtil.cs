@@ -239,6 +239,27 @@ public static class BatchUtil
             }
             sqlParameters = mysqlParameters;
         }
+        else if (databaseType == SqlType.Oracle)
+        {
+            resultQuery = SqlAdaptersMapping.DbServer.QueryBuilder.RestructureForBatch(resultQuery);
+
+            var mysqlParameters = new List<DbParameter>();
+            foreach (var param in sqlParameters)
+            {
+                dynamic mysqlParam = SqlAdaptersMapping.DbServer.QueryBuilder.CreateParameter(param.ParameterName, param.Value);
+
+                string paramName = mysqlParam.ParameterName.Replace(":", "");
+                var propertyType = type.GetProperties().SingleOrDefault(a => a.Name == paramName)?.PropertyType;
+                if (propertyType == typeof(System.Text.Json.JsonElement) || propertyType == typeof(System.Text.Json.JsonElement?)) // for JsonDocument works without fix
+                {
+                    var dbtypeJsonb = SqlAdaptersMapping.DbServer.QueryBuilder.Dbtype();
+                    SqlAdaptersMapping.DbServer.QueryBuilder.SetDbTypeParam(mysqlParam, dbtypeJsonb);
+                }
+
+                mysqlParameters.Add(mysqlParam);
+            }
+            sqlParameters = mysqlParameters;
+        }
 
         return (resultQuery, sqlParameters);
     }
