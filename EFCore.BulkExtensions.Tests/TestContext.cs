@@ -1,4 +1,4 @@
-using EFCore.BulkExtensions.SqlAdapters;
+﻿using EFCore.BulkExtensions.SqlAdapters;
 using HotChocolate;
 using HotChocolate.Types;
 using Microsoft.EntityFrameworkCore;
@@ -358,6 +358,64 @@ public class TestContext : DbContext
     }
 }
 
+public class OracleTestContext : DbContext
+{
+
+    public DbSet<Item> Items { get; set; } = null!;
+    public DbSet<ItemHistory> ItemHistories { get; set; } = null!;
+    public DbSet<ItemCategory> Categories { get; set; } = null!;
+
+    public OracleTestContext(DbContextOptions options) : base(options)
+    {
+        Database.EnsureCreated();
+    }
+
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        configurationBuilder.Conventions.Remove(typeof(TableNameFromDbSetConvention));
+    }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        ApplyTableName(modelBuilder);
+    }
+    private static string ToScreamingSnakeCase(string input)
+    {
+        if (string.IsNullOrEmpty(input))
+            return input;
+
+        return string.Concat(input.Select((c, i) =>
+            i > 0 && char.IsUpper(c) && !char.IsUpper(input[i - 1])
+                ? "_" + c
+                : c.ToString()))
+            .ToUpper();
+    }
+    public static void ApplyTableName(ModelBuilder modelBuilder)
+    {
+        foreach (var entity in modelBuilder.Model.GetEntityTypes())
+        {
+            // Přizpůsobení názvu tabulky
+            var tableName = entity.GetTableName();
+            if (tableName != null)
+            {
+                var newTableName = ToScreamingSnakeCase(tableName);
+                entity.SetTableName(newTableName);
+
+                // Přizpůsobení názvů sloupců
+                foreach (var property in entity.GetProperties())
+                {
+                    var columnName = property.GetColumnName(StoreObjectIdentifier.Table(newTableName, null));
+                    if (columnName != null)
+                    {
+                        var newColumnName = ToScreamingSnakeCase(columnName);
+                        property.SetColumnName(newColumnName);
+                    }
+                }
+            }
+        }
+    }
+}
+
 public static class ContextUtil
 {
     static IDbServer? _dbServerMapping;
@@ -377,6 +435,7 @@ public static class ContextUtil
                 SqlType.Sqlite => new SqlAdapters.Sqlite.SqliteDbServer(),
                 SqlType.PostgreSql => new SqlAdapters.PostgreSql.PostgreSqlDbServer(),
                 SqlType.MySql => new SqlAdapters.MySql.MySqlDbServer(),
+                SqlType.Oracle => new SqlAdapters.Oracle.OracleDbServer(),
                 _ => throw new NotImplementedException(),
             };
         }
@@ -440,6 +499,11 @@ public static class ContextUtil
             string connectionString = GetMySqlConnectionString(databaseName);
             optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString), opt => opt.UseNetTopologySuite());
         }
+        else if (DatabaseType == SqlType.Oracle)
+        {
+            string connectionString = GetOracleConnectionString(databaseName);
+            optionsBuilder.UseOracle(connectionString);
+        }
         else
         {
             throw new NotSupportedException($"Database {dbServerType} is not supported. Only SQL Server and SQLite are Currently supported.");
@@ -487,6 +551,13 @@ public static class ContextUtil
     {
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
         return GetConfiguration().GetConnectionString("MySql").Replace("{databaseName}", databaseName);
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
+    }
+
+    public static string GetOracleConnectionString(string databaseName)
+    {
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
+        return GetConfiguration().GetConnectionString("Oracle").Replace("{databaseName}", databaseName);
 #pragma warning restore CS8602 // Dereference of a possibly null reference.
     }
 }
