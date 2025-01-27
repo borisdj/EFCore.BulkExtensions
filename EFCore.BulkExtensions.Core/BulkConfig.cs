@@ -331,6 +331,11 @@ public class BulkConfig
     public List<SqlBulkCopyColumnOrderHint>? SqlBulkCopyColumnOrderHints { get; set; }
 
     /// <summary>
+    /// Set MySqlBulkLoaderConflictOption
+    /// </summary>
+    public ConflictOption ConflictOption { get; set; } = ConflictOption.None;
+
+    /// <summary>
     ///     A filter on entities to delete when using BulkInsertOrUpdateOrDelete.
     /// </summary>
     public void SetSynchronizeFilter<T>(Expression<Func<T, bool>> filter) where T : class
@@ -492,3 +497,25 @@ public enum SortOrder
     /// </summary>
     Descending = 1
 }
+
+/// <summary>
+/// Conflict option for Bulk Insert
+/// </summary>
+public enum ConflictOption
+{
+    /// <summary>
+    /// Treat conflicts as errors
+    /// </summary>
+    None,
+
+    /// <summary>
+    /// Replace conflicting rows with new rows
+    /// </summary>
+    Replace,
+
+    /// <summary>
+    /// Ignore conflicting rows and keep old rows
+    /// </summary>
+    Ignore
+}
+
