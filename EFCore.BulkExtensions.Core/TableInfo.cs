@@ -608,7 +608,7 @@ public class TableInfo
                                 }
                             }
 
-                            var converter = ownedEntityProperty.GetValueConverter();
+                            var converter = ownedEntityProperty.GetValueConverter() ?? ownedEntityProperty.GetTypeMapping().Converter;
                             if (converter != null)
                             {
                                 ConvertibleColumnConverterDict.Add($"{prefix}{ownedEntityProperty.Name}", converter);
