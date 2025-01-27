@@ -4,6 +4,6 @@
     "Sqlite": "Data Source={databaseName}.db",
     "PostgreSql": "Server=localhost;Port=5432;Database={databaseName};User Id=postgres;Password=Postgres22;",
     "MySql": "Server=localhost;Database={databaseName};Uid=root;Pwd=MySQL22;AllowLoadLocalInfile=true;",
-    "Oracle": "Data Source=(DESCRIPTION = (ADDRESS = (PROTOCOL = TCP)(HOST = db-ora-01-dev.mediso.local)(PORT = 1521))(CONNECT_DATA = (SERVER = DEDICATED)(SERVICE_NAME = MEDAMLNG)));User Id=medi;Password=nBEUPra4wue4Rl5T32Of;Pooling=True;Min Pool Size=5;Max Pool Size=30;Connection Lifetime=900;Connection Timeout=15;"
+    "Oracle": "Data Source={databaseName};User Id=oracle;Password=Oracle;Pooling=True;Min Pool Size=5;Max Pool Size=30;Connection Lifetime=900;Connection Timeout=15;"
   }
 }
