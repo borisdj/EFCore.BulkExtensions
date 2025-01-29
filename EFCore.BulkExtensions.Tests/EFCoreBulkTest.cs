@@ -24,9 +24,7 @@ public class EFCoreBulkTest
     [InlineData(SqlType.PostgreSql)]
     public void InsertEnumStringValue(SqlType sqlType)
     {
-        ContextUtil.DatabaseType = sqlType;
-
-        using var context = new TestContext(ContextUtil.GetOptions());
+        using var context = new TestContext(sqlType);
         context.Database.ExecuteSqlRaw($@"DELETE FROM ""{nameof(Wall)}""");
         context.Database.ExecuteSqlRaw($@"DELETE FROM ""{nameof(TimeRecord)}""");
 
@@ -67,9 +65,7 @@ public class EFCoreBulkTest
     [InlineData(SqlType.PostgreSql)]
     public void InsertTestPostgreSql(SqlType sqlType)
     {
-        ContextUtil.DatabaseType = sqlType;
-
-        using var context = new TestContext(ContextUtil.GetOptions());
+        using var context = new TestContext(sqlType);
         
         context.Database.ExecuteSqlRaw($@"DELETE FROM ""{nameof(Item)}""");
         context.Database.ExecuteSqlRaw($@"ALTER SEQUENCE ""{nameof(Item)}_{nameof(Item.ItemId)}_seq"" RESTART WITH 1");
@@ -277,9 +273,7 @@ public class EFCoreBulkTest
     // -- For client side connection string is already set with: "AllowLoadLocalInfile=true"
     public void InsertTestMySql(SqlType sqlType)
     {
-        ContextUtil.DatabaseType = sqlType;
-
-        using var context = new TestContext(ContextUtil.GetOptions());
+        using var context = new TestContext(sqlType);
 
         var currentTime = DateTime.UtcNow; // default DateTime type: "timestamp with time zone"; DateTime.Now goes with: "timestamp without time zone"
 
@@ -395,20 +389,18 @@ public class EFCoreBulkTest
     //[InlineData(DbServer.SqlServer, false)] // for speed comparison with Regular EF CUD operations
     public void OperationsTest(SqlType sqlType, bool isBulk)
     {
-        ContextUtil.DatabaseType = sqlType;
-
         //DeletePreviousDatabase();
         new EFCoreBatchTest().RunDeleteAll(sqlType);
 
-        RunInsert(isBulk);
+        RunInsert(isBulk, sqlType);
         RunInsertOrUpdate(isBulk, sqlType);
         RunUpdate(isBulk, sqlType);
 
-        RunRead();
+        RunRead(sqlType);
 
         if (sqlType == SqlType.SqlServer)
         {
-            RunInsertOrUpdateOrDelete(isBulk); // Not supported for Sqlite (has only UPSERT), instead use BulkRead, then split list into sublists and call separately Bulk methods for Insert, Update, Delete.
+            RunInsertOrUpdateOrDelete(isBulk, sqlType); // Not supported for Sqlite (has only UPSERT), instead use BulkRead, then split list into sublists and call separately Bulk methods for Insert, Update, Delete.
         }
         RunDelete(isBulk, sqlType);
 
@@ -426,8 +418,7 @@ public class EFCoreBulkTest
 
     private static void BulkOperationShouldNotCloseOpenConnection(SqlType sqlType, Action<TestContext> bulkOperation)
     {
-        ContextUtil.DatabaseType = sqlType;
-        using var context = new TestContext(ContextUtil.GetOptions());
+        using var context = new TestContext(sqlType);
 
         var sqlHelper = context.GetService<ISqlGenerationHelper>();
         context.Database.OpenConnection();
@@ -464,15 +455,15 @@ public class EFCoreBulkTest
         }
     }
 
-    private static void DeletePreviousDatabase()
+    private static void DeletePreviousDatabase(SqlType sqlType)
     {
-        using var context = new TestContext(ContextUtil.GetOptions());
+        using var context = new TestContext(sqlType);
         context.Database.EnsureDeleted();
     }
 
-    private static void CheckQueryCache()
+    private static void CheckQueryCache(SqlType sqlType)
     {
-        using var context = new TestContext(ContextUtil.GetOptions());
+        using var context = new TestContext(sqlType);
         var compiledQueryCache = ((MemoryCache)context.GetService<IMemoryCache>());
 
         Assert.Equal(0, compiledQueryCache.Count);
@@ -484,9 +475,9 @@ public class EFCoreBulkTest
             Debug.WriteLine(percentage);
     }
 
-    private static void RunInsert(bool isBulk)
+    private static void RunInsert(bool isBulk, SqlType sqlType)
     {
-        using var context = new TestContext(ContextUtil.GetOptions());
+        using var context = new TestContext(sqlType);
         var categories  = new List<ItemCategory> { new ItemCategory { Id = 1, Name = "Some 1" }, new ItemCategory { Id = 2, Name = "Some 2" } };
         var entities = new List<Item>();
         var subEntities = new List<ItemHistory>();
@@ -524,7 +515,7 @@ public class EFCoreBulkTest
         if (isBulk)
         {
             context.BulkInsertOrUpdate(categories);
-            if (ContextUtil.DatabaseType == SqlType.SqlServer)
+            if (sqlType == SqlType.SqlServer)
             {
                 using var transaction = context.Database.BeginTransaction();
                 var bulkConfig = new BulkConfig
@@ -552,7 +543,7 @@ public class EFCoreBulkTest
 
                 transaction.Commit();
             }
-            else if (ContextUtil.DatabaseType == SqlType.Sqlite)
+            else if (sqlType == SqlType.Sqlite)
             {
                 using var transaction = context.Database.BeginTransaction();
                 var bulkConfig = new BulkConfig() { SetOutputIdentity = true };
@@ -589,7 +580,7 @@ public class EFCoreBulkTest
 
     private static void RunInsertOrUpdate(bool isBulk, SqlType sqlType)
     {
-        using var context = new TestContext(ContextUtil.GetOptions());
+        using var context = new TestContext(sqlType);
 
         var entities = new List<Item>();
         var dateTimeNow = DateTime.Now;
@@ -636,9 +627,9 @@ public class EFCoreBulkTest
         Assert.Equal("name InsertOrUpdate " + EntitiesNumber, lastEntity?.Name);
     }
 
-    private static void RunInsertOrUpdateOrDelete(bool isBulk)
+    private static void RunInsertOrUpdateOrDelete(bool isBulk, SqlType sqlType)
     {
-        using var context = new TestContext(ContextUtil.GetOptions());
+        using var context = new TestContext(sqlType);
 
         var entities = new List<Item>();
         var dateTimeNow = DateTime.Now;
@@ -712,7 +703,7 @@ public class EFCoreBulkTest
 
     private static void RunUpdate(bool isBulk, SqlType sqlType)
     {
-        using var context = new TestContext(ContextUtil.GetOptions());
+        using var context = new TestContext(sqlType);
 
         int counter = 1;
         var entities = context.Items.AsNoTracking().ToList();
@@ -752,9 +743,9 @@ public class EFCoreBulkTest
         Assert.Equal("name InsertOrUpdate " + EntitiesNumber, lastEntity?.Name);
     }
 
-    private static void RunRead()
+    private static void RunRead(SqlType sqlType)
     {
-        using var context = new TestContext(ContextUtil.GetOptions());
+        using var context = new TestContext(sqlType);
 
         var entities = new List<Item>();
         for (int i = 1; i < EntitiesNumber; i++)
@@ -782,7 +773,7 @@ public class EFCoreBulkTest
 
     private void RunDelete(bool isBulk, SqlType sqlType)
     {
-        using var context = new TestContext(ContextUtil.GetOptions());
+        using var context = new TestContext(sqlType);
 
         var entities = context.Items.ToList();
         // ItemHistories will also be deleted because of Relationship - ItemId (Delete Rule: Cascade)

@@ -10,7 +10,7 @@ using Xunit;
 
 namespace EFCore.BulkExtensions.Tests.IncludeGraph;
 
-public class IncludeGraphTests : IDisposable
+public class IncludeGraphTests
 {
     private readonly static WorkOrder WorkOrder1 = new ()
     {
@@ -83,9 +83,11 @@ public class IncludeGraphTests : IDisposable
     //[InlineData(DbServer.Sqlite)]
     public async Task BulkInsertOrUpdate_EntityWithNestedObjectGraph_SavesGraphToDatabase(SqlType dbServer)
     {
-        ContextUtil.DatabaseType = dbServer;
+        var options = new ContextUtil(dbServer)
+            .GetOptions<GraphDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_Graph");
 
-        using var db = new GraphDbContext(ContextUtil.GetOptions<GraphDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_Graph"));
+        using var db = new GraphDbContext(options);
+        await db.Database.EnsureDeletedAsync();
         await db.Database.EnsureCreatedAsync();
 
         // To ensure there are no stack overflows with circular reference trees, we must test for that.
@@ -134,11 +136,5 @@ public class IncludeGraphTests : IDisposable
     {
         yield return WorkOrder1;
         yield return WorkOrder2;
-    }
-
-    public void Dispose()
-    {
-        using var db = new GraphDbContext(ContextUtil.GetOptions<GraphDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_Graph"));
-        db.Database.EnsureDeleted();
     }
 }

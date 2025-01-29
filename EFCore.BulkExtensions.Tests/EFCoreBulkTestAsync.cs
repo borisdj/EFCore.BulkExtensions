@@ -26,21 +26,19 @@ public class EFCoreBulkTestAsync
     //[InlineData(DatabaseType.SqlServer, false)] // for speed comparison with Regular EF CUD operations
     public async Task OperationsTestAsync(SqlType sqlType, bool isBulk)
     {
-        ContextUtil.DatabaseType = sqlType;
-
         //await DeletePreviousDatabaseAsync().ConfigureAwait(false);
         await new EFCoreBatchTestAsync().RunDeleteAllAsync(sqlType);
 
         // Test can be run individually by commenting others and running each separately in order one after another
-        await RunInsertAsync(isBulk);
+        await RunInsertAsync(isBulk, sqlType);
         await RunInsertOrUpdateAsync(isBulk, sqlType);
         await RunUpdateAsync(isBulk, sqlType);
 
-        await RunReadAsync();
+        await RunReadAsync(sqlType);
 
         if (sqlType == SqlType.SqlServer)
         {
-            await RunInsertOrUpdateOrDeleteAsync(isBulk); // Not supported for Sqlite (has only UPSERT), instead use BulkRead, then split list into sublists and call separately Bulk methods for Insert, Update, Delete.
+            await RunInsertOrUpdateOrDeleteAsync(isBulk, sqlType); // Not supported for Sqlite (has only UPSERT), instead use BulkRead, then split list into sublists and call separately Bulk methods for Insert, Update, Delete.
         }
         //await RunDeleteAsync(isBulk, sqlType);
     }
@@ -54,9 +52,9 @@ public class EFCoreBulkTestAsync
         await BulkOperationShouldNotCloseOpenConnectionAsync(sqlType, context => context.BulkUpdateAsync(new[] { new Item() }), "2");
     }
 
-    private static async Task DeletePreviousDatabaseAsync()
+    private static async Task DeletePreviousDatabaseAsync(SqlType dbServer)
     {
-        using var context = new TestContext(ContextUtil.GetOptions());
+        using var context = new TestContext(dbServer);
         await context.Database.EnsureDeletedAsync().ConfigureAwait(false);
     }
 
@@ -68,8 +66,7 @@ public class EFCoreBulkTestAsync
 
     private static async Task BulkOperationShouldNotCloseOpenConnectionAsync(SqlType sqlType, Func<TestContext, Task> bulkOperation, string tableSufix)
     {
-        ContextUtil.DatabaseType = sqlType;
-        using var context = new TestContext(ContextUtil.GetOptions());
+        using var context = new TestContext(sqlType);
 
         var sqlHelper = context.GetService<ISqlGenerationHelper>();
         await context.Database.OpenConnectionAsync();
@@ -101,9 +98,9 @@ public class EFCoreBulkTestAsync
         }
     }
 
-    private static async Task RunInsertAsync(bool isBulk)
+    private static async Task RunInsertAsync(bool isBulk, SqlType sqlType)
     {
-        using var context = new TestContext(ContextUtil.GetOptions());
+        using var context = new TestContext(sqlType);
 
         var entities = new List<Item>();
         var subEntities = new List<ItemHistory>();
@@ -138,7 +135,7 @@ public class EFCoreBulkTestAsync
 
         if (isBulk)
         {
-            if (ContextUtil.DatabaseType == SqlType.SqlServer)
+            if (sqlType == SqlType.SqlServer)
             {
                 using var transaction = await context.Database.BeginTransactionAsync();
                 var bulkConfig = new BulkConfig
@@ -166,7 +163,7 @@ public class EFCoreBulkTestAsync
 
                 await transaction.CommitAsync();
             }
-            else if (ContextUtil.DatabaseType == SqlType.Sqlite)
+            else if (sqlType == SqlType.Sqlite)
             {
                 using var transaction = await context.Database.BeginTransactionAsync();
 
@@ -206,7 +203,7 @@ public class EFCoreBulkTestAsync
 
     private static async Task RunInsertOrUpdateAsync(bool isBulk, SqlType sqlType)
     {
-        using var context = new TestContext(ContextUtil.GetOptions());
+        using var context = new TestContext(sqlType);
         var entities = new List<Item>();
         var dateTimeNow = DateTime.Now;
         var dateTimeOffsetNow = DateTimeOffset.UtcNow;
@@ -253,9 +250,9 @@ public class EFCoreBulkTestAsync
         Assert.Equal("name InsertOrUpdate " + EntitiesNumber, lastEntity?.Name);
     }
 
-    private static async Task RunInsertOrUpdateOrDeleteAsync(bool isBulk)
+    private static async Task RunInsertOrUpdateOrDeleteAsync(bool isBulk, SqlType sqlType)
     {
-        using var context = new TestContext(ContextUtil.GetOptions());
+        using var context = new TestContext(sqlType);
 
         var entities = new List<Item>();
         var dateTimeNow = DateTime.Now;
@@ -295,7 +292,7 @@ public class EFCoreBulkTestAsync
         }
 
         // TEST
-        using var contextRead = new TestContext(ContextUtil.GetOptions());
+        using var contextRead = new TestContext(sqlType);
         int entitiesCount = await contextRead.Items.CountAsync(); // = ItemsCountQuery(context);
         Item? firstEntity = contextRead.Items.OrderBy(a => a.ItemId).FirstOrDefault(); // = LastItemQuery(context);
         Item? lastEntity = contextRead.Items.OrderByDescending(a => a.ItemId).FirstOrDefault();
@@ -329,7 +326,7 @@ public class EFCoreBulkTestAsync
 
     private static async Task RunUpdateAsync(bool isBulk, SqlType sqlType)
     {
-        using var context = new TestContext(ContextUtil.GetOptions());
+        using var context = new TestContext(sqlType);
 
         int counter = 1;
         var entities = context.Items.AsNoTracking().ToList();
@@ -364,9 +361,9 @@ public class EFCoreBulkTestAsync
         Assert.Equal("Desc Update " + EntitiesNumber, lastEntity?.Description);
     }
 
-    private static async Task RunReadAsync()
+    private static async Task RunReadAsync(SqlType sqlType)
     {
-        using var context = new TestContext(ContextUtil.GetOptions());
+        using var context = new TestContext(sqlType);
 
         var entities = new List<Item>();
         for (int i = 1; i < EntitiesNumber; i++)
@@ -385,7 +382,7 @@ public class EFCoreBulkTestAsync
 
     private async Task RunDeleteAsync(bool isBulk, SqlType sqlType)
     {
-        using var context = new TestContext(ContextUtil.GetOptions());
+        using var context = new TestContext(sqlType);
 
         var entities = context.Items.AsNoTracking().ToList();
         // ItemHistories will also be deleted because of Relationship - ItemId (Delete Rule: Cascade)

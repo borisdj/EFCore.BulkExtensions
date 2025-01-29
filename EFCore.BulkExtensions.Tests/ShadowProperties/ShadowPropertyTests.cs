@@ -7,16 +7,15 @@ using Xunit;
 
 namespace EFCore.BulkExtensions.Tests.ShadowProperties;
 
-public class ShadowPropertyTests : IDisposable
+public class ShadowPropertyTests
 {
     [Theory]
     [InlineData(SqlType.SqlServer)]
     [InlineData(SqlType.Sqlite)]
     public void BulkInsertOrUpdate_EntityWithShadowProperties_SavesToDatabase(SqlType dbServer)
     {
-        ContextUtil.DatabaseType = dbServer;
-
-        using var db = new SpDbContext(ContextUtil.GetOptions<SpDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_ShadowProperties"));
+        var options = new ContextUtil(dbServer).GetOptions<SpDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_ShadowProperties");
+        using var db = new SpDbContext(options);
 
         db.BulkInsertOrUpdate(GetTestData(db, true, 10000).ToList(), new BulkConfig
         {
@@ -35,9 +34,10 @@ public class ShadowPropertyTests : IDisposable
     [InlineData(SqlType.Sqlite)]
     public void BulkInsertOrUpdate_EntityWithShadowProperties_GlobalFunc_SavesToDatabase(SqlType dbServer)
     {
-        ContextUtil.DatabaseType = dbServer;
-
-        using var db = new SpDbContext(ContextUtil.GetOptions<SpDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_ShadowProperties"));
+        var options = new ContextUtil(dbServer)
+            .GetOptions<SpDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_ShadowProperties");
+        
+        using var db = new SpDbContext(options);
 
         var data = GetTestData(db, false, 10000);
 
@@ -91,11 +91,5 @@ public class ShadowPropertyTests : IDisposable
         }
 
         return data; 
-    }
-
-    public void Dispose()
-    {
-        using var db = new SpDbContext(ContextUtil.GetOptions<SpDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_ShadowProperties"));
-        db.Database.EnsureDeleted();
     }
 }
