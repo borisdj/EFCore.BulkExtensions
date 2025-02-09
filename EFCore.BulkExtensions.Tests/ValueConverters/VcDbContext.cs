@@ -2,14 +2,22 @@
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using System;
 using System.Diagnostics.CodeAnalysis;
+using EFCore.BulkExtensions.SqlAdapters;
 
 namespace EFCore.BulkExtensions.Tests.ValueConverters;
 
 public class VcDbContext : DbContext
 {
-    public VcDbContext([NotNull] DbContextOptions options) : base(options)
+    private readonly SqlType _sqlType;
+
+    [SuppressMessage("ReSharper", "VirtualMemberCallInConstructor")]
+    public VcDbContext(string databaseName, SqlType sqlType) 
+        : base(new ContextUtil(sqlType).GetOptions<VcDbContext>(databaseName: databaseName))
     {
-        this.Database.EnsureCreated();
+        _sqlType = sqlType;
+        
+        Database.EnsureDeleted();
+        Database.EnsureCreated();
     }
 
     public DbSet<VcModel> VcModels { get; set; } = null!;
@@ -22,8 +30,10 @@ public class VcDbContext : DbContext
         {
             cfg.HasKey(y => y.Id);
             cfg.Property(y => y.Id).UseIdentityColumn();
-
-            cfg.Property(y => y.Enum).HasColumnType("nvarchar(4000)").HasConversion<string>();
+            
+            cfg.Property(y => y.Enum)
+                .HasColumnType(_sqlType == SqlType.PostgreSql ? "text" : "nvarchar(4000)")
+                .HasConversion<string>();
 
             cfg.Property(y => y.LocalDate).HasColumnType("date").HasConversion(new LocalDateValueConverter());
         });
@@ -31,8 +41,8 @@ public class VcDbContext : DbContext
 
     public class LocalDateValueConverter : ValueConverter<LocalDate, DateTime>
     {
-        public LocalDateValueConverter()
-        : base((LocalDate i) => ToProvider(i), (DateTime d) => FromProvider(d), null)
+        public LocalDateValueConverter() 
+            : base((LocalDate i) => ToProvider(i), (DateTime d) => FromProvider(d), null)
         {
         }
 

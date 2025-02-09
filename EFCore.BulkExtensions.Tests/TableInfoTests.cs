@@ -10,8 +10,7 @@ public class TableInfoTests
     [InlineData(SqlType.SqlServer)]
     private void CreateTableInfo_For_Hidden_PrimaryKey_Does_Not_Throw(SqlType sqlType)
     {
-        ContextUtil.DatabaseType = sqlType;
-        using var context = new TestContext(ContextUtil.GetOptions());
+        using var context = new TestContext(sqlType);
 
         var entities = new List<TrayType> { new TrayType() };
         var info = TableInfo.CreateInstance(context, null, entities, OperationType.Insert, new BulkConfig

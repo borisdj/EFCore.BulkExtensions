@@ -8,6 +8,7 @@ public class SpDbContext : DbContext
 {
     public SpDbContext([NotNull] DbContextOptions options) : base(options)
     {
+        Database.EnsureDeleted();
         Database.EnsureCreated();
     }
 

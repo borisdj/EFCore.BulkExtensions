@@ -14,9 +14,10 @@ public class NestedOwnedTests
     [InlineData(SqlType.PostgreSql)]
     public async Task NestedOwnedTest(SqlType sqlType)
     {
-        ContextUtil.DatabaseType = sqlType;
+        var options = new ContextUtil(sqlType)
+            .GetOptions<NestedDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_NestedOwned");
         
-        using var context = new NestedDbContext(ContextUtil.GetOptions<NestedDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_NestedOwned"));
+        using var context = new NestedDbContext(options);
 
         NestedRoot[] entities = [
             new()

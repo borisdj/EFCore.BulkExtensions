@@ -2,29 +2,32 @@
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using Xunit;
 
 namespace EFCore.BulkExtensions.Tests.ValueConverters;
 
-public class ValueConverterTests: IDisposable
+public class ValueConverterTests
 {
     [Theory]
     [InlineData(SqlType.SqlServer)]
     [InlineData(SqlType.Sqlite)]
-    public void BulkInsertOrUpdate_EntityUsingBuiltInEnumToStringConverter_SavesToDatabase(SqlType dbServer)
+    [InlineData(SqlType.PostgreSql)]
+    public void BulkInsertOrUpdate_EntityUsingBuiltInEnumToStringConverter_SavesToDatabase(SqlType sqlType)
     {
-        ContextUtil.DatabaseType = dbServer;
-
-        using var db = new VcDbContext(ContextUtil.GetOptions<VcDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_ValueConverters"));
+        using var db = new VcDbContext(DatabaseName, sqlType);
 
         db.BulkInsertOrUpdate(GetTestData().ToList());
 
         var connection = db.Database.GetDbConnection();
-        connection.Open();
+        if (connection.State != ConnectionState.Open)
+        {
+            connection.Open();
+        }
 
         using var cmd = connection.CreateCommand();
-        cmd.CommandText = "SELECT * FROM VcModels ORDER BY Id DESC";
+        cmd.CommandText = GetSelectQuery(sqlType);
         cmd.CommandType = System.Data.CommandType.Text;
 
         using var reader = cmd.ExecuteReader();
@@ -38,11 +41,10 @@ public class ValueConverterTests: IDisposable
     [Theory]
     [InlineData(SqlType.SqlServer)]
     [InlineData(SqlType.Sqlite)]
-    public void BatchUpdate_EntityUsingBuiltInEnumToStringConverter_UpdatesDatabaseWithEnumStringValue(SqlType dbServer)
+    [InlineData(SqlType.PostgreSql)]
+    public void BatchUpdate_EntityUsingBuiltInEnumToStringConverter_UpdatesDatabaseWithEnumStringValue(SqlType sqlType)
     {
-        ContextUtil.DatabaseType = dbServer;
-
-        using var db = new VcDbContext(ContextUtil.GetOptions<VcDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_ValueConverters"));
+        using var db = new VcDbContext(DatabaseName, sqlType);
 
         db.BulkInsertOrUpdate(GetTestData().ToList());
 
@@ -54,10 +56,13 @@ public class ValueConverterTests: IDisposable
         });
 
         var connection = db.Database.GetDbConnection();
-        connection.Open();
+        if (connection.State != ConnectionState.Open)
+        {
+            connection.Open();
+        }
 
         using var cmd = connection.CreateCommand();
-        cmd.CommandText = "SELECT * FROM VcModels ORDER BY Id DESC";
+        cmd.CommandText = GetSelectQuery(sqlType);
         cmd.CommandType = System.Data.CommandType.Text;
 
         using var reader = cmd.ExecuteReader();
@@ -71,11 +76,10 @@ public class ValueConverterTests: IDisposable
     [Theory]
     [InlineData(SqlType.SqlServer)]
     [InlineData(SqlType.Sqlite)]
-    public void BatchDelete_UsingWhereExpressionWithValueConverter_Deletes(SqlType dbServer)
+    [InlineData(SqlType.PostgreSql)]
+    public void BatchDelete_UsingWhereExpressionWithValueConverter_Deletes(SqlType sqlType)
     {
-        ContextUtil.DatabaseType = dbServer;
-
-        using var db = new VcDbContext(ContextUtil.GetOptions<VcDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_ValueConverters"));
+        using var db = new VcDbContext(DatabaseName, sqlType);
 
         db.BulkInsertOrUpdate(GetTestData().ToList());
 
@@ -96,10 +100,11 @@ public class ValueConverterTests: IDisposable
 
         yield return one;
     }
-
-    public void Dispose()
-    {
-        using var db = new VcDbContext(ContextUtil.GetOptions<VcDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_ValueConverters"));
-        db.Database.EnsureDeleted();
-    }
+    
+    private static string GetSelectQuery(SqlType sqlType) =>
+        sqlType == SqlType.PostgreSql
+            ? "SELECT * FROM \"VcModels\" ORDER BY \"Id\" DESC"
+            : "SELECT * FROM VcModels ORDER BY Id DESC";
+    
+    private static string DatabaseName => $"{nameof(EFCoreBulkTest)}_ValueConverters";
 }

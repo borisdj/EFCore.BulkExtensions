@@ -1,12 +1,9 @@
-﻿using EFCore.BulkExtensions.SqlAdapters;
 using HotChocolate;
 using HotChocolate.Types;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Microsoft.Extensions.Configuration;
 using NetTopologySuite.Geometries;
 using System;
 using System.Collections.Generic;
@@ -14,14 +11,19 @@ using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
+using System.Reflection;
 using System.Text.Json;
-using Npgsql;
+using EFCore.BulkExtensions.SqlAdapters;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Infrastructure.Internal;
+
+// ReSharper disable EntityFramework.ModelValidation.UnlimitedStringLength
+// ReSharper disable PropertyCanBeMadeInitOnly.Global
+// ReSharper disable ConvertToAutoProperty
 
 namespace EFCore.BulkExtensions.Tests;
 
 public class TestContext : DbContext
 {
-
     public DbSet<Item> Items { get; set; } = null!;
     public DbSet<ItemHistory> ItemHistories { get; set; } = null!;
 
@@ -98,10 +100,8 @@ public class TestContext : DbContext
     public virtual DbSet<ChildType> ChildTypes { get; set; } = null!;
     public virtual DbSet<ParentType> ParentTypes { get; set; } = null!;
 
-    public static bool UseTopologyPostgres { get; set; } = true; // needed for object Address with Geo. props
-    // 'No suitable constructor was found for entity type 'LineString'. The following constructors had parameters that could not be bound to properties of the entity type: 
-    // Cannot bind 'points' in 'LineString(Coordinate[] points)'  Cannot bind 'points', 'factory' in 'LineString(CoordinateSequence points, GeometryFactory factory)'
-
+    public TestContext(SqlType sqlType) : this (new ContextUtil(sqlType).GetOptions()) {}
+    
     public TestContext(DbContextOptions options) : base(options)
     {
         Database.EnsureCreated();
@@ -211,6 +211,7 @@ public class TestContext : DbContext
 
         modelBuilder.Entity<ItemLink>().Property<string>("Data");
         
+        //Json tests
         if (Database.IsSqlServer() || Database.IsNpgsql())
         {
             modelBuilder.Entity<Author>().OwnsOne(
@@ -283,23 +284,19 @@ public class TestContext : DbContext
         {
             modelBuilder.Entity<GraphQLModel>().Property(x => x.Id).HasDefaultValueSql("gen_random_uuid()");
 
-            if (UseTopologyPostgres)
-            {
-                modelBuilder.Entity<Address>().Property(p => p.LocationGeometry).HasColumnType("geometry (point, 2180)").HasSrid(2180);
-            }
-            else
-            {
-                modelBuilder.Entity<Address>().Ignore(p => p.LocationGeography);
-                modelBuilder.Entity<Address>().Ignore(p => p.LocationGeometry);
-            }
+            modelBuilder.Entity<Address>().Property(p => p.LocationGeometry).HasColumnType("geometry (point, 2180)").HasSrid(2180);
 
             modelBuilder.Entity<FilePG>().Property(p => p.Formats).HasColumnType("text[]");
 
-            modelBuilder.Entity<Event>().Property(p => p.TimeCreated).HasColumnType("timestamp"); // with annotation defined as "datetime2(3)" so here corrected for PG ("timestamp" in short for "timestamp without time zone")
+            modelBuilder.Entity<Event>().Property(p => p.TimeCreated).HasColumnType("timestamp"); // with annotation defined as "datetime2(3)" so here corrected for PG ("timestamp" is short for "timestamp without time zone")
             modelBuilder.Entity<Event>().Property(p => p.TimeUpdated).HasColumnType("timestamp(2)");
 
             modelBuilder.Entity<Box>().Property(p => p.ElementContent).HasColumnType("jsonb"); // with annotation not mapped since not used for others DBs
             modelBuilder.Entity<Box>().Property(p => p.DocumentContent).HasColumnType("jsonb"); // with annotation not mapped since not used for others DBs
+
+            modelBuilder.Entity<ArrayModel>(); // for testing Array mapping
+
+            modelBuilder.Entity<Item>().Property(x => x.TimeUpdated).HasColumnType("timestamp without time zone");
         }
         else
         {
@@ -365,6 +362,9 @@ public class OracleTestContext : DbContext
     public DbSet<ItemHistory> ItemHistories { get; set; } = null!;
     public DbSet<ItemCategory> Categories { get; set; } = null!;
 
+    public OracleTestContext(SqlType sqlType) 
+        : this(new ContextUtil(sqlType).GetOptions<OracleTestContext>()) {}
+    
     public OracleTestContext(DbContextOptions options) : base(options)
     {
         Database.EnsureCreated();
@@ -385,9 +385,9 @@ public class OracleTestContext : DbContext
             return input;
 
         return string.Concat(input.Select((c, i) =>
-            i > 0 && char.IsUpper(c) && !char.IsUpper(input[i - 1])
-                ? "_" + c
-                : c.ToString()))
+                i > 0 && char.IsUpper(c) && !char.IsUpper(input[i - 1])
+                    ? "_" + c
+                    : c.ToString()))
             .ToUpper();
     }
     public static void ApplyTableName(ModelBuilder modelBuilder)
@@ -413,152 +413,6 @@ public class OracleTestContext : DbContext
                 }
             }
         }
-    }
-}
-
-public static class ContextUtil
-{
-    static IDbServer? _dbServerMapping;
-    static SqlType _databaseType;
-
-    // TODO: Pass DbService through all the GetOptions methods as a parameter and eliminate this property so the automated tests
-    // are thread safe
-    public static SqlType DatabaseType
-    {
-        get => _databaseType;
-        set
-        {
-            _databaseType = value;
-            _dbServerMapping = value switch
-            {
-                SqlType.SqlServer => new SqlAdapters.SqlServer.SqlServerDbServer(),
-                SqlType.Sqlite => new SqlAdapters.Sqlite.SqliteDbServer(),
-                SqlType.PostgreSql => new SqlAdapters.PostgreSql.PostgreSqlDbServer(),
-                SqlType.MySql => new SqlAdapters.MySql.MySqlDbServer(),
-                SqlType.Oracle => new SqlAdapters.Oracle.OracleDbServer(),
-                _ => throw new NotImplementedException(),
-            };
-        }
-    }
-
-    public static DbContextOptions GetOptions(IInterceptor dbInterceptor) => GetOptions(new[] { dbInterceptor });
-    public static DbContextOptions GetOptions(IEnumerable<IInterceptor>? dbInterceptors = null) => GetOptions<TestContext>(dbInterceptors);
-
-    public static DbContextOptions GetOptions<TDbContext>(IEnumerable<IInterceptor>? dbInterceptors = null, string databaseName = nameof(EFCoreBulkTest))
-        where TDbContext : DbContext
-        => GetOptions<TDbContext>(ContextUtil.DatabaseType, dbInterceptors, databaseName);
-
-    public static DbContextOptions GetOptions<TDbContext>(SqlType dbServerType, IEnumerable<IInterceptor>? dbInterceptors = null, string databaseName = nameof(EFCoreBulkTest))
-        where TDbContext : DbContext
-    {
-        var optionsBuilder = new DbContextOptionsBuilder<TDbContext>();
-
-        if (dbServerType == SqlType.SqlServer)
-        {
-            var connectionString = GetSqlServerConnectionString(databaseName);
-
-            // ALTERNATIVELY (Using MSSQLLocalDB):
-            //var connectionString = $@"Data Source=(localdb)\MSSQLLocalDB;Database={databaseName};Trusted_Connection=True;MultipleActiveResultSets=True";
-
-            //optionsBuilder.UseSqlServer(connectionString); // Can NOT Test with UseInMemoryDb (Exception: Relational-specific methods can only be used when the context is using a relational)
-            //optionsBuilder.UseSqlServer(connectionString, opt => opt.UseNetTopologySuite()); // NetTopologySuite for Geometry / Geometry types
-            optionsBuilder.UseSqlServer(connectionString, opt =>
-            {
-                opt.UseNetTopologySuite();
-                opt.UseHierarchyId();
-            });
-        }
-        else if (dbServerType == SqlType.Sqlite)
-        {
-            string connectionString = GetSqliteConnectionString(databaseName);
-            optionsBuilder.UseSqlite(connectionString, opt =>
-            {
-                opt.UseNetTopologySuite();
-            });
-            SQLitePCL.Batteries.Init();
-
-            // ALTERNATIVELY:
-            //string connectionString = (new SqliteConnectionStringBuilder { DataSource = $"{databaseName}Lite.db" }).ToString();
-            //optionsBuilder.UseSqlite(new SqliteConnection(connectionString));
-        }
-        else if (DatabaseType == SqlType.PostgreSql)
-        {
-            string connectionString = GetPostgreSqlConnectionString(databaseName);
-
-            var builder = new NpgsqlDataSourceBuilder(connectionString)
-                .EnableDynamicJson()
-                .Build();
-
-            if (TestContext.UseTopologyPostgres)
-                optionsBuilder.UseNpgsql(builder, opt => opt.UseNetTopologySuite());
-            else
-                optionsBuilder.UseNpgsql(builder);
-        }
-        else if (DatabaseType == SqlType.MySql)
-        {
-            string connectionString = GetMySqlConnectionString(databaseName);
-            optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString), opt => opt.UseNetTopologySuite());
-        }
-        else if (DatabaseType == SqlType.Oracle)
-        {
-            string connectionString = GetOracleConnectionString(databaseName);
-            optionsBuilder.UseOracle(connectionString);
-        }
-        else
-        {
-            throw new NotSupportedException($"Database {dbServerType} is not supported. Only SQL Server and SQLite are Currently supported.");
-        }
-
-        if (dbInterceptors?.Any() == true)
-        {
-            optionsBuilder.AddInterceptors(dbInterceptors);
-        }
-
-        return optionsBuilder.Options;
-    }
-
-    private static IConfiguration GetConfiguration()
-    {
-        var configBuilder = new ConfigurationBuilder()
-            .AddJsonFile("testsettings.json", optional: false)
-            .AddJsonFile("testsettings.local.json", optional: true);
-
-        return configBuilder.Build();
-    }
-
-    public static string GetSqlServerConnectionString(string databaseName)
-    {
-#pragma warning disable CS8602 // Dereference of a possibly null reference.
-        return GetConfiguration().GetConnectionString("SqlServer").Replace("{databaseName}", databaseName);
-#pragma warning restore CS8602 // Dereference of a possibly null reference.
-    }
-
-    public static string GetSqliteConnectionString(string databaseName)
-    {
-#pragma warning disable CS8602 // Dereference of a possibly null reference.
-        return GetConfiguration().GetConnectionString("Sqlite").Replace("{databaseName}", databaseName);
-#pragma warning restore CS8602 // Dereference of a possibly null reference.
-    }
-
-    public static string GetPostgreSqlConnectionString(string databaseName)
-    {
-#pragma warning disable CS8602 // Dereference of a possibly null reference.
-        return GetConfiguration().GetConnectionString("PostgreSql").Replace("{databaseName}", databaseName);
-#pragma warning restore CS8602 // Dereference of a possibly null reference.
-    }
-
-    public static string GetMySqlConnectionString(string databaseName)
-    {
-#pragma warning disable CS8602 // Dereference of a possibly null reference.
-        return GetConfiguration().GetConnectionString("MySql").Replace("{databaseName}", databaseName);
-#pragma warning restore CS8602 // Dereference of a possibly null reference.
-    }
-
-    public static string GetOracleConnectionString(string databaseName)
-    {
-#pragma warning disable CS8602 // Dereference of a possibly null reference.
-        return GetConfiguration().GetConnectionString("Oracle").Replace("{databaseName}", databaseName);
-#pragma warning restore CS8602 // Dereference of a possibly null reference.
     }
 }
 
@@ -1235,6 +1089,21 @@ public class GraphQLModel
     public virtual System.Guid Id { get; set; }
 
     public string? Name { get; set; }
+}
+
+/// <summary>
+/// Test model for PG array columns
+/// </summary>
+public class ArrayModel
+{
+    public int Id { get; set; }
+    
+    public string[]? Array { get; set; }
+    
+    public List<int>? List { get; set; }
+    
+    public BindingFlags[]? EnumArray { get; set; }
+    public BindingFlags Enum { get; set; }
 }
 
 public class Article

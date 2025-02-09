@@ -58,16 +58,18 @@ public class OwnedGraphContext : DbContext
     }
 }
 
-public class OwnedGraph : IDisposable
+public class OwnedGraph
 {
     //[Theory]
     //[InlineData(DbServer.SQLServer)]
     public async Task Test(SqlType dbServer)
     {
         //ARRANGE
-        ContextUtil.DatabaseType = dbServer;
-
-        using var db = new OwnedGraphContext(ContextUtil.GetOptions<OwnedGraphContext>(databaseName: $"{nameof(EFCoreBulkTest)}_OwnedGraph"));
+        var options = new ContextUtil(dbServer)
+            .GetOptions<OwnedGraphContext>(databaseName: $"{nameof(EFCoreBulkTest)}_OwnedGraph");
+        using var db = new OwnedGraphContext(options);
+        
+        await db.Database.EnsureDeletedAsync();
         await db.Database.EnsureCreatedAsync();
 
         var first = new GraphRoot
@@ -116,11 +118,5 @@ public class OwnedGraph : IDisposable
         Assert.Equal("b", firstLoaded.Component.Items[1].Value);
         Assert.Equal("c", secondLoaded.Component.Items[0].Value);
         Assert.Equal("d", secondLoaded.Component.Items[1].Value);
-    }
-
-    public void Dispose()
-    {
-        using var db = new OwnedGraphContext(ContextUtil.GetOptions<OwnedGraphContext>(databaseName: $"{nameof(EFCoreBulkTest)}_OwnedGraph"));
-        db.Database.EnsureDeleted();
     }
 }

@@ -11,7 +11,7 @@ namespace EFCore.BulkExtensions.Tests;
 
 public class SqlQueryBuilderUnitOracleTests
 {
-    private TableInfo GetTestTableInfo(Func<string, string, string>? onConflictUpdateWhereSql = null)
+    private static TableInfo GetTestTableInfo(Func<string, string, string>? onConflictUpdateWhereSql = null)
     {
         var tableInfo = new TableInfo()
         {
@@ -44,9 +44,9 @@ public class SqlQueryBuilderUnitOracleTests
         tableInfo.IdentityColumnName = "ItemId";
         string result = OracleQueryBuilder.MergeTable<Item>(tableInfo, OperationType.Insert);
 
-        string expected = "INSERT INTO dbo.Item (Name) SELECT Name FROM dbo.ItemTemp1234; ";
+        const string expected = "INSERT INTO dbo.Item (Name) SELECT Name FROM dbo.ItemTemp1234; ";
 
-        Assert.Equal(result, expected);
+        Assert.Equal(expected, result);
     }
     [Fact]
     public void MergeTableUpdateTest()
@@ -55,13 +55,13 @@ public class SqlQueryBuilderUnitOracleTests
         tableInfo.IdentityColumnName = "ItemId";
         string result = OracleQueryBuilder.MergeTable<Item>(tableInfo, OperationType.Update);
 
-        string expected = @"MERGE INTO dbo.Item AS A
+        const string expected = @"MERGE INTO dbo.Item AS A
 USING dbo.ItemTemp1234 AS B
 ON (A.ItemId = B.ItemId)
 WHEN MATCHED THEN
     UPDATE SET A.Name = B.Name;";
 
-        Assert.Equal(result, expected);
+        Assert.Equal(expected, result);
     }
     [Fact]
     public void MergeTableDeleteTest()
@@ -70,9 +70,9 @@ WHEN MATCHED THEN
         tableInfo.IdentityColumnName = "ItemId";
         string result = OracleQueryBuilder.MergeTable<Item>(tableInfo, OperationType.Delete);
 
-        string expected = "DELETE FROM FROM dbo.Item A WHERE A.ItemId IN (SELECT B.ItemId FROM dbo.ItemTemp1234 B); ";
+        const string expected = "DELETE FROM dbo.Item A WHERE A.ItemId IN (SELECT B.ItemId FROM dbo.ItemTemp1234 B); ";
 
-        Assert.Equal(result, expected);
+        Assert.Equal(expected, result);
     }
 
     [Fact]
@@ -82,7 +82,7 @@ WHEN MATCHED THEN
         tableInfo.IdentityColumnName = "ItemId";
         string result = OracleQueryBuilder.MergeTable<Item>(tableInfo, OperationType.InsertOrUpdate);
 
-        string expected = @"MERGE INTO dbo.Item AS A
+        const string expected = @"MERGE INTO dbo.Item AS A
 USING dbo.ItemTemp1234 AS B
 ON (A.ItemId = B.ItemId)
 WHEN MATCHED THEN
@@ -91,6 +91,6 @@ WHEN NOT MATCHED THEN
     INSERT (ItemId, Name)
     VALUES (B.ItemId, B.Name);";
 
-        Assert.Equal(result, expected);
+        Assert.Equal(expected, result);
     }
 }

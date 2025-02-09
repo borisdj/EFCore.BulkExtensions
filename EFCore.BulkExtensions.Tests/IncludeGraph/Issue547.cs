@@ -35,7 +35,7 @@ public class ChildEntity
 
 public class Issue547DbContext : DbContext
 {
-    public Issue547DbContext([NotNullAttribute] DbContextOptions options) : base(options)
+    public Issue547DbContext(DbContextOptions options) : base(options)
     {
     }
 
@@ -68,16 +68,19 @@ public class Issue547DbContext : DbContext
     }
 }
 
-public class Issue547 : IDisposable
+public class Issue547
 {
     //[Theory] // throws: System.Data.SqlTypes.SqlNullValueException : Data is Null. This method or property cannot be called on Null values.
                // at: TableInfo method LoadOutputDataAsync line 1128:var entitiesWithOutputIdentity = QueryOutputTable(...
     //[InlineData(SqlType.SqlServer)]
     public async Task Test(SqlType dbServer)
     {
-        ContextUtil.DatabaseType = dbServer;
+        var options = new ContextUtil(dbServer)
+            .GetOptions<Issue547DbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_Issue547");
+        
+        using var db = new Issue547DbContext(options);
 
-        using var db = new Issue547DbContext(ContextUtil.GetOptions<Issue547DbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_Issue547"));
+        await db.Database.EnsureDeletedAsync();
         await db.Database.EnsureCreatedAsync();
 
         var tranches = new List<RootEntity>
@@ -135,11 +138,5 @@ public class Issue547 : IDisposable
             Assert.NotNull(re.OwnedInSeparateTable);
             Assert.NotEmpty(re.OwnedInSeparateTable.Flowers);
         }
-    }
-
-    public void Dispose()
-    {
-        using var db = new Issue547DbContext(ContextUtil.GetOptions<Issue547DbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_Issue547"));
-        db.Database.EnsureDeleted();
     }
 }
