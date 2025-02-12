@@ -34,7 +34,7 @@ If eligible for free usage but still need  active support, consider purchasing S
 If you find this project useful you can mark it by leaving a Github **Star** :star:  
 And even with Community license, if you want help Development, you can make a Donation:  
 [<img src="https://www.buymeacoffee.com/assets/img/custom_images/yellow_img.png" alt="Buy Me A Coffee" height=28>](https://www.buymeacoffee.com/boris.dj) _ or _ 
-[![Button](https://img.shields.io/badge/donate-Bitcoin-orange.svg?logo=bitcoin):zap:](https://borisdj.net/donation/donate-btc.html)
+[![Button](https://img.shields.io/badge/donate-Bitcoin-orange.svg?logo=bitcoin):zap:](https://borisdj.net/donation/donate-btc.html) ([Moneylution](https://infopedia.io/revolution-of-money/))
 
 ## Contributing
 Please read [CONTRIBUTING](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/CONTRIBUTING.md) for details on code of conduct, and the process for submitting pull requests. <!-- valid link short also (CONTRIBUTING.md) -->   
