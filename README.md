@@ -60,7 +60,7 @@ Specific ones have adapter suffix: MainNuget + *.SqlServer/PostgreSql/MySql/Orac
 [![](https://img.shields.io/static/v1?label=&message=MS&color=darkred)](https://www.nuget.org/packages/EFCore.BulkExtensions.SqlServer)
 [![](https://img.shields.io/static/v1?label=&message=PG&color=blue)](https://www.nuget.org/packages/EFCore.BulkExtensions.PostgreSql)
 [![](https://img.shields.io/static/v1?label=&message=MY&color=chocolate)](https://www.nuget.org/packages/EFCore.BulkExtensions.MySql)
-[![](https://img.shields.io/static/v1?label=&message=MY&color=red)](https://www.nuget.org/packages/EFCore.BulkExtensions.Oracle)
+[![](https://img.shields.io/static/v1?label=&message=OR&color=red)](https://www.nuget.org/packages/EFCore.BulkExtensions.Oracle)
 [![](https://img.shields.io/static/v1?label=&message=LT&color=lightgreen)](https://www.nuget.org/packages/EFCore.BulkExtensions.Sqlite)
 )  
 Its assembly is [Strong-Named](https://docs.microsoft.com/en-us/dotnet/standard/library-guidance/strong-naming) and [Signed](https://github.com/borisdj/EFCore.BulkExtensions/issues/161) with a key.
