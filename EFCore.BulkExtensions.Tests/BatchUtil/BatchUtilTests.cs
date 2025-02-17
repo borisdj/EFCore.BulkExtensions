@@ -8,9 +8,7 @@ public class BatchUtilTests
     [Fact]
     public void GetBatchSql_UpdateSqlite_ReturnsExpectedValues()
     {
-        ContextUtil.DatabaseType = SqlType.Sqlite;
-
-        using var context = new TestContext(ContextUtil.GetOptions());
+        using var context = new TestContext(SqlType.Sqlite);
         (string sql, string tableAlias, string tableAliasSufixAs, _, _, _) = BulkExtensions.BatchUtil.GetBatchSql(context.Items, context, true);
 
         Assert.Equal("\"Item\"", tableAlias);

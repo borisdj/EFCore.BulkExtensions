@@ -300,10 +300,11 @@ public class SqlQueryBuilderUnitTests
         return tableInfo;
     }
 
-    [Fact]
-    public async Task DelegateDecompiler_DecompileAsync_WorksAsync()
+    [Theory]
+    [InlineData(SqlType.SqlServer)]
+    public async Task DelegateDecompiler_DecompileAsync_WorksAsync(SqlType sqlType)
     {
-        using var context = new TestContext(ContextUtil.GetOptions());
+        using var context = new TestContext(sqlType);
 #pragma warning disable
         await context.Items
             .Where(x => x.ItemId < 0)

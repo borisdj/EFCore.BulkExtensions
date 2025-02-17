@@ -17,24 +17,22 @@ public class EFCoreBatchTestAsync
     [InlineData(SqlType.Sqlite)]
     public async Task BatchTestAsync(SqlType dbServer)
     {
-        ContextUtil.DatabaseType = dbServer;
-
         await RunDeleteAllAsync(dbServer);
-        await RunInsertAsync();
+        await RunInsertAsync(dbServer);
         await RunBatchUpdateAsync(dbServer);
 
         int deletedEntities = 1;
         if (dbServer == SqlType.SqlServer)
         {
-            deletedEntities = await RunTopBatchDeleteAsync();
+            deletedEntities = await RunTopBatchDeleteAsync(dbServer);
         }
 
-        await RunBatchDeleteAsync();
+        await RunBatchDeleteAsync(dbServer);
 
-        await UpdateSettingAsync(SettingsEnum.Sett1, "Val1UPDATE");
-        await UpdateByteArrayToDefaultAsync();
+        await UpdateSettingAsync(dbServer, SettingsEnum.Sett1, "Val1UPDATE");
+        await UpdateByteArrayToDefaultAsync(dbServer);
 
-        using var context = new TestContext(ContextUtil.GetOptions());
+        using var context = new TestContext(dbServer);
 
         var firstItem = (await context.Items.ToListAsync()).First();
         var lastItem = (await context.Items.ToListAsync()).Last();
@@ -56,8 +54,9 @@ public class EFCoreBatchTestAsync
     {
         var dbCommandInterceptor = new TestDbCommandInterceptor();
         var interceptors = new[] { dbCommandInterceptor };
-
-        using var testContext = new TestContext(ContextUtil.GetOptions<TestContext>(SqlType.SqlServer, interceptors));
+        
+        var options = new ContextUtil(SqlType.SqlServer).GetOptions<TestContext>(interceptors);
+        using var testContext = new TestContext(options);
 
         string oldPhoneNumber = "7756789999";
         string newPhoneNumber = "3606789999";
@@ -89,7 +88,7 @@ WHERE [p].[PhoneNumber] = @__oldPhoneNumber_0";
 
     internal async Task RunDeleteAllAsync(SqlType dbServer)
     {
-        using var context = new TestContext(ContextUtil.GetOptions());
+        using var context = new TestContext(dbServer);
         await context.Items.AddAsync(new Item { }); // used for initial add so that after RESEED it starts from 1, not 0
         await context.SaveChangesAsync();
 
@@ -107,9 +106,9 @@ WHERE [p].[PhoneNumber] = @__oldPhoneNumber_0";
         context.Database.ExecuteSqlRaw(deleteTableSql);
     }
 
-    private static async Task RunInsertAsync()
+    private static async Task RunInsertAsync(SqlType dbServer)
     {
-        using var context = new TestContext(ContextUtil.GetOptions());
+        using var context = new TestContext(dbServer);
         var entities = new List<Item>();
         for (int i = 1; i <= EntitiesNumber; i++)
         {
@@ -131,7 +130,7 @@ WHERE [p].[PhoneNumber] = @__oldPhoneNumber_0";
 
     private static async Task RunBatchUpdateAsync(SqlType dbServer)
     {
-        using var context = new TestContext(ContextUtil.GetOptions());
+        using var context = new TestContext(dbServer);
 
         //var updateColumns = new List<string> { nameof(Item.Quantity) }; // Adding explicitly PropertyName for update to its default value
 
@@ -178,21 +177,21 @@ WHERE [p].[PhoneNumber] = @__oldPhoneNumber_0";
         }
     }
 
-    private static async Task<int> RunTopBatchDeleteAsync()
+    private static async Task<int> RunTopBatchDeleteAsync(SqlType dbServer)
     {
-        using var context = new TestContext(ContextUtil.GetOptions());
+        using var context = new TestContext(dbServer);
         return await context.Items.Where(a => a.ItemId > 500).Take(1).BatchDeleteAsync();
     }
 
-    private static async Task RunBatchDeleteAsync()
+    private static async Task RunBatchDeleteAsync(SqlType dbServer)
     {
-        using var context = new TestContext(ContextUtil.GetOptions());
+        using var context = new TestContext(dbServer);
         await context.Items.Where(a => a.ItemId > 500).BatchDeleteAsync();
     }
 
-    private static async Task UpdateSettingAsync(SettingsEnum settings, object value)
+    private static async Task UpdateSettingAsync(SqlType dbServer, SettingsEnum settings, object value)
     {
-        using var context = new TestContext(ContextUtil.GetOptions());
+        using var context = new TestContext(dbServer);
 
         await context.TruncateAsync<Setting>();
 
@@ -205,9 +204,9 @@ WHERE [p].[PhoneNumber] = @__oldPhoneNumber_0";
         await context.TruncateAsync<Setting>();
     }
 
-    private static async Task UpdateByteArrayToDefaultAsync()
+    private static async Task UpdateByteArrayToDefaultAsync(SqlType dbServer)
     {
-        using var context = new TestContext(ContextUtil.GetOptions());
+        using var context = new TestContext(dbServer);
 
         await context.Files.BatchUpdateAsync(new File { DataBytes = null }, updateColumns: new List<string> { nameof(File.DataBytes) }).ConfigureAwait(false);
         await context.Files.BatchUpdateAsync(a => new File { DataBytes = null }).ConfigureAwait(false);

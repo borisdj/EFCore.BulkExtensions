@@ -19,9 +19,7 @@ public class EFCoreBulkTestOracle
     [InlineData(SqlType.Oracle)]
     public void BulkInsert(SqlType sqlType)
     {
-        ContextUtil.DatabaseType = sqlType;
-
-        using var context = new OracleTestContext(ContextUtil.GetOptions<OracleTestContext>());
+        using var context = new OracleTestContext(sqlType);
         _ = context.Database.ExecuteSqlRaw($@"DELETE FROM {nameof(Item)}");
 
         var items = new List<Item>();
@@ -48,9 +46,7 @@ public class EFCoreBulkTestOracle
     [InlineData(SqlType.Oracle)]
     public void BulkUpdate(SqlType sqlType)
     {
-        ContextUtil.DatabaseType = sqlType;
-
-        using var context = new OracleTestContext(ContextUtil.GetOptions<OracleTestContext>());
+        using var context = new OracleTestContext(sqlType);
 
         var items = new List<Item>();
         for (int i = 1; i <= 100; i++)
@@ -76,9 +72,7 @@ public class EFCoreBulkTestOracle
     [InlineData(SqlType.Oracle)]
     public void BulkInsertOrUpdate(SqlType sqlType)
     {
-        ContextUtil.DatabaseType = sqlType;
-
-        using var context = new OracleTestContext(ContextUtil.GetOptions<OracleTestContext>());
+        using var context = new OracleTestContext(sqlType);
 
         var items = new List<Item>();
         for (int i = 1; i <= 10; i++)
@@ -117,9 +111,7 @@ public class EFCoreBulkTestOracle
     [InlineData(SqlType.Oracle)]
     public void BulkDelete(SqlType sqlType)
     {
-        ContextUtil.DatabaseType = sqlType;
-
-        using var context = new OracleTestContext(ContextUtil.GetOptions<OracleTestContext>());
+        using var context = new OracleTestContext(sqlType);
 
         var items = new List<Item>();
         for (int i = 21; i <= 30; i++)
