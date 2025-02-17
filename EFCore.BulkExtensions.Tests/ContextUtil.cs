@@ -54,30 +54,18 @@ public class ContextUtil
                 });
                 break;
             }
-            case SqlType.Sqlite:
-            {
-                string connectionString = GetSqliteConnectionString(databaseName);
-                optionsBuilder.UseSqlite(connectionString, opt =>
-                {
-                    opt.UseNetTopologySuite();
-                });
-                SQLitePCL.Batteries.Init();
-
-                // ALTERNATIVELY:
-                //string connectionString = (new SqliteConnectionStringBuilder { DataSource = $"{databaseName}Lite.db" }).ToString();
-                //optionsBuilder.UseSqlite(new SqliteConnection(connectionString));
-                break;
-            }
             case SqlType.PostgreSql:
             {
                 string connectionString = GetPostgreSqlConnectionString(databaseName);
-
+#if NET8_0
+                optionsBuilder.UseNpgsql(connectionString);
+#else
                 var dataSource = new NpgsqlDataSourceBuilder(connectionString)
                     .EnableDynamicJson()
                     .UseNetTopologySuite()
                     .Build();
-
                 optionsBuilder.UseNpgsql(dataSource, opt => opt.UseNetTopologySuite());
+#endif
                 break;
             }
             case SqlType.MySql:
@@ -90,6 +78,20 @@ public class ContextUtil
             {
                 string connectionString = GetOracleConnectionString(databaseName);
                 optionsBuilder.UseOracle(connectionString);
+                break;
+            }
+            case SqlType.Sqlite:
+            {
+                string connectionString = GetSqliteConnectionString(databaseName);
+                optionsBuilder.UseSqlite(connectionString, opt =>
+                {
+                    opt.UseNetTopologySuite();
+                });
+                SQLitePCL.Batteries.Init();
+
+                // ALTERNATIVELY:
+                //string connectionString = (new SqliteConnectionStringBuilder { DataSource = $"{databaseName}Lite.db" }).ToString();
+                //optionsBuilder.UseSqlite(new SqliteConnection(connectionString));
                 break;
             }
             default:

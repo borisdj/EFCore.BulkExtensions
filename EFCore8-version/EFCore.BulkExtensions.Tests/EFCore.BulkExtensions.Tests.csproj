@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>    
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <NoWarn>$(NoWarn);CA2007</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+	<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" Version="8.0.13" />
+	<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.NetTopologySuite" Version="8.0.13" />
+	<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite" Version="8.0.11" />
+	<PackageReference Include="Pomelo.EntityFrameworkCore.MySql.NetTopologySuite" Version="8.0.2" />
+	<PackageReference Include="Oracle.EntityFrameworkCore" Version="8.23.70" />
+	<PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.10" />
+	<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.1" />
+	<PackageReference Include="RT.Comb" Version="4.0.1" />
+	<PackageReference Include="FastMember" Version="1.5.0" />
+	<PackageReference Include="DelegateDecompiler.EntityFrameworkCore5" Version="0.34.1" />
+	<PackageReference Include="HotChocolate.Types" Version="15.0.3" />
+	<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
+	<PackageReference Include="xunit" Version="2.9.3" />
+	<PackageReference Include="xunit.runner.visualstudio" Version="3.0.2" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\EFCore.BulkExtensions\EFCore.BulkExtensions.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="testsettings.local.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="testsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+</Project>
