@@ -9,7 +9,7 @@
   <ItemGroup>
 	<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.0-preview.1" />
 	<PackageReference Include="Npgsql" Version="8.0.6" />
-	<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.0" />
+	<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.2" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EFCore.BulkExtensions.Core\EFCore.BulkExtensions.Core.csproj" />
