@@ -22,7 +22,7 @@ public class PostgreSqlQueryBuilder : SqlQueryBuilder
     public static string CreateOutputStatsTable(string newTableName, bool useTempDb, bool unlogged)
     {
         string keywordPrefix = "";
-        if (unlogged == true)
+        if (useTempDb == true)
         {
             keywordPrefix = "TEMP "; // "TEMP " or "TEMPORARY "
         }
@@ -45,7 +45,7 @@ public class PostgreSqlQueryBuilder : SqlQueryBuilder
     public static string CreateTableCopy(string existingTableName, string newTableName, bool useTempDb, bool unlogged)
     {
         string keywordPrefix = "";
-        if (unlogged == true)
+        if (useTempDb == true)
         {
             keywordPrefix = "TEMP "; // "TEMP " or "TEMPORARY "
         }
