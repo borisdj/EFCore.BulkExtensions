@@ -10,7 +10,7 @@
     <FileVersion>$(Version).0</FileVersion>
     <PackageIcon>EFCoreBulk.png</PackageIcon>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
-	<PackageReleaseNotes>several updates</PackageReleaseNotes>
+	<PackageReleaseNotes>some updates</PackageReleaseNotes>
     <PackageTags>EntityFrameworkCore Entity Framework Core .Net EFCore EF Core Bulk Batch Copy SqlBulkCopy Extensions Insert Update Delete Read Truncate SaveChanges</PackageTags>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
     <RepositoryUrl>https://github.com/borisdj/EFCore.BulkExtensions</RepositoryUrl>
