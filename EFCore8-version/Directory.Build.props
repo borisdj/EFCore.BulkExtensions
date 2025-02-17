@@ -5,7 +5,7 @@
     <Authors>borisdj</Authors>
     <PackageProjectUrl>https://github.com/borisdj/EFCore.BulkExtensions</PackageProjectUrl>
     <Company>CODIS LLC</Company>
-    <Version>8.1.2</Version>
+    <Version>8.1.3</Version>
     <AssemblyVersion>$(Version).0</AssemblyVersion>
     <FileVersion>$(Version).0</FileVersion>
     <PackageIcon>EFCoreBulk.png</PackageIcon>
