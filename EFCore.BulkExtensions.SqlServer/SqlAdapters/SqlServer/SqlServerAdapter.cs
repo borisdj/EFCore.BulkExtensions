@@ -481,7 +481,7 @@ public class SqlServerAdapter : ISqlOperationsAdapter
         var columnsDict = new Dictionary<string, object?>();
         var ownedEntitiesMappedProperties = new HashSet<string>();
 
-        var databaseType = SqlAdaptersMapping.GetDatabaseType();
+        var databaseType = SqlAdaptersMapping.GetDatabaseType(context);
         var isSqlServer = databaseType == SqlType.SqlServer;
         var sqlServerBytesWriter = new SqlServerBytesWriter();
 

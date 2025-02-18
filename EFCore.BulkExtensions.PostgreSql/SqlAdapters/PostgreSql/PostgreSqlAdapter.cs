@@ -598,7 +598,7 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
     private static async Task<(NpgsqlConnection connection, bool closeConnectionInternally)> GetOrCreateConnection(DbContext context, bool isAsync, CancellationToken cancellationToken)
     {
         var closeConnectionInternally = false;
-        var connection = (NpgsqlConnection?)SqlAdaptersMapping.DbServer.DbConnection;
+        var connection = (NpgsqlConnection?)SqlAdaptersMapping.DbServer(context).DbConnection;
 
         if (connection != null) return (connection, closeConnectionInternally);
         return await ReopenConnection(context, isAsync, cancellationToken).ConfigureAwait(false);

@@ -38,7 +38,7 @@ public class BatchUpdateCreateBodyData
         LambdaExpression updateExpression)
     {
         BaseSql = baseSql;
-        DatabaseType = SqlAdaptersMapping.GetDatabaseType();
+        DatabaseType = SqlAdaptersMapping.GetDatabaseType(dbContext);
         DbContext = dbContext;
         Query = query;
         RootInstanceParameterName = updateExpression.Parameters?.FirstOrDefault()?.Name;

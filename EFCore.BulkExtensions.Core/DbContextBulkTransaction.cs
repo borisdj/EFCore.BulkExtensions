@@ -103,7 +103,7 @@ internal static class DbContextBulkTransaction
     #region SqlAdapters Settings
     private static void UpdateSqlAdaptersProps(DbContext context)
     {
-        SqlAdaptersMapping.ProviderName = context.Database.ProviderName;
+        SqlAdaptersMapping.UpdateProviderName(context.Database.ProviderName);
     }
     #endregion
 
