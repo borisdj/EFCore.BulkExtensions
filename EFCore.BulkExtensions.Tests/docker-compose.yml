@@ -1,0 +1,26 @@
+services:
+  postgres:
+    image: "postgis/postgis"
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=Postgres22
+      - POSTGRES_DB=bulk
+    volumes:
+      - postgis_data:/var/lib/postgresql/data
+
+  mysql:
+    image: mysql
+    environment:
+      - MYSQL_DATABASE=bulk
+      - MYSQL_ROOT_PASSWORD=MySQL22
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql_data
+    command: --local-infile=1
+
+volumes:
+  postgis_data:
+  mysql_data:

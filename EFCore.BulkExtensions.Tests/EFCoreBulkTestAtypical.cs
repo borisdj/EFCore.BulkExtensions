@@ -698,7 +698,7 @@ public class EFCoreBulkTestAtypical
                     Description = string.Concat("info ", Guid.NewGuid().ToString().AsSpan(0, 3)),
                     Quantity = i % 10,
                     Price = i / (i % 5 + 1),
-                    TimeUpdated = sqlType == SqlType.PostgreSql ? DateTime.UtcNow : DateTime.Now,
+                    TimeUpdated = DateTime.Now,
                     ItemHistories = new List<ItemHistory>()
                 };
 

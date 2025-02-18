@@ -43,7 +43,7 @@ public class EFCoreBulkTestSaveChanges
     private static List<Item> GetNewEntities(SqlType dbServer, int count, string nameSuffix)
     {
         var newEntities = new List<Item>();
-        var dateTimeNow = dbServer == SqlType.PostgreSql ? DateTime.UtcNow : DateTime.Now;
+        var dateTimeNow = DateTime.Now;
 
         for (int i = 1; i <= count; i += 1) // Insert 4000 new ones
         {
