@@ -36,7 +36,7 @@ public class SqliteAdapter : ISqlOperationsAdapter
     /// <inheritdoc/>
     public static async Task InsertAsync<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken)
     {
-        SqliteConnection? connection = (SqliteConnection?)SqlAdaptersMapping.DbServer.DbConnection;
+        SqliteConnection? connection = (SqliteConnection?)SqlAdaptersMapping.DbServer(context).DbConnection;
         if (connection == null)
         {
             connection = isAsync ? await OpenAndGetSqliteConnectionAsync(context, cancellationToken).ConfigureAwait(false)
@@ -52,7 +52,7 @@ public class SqliteAdapter : ISqlOperationsAdapter
                 doExplicitCommit = true;
             }
 
-            SqliteTransaction? transaction = (SqliteTransaction?)SqlAdaptersMapping.DbServer.DbTransaction;
+            SqliteTransaction? transaction = (SqliteTransaction?)SqlAdaptersMapping.DbServer(context).DbTransaction;
             if (transaction == null)
             {
                 var dbTransaction = doExplicitCommit ? connection.BeginTransaction()
@@ -247,8 +247,8 @@ public class SqliteAdapter : ISqlOperationsAdapter
 
             tableInfo.BulkConfig.OperationType = OperationType.Insert;
             tableInfo.InsertToTempTable = true;
-            SqlAdaptersMapping.DbServer.DbConnection = connection;
-            SqlAdaptersMapping.DbServer.DbTransaction = transaction;
+            SqlAdaptersMapping.DbServer(context).DbConnection = connection;
+            SqlAdaptersMapping.DbServer(context).DbTransaction = transaction;
             // INSERT
             if (isAsync)
             {

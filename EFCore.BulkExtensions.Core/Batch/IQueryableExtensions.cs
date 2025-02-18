@@ -9,6 +9,7 @@ using System.Data.Common;
 using System.Linq;
 using System.Reflection;
 using EFCore.BulkExtensions.SqlAdapters;
+using Microsoft.EntityFrameworkCore;
 
 namespace EFCore.BulkExtensions;
 
@@ -21,9 +22,10 @@ public static class IQueryableExtensions
     /// Extension method to paramatize sql query
     /// </summary>
     /// <param name="query"></param>
+    /// <param name="context">The database context.</param>
     /// <returns></returns>
     /// <exception cref="InvalidOperationException"></exception>
-    public static (string, IEnumerable<DbParameter>) ToParametrizedSql(this IQueryable query)
+    public static (string, IEnumerable<DbParameter>) ToParametrizedSql(this IQueryable query, DbContext context)
     {
         string relationalQueryContextText = "_relationalQueryContext";
         string relationalCommandCacheText = "_relationalCommandCache"; // used with EF 8
@@ -69,7 +71,7 @@ public static class IQueryableExtensions
         IList<DbParameter> parameters;
         try
         {
-            using var dbCommand = SqlAdaptersMapping.DbServer.QueryBuilder.CreateCommand(); // Use a DbCommand to convert parameter values using ValueConverters to the correct type.
+            using var dbCommand = SqlAdaptersMapping.DbServer(context).QueryBuilder.CreateCommand(); // Use a DbCommand to convert parameter values using ValueConverters to the correct type.
             foreach (var param in command.Parameters)
             {
                 var values = parameterValues[param.InvariantName];
@@ -89,7 +91,7 @@ public static class IQueryableExtensions
                 ex.Message.StartsWith(npgsqlSpecParamMessage)) // Fix for BatchDelete with Contains on PostgreSQL
             {
                 var parameterNames = new HashSet<string>(command.Parameters.Select(p => p.InvariantName));
-                parameters = parameterValues.Where(pv => parameterNames.Contains(pv.Key)).Select(pv => SqlAdaptersMapping.DbServer.QueryBuilder.CreateParameter("@" + pv.Key, pv.Value)).ToList();
+                parameters = parameterValues.Where(pv => parameterNames.Contains(pv.Key)).Select(pv => SqlAdaptersMapping.DbServer(context).QueryBuilder.CreateParameter("@" + pv.Key, pv.Value)).ToList();
             }
             else
             {
