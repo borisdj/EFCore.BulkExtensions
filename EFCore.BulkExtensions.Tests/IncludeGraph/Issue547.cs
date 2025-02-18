@@ -33,7 +33,7 @@ public class ChildEntity
     public string Name { get; set; } = null!;
 }
 
-public class Issue547DbContext : DbContext
+public class Issue547DbContext : TestContextBase
 {
     public Issue547DbContext(DbContextOptions options) : base(options)
     {

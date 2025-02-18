@@ -21,6 +21,25 @@ services:
       - mysql_data:/var/lib/mysql_data
     command: --local-infile=1
 
+  oracle:
+    image: gvenzl/oracle-xe
+    environment:
+      - ORACLE_PASSWORD=Oracle
+    ports:
+      - "1521:1521"
+    volumes:
+      - oracle_data:/opt/oracle/oradata
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-CU14-ubuntu-22.04
+    environment:
+      - SA_PASSWORD=SuperSecret42!
+      - ACCEPT_EULA=Y
+    ports:
+      - "1433:1433"
+
 volumes:
   postgis_data:
   mysql_data:
+  oracle_data:
+  sql_server:

@@ -81,13 +81,11 @@ public class ThirdNested
     public string? ThirdNestedProperty { get; set; }
 }
 
-public class NestedDbContext : DbContext
+public class NestedDbContext : TestContext
 {
     [SuppressMessage("ReSharper", "VirtualMemberCallInConstructor")]
     public NestedDbContext(DbContextOptions opts) : base(opts)
     {
-        Database.EnsureDeleted();
-        Database.EnsureCreated();
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

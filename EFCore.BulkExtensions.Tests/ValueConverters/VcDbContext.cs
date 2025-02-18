@@ -6,7 +6,7 @@ using EFCore.BulkExtensions.SqlAdapters;
 
 namespace EFCore.BulkExtensions.Tests.ValueConverters;
 
-public class VcDbContext : DbContext
+public class VcDbContext : TestContextBase
 {
     private readonly SqlType _sqlType;
 
@@ -15,9 +15,6 @@ public class VcDbContext : DbContext
         : base(new ContextUtil(sqlType).GetOptions<VcDbContext>(databaseName: databaseName))
     {
         _sqlType = sqlType;
-        
-        Database.EnsureDeleted();
-        Database.EnsureCreated();
     }
 
     public DbSet<VcModel> VcModels { get; set; } = null!;

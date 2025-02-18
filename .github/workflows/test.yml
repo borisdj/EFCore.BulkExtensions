@@ -1,0 +1,29 @@
+name: Run Tests
+
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+    branches:
+    - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+        
+    steps:  
+    - uses: actions/checkout@v4.2.2
+ 
+    - name: setup dotnet
+      uses: actions/setup-dotnet@v4.2.0
+      with:
+        dotnet-version: 9.0.x
+
+    - name: test - start compose
+      run: docker compose up -d
+      working-directory: EFCore.BulkExtensions.Tests
+
+    - name: test
+      run: |
+        dotnet test
