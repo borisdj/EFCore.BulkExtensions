@@ -77,7 +77,7 @@ public class EFCoreBulkTest
 
         context.Database.ExecuteSqlRaw($@"DELETE FROM ""{nameof(UserRole)}""");
         
-        var currentTime = DateTime.UtcNow; // default DateTime type: "timestamp with time zone"; DateTime.Now goes with: "timestamp without time zone"
+        var currentTime = DateTime.Now; // default DateTime type: "timestamp with time zone"; DateTime.Now goes with: "timestamp without time zone"
 
         var entities = new List<Item>();
         for (int i = 1; i <= 2; i++)

@@ -51,6 +51,7 @@ public class ContextUtil
                 {
                     opt.UseNetTopologySuite();
                     opt.UseHierarchyId();
+                    opt.CommandTimeout(120);
                 });
                 break;
             }

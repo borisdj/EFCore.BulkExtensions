@@ -55,8 +55,8 @@ public class SqlQueryBuilderUnitOracleTests
         tableInfo.IdentityColumnName = "ItemId";
         string result = OracleQueryBuilder.MergeTable<Item>(tableInfo, OperationType.Update);
 
-        const string expected = @"MERGE INTO dbo.Item AS A
-USING dbo.ItemTemp1234 AS B
+        const string expected = @"MERGE INTO dbo.Item A
+USING dbo.ItemTemp1234 B
 ON (A.ItemId = B.ItemId)
 WHEN MATCHED THEN
     UPDATE SET A.Name = B.Name;";
@@ -82,8 +82,8 @@ WHEN MATCHED THEN
         tableInfo.IdentityColumnName = "ItemId";
         string result = OracleQueryBuilder.MergeTable<Item>(tableInfo, OperationType.InsertOrUpdate);
 
-        const string expected = @"MERGE INTO dbo.Item AS A
-USING dbo.ItemTemp1234 AS B
+        const string expected = @"MERGE INTO dbo.Item A
+USING dbo.ItemTemp1234 B
 ON (A.ItemId = B.ItemId)
 WHEN MATCHED THEN
     UPDATE SET A.Name = B.Name
