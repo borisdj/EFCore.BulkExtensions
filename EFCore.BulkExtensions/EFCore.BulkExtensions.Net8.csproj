@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Title>EFCore.BulkExtensions</Title>
+    <Description>EntityFramework .Net EFCore EF Core Bulk Batch Extensions for Insert Update Delete Read (CRUD) operations on SQL Server, PostgreSQL, MySQL, SQLite</Description>
+    <PackageTags>$(PackageTags) SQLServer PostgreSQL MySQL SQLite</PackageTags>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+	<NuGetAudit>false</NuGetAudit>
+    <PackageId>EFCore.BulkExtensions</PackageId>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\EFCore.BulkExtensions.SqlServer\EFCore.BulkExtensions.SqlServer.Net8.csproj" />
+    <ProjectReference Include="..\EFCore.BulkExtensions.PostgreSql\EFCore.BulkExtensions.PostgreSql.Net8.csproj" />
+	<ProjectReference Include="..\EFCore.BulkExtensions.MySql\EFCore.BulkExtensions.MySql.Net8.csproj" />
+	<ProjectReference Include="..\EFCore.BulkExtensions.Oracle\EFCore.BulkExtensions.Oracle.Net8.csproj" />
+    <ProjectReference Include="..\EFCore.BulkExtensions.Sqlite\EFCore.BulkExtensions.Sqlite.Net8.csproj" />
+  </ItemGroup>
+</Project>

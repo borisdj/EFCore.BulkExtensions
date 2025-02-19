@@ -90,6 +90,8 @@ public class NestedDbContext : TestContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        base.OnModelCreating(modelBuilder);
+
         modelBuilder.Entity<NestedRoot>(r => r.OwnsOne(r => r.FirstNested, 
             f =>
             {

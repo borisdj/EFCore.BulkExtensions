@@ -1,5 +1,0 @@
-Copy all 6 folders and .props file from this folder into root directory.
-That way .csproj files in their respective folder would be overridden with these ones that have .net8 target and dependencies.
-Optionally check dependencies for updates but only of minor versions, e.g. 8.0.1 to 8.0.2 (do Not upgrade to 9.x).
-Then build and publish nugets.
-Afterwards do not commit changes, instead stash them (discard changes) or delete local repo and clone it again, since main branch should remain on latest version.

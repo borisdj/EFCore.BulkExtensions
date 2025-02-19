@@ -106,7 +106,6 @@ public class TestContext : TestContextBase
     
     public TestContext(DbContextOptions options) : base(options)
     {
-        Database.EnsureCreated();
         // if for Postgres on test run get Npgsql Ex:[could not open .../postgis.control] then either install the plugin it or set UseTopologyPostgres to False;
 
         /*if (Database.IsSqlServer())
@@ -377,7 +376,7 @@ public class TestContextBase : DbContext
         {
             Database.EnsureCreated();
         }
-        catch 
+        catch (OracleException)
         {
             // NOOP
         }

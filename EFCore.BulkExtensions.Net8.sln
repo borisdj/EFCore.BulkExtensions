@@ -2,23 +2,23 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.4.32804.182
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.BulkExtensions.Tests", "EFCore.BulkExtensions.Tests\EFCore.BulkExtensions.Tests.csproj", "{2328B243-982C-47B7-885B-999231149C72}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.BulkExtensions.Tests", "EFCore.BulkExtensions.Tests\EFCore.BulkExtensions.Tests.Net8.csproj", "{2328B243-982C-47B7-885B-999231149C72}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.BulkExtensions", "EFCore.BulkExtensions\EFCore.BulkExtensions.csproj", "{6796CE3B-B8AA-4F6E-ADAE-DDA86CF79882}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.BulkExtensions", "EFCore.BulkExtensions\EFCore.BulkExtensions.Net8.csproj", "{6796CE3B-B8AA-4F6E-ADAE-DDA86CF79882}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.BulkExtensions.Core", "EFCore.BulkExtensions.Core\EFCore.BulkExtensions.Core.csproj", "{098F9FE6-0054-4907-9F46-D55D63077BCB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.BulkExtensions.Core", "EFCore.BulkExtensions.Core\EFCore.BulkExtensions.Core.Net8.csproj", "{098F9FE6-0054-4907-9F46-D55D63077BCB}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.BulkExtensions.MySql", "EFCore.BulkExtensions.MySql\EFCore.BulkExtensions.MySql.csproj", "{56BE5934-DE55-43D5-B534-F44AF96093D1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.BulkExtensions.MySql", "EFCore.BulkExtensions.MySql\EFCore.BulkExtensions.MySql.Net8.csproj", "{56BE5934-DE55-43D5-B534-F44AF96093D1}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.BulkExtensions.PostgreSql", "EFCore.BulkExtensions.PostgreSql\EFCore.BulkExtensions.PostgreSql.csproj", "{1FB8C964-B38B-4A2F-848B-A5FCDD45354A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.BulkExtensions.PostgreSql", "EFCore.BulkExtensions.PostgreSql\EFCore.BulkExtensions.PostgreSql.Net8.csproj", "{1FB8C964-B38B-4A2F-848B-A5FCDD45354A}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.BulkExtensions.Sqlite", "EFCore.BulkExtensions.Sqlite\EFCore.BulkExtensions.Sqlite.csproj", "{C5C3B567-C045-40DD-8AB3-E437750EC8EA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.BulkExtensions.Sqlite", "EFCore.BulkExtensions.Sqlite\EFCore.BulkExtensions.Sqlite.Net8.csproj", "{C5C3B567-C045-40DD-8AB3-E437750EC8EA}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.BulkExtensions.SqlServer", "EFCore.BulkExtensions.SqlServer\EFCore.BulkExtensions.SqlServer.csproj", "{8879D6FE-62DB-49DF-A8DF-70AD386C9FC6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.BulkExtensions.SqlServer", "EFCore.BulkExtensions.SqlServer\EFCore.BulkExtensions.SqlServer.Net8.csproj", "{8879D6FE-62DB-49DF-A8DF-70AD386C9FC6}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "EFCore.BulkExtensions.PerProvider", "EFCore.BulkExtensions.PerProvider", "{2DFD1CF8-67D7-4B56-B131-CE01B1F2DC7C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EFCore.BulkExtensions.Oracle", "EFCore.BulkExtensions.Oracle\EFCore.BulkExtensions.Oracle.csproj", "{FC913B1E-3AF8-4E06-9452-9BFC8CF4E39A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EFCore.BulkExtensions.Oracle", "EFCore.BulkExtensions.Oracle\EFCore.BulkExtensions.Oracle.Net8.csproj", "{FC913B1E-3AF8-4E06-9452-9BFC8CF4E39A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -58,10 +58,10 @@ Global
 		{FC913B1E-3AF8-4E06-9452-9BFC8CF4E39A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FC913B1E-3AF8-4E06-9452-9BFC8CF4E39A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FC913B1E-3AF8-4E06-9452-9BFC8CF4E39A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{EEFE9923-11BF-46B8-9185-7F748136898E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{EEFE9923-11BF-46B8-9185-7F748136898E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{EEFE9923-11BF-46B8-9185-7F748136898E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{EEFE9923-11BF-46B8-9185-7F748136898E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0FD511A8-FFFE-42F8-9C3C-4C81D38D8C2B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0FD511A8-FFFE-42F8-9C3C-4C81D38D8C2B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0FD511A8-FFFE-42F8-9C3C-4C81D38D8C2B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0FD511A8-FFFE-42F8-9C3C-4C81D38D8C2B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

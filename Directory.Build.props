@@ -5,9 +5,6 @@
     <Authors>borisdj</Authors>
     <PackageProjectUrl>https://github.com/borisdj/EFCore.BulkExtensions</PackageProjectUrl>
     <Company>CODIS LLC</Company>
-    <Version>9.0.1</Version>
-    <AssemblyVersion>$(Version).0</AssemblyVersion>
-    <FileVersion>$(Version).0</FileVersion>
     <PackageIcon>EFCoreBulk.png</PackageIcon>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
 	<PackageReleaseNotes>net 9 update</PackageReleaseNotes>
@@ -22,8 +19,17 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <LangVersion>latest</LangVersion>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <PackageOutputPath>$(MSBuildThisFileDirectory)Nugets</PackageOutputPath>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+  <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('Net8'))">
+    <Version>8.1.3</Version>
+    <PackageOutputPath>$(SolutionDir)Nugets\net8</PackageOutputPath>
+    <AssemblyVersion>$(Version).0</AssemblyVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="!$(MSBuildProjectName.EndsWith('Net8'))">
+    <Version>9.0.1</Version>
+    <PackageOutputPath>$(SolutionDir)Nugets\net9</PackageOutputPath>
+    <AssemblyVersion>$(Version).0</AssemblyVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="StrongNamer" Version="0.2.5" PrivateAssets="All" />
