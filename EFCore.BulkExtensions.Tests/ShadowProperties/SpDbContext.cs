@@ -4,12 +4,10 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace EFCore.BulkExtensions.Tests.ShadowProperties;
 
-public class SpDbContext : DbContext
+public class SpDbContext : TestContextBase
 {
     public SpDbContext([NotNull] DbContextOptions options) : base(options)
     {
-        Database.EnsureDeleted();
-        Database.EnsureCreated();
     }
 
     public DbSet<SpModel> SpModels { get; set; } = null!;

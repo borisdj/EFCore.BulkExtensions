@@ -4,11 +4,10 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace EFCore.BulkExtensions.Tests.ShadowProperties;
 
-public class GraphDbContext : DbContext
+public class GraphDbContext : TestContextBase
 {
     public GraphDbContext([NotNull] DbContextOptions options) : base(options)
     {
-        this.Database.EnsureCreated();
     }
 
     public DbSet<WorkOrder> WorkOrders { get; set; } = null!;

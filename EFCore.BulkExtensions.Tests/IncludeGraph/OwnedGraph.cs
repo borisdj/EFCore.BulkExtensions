@@ -25,7 +25,7 @@ public class OwnedItem
     public string Value { get; set; } = null!;
 }
 
-public class OwnedGraphContext : DbContext
+public class OwnedGraphContext : TestContextBase
 {
     public OwnedGraphContext([NotNull] DbContextOptions options) : base(options)
     {

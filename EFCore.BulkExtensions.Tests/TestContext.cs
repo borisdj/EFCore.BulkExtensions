@@ -15,6 +15,8 @@ using System.Reflection;
 using System.Text.Json;
 using EFCore.BulkExtensions.SqlAdapters;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Infrastructure.Internal;
+using Oracle.ManagedDataAccess.Client;
+using System.Threading;
 
 // ReSharper disable EntityFramework.ModelValidation.UnlimitedStringLength
 // ReSharper disable PropertyCanBeMadeInitOnly.Global
@@ -22,7 +24,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Infrastructure.Internal;
 
 namespace EFCore.BulkExtensions.Tests;
 
-public class TestContext : DbContext
+public class TestContext : TestContextBase
 {
     public DbSet<Item> Items { get; set; } = null!;
     public DbSet<ItemHistory> ItemHistories { get; set; } = null!;
@@ -104,7 +106,6 @@ public class TestContext : DbContext
     
     public TestContext(DbContextOptions options) : base(options)
     {
-        Database.EnsureCreated();
         // if for Postgres on test run get Npgsql Ex:[could not open .../postgis.control] then either install the plugin it or set UseTopologyPostgres to False;
 
         /*if (Database.IsSqlServer())
@@ -355,7 +356,34 @@ public class TestContext : DbContext
     }
 }
 
-public class OracleTestContext : DbContext
+public class TestContextBase : DbContext
+{
+    public TestContextBase(DbContextOptions options) : base(options)
+    {
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+
+        while (!cts.IsCancellationRequested)
+        {
+            if (Database.CanConnect())
+            {
+                break;
+            }
+
+            Thread.Sleep(100);
+        }
+
+        try
+        {
+            Database.EnsureCreated();
+        }
+        catch (OracleException)
+        {
+            // NOOP
+        }
+    }
+}
+
+public class OracleTestContext : TestContextBase
 {
 
     public DbSet<Item> Items { get; set; } = null!;
@@ -363,12 +391,7 @@ public class OracleTestContext : DbContext
     public DbSet<ItemCategory> Categories { get; set; } = null!;
 
     public OracleTestContext(SqlType sqlType) 
-        : this(new ContextUtil(sqlType).GetOptions<OracleTestContext>()) {}
-    
-    public OracleTestContext(DbContextOptions options) : base(options)
-    {
-        Database.EnsureCreated();
-    }
+        : base(new ContextUtil(sqlType).GetOptions<OracleTestContext>()) {}
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {

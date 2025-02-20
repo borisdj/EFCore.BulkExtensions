@@ -4,6 +4,7 @@
     <Title>EFCore.BulkExtensions.SqlServer</Title>
     <Description>EntityFramework .Net EFCore EF Core Bulk Batch Extensions for Insert Update Delete Read (CRUD) operations on SQL Server</Description>
     <PackageTags>$(PackageTags) SQLServer</PackageTags>
+    <PackageId>EFCore.BulkExtensions.SqlServer</PackageId>
   </PropertyGroup>
   <ItemGroup>
 	<PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.1" />
@@ -11,6 +12,6 @@
 	<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.HierarchyId" Version="8.0.13" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\EFCore.BulkExtensions.Core\EFCore.BulkExtensions.Core.csproj" />
+    <ProjectReference Include="..\EFCore.BulkExtensions.Core\EFCore.BulkExtensions.Core.Net8.csproj" />
   </ItemGroup>
 </Project>

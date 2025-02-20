@@ -112,7 +112,7 @@ public record Overdraft
     public decimal Limit { get; init; }
 }
 
-public class InheritedDbContext(DbContextOptions opts) : DbContext(opts)
+public class InheritedDbContext(DbContextOptions opts) : TestContextBase(opts)
 {
     public DbSet<AbstractAccount> Accounts => Set<AbstractAccount>();
     public DbSet<SavingsAccount> SavingsAccounts => Set<SavingsAccount>();

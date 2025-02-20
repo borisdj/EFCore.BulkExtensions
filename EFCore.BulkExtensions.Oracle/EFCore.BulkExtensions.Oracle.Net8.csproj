@@ -5,6 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <NuGetAudit>false</NuGetAudit>
+    <PackageId>EFCore.BulkExtensions.Oracle</PackageId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\EFCore.BulkExtensions.Core\EFCore.BulkExtensions.Core.csproj" />
+    <ProjectReference Include="..\EFCore.BulkExtensions.Core\EFCore.BulkExtensions.Core.Net8.csproj" />
   </ItemGroup>
 
 </Project>

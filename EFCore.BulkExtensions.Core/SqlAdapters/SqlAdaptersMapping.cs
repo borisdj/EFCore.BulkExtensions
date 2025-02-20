@@ -94,32 +94,23 @@ public static class SqlAdaptersMapping
 
         if (_dbServer == null || _dbServer.Type != DatabaseType)
         {
-            string namespaceSqlAdaptersTEXT = "EFCore.BulkExtensions.SqlAdapters";
-            Type? dbServerType = null;
+            static Type GetType(SqlType type)
+            {
+                var typeName = type.ToString();
+                var assemblyName = typeof(SqlAdaptersMapping).Assembly.GetName().Name!.Replace(".Core", $".{typeName}");
 
-            if (DatabaseType == SqlType.SqlServer)
-            {
-                dbServerType = Type.GetType(namespaceSqlAdaptersTEXT + ".SqlServer.SqlServerDbServer,EFCore.BulkExtensions.SqlServer");
-            }
-            else if (DatabaseType == SqlType.PostgreSql)
-            {
-                dbServerType = Type.GetType(namespaceSqlAdaptersTEXT + ".PostgreSql.PostgreSqlDbServer,EFCore.BulkExtensions.PostgreSql");
-            }
-            else if (DatabaseType == SqlType.MySql)
-            {
-                dbServerType = Type.GetType(namespaceSqlAdaptersTEXT + ".MySql.MySqlDbServer,EFCore.BulkExtensions.MySql");
-            }
-            else if (DatabaseType == SqlType.Sqlite)
-            {
-                dbServerType = Type.GetType(namespaceSqlAdaptersTEXT + ".Sqlite.SqliteDbServer,EFCore.BulkExtensions.Sqlite");
-            }
-            else if (DatabaseType == SqlType.Oracle)
-            {
-                dbServerType = Type.GetType(namespaceSqlAdaptersTEXT + ".Oracle.OracleDbServer,EFCore.BulkExtensions.Oracle");
+                return Type.GetType($"EFCore.BulkExtensions.SqlAdapters.{typeName}.{typeName}DbServer,{assemblyName}") ??
+                    throw new InvalidOperationException("Failed to resolve type.");
             }
 
-            var dbServerInstance = Activator.CreateInstance(dbServerType ?? typeof(int));
-            _dbServer = dbServerInstance as IDbServer;
+            _dbServer = null;
+            if (Enum.IsDefined(DatabaseType))
+            {
+                var serverType = GetType(DatabaseType);
+
+                _dbServer = Activator.CreateInstance(serverType) as IDbServer;
+            }
+
         }
         return _dbServer ?? throw new InvalidOperationException("Failed to create DbServer");
     }
