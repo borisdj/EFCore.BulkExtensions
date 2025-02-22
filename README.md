@@ -15,15 +15,15 @@ Icon>> and Logo (__):
 
 **Also take a look into others packages:</br>
 Open source (MIT or cFOSS) authored [.Net libraries](https://infopedia.io/dot-net-libraries/) and other projects (@[**Infopedia.io**](https://infopedia.io/) personal blog post)
-| №  | Project                  | Type | Lic. | Description                                              |
-| -  | ------------------------ | ---- | ---- | -------------------------------------------------------- |
-| 1* | [EFCore.BulkExtensions](https://github.com/borisdj/EFCore.BulkExtensions) | .Net Lib.(nuget) | cFOSS | EF Core Bulk CRUD Ops (**Flagship** Lib) |
-| 2  | [EFCore.UtilExtensions](https://github.com/borisdj/EFCore.UtilExtensions) | .Net Lib.(nuget) | MIT | EF Core Custom Annotations and AuditInfo |
-| 3  | [EFCore.FluentApiToAnnotation](https://github.com/borisdj/EFCore.FluentApiToAnnotation) | .Net Lib.(nuget) | MIT | Converting FluentApi configuration to Annotations |
-| 4  | [ExcelIO.FastMapper](https://github.com/borisdj/ExcelIO.FastMapper) | .Net Lib.(nuget) | MIT | Excel I/O Mapper to-from Poco & .xlsx with attribute |
-| 5  | [FixedWidthParserWriter](https://github.com/borisdj/FixedWidthParserWriter) | .Net Lib.(nuget) | MIT | Reading & Writing fixed-width/flat data files |
-| 6  | [CsCodeGenerator](https://github.com/borisdj/CsCodeGenerator) | .Net Lib.(nuget) | MIT | C# code generation based on Classes and elements |
-| 7  | [CsCodeExample](https://github.com/borisdj/CsCodeExample) | C# Code | MIT | Examples of C# code in form of a simple tutorial |
+| №  | Project                  | Type | Description                                              |
+| -  | ------------------------ | ---- | -------------------------------------------------------- |
+| 1* | [EFCore.BulkExtensions](https://github.com/borisdj/EFCore.BulkExtensions) | .Net Lib.(nuget) | EF Core Bulk CRUD Ops (**Flagship** Lib) |
+| 2  | [EFCore.UtilExtensions](https://github.com/borisdj/EFCore.UtilExtensions) | .Net Lib.(nuget) | EF Core Custom Annotations and AuditInfo |
+| 3  | [EFCore.FluentApiToAnnotation](https://github.com/borisdj/EFCore.FluentApiToAnnotation) | .Net Lib.(nuget) | Converting FluentApi configuration to Annotations |
+| 4  | [ExcelIO.FastMapper](https://github.com/borisdj/ExcelIO.FastMapper) | .Net Lib.(nuget) | Excel I/O Mapper to-from Poco & .xlsx with attribute |
+| 5  | [FixedWidthParserWriter](https://github.com/borisdj/FixedWidthParserWriter) | .Net Lib.(nuget) | Reading & Writing fixed-width/flat data files |
+| 6  | [CsCodeGenerator](https://github.com/borisdj/CsCodeGenerator) | .Net Lib.(nuget) | C# code generation based on Classes and elements |
+| 7  | [CsCodeExample](https://github.com/borisdj/CsCodeExample) | C# Code | Examples of C# code in form of a simple tutorial |
 
 ## License
 BulkExtensions [licensed](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE.txt) under [**Dual License v1**](https://codis.tech/efcorebulk) (**cFOSS**: conditionallyFree OSS - [OpenSource Sustainability](https://infopedia.io/solution-to-opensource-sustainability/) & funding).  
