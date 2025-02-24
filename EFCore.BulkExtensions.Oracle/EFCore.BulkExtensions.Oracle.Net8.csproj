@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Oracle.EntityFrameworkCore" Version="8.23.70" />
+    <PackageReference Include="Oracle.EntityFrameworkCore" Version="9.23.60" />
   </ItemGroup>
 
   <ItemGroup>
