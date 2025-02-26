@@ -9,20 +9,23 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     reviewers:
       - "borisdj"
   # Maintain dependencies for .NET projects (EFCore.BulkExtensions.Tests)
   - package-ecosystem: "nuget"
     directory: "/EFCore.BulkExtensions.Tests/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
     reviewers:
       - "borisdj"
   # Maintain dependencies for .NET projects (EFCore.BulkExtensions)
   - package-ecosystem: "nuget"
-    directory: "/EFCore.BulkExtensions/"
+    directory: "/EFCore.BulkExtensions.Core/EFCore.BulkExtensions.Core.Net8.csproj"
     schedule:
-      interval: "weekly"
+      interval: "daily"
+    ignore:
+        - dependency-name: "*"
+        update-types: ["version-update:semver-minor"]
     reviewers:
       - "borisdj"
