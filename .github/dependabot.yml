@@ -12,16 +12,16 @@ updates:
       interval: "monthly"
     reviewers:
       - "borisdj"
-  # Maintain dependencies for .NET projects (EFCore.BulkExtensions.Tests)
-  - package-ecosystem: "nuget"
-    directory: "/EFCore.BulkExtensions.Tests/"
+  # Maintain dependencies for .NET projects (EFCore.BulkExtensions.SqlServer)
+  - package-ecosystem: "github-actions"
+    directory: "/"
     schedule:
-      interval: "monthly"
+      interval: "daily"
     reviewers:
       - "borisdj"
-  # Maintain dependencies for .NET projects (EFCore.BulkExtensions)
+  # Maintain dependencies for .NET projects (EFCore.BulkExtensions.SqlServer .Net8)
   - package-ecosystem: "nuget"
-    directory: "/EFCore.BulkExtensions.Core/EFCore.BulkExtensions.Core.Net8.csproj"
+    directory: "/EFCore.BulkExtensions.SqlServer/EFCore.BulkExtensions.SqlServer.Net8.csproj"
     schedule:
       interval: "daily"
     ignore:
