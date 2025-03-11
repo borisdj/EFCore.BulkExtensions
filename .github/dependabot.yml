@@ -14,7 +14,7 @@ updates:
       - "borisdj"
   # Maintain dependencies for .NET projects (EFCore.BulkExtensions.SqlServer)
   - package-ecosystem: "github-actions"
-    directory: "/"
+    directory: "/EFCore.BulkExtensions.SqlServer/EFCore.BulkExtensions.SqlServer.csproj"
     schedule:
       interval: "daily"
     reviewers:
