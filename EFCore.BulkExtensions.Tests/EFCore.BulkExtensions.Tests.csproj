@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>    
     <TargetFramework>net9.0</TargetFramework>
     <LangVersion>latest</LangVersion>
@@ -20,7 +20,7 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite" Version="9.0.3" />
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql.NetTopologySuite" Version="9.0.0-preview.2.efcore.9.0.0" />
     <PackageReference Include="Oracle.EntityFrameworkCore" Version="9.23.60" />
-    <PackageReference Include="RT.Comb" Version="4.0.1" />
+    <PackageReference Include="RT.Comb" Version="4.0.2" />
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.10" />
     <PackageReference Include="StrongNamer" Version="0.2.5" PrivateAssets="All" />
     <PackageReference Include="xunit" Version="2.9.3" />
