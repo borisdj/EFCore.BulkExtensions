@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>    
     <TargetFramework>net8.0</TargetFramework>
     <LangVersion>latest</LangVersion>
@@ -9,7 +9,7 @@
   <ItemGroup>
     <PackageReference Include="DelegateDecompiler.EntityFrameworkCore5" Version="0.34.1" />
     <PackageReference Include="FastMember" Version="1.5.0" />
-    <PackageReference Include="HotChocolate.Types" Version="15.0.3" />
+    <PackageReference Include="HotChocolate.Types" Version="15.1.3" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.NetTopologySuite" Version="9.0.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" Version="9.0.2" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.2" />
