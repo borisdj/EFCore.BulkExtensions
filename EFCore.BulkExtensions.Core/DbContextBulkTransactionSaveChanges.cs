@@ -59,7 +59,7 @@ internal static class DbContextBulkTransactionSaveChanges
             .Where(x => x.PrincipalEntityType != e)
             .Select(x => x.PrincipalEntityType);
 
-        // Topoligicaly sort insert operations by FK
+        // Topologically sort insert operations by FK
         var added = entriesGroupedByEntity.Where(x => x.State == EntityState.Added);
         var addedLookup = added.ToLookup(x => x.EntityType);
 #if NET8_0
@@ -68,7 +68,7 @@ internal static class DbContextBulkTransactionSaveChanges
         var sortedAdded = added;
 #endif
 
-        // Topoligicaly sort delete operations by reverse FK
+        // Topologically sort delete operations by reverse FK
         var deleted = entriesGroupedByEntity.Where(x => x.State == EntityState.Deleted);
         var deletedLookup = deleted.ToLookup(x => x.EntityType);
 #if NET8_0
