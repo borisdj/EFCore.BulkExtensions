@@ -7,7 +7,7 @@ namespace EFCore.BulkExtensions;
 /// <summary>
 /// This class helps to extract properties of the incoming type which have default sql values
 /// </summary>
-internal static class GenericsHelpers
+public static class GenericsHelpers
 {
     internal static IEnumerable<string> GetPropertiesDefaultValue<T>(this T value, Type type, TableInfo tableInfo) where T : class
     {
@@ -46,7 +46,10 @@ internal static class GenericsHelpers
         return result;
     }
 
-    internal static bool IsDefaultValue(object? value)
+    /// <summary>
+    /// Checks is DefaultValue
+    /// </summary>
+    public static bool IsDefaultValue(object? value)
     {
         if (value == null)
         {
