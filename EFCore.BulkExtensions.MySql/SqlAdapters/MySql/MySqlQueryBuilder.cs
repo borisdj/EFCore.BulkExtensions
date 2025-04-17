@@ -245,7 +245,7 @@ public class MySqlQueryBuilder : SqlQueryBuilder
 
         var uniqueConstrainName = GetUniqueConstrainName(tableInfo);
 
-        var q = $@"SELECT DISTINCT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE " +
+        var q = $@"SELECT DISTINCT COUNT(*) FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE " +
                 $@"CONSTRAINT_TYPE = 'UNIQUE' AND CONSTRAINT_NAME = '{uniqueConstrainName}';";
         return q;
     }
