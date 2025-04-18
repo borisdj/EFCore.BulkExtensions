@@ -367,7 +367,7 @@ public class MySqlAdapter : ISqlOperationsAdapter
                     while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
                     {
                         Int64.TryParse(reader[0].ToString(), out long result);
-                        hasUniqueConstrain = result == 1;
+                        hasUniqueConstrain = result > 0;
                     }
                 }
             }
@@ -379,7 +379,7 @@ public class MySqlAdapter : ISqlOperationsAdapter
                     while (reader.Read())
                     {
                         Int64.TryParse(reader[0].ToString(), out long result);
-                        hasUniqueConstrain = result == 1;
+                        hasUniqueConstrain = result > 0;
                     }
                 }
             }
