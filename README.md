@@ -17,7 +17,7 @@ Icon>> and Logo (__):
 Open source (MIT or cFOSS) authored [.Net libraries](https://infopedia.io/dot-net-libraries/) and other projects (@[**Infopedia.io**](https://infopedia.io/) personal blog post)
 | №  | Project                  | Type | Description                                              |
 | -  | ------------------------ | ---- | -------------------------------------------------------- |
-| 1* | [EFCore.BulkExtensions](https://github.com/borisdj/EFCore.BulkExtensions) | .Net_Lib(ngt) cF | EF Core Bulk CRUD Ops (**Flagship** Lib) |
+| 1* | [EFCore.BulkExtensions](https://github.com/borisdj/EFCore.BulkExtensions) | .Net_Lib(ngt) cF | EF Core Bulk CRUD Ops (**Flagship** Library) |
 | 2  | [EFCore.UtilExtensions](https://github.com/borisdj/EFCore.UtilExtensions) | .Net_Lib(ngt) MIT | EF Core Custom Annotations and AuditInfo |
 | 3  | [EFCore.FluentApiToAnnotation](https://github.com/borisdj/EFCore.FluentApiToAnnotation) | .Net_Lib(ngt) MIT | Converting FluentApi configuration to Annotations |
 | 4  | [ExcelIO.FastMapper](https://github.com/borisdj/ExcelIO.FastMapper) | .Net_Lib(ngt) MIT | Excel I/O Mapper to-from Poco & .xlsx + attribute |
