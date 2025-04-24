@@ -20,10 +20,10 @@ Open source (MIT or cFOSS) authored [.Net libraries](https://infopedia.io/dot-ne
 | 1* | [EFCore.BulkExtensions](https://github.com/borisdj/EFCore.BulkExtensions) | .Net_Lib(ngt) cF | EF Core Bulk CRUD Ops (**Flagship** Lib) |
 | 2  | [EFCore.UtilExtensions](https://github.com/borisdj/EFCore.UtilExtensions) | .Net_Lib(ngt) MIT | EF Core Custom Annotations and AuditInfo |
 | 3  | [EFCore.FluentApiToAnnotation](https://github.com/borisdj/EFCore.FluentApiToAnnotation) | .Net_Lib(ngt) MIT | Converting FluentApi configuration to Annotations |
-| 4  | [ExcelIO.FastMapper](https://github.com/borisdj/ExcelIO.FastMapper) | .Net_Lib(ngt) MIT | Excel I/O Mapper to-from Poco & .xlsx with attribute |
+| 4  | [ExcelIO.FastMapper](https://github.com/borisdj/ExcelIO.FastMapper) | .Net_Lib(ngt) MIT | Excel I/O Mapper to-from Poco & .xlsx + attribute |
 | 5  | [FixedWidthParserWriter](https://github.com/borisdj/FixedWidthParserWriter) | .Net_Lib(ngt) MIT | Reading & Writing fixed-width/flat data files |
 | 6  | [CsCodeGenerator](https://github.com/borisdj/CsCodeGenerator) | .Net_Lib(ngt) MIT | C# code generation based on Classes and elements |
-| 7  | [CsCodeExample](https://github.com/borisdj/CsCodeExample) | C# Code ---- MIT | Examples of C# code in form of a simple tutorial |
+| 7  | [CsCodeExample](https://github.com/borisdj/CsCodeExample) | C# Code --- MIT | Examples of C# code in form of a simple tutorial |
 
 ## License
 BulkExtensions [licensed](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE.txt) under [**Dual License**](https://codis.tech/efcorebulk) (**cFOSS**: *conditionallyFree* OSS - [**OpenSource Sustainability**](https://infopedia.io/solution-to-opensource-sustainability/) & funding).  
