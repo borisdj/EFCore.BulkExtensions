@@ -23,7 +23,7 @@ Open source (MIT or cFOSS) authored [.Net libraries](https://infopedia.io/dot-ne
 | 4  | [ExcelIO.FastMapper](https://github.com/borisdj/ExcelIO.FastMapper) | .Net_Lib(ngt) MIT | Excel I/O Mapper to-from Poco & .xlsx + attribute |
 | 5  | [FixedWidthParserWriter](https://github.com/borisdj/FixedWidthParserWriter) | .Net_Lib(ngt) MIT | Reading & Writing fixed-width/flat data files |
 | 6  | [CsCodeGenerator](https://github.com/borisdj/CsCodeGenerator) | .Net_Lib(ngt) MIT | C# code generation based on Classes and elements |
-| 7  | [CsCodeExample](https://github.com/borisdj/CsCodeExample) | C# Code --- MIT | Examples of C# code in form of a simple tutorial |
+| 7  | [CsCodeExample](https://github.com/borisdj/CsCodeExample) | C# Code ---  MIT | Examples of C# code in form of a simple tutorial |
 
 ## License
 BulkExtensions [licensed](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE.txt) under [**Dual License**](https://codis.tech/efcorebulk) (**cFOSS**: *conditionallyFree* OSS - [**OpenSource Sustainability**](https://infopedia.io/solution-to-opensource-sustainability/) & funding).  
