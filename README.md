@@ -28,7 +28,7 @@ Open source (MIT or cFOSS) authored [.Net libraries](https://infopedia.io/dot-ne
 ## License
 BulkExtensions [licensed](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/LICENSE.txt) under [**Dual License**](https://codis.tech/efcorebulk) (**cFOSS**: *conditionallyFree* OSS - [**OpenSource Sustainability**](https://infopedia.io/solution-to-opensource-sustainability/) & funding).  
 If you do not meet criteria for free usage of software with community license then you have to buy commercial one.  
-If eligible for free usage but still need  active support, consider purchasing Starter Lic.  
+When eligible for free usage but still need  active support, consider purchasing Starter Lic.  
 
 ## Support
 If you find this project useful you can mark it by leaving a Github **Star** :star:  
@@ -53,8 +53,8 @@ Instead Test options are  SqlServer(Developer or Express), LocalDb(if alongside 
 
 ## Installation
 Available on [![NuGet](https://img.shields.io/nuget/v/EFCore.BulkExtensions.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/)  [![Downloads](https://img.shields.io/nuget/dt/EFCore.BulkExtensions.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/)  
-Main nuget is for all Databases, and specific ones with single provider for those who need small packages.  
 Package manager console command to install: *Install-Package EFCore.BulkExtensions*  
+Main nuget is for all Databases, and specific ones with single provider for those who need small size packages.  
 Specific ones have adapter suffix: MainNuget + *.SqlServer/PostgreSql/MySql/Oracle/Sqlite* 
 (
 [![](https://img.shields.io/static/v1?label=&message=MS&color=darkred)](https://www.nuget.org/packages/EFCore.BulkExtensions.SqlServer)
@@ -76,7 +76,7 @@ Its assembly is [Strong-Named](https://docs.microsoft.com/en-us/dotnet/standard/
 | 1.x   | NetStandard 1.4 | EF Core 1 | NetCore(1.0+)                   |
 
 Supports follows official [.Net lifecycle](https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core), currently v.9 as latest and v.8(LTS).  
-**Currently *Pomelo.EntityFrameworkCore.MySql* still does not have full Release for EF9 so its nuget is published as 'rc' and Main package as 9.0.0-rc.1 (mysql adapter is ommited from from main release version 9.0.1)
+**At the moment *Pomelo.EntityFrameworkCore.MySql* still does not have full Release for EF9 so its nuget is published as 'rc' and Main package as 9.0.0-rc.1 (mysql adapter is ommited from main release version 9.0.1)
 
 ## Usage
 It's pretty simple and straightforward.  
@@ -231,8 +231,8 @@ PROPERTY : DEFAULTvalue
 METHOD: SetSynchronizeFilter<T>
         SetSynchronizeSoftDelete<T>
 ```
-If we want to change defaults, BulkConfig should be added explicitly with one or more bool properties set to true, and/or int props like **BatchSize** to different number.   Config also has DelegateFunc for setting *Underlying-Connection/Transaction*, e.g. in UnderlyingTest.  
-When doing update we can chose to exclude one or more properties by adding their names into **PropertiesToExclude**, or if we need to update less then half column then **PropertiesToInclude** can be used. Setting both Lists are not allowed.
+If we want to change defaults, BulkConfig should be added explicitly with one or more bool properties set tocustom value. Config also has DelegateFunc for setting *Underlying-Connection/Transaction*, e.g. in UnderlyingTest.  
+When doing update we can chose to exclude one or more properties by adding their names into **PropertiesToExclude**, or if we need to update less then half column then **PropertiesToInclude** can be used. Setting both Lists is not allowed.
 
 When using the **BulkInsert_/OrUpdate** methods, you may also specify the **PropertiesToIncludeOnCompare** and **PropertiesToExcludeOnCompare** properties (only for SqlServer). By adding a column name to the *PropertiesToExcludeOnCompare*, will allow it to be inserted and updated but will not update the row if any of the other columns in that row did not change. For example, if you are importing bulk data and want to remove from comparison an internal *CreateDate* or *UpdateDate*, you add those columns to the *PropertiesToExcludeOnCompare*.  
 Another option that may be used in the same scenario are the **PropertiesToIncludeOnUpdate** and **PropertiesToExcludeOnUpdate** properties. These properties will allow you to specify insert-only columns such as *CreateDate* and *CreatedBy*.
@@ -364,13 +364,13 @@ For **parallelism**, important notes are:
 -Import data to a single unindexed table with [table level lock](https://learn.microsoft.com/en-us/previous-versions/sql/sql-server-2005/ms186341(v=sql.90))  
 
 Library supports [Global Query Filters](https://docs.microsoft.com/en-us/ef/core/querying/filters) and [Value Conversions](https://docs.microsoft.com/en-us/ef/core/modeling/value-conversions) as well.  
-Additionally BatchUpdate and named Property works with [EnumToString Conversion](https://github.com/borisdj/EFCore.BulkExtensions/issues/397)  
+Additionally BatchUpdate and named Property works with [EnumToString Conversion](https://github.com/borisdj/EFCore.BulkExtensions/issues/397).  
 It can map [OwnedTypes](https://docs.microsoft.com/en-us/ef/core/modeling/owned-entities), also next are links with info how to achieve 
 [NestedOwnedTypes](https://github.com/borisdj/EFCore.BulkExtensions/issues/167#issuecomment-476737959) and 
-[OwnedInSeparateTable](https://github.com/borisdj/EFCore.BulkExtensions/issues/114#issuecomment-803462928)  
-On PG when Enum is in OwnedType it needs to have [Converter explicitly](https://github.com/borisdj/EFCore.BulkExtensions/issues/1108) configured in *OnModelCreating*  
+[OwnedInSeparateTable](https://github.com/borisdj/EFCore.BulkExtensions/issues/114#issuecomment-803462928).  
+On PG when Enum is in OwnedType it needs to have [Converter explicitly](https://github.com/borisdj/EFCore.BulkExtensions/issues/1108) configured in *OnModelCreating*.  
 
-Table splitting is somewhat specific but could be configured in the way [Set TableSplit](https://github.com/borisdj/EFCore.BulkExtensions/issues/352#issuecomment-803674404)  
+Table splitting is somewhat specific but could be configured in the way [Set TableSplit](https://github.com/borisdj/EFCore.BulkExtensions/issues/352#issuecomment-803674404).  
 With [Computed](https://docs.microsoft.com/en-us/ef/core/modeling/relational/computed-columns) and [Timestamp](https://docs.microsoft.com/en-us/ef/core/modeling/concurrency) Columns, it will work in a way that they are automatically excluded from Insert. And when combined with *SetOutputIdentity* they will be Selected.  
 [Spatial](https://docs.microsoft.com/en-us/sql/relational-databases/spatial/spatial-data-types-overview?view=sql-server-ver15) types, like Geometry, are also supported and if an Entity has one, clause *EXIST ... EXCEPT* is skipped because it's not comparable.  
 Performance for bulk ops measured with `ActivitySources` named: '*BulkExecute*' (tags: '*operationType*', '*entitiesCount*')  
