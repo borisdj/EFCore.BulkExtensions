@@ -7,7 +7,7 @@
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <NoWarn>$(NoWarn);NU5128</NoWarn>
 	<NuGetAudit>false</NuGetAudit>
-    <PackageId>Squidex.EFCore.BulkExtensions</PackageId>
+    <PackageId>EFCore.BulkExtensions</PackageId>
     <IsPackable>true</IsPackable>
   </PropertyGroup>
   <ItemGroup>

@@ -12,17 +12,17 @@ namespace EFCore.BulkExtensions;
 
 internal static class DbContextBulkTransactionGraphUtil
 {
-    public static void ExecuteWithGraph(DbContext context, IEnumerable<object> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal>? progress)
+    public static void ExecuteWithGraph(BulkContext context, IEnumerable<object> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal>? progress)
     {
         ExecuteWithGraphAsync(context, entities, operationType, bulkConfig, progress, isAsync: false, CancellationToken.None).GetAwaiter().GetResult();
     }
 
-    public static async Task ExecuteWithGraphAsync(DbContext context, IEnumerable<object> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal>? progress, CancellationToken cancellationToken)
+    public static async Task ExecuteWithGraphAsync(BulkContext context, IEnumerable<object> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal>? progress, CancellationToken cancellationToken)
     {
         await ExecuteWithGraphAsync(context, entities, operationType, bulkConfig, progress, isAsync: true, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async Task ExecuteWithGraphAsync(DbContext context, IEnumerable<object> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken)
+    private static async Task ExecuteWithGraphAsync(BulkContext context, IEnumerable<object> entities, OperationType operationType, BulkConfig bulkConfig, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken)
     {
         if (operationType != OperationType.Insert
             && operationType != OperationType.InsertOrUpdate
@@ -31,7 +31,7 @@ internal static class DbContextBulkTransactionGraphUtil
             throw new InvalidBulkConfigException($"{nameof(BulkConfig)}.{nameof(BulkConfig.IncludeGraph)} only supports Insert or Update operations.");
 
         // Sqlite bulk merge adapter does not support multiple objects of the same type with a zero value primary key
-        if (SqlAdaptersMapping.GetDatabaseType(context) == SqlType.Sqlite)
+        if (context.Server.Type == SqlType.Sqlite)
             throw new NotSupportedException("Sqlite is not currently supported due to its BulkInsert implementation.");
 
         bulkConfig.PreserveInsertOrder = true; // Required for SetOutputIdentity ('true' is default but here explicitly assigned again in case it was changed to 'false' in BulkConfing)
@@ -40,14 +40,14 @@ internal static class DbContextBulkTransactionGraphUtil
         // If this is set to false, wont' be able to support some code first model types as EFCore uses shadow properties when a relationship's foreign keys arent explicitly defined
         bulkConfig.EnableShadowProperties = true;
 
-        var graphNodes = GraphUtil.GetTopologicallySortedGraph(context, entities);
+        var graphNodes = GraphUtil.GetTopologicallySortedGraph(context.DbContext, entities);
 
         if (graphNodes == null)
             return;
 
         // Inserting an entity graph must be done within a transaction otherwise the database could end up in a bad state
-        var hasExistingTransaction = context.Database.CurrentTransaction != null || Transaction.Current != null;
-        var transaction = hasExistingTransaction ? null : context.Database.CurrentTransaction ?? (isAsync ? await context.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false) : context.Database.BeginTransaction());
+        var hasExistingTransaction = context.DbContext.Database.CurrentTransaction != null || Transaction.Current != null;
+        var transaction = hasExistingTransaction ? null : context.DbContext.Database.CurrentTransaction ?? (isAsync ? await context.DbContext.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false) : context.DbContext.Database.BeginTransaction());
 
         try
         {
@@ -58,7 +58,7 @@ internal static class DbContextBulkTransactionGraphUtil
             foreach (var graphNodeGroup in graphNodesGroupedByType)
             {
                 var entityClrType = graphNodeGroup.Key;
-                var entityType = context.Model.FindEntityType(entityClrType) ?? throw new ArgumentException($"Unable to determine EntityType from given type {entityClrType.Name}");
+                var entityType = context.DbContext.Model.FindEntityType(entityClrType) ?? throw new ArgumentException($"Unable to determine EntityType from given type {entityClrType.Name}");
 
                 if (OwnedTypeUtil.IsOwnedInSameTableAsOwner(entityType))
                 {
@@ -67,7 +67,7 @@ internal static class DbContextBulkTransactionGraphUtil
 
                 // It is possible the object graph contains duplicate entities (by primary key) but the entities are different object instances in memory.
                 // This an happen when deserializing a nested JSON tree for example. So filter out the duplicates.
-                var entitiesToAction = GetUniqueEntities(context, graphNodeGroup.Select(y => y.Entity)).ToList();
+                var entitiesToAction = GetUniqueEntities(context.DbContext, graphNodeGroup.Select(y => y.Entity)).ToList();
                 var tableInfo = TableInfo.CreateInstance(context, entityClrType, entitiesToAction, operationType, bulkConfig);
 
                 if (isAsync)
@@ -82,7 +82,7 @@ internal static class DbContextBulkTransactionGraphUtil
                 UpdateStats(stats, bulkConfig);
 
                 // Set the foreign keys for dependents so they may be inserted on the next loop
-                var dependentsOfSameType = SetForeignKeysForDependentsAndYieldSameTypeDependents(context, entityClrType, graphNodeGroup).ToList();
+                var dependentsOfSameType = SetForeignKeysForDependentsAndYieldSameTypeDependents(context.DbContext, entityClrType, graphNodeGroup).ToList();
 
                 // If there are any dependents of the same type (parent child relationship), then save those dependent entities again to commit the fk values
                 if (dependentsOfSameType.Any())

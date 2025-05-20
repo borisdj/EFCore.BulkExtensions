@@ -4,7 +4,7 @@
     <Title>EFCore.BulkExtensions.Core</Title>
     <RootNamespace>EFCore.BulkExtensions</RootNamespace>
     <Description>EntityFramework .Net EFCore EF Core Bulk Batch Extensions for Insert Update Delete Read (CRUD) operations</Description>
-    <PackageId>Squidex.EFCore.BulkExtensions.Core</PackageId>
+    <PackageId>EFCore.BulkExtensions.Core</PackageId>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="8.0.15" />

@@ -22,7 +22,7 @@ public class BatchUpdateCreateBodyData
     /// Creates an instance of BatchUpdateCreateBodyData used to provide a config for batch updates and creations
     /// </summary>
     /// <param name="baseSql"></param>
-    /// <param name="dbContext"></param>
+    /// <param name="context"></param>
     /// <param name="innerParameters"></param>
     /// <param name="query"></param>
     /// <param name="rootType"></param>
@@ -30,7 +30,7 @@ public class BatchUpdateCreateBodyData
     /// <param name="updateExpression"></param>
     public BatchUpdateCreateBodyData(
         string baseSql,
-        DbContext dbContext,
+        BulkContext context,
         IEnumerable<DbParameter> innerParameters,
         IQueryable query,
         Type rootType,
@@ -38,8 +38,7 @@ public class BatchUpdateCreateBodyData
         LambdaExpression updateExpression)
     {
         BaseSql = baseSql;
-        DatabaseType = SqlAdaptersMapping.GetDatabaseType(dbContext);
-        DbContext = dbContext;
+        Context = context;
         Query = query;
         RootInstanceParameterName = updateExpression.Parameters?.FirstOrDefault()?.Name;
         RootType = rootType;
@@ -51,7 +50,7 @@ public class BatchUpdateCreateBodyData
         _tableInfoBulkConfig = new BulkConfig();
         _tableInfoLookup = new Dictionary<Type, TableInfo>();
 
-        var tableInfo = TableInfo.CreateInstance(dbContext, rootType, Array.Empty<object>(), OperationType.Read, _tableInfoBulkConfig);
+        var tableInfo = TableInfo.CreateInstance(context, rootType, Array.Empty<object>(), OperationType.Read, _tableInfoBulkConfig);
         _tableInfoLookup.Add(rootType, tableInfo);
 
         SqlParameters = new List<DbParameter>(innerParameters);
@@ -64,8 +63,9 @@ public class BatchUpdateCreateBodyData
 
 #pragma warning disable CS1591 // No need for XML comments here.
     public string BaseSql { get; }
-    public SqlType DatabaseType { get; }
-    public DbContext DbContext { get; }
+    public SqlType DatabaseType => Context.Server.Type;
+    public BulkContext Context { get; }
+    public DbContext DbContext => Context.DbContext;
     public IQueryable Query { get; }
     public string? RootInstanceParameterName { get; }
     public Type RootType { get; }
@@ -82,7 +82,7 @@ public class BatchUpdateCreateBodyData
             return tableInfo;
         }
 
-        tableInfo = TableInfo.CreateInstance(DbContext, typeToLookup, Array.Empty<object>(), OperationType.Read, _tableInfoBulkConfig);
+        tableInfo = TableInfo.CreateInstance(Context, typeToLookup, Array.Empty<object>(), OperationType.Read, _tableInfoBulkConfig);
         if (tableInfo != null)
         {
             _tableInfoLookup.Add(typeToLookup, tableInfo);

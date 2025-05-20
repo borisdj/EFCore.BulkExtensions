@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -20,7 +19,7 @@ public interface ISqlOperationsAdapter
     /// <param name="entities"></param>
     /// <param name="tableInfo"></param>
     /// <param name="progress"></param>
-    void Insert<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress);
+    void Insert<T>(BulkContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress);
 
     /// <summary>
     /// Inserts a list of entities
@@ -32,7 +31,7 @@ public interface ISqlOperationsAdapter
     /// <param name="tableInfo"></param>
     /// <param name="progress"></param>
     /// <param name="cancellationToken"></param>
-    Task InsertAsync<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress, CancellationToken cancellationToken);
+    Task InsertAsync<T>(BulkContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress, CancellationToken cancellationToken);
 
     /// <summary>
     /// Merges a list of entities with a table source
@@ -44,7 +43,7 @@ public interface ISqlOperationsAdapter
     /// <param name="tableInfo"></param>
     /// <param name="operationType"></param>
     /// <param name="progress"></param>
-    void Merge<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress) where T : class;
+    void Merge<T>(BulkContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress) where T : class;
 
     /// <summary>
     /// Merges a list of entities with a table source
@@ -57,7 +56,7 @@ public interface ISqlOperationsAdapter
     /// <param name="operationType"></param>
     /// <param name="progress"></param>
     /// <param name="cancellationToken"></param>
-    Task MergeAsync<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress, CancellationToken cancellationToken) where T : class;
+    Task MergeAsync<T>(BulkContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress, CancellationToken cancellationToken) where T : class;
 
     /// <summary>
     /// Reads a list of entities from database
@@ -68,7 +67,7 @@ public interface ISqlOperationsAdapter
     /// <param name="entities"></param>
     /// <param name="tableInfo"></param>
     /// <param name="progress"></param>
-    void Read<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress) where T : class;
+    void Read<T>(BulkContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress) where T : class;
 
     /// <summary>
     /// Reads a list of entities from database
@@ -80,14 +79,14 @@ public interface ISqlOperationsAdapter
     /// <param name="tableInfo"></param>
     /// <param name="progress"></param>
     /// <param name="cancellationToken"></param>
-    Task ReadAsync<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress, CancellationToken cancellationToken) where T : class;
+    Task ReadAsync<T>(BulkContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress, CancellationToken cancellationToken) where T : class;
 
     /// <summary>
     /// Truncates a table
     /// </summary>
     /// <param name="context"></param>
     /// <param name="tableInfo"></param>
-    void Truncate(DbContext context, TableInfo tableInfo);
+    void Truncate(BulkContext context, TableInfo tableInfo);
 
     /// <summary>
     /// Truncates a table
@@ -95,7 +94,7 @@ public interface ISqlOperationsAdapter
     /// <param name="context"></param>
     /// <param name="tableInfo"></param>
     /// <param name="cancellationToken"></param>
-    Task TruncateAsync(DbContext context, TableInfo tableInfo, CancellationToken cancellationToken);
+    Task TruncateAsync(BulkContext context, TableInfo tableInfo, CancellationToken cancellationToken);
 
     /// <summary>
     /// Sets provider specific config in TableInfo
@@ -103,5 +102,5 @@ public interface ISqlOperationsAdapter
     /// <param name="context"></param>
     /// <param name="tableInfo"></param>
     /// <returns></returns>
-    virtual string? ReconfigureTableInfo(DbContext context, TableInfo tableInfo) { return null; }
+    virtual string? ReconfigureTableInfo(BulkContext context, TableInfo tableInfo) { return null; }
 }

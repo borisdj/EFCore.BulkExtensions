@@ -16,47 +16,45 @@ namespace EFCore.BulkExtensions.SqlAdapters.Sqlite;
 /// <inheritdoc/>
 public class SqliteAdapter : ISqlOperationsAdapter
 {
-    private SqliteQueryBuilder ProviderSqlQueryBuilder => new SqliteQueryBuilder();
-
     /// <inheritdoc/>
     #region Methods
     // Insert
-    public void Insert<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress)
+    public void Insert<T>(BulkContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress)
     {
         InsertAsync(context, type, entities, tableInfo, progress, isAsync: false, CancellationToken.None).GetAwaiter().GetResult();
     }
 
-
     /// <inheritdoc/>
-    public async Task InsertAsync<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress, CancellationToken cancellationToken)
+    public async Task InsertAsync<T>(BulkContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress, CancellationToken cancellationToken)
     {
         await InsertAsync(context, type, entities, tableInfo, progress, isAsync: true, cancellationToken).ConfigureAwait(false);
     }
     
     /// <inheritdoc/>
-    public static async Task InsertAsync<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken)
+    public static async Task InsertAsync<T>(BulkContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken)
     {
-        SqliteConnection? connection = (SqliteConnection?)SqlAdaptersMapping.DbServer(context).DbConnection;
+        var dbContext = context.DbContext;
+        SqliteConnection? connection = (SqliteConnection?)context.DbConnection;
         if (connection == null)
         {
-            connection = isAsync ? await OpenAndGetSqliteConnectionAsync(context, cancellationToken).ConfigureAwait(false)
-                                 : OpenAndGetSqliteConnection(context);
+            connection = isAsync ? await OpenAndGetSqliteConnectionAsync(dbContext, cancellationToken).ConfigureAwait(false)
+                                 : OpenAndGetSqliteConnection(dbContext);
         }
         bool doExplicitCommit = false;
 
         try
         {
-            if (context.Database.CurrentTransaction == null)
+            if (dbContext.Database.CurrentTransaction == null)
             {
                 //context.Database.UseTransaction(connection.BeginTransaction());
                 doExplicitCommit = true;
             }
 
-            SqliteTransaction? transaction = (SqliteTransaction?)SqlAdaptersMapping.DbServer(context).DbTransaction;
+            SqliteTransaction? transaction = (SqliteTransaction?)context.DbTransaction;
             if (transaction == null)
             {
                 var dbTransaction = doExplicitCommit ? connection.BeginTransaction()
-                                                     : context.Database.CurrentTransaction?.GetUnderlyingTransaction(tableInfo.BulkConfig);
+                                                     : dbContext.Database.CurrentTransaction?.GetUnderlyingTransaction(tableInfo.BulkConfig);
 
                 transaction = (SqliteTransaction?)dbTransaction;
             }
@@ -65,14 +63,14 @@ public class SqliteAdapter : ISqlOperationsAdapter
                 doExplicitCommit = false;
             }
 
-            var command = GetSqliteCommand(context, type, entities, tableInfo, connection, transaction);
+            var command = GetSqliteCommand(dbContext, type, entities, tableInfo, connection, transaction);
 
             type = tableInfo.HasAbstractList ? entities.ElementAt(0)!.GetType() : type;
             int rowsCopied = 0;
 
             foreach (var item in entities)
             {
-                LoadSqliteValues(tableInfo, item, command, context);
+                LoadSqliteValues(tableInfo, item, command, dbContext);
                 if (isAsync)
                 {
                     await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
@@ -94,11 +92,11 @@ public class SqliteAdapter : ISqlOperationsAdapter
             {
                 if (isAsync)
                 {
-                    await context.Database.CloseConnectionAsync().ConfigureAwait(false);
+                    await dbContext.Database.CloseConnectionAsync().ConfigureAwait(false);
                 }
                 else
                 {
-                    context.Database.CloseConnection();
+                    dbContext.Database.CloseConnection();
                 }
             }
         }
@@ -106,43 +104,44 @@ public class SqliteAdapter : ISqlOperationsAdapter
 
     // Merge
     /// <inheritdoc/>
-    public void Merge<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress) where T : class
+    public void Merge<T>(BulkContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress) where T : class
     {
         MergeAsync(context, type, entities, tableInfo, operationType, progress, isAsync: false, CancellationToken.None).GetAwaiter().GetResult();
     }
 
     /// <inheritdoc/>
-    public async Task MergeAsync<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress, CancellationToken cancellationToken) where T : class
+    public async Task MergeAsync<T>(BulkContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress, CancellationToken cancellationToken) where T : class
     {
         await MergeAsync(context, type, entities, tableInfo, operationType, progress, isAsync: true, cancellationToken).ConfigureAwait(false);
     }
     
     /// <inheritdoc/>
-    protected static async Task MergeAsync<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken) where T : class
+    protected static async Task MergeAsync<T>(BulkContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken) where T : class
     {
-        SqliteConnection connection = isAsync ? await OpenAndGetSqliteConnectionAsync(context, cancellationToken).ConfigureAwait(false)
-                                                    : OpenAndGetSqliteConnection(context);
+        var dbContext = context.DbContext;
+        SqliteConnection connection = isAsync ? await OpenAndGetSqliteConnectionAsync(dbContext, cancellationToken).ConfigureAwait(false)
+                                                    : OpenAndGetSqliteConnection(dbContext);
         bool doExplicitCommit = false;
 
         try
         {
-            if (context.Database.CurrentTransaction == null)
+            if (dbContext.Database.CurrentTransaction == null)
             {
                 //context.Database.UseTransaction(connection.BeginTransaction());
                 doExplicitCommit = true;
             }
             var dbTransaction = doExplicitCommit ? connection.BeginTransaction()
-                                                 : context.Database.CurrentTransaction?.GetUnderlyingTransaction(tableInfo.BulkConfig);
+                                                 : dbContext.Database.CurrentTransaction?.GetUnderlyingTransaction(tableInfo.BulkConfig);
             var transaction = (SqliteTransaction?)dbTransaction;
 
-            var command = GetSqliteCommand(context, type, entities, tableInfo, connection, transaction);
+            var command = GetSqliteCommand(dbContext, type, entities, tableInfo, connection, transaction);
 
             type = tableInfo.HasAbstractList ? entities.ElementAt(0).GetType() : type;
             int rowsCopied = 0;
 
             foreach (var item in entities)
             {
-                LoadSqliteValues(tableInfo, item, command, context);
+                LoadSqliteValues(tableInfo, item, command, dbContext);
                 if (isAsync)
                 {
                     await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
@@ -171,11 +170,11 @@ public class SqliteAdapter : ISqlOperationsAdapter
             {
                 if (isAsync)
                 {
-                    await context.Database.ExecuteSqlRawAsync(tableInfo.BulkConfig.CustomSqlPostProcess, cancellationToken).ConfigureAwait(false);
+                    await dbContext.Database.ExecuteSqlRawAsync(tableInfo.BulkConfig.CustomSqlPostProcess, cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
-                    context.Database.ExecuteSqlRaw(tableInfo.BulkConfig.CustomSqlPostProcess);
+                    dbContext.Database.ExecuteSqlRaw(tableInfo.BulkConfig.CustomSqlPostProcess);
                 }
             }
 
@@ -188,47 +187,48 @@ public class SqliteAdapter : ISqlOperationsAdapter
         {
             if (isAsync)
             {
-                await context.Database.CloseConnectionAsync().ConfigureAwait(false);
+                await dbContext.Database.CloseConnectionAsync().ConfigureAwait(false);
             }
             else
             {
-                context.Database.CloseConnection();
+                dbContext.Database.CloseConnection();
             }
         }
     }
 
     // Read
     /// <inheritdoc/>
-    public void Read<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress) where T : class
+    public void Read<T>(BulkContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress) where T : class
     {
         ReadAsync(context, type, entities, tableInfo, progress, isAsync: false, CancellationToken.None).GetAwaiter().GetResult();
     }
 
     /// <inheritdoc/>
-    public async Task ReadAsync<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress, CancellationToken cancellationToken) where T : class
+    public async Task ReadAsync<T>(BulkContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress, CancellationToken cancellationToken) where T : class
     {
         await ReadAsync(context, type, entities, tableInfo, progress, isAsync: true, cancellationToken).ConfigureAwait(false);
     }
     
     /// <inheritdoc/>
-    protected static async Task ReadAsync<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken) where T : class
+    protected static async Task ReadAsync<T>(BulkContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken) where T : class
     {
-        SqliteConnection connection = isAsync ? await OpenAndGetSqliteConnectionAsync(context, cancellationToken).ConfigureAwait(false)
-                                                    : OpenAndGetSqliteConnection(context);
+        var dbContext = context.DbContext;
+        SqliteConnection connection = isAsync ? await OpenAndGetSqliteConnectionAsync(dbContext, cancellationToken).ConfigureAwait(false)
+                                                    : OpenAndGetSqliteConnection(dbContext);
         bool doExplicitCommit = false;
         bool tempTableCreated = false;
         SqliteTransaction? transaction = null;
         SqliteCommand? command = null;
         try
         {
-            if (context.Database.CurrentTransaction == null)
+            if (dbContext.Database.CurrentTransaction == null)
             {
                 //context.Database.UseTransaction(connection.BeginTransaction());
                 doExplicitCommit = true;
             }
 
             transaction = doExplicitCommit ? connection.BeginTransaction()
-                                           : (SqliteTransaction?)context.Database.CurrentTransaction?.GetUnderlyingTransaction(tableInfo.BulkConfig);
+                                           : (SqliteTransaction?)dbContext.Database.CurrentTransaction?.GetUnderlyingTransaction(tableInfo.BulkConfig);
 
             command = connection.CreateCommand();
             command.Transaction = transaction;
@@ -247,8 +247,8 @@ public class SqliteAdapter : ISqlOperationsAdapter
 
             tableInfo.BulkConfig.OperationType = OperationType.Insert;
             tableInfo.InsertToTempTable = true;
-            SqlAdaptersMapping.DbServer(context).DbConnection = connection;
-            SqlAdaptersMapping.DbServer(context).DbTransaction = transaction;
+            context.DbConnection = connection;
+            context.DbTransaction = transaction;
             // INSERT
             if (isAsync)
             {
@@ -264,7 +264,7 @@ public class SqliteAdapter : ISqlOperationsAdapter
             var sqlSelectJoinTable = SqlQueryBuilder.SelectJoinTable(tableInfo);
             Expression<Func<DbContext, IQueryable<T>>> expression = tableInfo.GetQueryExpression<T>(sqlSelectJoinTable, false);
             var compiled = EF.CompileQuery(expression); // instead using Compiled queries
-            existingEntities = compiled(context).ToList();
+            existingEntities = compiled(dbContext).ToList();
 
             if (tableInfo.BulkConfig.ReplaceReadEntities)
             {
@@ -272,7 +272,7 @@ public class SqliteAdapter : ISqlOperationsAdapter
             }
             else
             {
-                tableInfo.UpdateReadEntities(entities, existingEntities, context);
+                tableInfo.UpdateReadEntities(entities, existingEntities, dbContext);
             }
         }
         finally
@@ -301,29 +301,29 @@ public class SqliteAdapter : ISqlOperationsAdapter
                         await transaction.DisposeAsync().ConfigureAwait(false);
                     }
 
-                    await context.Database.CloseConnectionAsync().ConfigureAwait(false);
+                    await dbContext.Database.CloseConnectionAsync().ConfigureAwait(false);
                 }
                 else
                 {
                     transaction?.Dispose();
-                    context.Database.CloseConnection();
+                    dbContext.Database.CloseConnection();
                 }
             }
         }
     }
 
     /// <inheritdoc/>
-    public void Truncate(DbContext context, TableInfo tableInfo)
+    public void Truncate(BulkContext context, TableInfo tableInfo)
     {
         string sql = SqlQueryBuilder.DeleteTable(tableInfo.FullTableName);
-        context.Database.ExecuteSqlRaw(sql);
+        context.DbContext.Database.ExecuteSqlRaw(sql);
     }
 
     /// <inheritdoc/>
-    public async Task TruncateAsync(DbContext context, TableInfo tableInfo, CancellationToken cancellationToken)
+    public async Task TruncateAsync(BulkContext context, TableInfo tableInfo, CancellationToken cancellationToken)
     {
         string sql = SqlQueryBuilder.DeleteTable(tableInfo.FullTableName);
-        await context.Database.ExecuteSqlRawAsync(sql, cancellationToken).ConfigureAwait(false);
+        await context.DbContext.Database.ExecuteSqlRawAsync(sql, cancellationToken).ConfigureAwait(false);
     }
     #endregion
 

@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
-using System.Data.Common;
 
 namespace EFCore.BulkExtensions.SqlAdapters.SqlServer;
 
@@ -14,12 +13,6 @@ public class SqlServerDbServer : IDbServer
 
     SqlServerDialect _dialect = new();
     IQueryBuilderSpecialization IDbServer.Dialect => _dialect;
-
-    /// <inheritdoc/>
-    public DbConnection? DbConnection { get; set; }
-
-    /// <inheritdoc/>
-    public DbTransaction? DbTransaction { get; set; }
 
     SqlAdapters.SqlQueryBuilder _queryBuilder = new SqlServerQueryBuilder();
     /// <inheritdoc/>

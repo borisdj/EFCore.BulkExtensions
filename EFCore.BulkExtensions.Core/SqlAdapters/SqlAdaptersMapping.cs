@@ -38,40 +38,7 @@ public enum SqlType
 #pragma warning disable CS1591 // No XML comment required here
 public static class SqlAdaptersMapping
 {
-    public static string? ProviderName { get; private set; }
-
-    public static SqlType DatabaseType { get; private set; }
-
     public static Func<DbContext, IDbServer>? Provider { get; set; }
-    
-    public static void UpdateProviderName(string? name)
-    {
-        var ignoreCase = StringComparison.InvariantCultureIgnoreCase;
-        if (string.Equals(name, ProviderName, ignoreCase))
-        {
-            return;
-        }
-
-        ProviderName = name;
-
-        DatabaseType = SqlType.SqlServer;                                       // ProviderName: Microsoft.EntityFrameworkCore.SqlServer
-        if (ProviderName?.EndsWith(SqlType.PostgreSql.ToString(), ignoreCase) ?? false) // ProviderName: Npgsql.EntityFrameworkCore.PostgreSQL
-        {
-            DatabaseType = SqlType.PostgreSql;
-        }
-        else if (ProviderName?.EndsWith(SqlType.MySql.ToString(), ignoreCase) ?? false) // ProviderName: Pomelo.EntityFrameworkCore.MySql
-        {
-            DatabaseType = SqlType.MySql;
-        }
-        else if (ProviderName?.EndsWith(SqlType.Sqlite.ToString(), ignoreCase) ?? false) // ProviderName: Microsoft.EntityFrameworkCore.Sqlite
-        {
-            DatabaseType = SqlType.Sqlite;
-        }
-        else if (ProviderName?.Contains(SqlType.Oracle.ToString(), ignoreCase) ?? false) // ProviderName: Microsoft.EntityFrameworkCore.Sqlite
-        {
-            DatabaseType = SqlType.Oracle;
-        }
-    }
 
     private static IDbServer? _dbServer { get; set; }
 
@@ -92,7 +59,27 @@ public static class SqlAdaptersMapping
             return fromProvider;
         }
 
-        if (_dbServer == null || _dbServer.Type != DatabaseType)
+        var ignoreCase = StringComparison.InvariantCultureIgnoreCase;
+        var databaseType = SqlType.SqlServer;
+        var providerName = context.Database.ProviderName;
+        if (providerName?.EndsWith(SqlType.PostgreSql.ToString(), ignoreCase) ?? false) // ProviderName: Npgsql.EntityFrameworkCore.PostgreSQL
+        {
+            databaseType = SqlType.PostgreSql;
+        }
+        else if (providerName?.EndsWith(SqlType.MySql.ToString(), ignoreCase) ?? false) // ProviderName: Pomelo.EntityFrameworkCore.MySql
+        {
+            databaseType = SqlType.MySql;
+        }
+        else if (providerName?.EndsWith(SqlType.Sqlite.ToString(), ignoreCase) ?? false) // ProviderName: Microsoft.EntityFrameworkCore.Sqlite
+        {
+            databaseType = SqlType.Sqlite;
+        }
+        else if (providerName?.Contains(SqlType.Oracle.ToString(), ignoreCase) ?? false) // ProviderName: Microsoft.EntityFrameworkCore.Sqlite
+        {
+            databaseType = SqlType.Oracle;
+        }
+
+        if (_dbServer == null || _dbServer.Type != databaseType)
         {
             static Type GetType(SqlType type)
             {
@@ -103,15 +90,10 @@ public static class SqlAdaptersMapping
                     throw new InvalidOperationException("Failed to resolve type.");
             }
 
-            _dbServer = null;
-            if (Enum.IsDefined(DatabaseType))
-            {
-                var serverType = GetType(DatabaseType);
-
-                _dbServer = Activator.CreateInstance(serverType) as IDbServer;
-            }
-
+            _dbServer = Activator.CreateInstance(GetType(databaseType)) as IDbServer;
         }
+
+
         return _dbServer ?? throw new InvalidOperationException("Failed to create DbServer");
     }
 
@@ -129,40 +111,4 @@ public static class SqlAdaptersMapping
     }
 
 #pragma warning restore CS1591 // No XML comment required here
-
-    /// <summary>
-    /// Creates the bulk operations adapter
-    /// </summary>
-    /// <returns></returns>
-    public static ISqlOperationsAdapter CreateBulkOperationsAdapter(DbContext dbContext)
-    {
-        return DbServer(dbContext).Adapter;
-    }
-
-    /// <summary>
-    /// Returns the Adapter dialect to be used
-    /// </summary>
-    /// <returns></returns>
-    public static IQueryBuilderSpecialization GetAdapterDialect(DbContext dbContext)
-    {
-        return DbServer(dbContext).Dialect;
-    }
-
-    /// <summary>
-    /// Returns the Database type
-    /// </summary>
-    /// <returns></returns>
-    public static SqlType GetDatabaseType(DbContext dbContext)
-    {
-        return DbServer(dbContext).Type;
-    }
-
-    /// <summary>
-    /// Returns per provider QueryBuilder instance, containing a compilation of SQL queries used in EFCore.
-    /// </summary>
-    /// <returns></returns>
-    public static SqlQueryBuilder GetQueryBuilder(DbContext dbContext)
-    {
-        return DbServer(dbContext).QueryBuilder;
-    }
 }

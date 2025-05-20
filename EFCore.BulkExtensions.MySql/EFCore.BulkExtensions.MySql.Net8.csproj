@@ -5,7 +5,7 @@
     <Description>EntityFramework .Net EFCore EF Core Bulk Batch Extensions for Insert Update Delete Read (CRUD) operations on MySQL</Description>
     <PackageTags>$(PackageTags) MySQL</PackageTags>
 	<NuGetAudit>false</NuGetAudit>
-    <PackageId>Squidex.EFCore.BulkExtensions.MySql</PackageId>
+    <PackageId>EFCore.BulkExtensions.MySql</PackageId>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.3" />
