@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <NuGetAudit>false</NuGetAudit>
-    <PackageId>EFCore.BulkExtensions.Oracle</PackageId>
+    <PackageId>Squidex.EFCore.BulkExtensions.Oracle</PackageId>
   </PropertyGroup>
 
   <ItemGroup>

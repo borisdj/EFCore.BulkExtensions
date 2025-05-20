@@ -4,7 +4,7 @@
     <Title>EFCore.BulkExtensions.PostgreSql</Title>
     <Description>EntityFramework .Net EFCore EF Core Bulk Batch Extensions for Insert Update Delete Read (CRUD) operations on PostgreSQL</Description>
     <PackageTags>$(PackageTags) PostgreSQL</PackageTags>
-    <PackageId>EFCore.BulkExtensions.PostgreSQL</PackageId>
+    <PackageId>Squidex.EFCore.BulkExtensions.PostgreSQL</PackageId>
   </PropertyGroup>
   <ItemGroup>
 	<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />

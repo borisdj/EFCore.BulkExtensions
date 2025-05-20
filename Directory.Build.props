@@ -22,7 +22,7 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
   <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('Net8'))">
-    <Version>8.1.3</Version>
+    <Version>8.1.6</Version>
     <PackageOutputPath>$(SolutionDir)Nugets\net8</PackageOutputPath>
     <AssemblyVersion>$(Version).0</AssemblyVersion>
   </PropertyGroup>
