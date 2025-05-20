@@ -241,12 +241,28 @@ public class MySqlQueryBuilder : SqlQueryBuilder
     /// <param name="tableInfo"></param>
     public static string HasUniqueConstrain(TableInfo tableInfo)
     {
-        var tableName = tableInfo.TableName;
-
-        var uniqueConstrainName = GetUniqueConstrainName(tableInfo);
-
-        var q = $@"SELECT DISTINCT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE " +
-                $@"CONSTRAINT_TYPE = 'UNIQUE' AND CONSTRAINT_NAME = '{uniqueConstrainName}';";
+        var usedKeyValues =  string.Join(",", tableInfo.PrimaryKeysPropertyColumnNameDict.Keys.ToList());
+        var q = $"""
+                 SELECT COUNT(*) FROM(
+                 SELECT 
+                     s.TABLE_SCHEMA,
+                     s.TABLE_NAME,
+                     s.INDEX_NAME,
+                     tc.CONSTRAINT_TYPE,
+                     GROUP_CONCAT(s.COLUMN_NAME ORDER BY s.SEQ_IN_INDEX) AS 'columns_keys'
+                 FROM INFORMATION_SCHEMA.STATISTICS s
+                 LEFT JOIN INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
+                     ON s.TABLE_SCHEMA = tc.TABLE_SCHEMA
+                     AND s.TABLE_NAME = tc.TABLE_NAME
+                     AND s.INDEX_NAME = tc.CONSTRAINT_NAME
+                 where
+                 	s.NON_UNIQUE = 0
+                 	and s.TABLE_SCHEMA = '{tableInfo.Schema}'
+                 	and s.TABLE_NAME = '{tableInfo.TableName}'
+                 GROUP BY s.TABLE_SCHEMA, s.TABLE_NAME, s.INDEX_NAME, tc.CONSTRAINT_TYPE
+                 having columns_keys = '{usedKeyValues}'
+                 ) as t
+                 """;
         return q;
     }
 

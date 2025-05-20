@@ -8,7 +8,7 @@
     <PackageId>Squidex.EFCore.BulkExtensions.MySql</PackageId>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.2" />
+    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.3" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EFCore.BulkExtensions.Core\EFCore.BulkExtensions.Core.Net8.csproj" />

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -7,7 +7,7 @@ namespace EFCore.BulkExtensions;
 /// <summary>
 /// This class helps to extract properties of the incoming type which have default sql values
 /// </summary>
-internal static class GenericsHelpers
+public static class GenericsHelpers
 {
     internal static IEnumerable<string> GetPropertiesDefaultValue<T>(this T value, Type type, TableInfo tableInfo) where T : class
     {
@@ -28,18 +28,9 @@ internal static class GenericsHelpers
                 continue;
             }
 
-            var temp = field.GetValue(value);
-            object? defaultValue = null;
+            var fieldValue = field.GetValue(value);
 
-            //bypass instance creation if incoming type is an interface or class does not have parameterless constructor
-            var hasParameterlessConstructor = type.GetConstructor(Type.EmptyTypes) != null;
-            if (!type.IsInterface && hasParameterlessConstructor)
-                defaultValue = field.GetValue(Activator.CreateInstance(type, true));
-
-            if (temp?.ToString() == defaultValue?.ToString() ||
-                (temp != null && defaultValue != null &&
-                 temp.ToString() == "0" && defaultValue.ToString() == "0") || // situation for int/long prop with HasSequence (test DefaultValues: Document)
-                (temp is Guid guid && guid == Guid.Empty))
+            if (IsDefaultValue(fieldValue))
             {
                 result.Add(name);
             }
@@ -53,5 +44,30 @@ internal static class GenericsHelpers
         //var result = values.SelectMany(x => x.GetPropertiesDefaultValue(type)).ToList().Distinct(); // TODO: Check all options(ComputedAndDefaultValuesTest) and consider optimisation
         var result = values.FirstOrDefault()?.GetPropertiesDefaultValue(type, tableInfo)?.Distinct();
         return result;
+    }
+
+    /// <summary>
+    /// Checks is DefaultValue
+    /// </summary>
+    public static bool IsDefaultValue(object? value)
+    {
+        if (value == null)
+        {
+            return true;
+        }
+
+        Type type = value.GetType();
+
+        if (!type.IsValueType)
+        {
+            return false;
+        }
+
+        if (Nullable.GetUnderlyingType(type) != null)
+        {
+            return false;
+        }
+
+        return value.Equals(Activator.CreateInstance(value.GetType()));
     }
 }
