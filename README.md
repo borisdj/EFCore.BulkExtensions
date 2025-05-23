@@ -6,7 +6,7 @@ EntityFrameworkCore extensions (performance improvement - into overdrive):
 Library is Lightweight and very Efficient (warp speed), having all mostly used [CRUD](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete) operation.  
 Was selected in top 20 [EF Core Extensions](https://docs.microsoft.com/en-us/ef/core/extensions/) recommended by Microsoft.  
 Latest version is using EF Core 9.  
-Supports all 5 major sql databases: **SQLServer, PostgreSQL, MySQL, Oracle, SQLite**  
+Supports all 5 major sql databases: **SQLServer, PostgreSQL, MySQL, Oracle, SQLite.**  
 Check out [Testimonials](https://docs.google.com/spreadsheets/d/e/2PACX-1vShdv2sTm3oQfowm9kVIx-PLBCk1lGQEa9E6n92-dX3pni7-XQUEp6taVcMSZVi9BaSAizv1YanWTy3/pubhtml?gid=801420190&single=true) from the Community and User Comments.  
 With thousands of pleased users and many satisfied clients from around the globe.  
 Icon>> and Logo (__):  
@@ -14,7 +14,7 @@ Icon>> and Logo (__):
 (f.forward | rocket time)
 
 **Also take a look into others packages:</br>
-Open source (MIT or cFOSS) authored [.Net libraries](https://infopedia.io/dot-net-libraries/) and other projects (@[**Infopedia.io**](https://infopedia.io/) personal blog post)
+Open source (MIT or cFOSS) authored [.Net libraries](https://infopedia.io/dot-net-libraries/) and other projects (@[**Infopedia.io**](https://infopedia.io/) personal blog post).
 | №  | Project                  | Type | Description                                              |
 | -  | ------------------------ | ---- | -------------------------------------------------------- |
 | 1* | [EFCore.BulkExtensions](https://github.com/borisdj/EFCore.BulkExtensions) | .Net_Lib(ngt) cF | EF Core Bulk CRUD Ops (**Flagship** Library) |
@@ -37,9 +37,9 @@ And even with Community license, if you want help Development, you can make a Do
 [![Button](https://img.shields.io/badge/donate-Bitcoin-orange.svg?logo=bitcoin):zap:](https://borisdj.net/donation/donate-btc.html) ([Moneylution](https://infopedia.io/revolution-of-money/))
 
 ## Contributing
-Please read [CONTRIBUTING](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/CONTRIBUTING.md) for details on code of conduct, and the process for submitting pull requests. <!-- valid link short also (CONTRIBUTING.md) -->   
+Please read [CONTRIBUTING](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/CONTRIBUTING.md) for details on code of conduct, and the process for submitting Pull Requests.  
 When opening issues do write detailed explanation of the problem or feature with reproducible example.  
-Want to **Contact** for Development & Consulting: [www.codis.tech](http://www.codis.tech) (*Quality Delivery*)  
+Want to **Contact** for Development & Consulting: [www.codis.tech](http://www.codis.tech) (*Quality Delivery*).  
 
 ## Description
 Supported databases:  
@@ -96,7 +96,7 @@ context.BulkSaveChanges();                    context.BulkSaveChangesAsync();
 
 **Batch** Extensions are made on *IQueryable* DbSet and can be used as in the following code segment.  
 They are done as pure sql and no check is done whether some are prior loaded in memory and are being Tracked.  
-(*updateColumns* is optional param in which PropertyNames added explicitly when need update to it's default value)  
+(*updateColumns* is optional param in which PropertyNames added explicitly when need update to it's default value).  
 Info about [lock-escalation](https://docs.microsoft.com/en-us/troubleshoot/sql/performance/resolve-blocking-problems-caused-lock-escalation) in SQL Server with Batch iteration example as a solution at the bottom of code segment.
 ```C#
 // Delete
