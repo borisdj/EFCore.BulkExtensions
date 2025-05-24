@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore.Infrastructure;
 using Oracle.EntityFrameworkCore.Metadata;
-using System.Data.Common;
 
 namespace EFCore.BulkExtensions.SqlAdapters.Oracle;
 
@@ -20,12 +19,6 @@ public class OracleDbServer : IDbServer
     public SqlQueryBuilder QueryBuilder => _queryBuilder;
 
     string IDbServer.ValueGenerationStrategy => nameof(OracleValueGenerationStrategy);
-
-    /// <inheritdoc/>
-    public DbConnection? DbConnection { get; set; }
-
-    /// <inheritdoc/>
-    public DbTransaction? DbTransaction { get; set; }
 
     bool IDbServer.PropertyHasIdentity(IAnnotation annotation) => (OracleValueGenerationStrategy?)annotation.Value == OracleValueGenerationStrategy.IdentityColumn;
 }
