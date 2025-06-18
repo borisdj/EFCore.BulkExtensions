@@ -200,7 +200,7 @@ public class TableInfo
         var entityTableName = entityType.GetTableName();
         var entityViewName = entityType.GetViewName();
         bool isView = entityTableName == null && entityViewName != null;
-        TableName = customTableName ?? entityTableName;
+        TableName = customTableName ?? (isView ? entityViewName : entityTableName);
 
         string? sourceSchema = null;
         string? sourceTableName = null;
