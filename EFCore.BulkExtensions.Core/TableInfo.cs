@@ -198,7 +198,9 @@ public class TableInfo
         Schema = customTableName != null ? customSchema : entityType.GetSchema() ?? defaultSchema;
 
         var entityTableName = entityType.GetTableName();
-        TableName = customTableName ?? entityTableName;
+        var entityViewName = entityType.GetViewName();
+        bool isView = entityTableName == null && entityViewName != null;
+        TableName = customTableName ?? (isView ? entityViewName : entityTableName);
 
         string? sourceSchema = null;
         string? sourceTableName = null;
@@ -224,12 +226,14 @@ public class TableInfo
         }
         TempTableName = sourceTableName ?? $"{TableName}{TempTableSufix}";
 
-        if (entityTableName is null)
+        if ((!isView && entityTableName is null) || (isView && entityViewName is null))
         {
-            throw new ArgumentException("Entity does not contain a table name");
+            throw new ArgumentException("Entity does not contain a table or view name");
         }
 
-        ObjectIdentifier = StoreObjectIdentifier.Table(entityTableName, entityType.GetSchema());
+        ObjectIdentifier = isView 
+            ? StoreObjectIdentifier.View(entityViewName!, entityType.GetSchema()) 
+            : StoreObjectIdentifier.Table(entityTableName!, entityType.GetSchema());
 
         var allProperties = new List<IProperty>();
         foreach (var entityProperty in entityType.GetProperties())
