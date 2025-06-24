@@ -346,6 +346,23 @@ public class TableInfo
                                               )?.GetColumnName(ObjectIdentifier);
         }
 
+        if (BulkConfig.AutoExcludeTimestamp)
+        {
+            var timestampProps = allProperties
+                .Where(p => p.IsConcurrencyToken && p.ValueGenerated == ValueGenerated.OnAddOrUpdate)
+                .Select(p => p.Name)
+                .ToList();
+
+            BulkConfig.PropertiesToExclude ??= new();
+            foreach (var prop in timestampProps)
+            {
+                if (!BulkConfig.PropertiesToExclude.Contains(prop))
+                    BulkConfig.PropertiesToExclude.Add(prop);
+            }
+        }
+
+
+
         // timestamp/row version properties are only set by the Db, the property has a [Timestamp] Attribute or is configured in FluentAPI with .IsRowVersion()
         // They can be identified by the columne type "timestamp" or .IsConcurrencyToken in combination with .ValueGenerated == ValueGenerated.OnAddOrUpdate
         string timestampDbTypeName = nameof(TimestampAttribute).Replace("Attribute", "").ToLower(); // = "timestamp";
