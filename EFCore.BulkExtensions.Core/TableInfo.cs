@@ -195,11 +195,15 @@ public class TableInfo
             }
         }
 
-        Schema = customTableName != null ? customSchema : entityType.GetSchema() ?? defaultSchema;
-
         var entityTableName = entityType.GetTableName();
         var entityViewName = entityType.GetViewName();
         bool isView = entityTableName == null && entityViewName != null;
+        
+        if(isView)
+            Schema = customTableName != null ? customSchema : entityType.GetViewSchema() ?? defaultSchema;
+        else
+            Schema = customTableName != null ? customSchema : entityType.GetSchema() ?? defaultSchema;
+
         TableName = customTableName ?? (isView ? entityViewName : entityTableName);
 
         string? sourceSchema = null;
@@ -232,7 +236,7 @@ public class TableInfo
         }
 
         ObjectIdentifier = isView 
-            ? StoreObjectIdentifier.View(entityViewName!, entityType.GetSchema()) 
+            ? StoreObjectIdentifier.View(entityViewName!, entityType.GetViewSchema()) 
             : StoreObjectIdentifier.Table(entityTableName!, entityType.GetSchema());
 
         var allProperties = new List<IProperty>();
