@@ -231,7 +231,7 @@ PROPERTY : DEFAULTvalue
 METHOD: SetSynchronizeFilter<T>
         SetSynchronizeSoftDelete<T>
 ```
-If we want to change defaults, BulkConfig should be added explicitly with one or more bool properties set tocustom value. Config also has DelegateFunc for setting *Underlying-Connection/Transaction*, e.g. in UnderlyingTest.  
+If we want to change defaults, BulkConfig should be added explicitly with one or more properties set to custom value. Config also has DelegateFunc for setting *Underlying-Connection/Transaction*, e.g. in UnderlyingTest.  
 When doing update we can chose to exclude one or more properties by adding their names into **PropertiesToExclude**, or if we need to update less then half column then **PropertiesToInclude** can be used. Setting both Lists is not allowed.
 
 When using the **BulkInsert_/OrUpdate** methods, you may also specify the **PropertiesToIncludeOnCompare** and **PropertiesToExcludeOnCompare** properties (only for SqlServer). By adding a column name to the *PropertiesToExcludeOnCompare*, will allow it to be inserted and updated but will not update the row if any of the other columns in that row did not change. For example, if you are importing bulk data and want to remove from comparison an internal *CreateDate* or *UpdateDate*, you add those columns to the *PropertiesToExcludeOnCompare*.  
