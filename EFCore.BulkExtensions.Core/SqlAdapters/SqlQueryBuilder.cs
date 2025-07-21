@@ -294,7 +294,7 @@ public abstract class SqlQueryBuilder
     /// <param name="entityPropertyWithDefaultValue"></param>
     /// <returns></returns>
     /// <exception cref="InvalidBulkConfigException"></exception>
-    public static (string sql, IEnumerable<object> parameters) MergeTable<T>(DbContext? context, TableInfo tableInfo, OperationType operationType,
+    public static (string sql, IEnumerable<object> parameters) MergeTable<T>(BulkContext context, TableInfo tableInfo, OperationType operationType,
                                                                              IEnumerable<string>? entityPropertyWithDefaultValue = default) where T : class
     {
         List<object> parameters = new();
@@ -375,11 +375,7 @@ public abstract class SqlQueryBuilder
             string syncFilterCondition = string.Empty;
             if (tableInfo.BulkConfig.SynchronizeFilter != null)
             {
-                if (context is null)
-                {
-                    throw new ArgumentNullException(nameof(context));
-                }
-                var querable = context.Set<T>().IgnoreQueryFilters().IgnoreAutoIncludes()
+                var querable = context.DbContext.Set<T>().IgnoreQueryFilters().IgnoreAutoIncludes()
                                                .Where((Expression<Func<T, bool>>)tableInfo.BulkConfig.SynchronizeFilter);
 
                 var (Sql, TableAlias, TableAliasSufixAs, TopStatement, LeadingComments, InnerParameters) = BatchUtil.GetBatchSql(querable, context, false);
@@ -404,15 +400,11 @@ public abstract class SqlQueryBuilder
             string softDeleteAssignment = string.Empty;
             if (tableInfo.BulkConfig.SynchronizeSoftDelete != null)
             {
-                if (context is null)
-                {
-                    throw new ArgumentNullException(nameof(context));
-                }
-                var querable = context.Set<T>().IgnoreQueryFilters().IgnoreAutoIncludes();
+                var querable = context.DbContext.Set<T>().IgnoreQueryFilters().IgnoreAutoIncludes();
                 var expression = (Expression<Func<T, T>>)tableInfo.BulkConfig.SynchronizeSoftDelete;
                 var (sqlOriginal, sqlParameters) = BatchUtil.GetSqlUpdate(querable, context, typeof(T), expression);
-                var databaseType = SqlAdaptersMapping.GetDatabaseType(context);
-                var (tableAlias, _) = SqlAdaptersMapping.GetAdapterDialect(context).GetBatchSqlReformatTableAliasAndTopStatement(sqlOriginal, databaseType);
+                var databaseType = context.Server.Type;
+                var (tableAlias, _) = context.Dialect.GetBatchSqlReformatTableAliasAndTopStatement(sqlOriginal, databaseType);
 
                 var sql = sqlOriginal.Replace($"[{tableAlias}]", "T");
                 int indexFrom = sql.IndexOf(".") - 1;

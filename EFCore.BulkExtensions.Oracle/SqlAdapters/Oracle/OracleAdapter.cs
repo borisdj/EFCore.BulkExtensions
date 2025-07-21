@@ -1,7 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
-using NetTopologySuite.Geometries;
 using Oracle.ManagedDataAccess.Client;
 using System.Data;
 using System.Data.Common;
@@ -17,36 +15,37 @@ public class OracleAdapter : ISqlOperationsAdapter
     /// <inheritdoc/>
     #region Methods
     // Insert
-    public void Insert<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress)
+    public void Insert<T>(BulkContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress)
         => InsertAsync(context, type, entities, tableInfo, progress, isAsync: false, CancellationToken.None).GetAwaiter().GetResult();
 
     /// <inheritdoc/>
-    public async Task InsertAsync<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress,
+    public async Task InsertAsync<T>(BulkContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress,
         CancellationToken cancellationToken)
         => await InsertAsync(context, type, entities, tableInfo, progress, isAsync: true, CancellationToken.None).ConfigureAwait(false);
 
     /// <inheritdoc/>
-    protected static async Task InsertAsync<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress,
+    protected static async Task InsertAsync<T>(BulkContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress,
         bool isAsync, CancellationToken cancellationToken)
     {
+        var dbContext = context.DbContext;
         tableInfo.CheckToSetIdentityForPreserveOrder(tableInfo, entities);
         if (isAsync)
         {
-            await context.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
+            await dbContext.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
         }
         else
         {
-            context.Database.OpenConnection();
+            dbContext.Database.OpenConnection();
         }
-        var connection = context.GetUnderlyingConnection(tableInfo.BulkConfig);
+        var connection = dbContext.GetUnderlyingConnection(tableInfo.BulkConfig);
         try
         {
-            var transaction = context.Database.CurrentTransaction;
+            var transaction = dbContext.Database.CurrentTransaction;
             var OracleBulkCopy = GetOracleBulkCopy((OracleConnection)connection, transaction, tableInfo.BulkConfig);
 
             SetOracleBulkCopyConfig(OracleBulkCopy, tableInfo);
 
-            var dataTable = GetDataTable(context, type, entities, OracleBulkCopy, tableInfo);
+            var dataTable = GetDataTable(dbContext, type, entities, OracleBulkCopy, tableInfo);
             IDataReader? dataReader = tableInfo.BulkConfig.DataReader;
 
             if (isAsync)
@@ -69,11 +68,11 @@ public class OracleAdapter : ISqlOperationsAdapter
         {
             if (isAsync)
             {
-                await context.Database.CloseConnectionAsync().ConfigureAwait(false);
+                await dbContext.Database.CloseConnectionAsync().ConfigureAwait(false);
             }
             else
             {
-                context.Database.CloseConnection();
+                dbContext.Database.CloseConnection();
             }
         }
         if (!tableInfo.CreateOutputTable)
@@ -82,37 +81,38 @@ public class OracleAdapter : ISqlOperationsAdapter
         }
     }
     /// <inheritdoc/>
-    public void Merge<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress)
+    public void Merge<T>(BulkContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress)
         where T : class
         => MergeAsync(context, type, entities, tableInfo, operationType, progress, isAsync: false, CancellationToken.None).GetAwaiter().GetResult();
 
     /// <inheritdoc/>
-    public async Task MergeAsync<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress,
+    public async Task MergeAsync<T>(BulkContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress,
         CancellationToken cancellationToken) where T : class
         => await MergeAsync(context, type, entities, tableInfo, operationType, progress, isAsync: true, CancellationToken.None).ConfigureAwait(false);
 
     /// <inheritdoc/>
-    protected async Task MergeAsync<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress,
+    protected async Task MergeAsync<T>(BulkContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress,
         bool isAsync, CancellationToken cancellationToken) where T : class
     {
         bool tempTableCreated = false;
         bool outputTableCreated = false;
         bool uniqueConstrainCreated = false;
         bool hasExistingTransaction = false;
-        var transaction = context.Database.CurrentTransaction;
+        var dbContext = context.DbContext;
+        var transaction = dbContext.Database.CurrentTransaction;
         try
         {
             //Because of using temp table in case of update, we need to access created temp table in Insert method.
-            hasExistingTransaction = context.Database.CurrentTransaction != null;
-            transaction ??= isAsync ? await context.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false)
-                                    : context.Database.BeginTransaction();
+            hasExistingTransaction = dbContext.Database.CurrentTransaction != null;
+            transaction ??= isAsync ? await dbContext.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false)
+                                    : dbContext.Database.BeginTransaction();
 
             if (tableInfo.BulkConfig.CustomSourceTableName == null)
             {
                 tableInfo.InsertToTempTable = true;
 
                 var sqlCreateTableCopy = OracleQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo, tableInfo.BulkConfig.UseTempDB, operationType);
-                await ExecuteSqlRawAsync(context, isAsync, sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
+                await ExecuteSqlRawAsync(dbContext, isAsync, sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
                 tempTableCreated = true;
             }
 
@@ -126,13 +126,13 @@ public class OracleAdapter : ISqlOperationsAdapter
             else
             {
                 (hasUniqueConstrain, bool connectionOpenedInternally) =
-                    await CheckHasExplicitUniqueConstrainAsync(context, tableInfo, isAsync, cancellationToken).ConfigureAwait(false);
+                    await CheckHasExplicitUniqueConstrainAsync(dbContext, tableInfo, isAsync, cancellationToken).ConfigureAwait(false);
             }
 
             if (!hasUniqueConstrain)
             {
                 string createUniqueConstrain = OracleQueryBuilder.CreateUniqueConstrain(tableInfo);
-                await ExecuteSqlRawAsync(context, isAsync, createUniqueConstrain, cancellationToken).ConfigureAwait(false);
+                await ExecuteSqlRawAsync(dbContext, isAsync, createUniqueConstrain, cancellationToken).ConfigureAwait(false);
                 uniqueConstrainCreated = true;
             }
 
@@ -141,7 +141,7 @@ public class OracleAdapter : ISqlOperationsAdapter
                 tableInfo.InsertToTempTable = true;
                 var sqlCreateOutputTableCopy = OracleQueryBuilder.CreateTableCopy(tableInfo.FullTableName,
                     tableInfo.FullTempOutputTableName, tableInfo, tableInfo.InsertToTempTable, operationType);
-                await ExecuteSqlRawAsync(context, isAsync, sqlCreateOutputTableCopy, cancellationToken).ConfigureAwait(false);
+                await ExecuteSqlRawAsync(dbContext, isAsync, sqlCreateOutputTableCopy, cancellationToken).ConfigureAwait(false);
                 outputTableCreated = true;
             }
 
@@ -158,7 +158,7 @@ public class OracleAdapter : ISqlOperationsAdapter
             }
 
             var sqlMergeTable = OracleQueryBuilder.MergeTable<T>(tableInfo, operationType);
-            await ExecuteSqlRawAsync(context, isAsync, sqlMergeTable, cancellationToken).ConfigureAwait(false);
+            await ExecuteSqlRawAsync(dbContext, isAsync, sqlMergeTable, cancellationToken).ConfigureAwait(false);
             if (tableInfo.CreateOutputTable)
             {
                 if (isAsync)
@@ -173,7 +173,7 @@ public class OracleAdapter : ISqlOperationsAdapter
 
             if (tableInfo.BulkConfig.CustomSqlPostProcess != null)
             {
-                await ExecuteSqlRawAsync(context, isAsync, tableInfo.BulkConfig.CustomSqlPostProcess, cancellationToken).ConfigureAwait(false);
+                await ExecuteSqlRawAsync(dbContext, isAsync, tableInfo.BulkConfig.CustomSqlPostProcess, cancellationToken).ConfigureAwait(false);
             }
 
             if (hasExistingTransaction == false && !tableInfo.BulkConfig.IncludeGraph)
@@ -193,7 +193,7 @@ public class OracleAdapter : ISqlOperationsAdapter
             if (uniqueConstrainCreated)
             {
                 string dropUniqueConstrain = OracleQueryBuilder.DropUniqueConstrain(tableInfo);
-                await ExecuteSqlRawAsync(context, isAsync, dropUniqueConstrain, cancellationToken).ConfigureAwait(false);
+                await ExecuteSqlRawAsync(dbContext, isAsync, dropUniqueConstrain, cancellationToken).ConfigureAwait(false);
             }
 
             if (!tableInfo.BulkConfig.UseTempDB) // Temp tables are automatically dropped by the database
@@ -201,12 +201,12 @@ public class OracleAdapter : ISqlOperationsAdapter
                 if (outputTableCreated)
                 {
                     var sqlDropOutputTable = ProviderSqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName, tableInfo.BulkConfig.UseTempDB);
-                    await ExecuteSqlRawAsync(context, isAsync, sqlDropOutputTable, cancellationToken).ConfigureAwait(false);
+                    await ExecuteSqlRawAsync(dbContext, isAsync, sqlDropOutputTable, cancellationToken).ConfigureAwait(false);
                 }
                 if (tempTableCreated)
                 {
                     var sqlDropTable = ProviderSqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
-                    await ExecuteSqlRawAsync(context, isAsync, sqlDropTable, cancellationToken).ConfigureAwait(false);
+                    await ExecuteSqlRawAsync(dbContext, isAsync, sqlDropTable, cancellationToken).ConfigureAwait(false);
                 }
                 if (hasExistingTransaction == false && !tableInfo.BulkConfig.IncludeGraph && transaction != null)
                 {
@@ -223,30 +223,30 @@ public class OracleAdapter : ISqlOperationsAdapter
         }
     }
     /// <inheritdoc/>
-    public void Read<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress) where T : class
+    public void Read<T>(BulkContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress) where T : class
     {
         throw new NotImplementedException();
     }
 
     /// <inheritdoc/>
-    public Task ReadAsync<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress,
+    public Task ReadAsync<T>(BulkContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress,
         CancellationToken cancellationToken) where T : class
     {
         throw new NotImplementedException();
     }
 
     /// <inheritdoc/>
-    public void Truncate(DbContext context, TableInfo tableInfo)
+    public void Truncate(BulkContext context, TableInfo tableInfo)
     {
         var sqlTruncateTable = ProviderSqlQueryBuilder.TruncateTable(tableInfo.FullTableName);
-        _ = context.Database.ExecuteSqlRaw(sqlTruncateTable);
+        _ = context.DbContext.Database.ExecuteSqlRaw(sqlTruncateTable);
     }
 
     /// <inheritdoc/>
-    public async Task TruncateAsync(DbContext context, TableInfo tableInfo, CancellationToken cancellationToken)
+    public async Task TruncateAsync(BulkContext context, TableInfo tableInfo, CancellationToken cancellationToken)
     {
         var sqlTruncateTable = ProviderSqlQueryBuilder.TruncateTable(tableInfo.FullTableName);
-        _ = await context.Database.ExecuteSqlRawAsync(sqlTruncateTable, cancellationToken).ConfigureAwait(false);
+        _ = await context.DbContext.Database.ExecuteSqlRawAsync(sqlTruncateTable, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task ExecuteSqlRawAsync(DbContext context, bool isAsync, string commandText, CancellationToken cancellationToken)

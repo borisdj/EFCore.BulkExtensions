@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore.Infrastructure;
-using System.Data.Common;
 
 namespace EFCore.BulkExtensions.SqlAdapters;
 
@@ -26,17 +25,7 @@ public interface IDbServer
     /// <summary>
     /// Contains a compilation of SQL queries used in EFCore.
     /// </summary>
-    SqlAdapters.SqlQueryBuilder QueryBuilder { get; }
-
-    /// <summary>
-    /// Gets or Sets a DbConnection for the provider
-    /// </summary>
-    DbConnection? DbConnection { get; set; }
-
-    /// <summary>
-    /// Gets or Sets a DbTransaction for the provider
-    /// </summary>
-    DbTransaction? DbTransaction { get; set; }
+    SqlQueryBuilder QueryBuilder { get; }
 
     /// <summary>
     /// Returns the current Provider's Value Generating Strategy

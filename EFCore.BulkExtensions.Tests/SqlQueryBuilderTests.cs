@@ -1,5 +1,6 @@
 using DelegateDecompiler.EntityFrameworkCore;
 using EFCore.BulkExtensions.SqlAdapters;
+using EFCore.BulkExtensions.SqlAdapters.SqlServer;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,12 +11,14 @@ namespace EFCore.BulkExtensions.Tests;
 
 public class SqlQueryBuilderUnitTests
 {
+    private readonly BulkContext context = new BulkContext(null!, new SqlServerDbServer());
+
     [Fact]
     public void MergeTableInsertTest()
     {
         TableInfo tableInfo = GetTestTableInfo();
         tableInfo.IdentityColumnName = "ItemId";
-        string result = SqlQueryBuilder.MergeTable<Item>(null, tableInfo, OperationType.Insert).sql;
+        string result = SqlQueryBuilder.MergeTable<Item>(context, tableInfo, OperationType.Insert).sql;
 
         string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T " + 
                           "USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
@@ -31,7 +34,7 @@ public class SqlQueryBuilderUnitTests
     {
         TableInfo tableInfo = GetTestTableInfo();
         tableInfo.IdentityColumnName = "ItemId";
-        string result = SqlQueryBuilder.MergeTable<Item>(null, tableInfo, OperationType.InsertOrUpdate).sql;
+        string result = SqlQueryBuilder.MergeTable<Item>(context, tableInfo, OperationType.InsertOrUpdate).sql;
 
         string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T " +
                           "USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
@@ -51,7 +54,7 @@ public class SqlQueryBuilderUnitTests
     {
         TableInfo tableInfo = GetTestTableInfo((existing, inserted) => $"{inserted}.ItemTimestamp > {existing}.ItemTimestamp");
         tableInfo.IdentityColumnName = "ItemId";
-        string actual = SqlQueryBuilder.MergeTable<Item>(null, tableInfo, OperationType.InsertOrUpdate).sql;
+        string actual = SqlQueryBuilder.MergeTable<Item>(context, tableInfo, OperationType.InsertOrUpdate).sql;
 
         string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T " +
                           "USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
@@ -72,7 +75,7 @@ public class SqlQueryBuilderUnitTests
     {
         TableInfo tableInfo = GetTestTableWithCompareInfo();
         tableInfo.IdentityColumnName = "ItemId";
-        string result = SqlQueryBuilder.MergeTable<Item>(null, tableInfo, OperationType.InsertOrUpdate).sql;
+        string result = SqlQueryBuilder.MergeTable<Item>(context, tableInfo, OperationType.InsertOrUpdate).sql;
 
         string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T " +
                           "USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
@@ -92,7 +95,7 @@ public class SqlQueryBuilderUnitTests
     {
         TableInfo tableInfo = GetTestTableWithCompareInfo((existing, inserted) => $"{inserted}.ItemTimestamp > {existing}.ItemTimestamp");
         tableInfo.IdentityColumnName = "ItemId";
-        string actual = SqlQueryBuilder.MergeTable<Item>(null, tableInfo, OperationType.InsertOrUpdate).sql;
+        string actual = SqlQueryBuilder.MergeTable<Item>(context, tableInfo, OperationType.InsertOrUpdate).sql;
 
         string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T " +
                           "USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
@@ -112,7 +115,7 @@ public class SqlQueryBuilderUnitTests
     {
         TableInfo tableInfo = GetTestTableWithNoUpdateInfo();
         tableInfo.IdentityColumnName = "ItemId";
-        string result = SqlQueryBuilder.MergeTable<Item>(null, tableInfo, OperationType.InsertOrUpdate).sql;
+        string result = SqlQueryBuilder.MergeTable<Item>(context, tableInfo, OperationType.InsertOrUpdate).sql;
 
         string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T " +
                           "USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
@@ -132,7 +135,7 @@ public class SqlQueryBuilderUnitTests
     {
         TableInfo tableInfo = GetTestTableWithNoUpdateInfo((existing, inserted) => $"{inserted}.ItemTimestamp > {existing}.ItemTimestamp");
         tableInfo.IdentityColumnName = "ItemId";
-        string actual = SqlQueryBuilder.MergeTable<Item>(null, tableInfo, OperationType.InsertOrUpdate).sql;
+        string actual = SqlQueryBuilder.MergeTable<Item>(context, tableInfo, OperationType.InsertOrUpdate).sql;
 
         string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T " +
                           "USING (SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
@@ -152,7 +155,7 @@ public class SqlQueryBuilderUnitTests
     {
         TableInfo tableInfo = GetTestTableInfo();
         tableInfo.IdentityColumnName = "ItemId";
-        string result = SqlQueryBuilder.MergeTable<Item>(null, tableInfo, OperationType.Update).sql;
+        string result = SqlQueryBuilder.MergeTable<Item>(context, tableInfo, OperationType.Update).sql;
 
         string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING " +
                           "(SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
@@ -170,7 +173,7 @@ public class SqlQueryBuilderUnitTests
     {
         TableInfo tableInfo = GetTestTableInfo((existing, inserted) => $"{inserted}.ItemTimestamp > {existing}.ItemTimestamp");
         tableInfo.IdentityColumnName = "ItemId";
-        string actual = SqlQueryBuilder.MergeTable<Item>(null, tableInfo, OperationType.Update).sql;
+        string actual = SqlQueryBuilder.MergeTable<Item>(context, tableInfo, OperationType.Update).sql;
 
         string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING " +
                           "(SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
@@ -202,7 +205,7 @@ public class SqlQueryBuilderUnitTests
     public void MergeTableDeleteDeleteTest()
     {
         var tableInfo = GetTestTableInfo();
-        string result = SqlQueryBuilder.MergeTable<Item>(null, tableInfo, OperationType.Delete).sql;
+        string result = SqlQueryBuilder.MergeTable<Item>(context, tableInfo, OperationType.Delete).sql;
 
         string expected = "MERGE [dbo].[Item] WITH (HOLDLOCK) AS T USING " +
                           "(SELECT TOP 0 * FROM [dbo].[ItemTemp1234] ORDER BY [ItemId]) AS S " +
