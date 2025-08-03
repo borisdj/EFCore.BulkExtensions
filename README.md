@@ -1,8 +1,8 @@
 # EFCore.BulkExtensions
-EntityFrameworkCore extensions (performance improvement - into overdrive):  
+EntityFrameworkCore extensions (performance boost - into overdrive):  
 -Bulk operations (super fast): **Insert, Update, Delete, Read, Upsert, Sync, SaveChanges.**  
 -Batch ops: **Update, Delete** - Deprecated from EF8 since EF7+ has native Execute-Up/Del.  
--AddOp (additional): **Truncate.**  
+-AddOp (additional improvement): **Truncate.**  
 Library is Lightweight and very Efficient (warp speed), having all mostly used [CRUD](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete) operation.  
 Was selected in top 20 [EF Core Extensions](https://docs.microsoft.com/en-us/ef/core/extensions/) recommended by Microsoft.  
 Latest version is using EF Core 9.  
@@ -13,7 +13,7 @@ Icon>> and Logo (__):
 <img src="/EFCore.BulkExtensions/EFCoreBulk.png" height=60> & <img src="EFCoreBulkLogo_small.png" height=60>  
 (f.forward | rocket time)
 
-**Also take a look into others packages:</br>
+**Also take a look into others highly performant packages:</br>
 Open source (MIT or cFOSS) authored [.Net libraries](https://infopedia.io/dot-net-libraries/) and other projects (@[**Infopedia.io**](https://infopedia.io/) personal blog post).
 | №  | Project                  | Type | Description                                              |
 | -  | ------------------------ | ---- | -------------------------------------------------------- |
