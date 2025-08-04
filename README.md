@@ -9,7 +9,7 @@ Latest version is using EF Core 9.
 Supports all 5 major sql databases: **SQLServer, PostgreSQL, MySQL, Oracle, SQLite.**  
 Check out [Testimonials](https://docs.google.com/spreadsheets/d/e/2PACX-1vShdv2sTm3oQfowm9kVIx-PLBCk1lGQEa9E6n92-dX3pni7-XQUEp6taVcMSZVi9BaSAizv1YanWTy3/pubhtml?gid=801420190&single=true) from the Community and User Comments.  
 With thousands of pleased Users and many satisfied Clients from around the globe.  
-Customers include mid-sized businesses and large corporations,some related to big-data/AI industry & fintech companies  
+Customers are mid-sized businesses and large corporations, some related to big-data/AI industry & fintech companies.  
 Icon>> and Logo (__):  
 <img src="/EFCore.BulkExtensions/EFCoreBulk.png" height=60> & <img src="EFCoreBulkLogo_small.png" height=60>  
 (f.forward | rocket time)
