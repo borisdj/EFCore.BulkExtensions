@@ -328,7 +328,7 @@ _ Setting it False can optionally be used to solve deadlock issue Insert.
 **CustomSqlPostProcess** If used, should be set to valid pure Sql syntax, that would be run after main operation but before deleting temporary tables. One practical use case would be to move data from TempOutput table (set UniqueTableNameTempDb to False know the name) into a some Log table, optionally using FOR JSON PATH (example test: *CustomSqlPostProcessTest*).  
 **IncludeGraph** when set, all entities that have relations with main ones from the list are also merged into theirs tables.  
 **OmitClauseExistsExcept** removes the clause from Merge statement, required when having noncomparable types like XML, and useful when need to activate triggers even for same data.  
-_ Also in some [sql collation](https://github.com/borisdj/EFCore.BulkExtensions/issues/641), small and capital letters are considered same (case-insensitive) so for BulkUpdate set it false.  
+_ Also in some [sql collation](https://github.com/borisdj/EFCore.BulkExtensions/issues/641), small and capital letters are considered same (case-insensitive) so for BulkUpdate set false.  
 **DoNotUpdateIfTimeStampChanged** if set checks TimeStamp for Concurrency, ones with conflict will [not be updated](https://github.com/borisdj/EFCore.BulkExtensions/issues/469#issuecomment-803662721).  
 Return info will be within *BulkConfig.**TimeStampInfo*** in field `NumberOfSkippedForUpdate` and list `EntitiesOutput`.  
 **SRID** Spatial Reference Identifier - for SQL Server with NetTopologySuite.  
