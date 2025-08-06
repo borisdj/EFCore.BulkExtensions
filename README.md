@@ -10,7 +10,7 @@ Supports all 5 major sql databases: **SQLServer, PostgreSQL, MySQL, Oracle, SQLi
 Check out [Testimonials](https://docs.google.com/spreadsheets/d/e/2PACX-1vShdv2sTm3oQfowm9kVIx-PLBCk1lGQEa9E6n92-dX3pni7-XQUEp6taVcMSZVi9BaSAizv1YanWTy3/pubhtml?gid=801420190&single=true) from the Community and User Comments.  
 With thousands of pleased Users and many satisfied Clients from around the globe.  
 Customers range from small and medium-sized businesses to large corporations,  
- of which some are related to big-data/AI industry and fintech companies.  
+ of which some are related to big-data/AI industry and fintech companies that have large datasets.  
 Icon>> and Logo (__):  
 <img src="/EFCore.BulkExtensions/EFCoreBulk.png" height=60> & <img src="EFCoreBulkLogo_small.png" height=60>  
 (f.forward | rocket time)
