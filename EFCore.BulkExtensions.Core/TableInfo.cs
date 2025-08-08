@@ -114,7 +114,7 @@ public class TableInfo
     /// <param name="bulkConfig"></param>
     /// <returns></returns>
     /// <exception cref="InvalidOperationException"></exception>
-    public static TableInfo CreateInstance<T>(DbContext context, Type? type, IEnumerable<T> entities, OperationType operationType, BulkConfig? bulkConfig)
+    public static TableInfo CreateInstance<T>(BulkContext context, Type? type, IEnumerable<T> entities, OperationType operationType, BulkConfig? bulkConfig)
     {
         var tableInfo = new TableInfo
         {
@@ -123,7 +123,7 @@ public class TableInfo
         };
         tableInfo.BulkConfig.OperationType = operationType;
 
-        bool isExplicitTransaction = context.Database.GetDbConnection().State == ConnectionState.Open;
+        bool isExplicitTransaction = context.DbContext.Database.GetDbConnection().State == ConnectionState.Open;
         if (tableInfo.BulkConfig.UseTempDB == true && !isExplicitTransaction && (operationType != OperationType.Insert || tableInfo.BulkConfig.SetOutputIdentity))
         {
             throw new InvalidOperationException("When 'UseTempDB' is set then BulkOperation has to be inside Transaction. " +
@@ -147,15 +147,16 @@ public class TableInfo
     /// <exception cref="InvalidOperationException"></exception>
     /// <exception cref="MultiplePropertyListSetException"></exception>
     /// <exception cref="InvalidBulkConfigException"></exception>
-    public void LoadData<T>(DbContext context, Type? type, IEnumerable<T> entities, bool loadOnlyPKColumn)
+    public void LoadData<T>(BulkContext context, Type? type, IEnumerable<T> entities, bool loadOnlyPKColumn)
 
     {
+        var dbContext = context.DbContext;
         LoadOnlyPKColumn = loadOnlyPKColumn;
-        var entityType = type is null ? null : context.Model.FindEntityType(type);
+        var entityType = type is null ? null : dbContext.Model.FindEntityType(type);
         if (entityType == null)
         {
             type = entities.FirstOrDefault()?.GetType() ?? throw new ArgumentNullException(nameof(type));
-            entityType = context.Model.FindEntityType(type);
+            entityType = dbContext.Model.FindEntityType(type);
             HasAbstractList = true;
         }
         if (entityType == null)
@@ -164,7 +165,7 @@ public class TableInfo
         }
 
         //var relationalData = entityType.Relational(); relationalData.Schema relationalData.TableName // DEPRECATED in Core3.0
-        string? providerName = context.Database.ProviderName?.ToLower();
+        string? providerName = dbContext.Database.ProviderName?.ToLower();
         bool isSqlServer = providerName?.EndsWith(SqlType.SqlServer.ToString().ToLower()) ?? false;
         bool isNpgsql = providerName?.EndsWith(SqlType.PostgreSql.ToString().ToLower()) ?? false;
         bool isSqlite = providerName?.EndsWith(SqlType.Sqlite.ToString().ToLower()) ?? false;
@@ -178,8 +179,7 @@ public class TableInfo
         }
         else if (isNpgsql)
         {
-            var adapter = SqlAdaptersMapping.CreateBulkOperationsAdapter(context);
-            defaultSchema = adapter.ReconfigureTableInfo(context, this);
+            defaultSchema = context.Adapter.ReconfigureTableInfo(context, this);
         }
 
         string? customSchema = null;
@@ -312,7 +312,7 @@ public class TableInfo
 
         if (isSqlServer || isNpgsql || isMySql)
         {
-            var strategyName = SqlAdaptersMapping.DbServer(context).ValueGenerationStrategy;
+            var strategyName = SqlAdaptersMapping.DbServer(dbContext).ValueGenerationStrategy;
             if (!strategyName.Contains(":Value"))
             {
                 strategyName = strategyName.Replace("Value", ":Value"); //example 'SqlServer:ValueGenerationStrategy'
@@ -324,7 +324,7 @@ public class TableInfo
                 bool hasIdentity = false;
                 if (annotation != null)
                 {
-                    hasIdentity = SqlAdaptersMapping.DbServer(context).PropertyHasIdentity(annotation);
+                    hasIdentity = SqlAdaptersMapping.DbServer(dbContext).PropertyHasIdentity(annotation);
                 }
                 if (hasIdentity)
                 {
@@ -443,7 +443,7 @@ public class TableInfo
                 var navigationProperty = property.GetContainingForeignKeys().FirstOrDefault()?.DependentToPrincipal?.PropertyInfo;
                 if (navigationProperty is not null)
                 {
-                    var navigationEntityType = context.Model.FindEntityType(navigationProperty.PropertyType);
+                    var navigationEntityType = dbContext.Model.FindEntityType(navigationProperty.PropertyType);
                     var navigationProperties = navigationEntityType?.GetProperties().Where(p => p.IsPrimaryKey()).ToList() ?? new();
 
                     foreach (var navEntityProperty in navigationProperties)
@@ -586,10 +586,10 @@ public class TableInfo
 
                         prefix += $"{property.Name}_";
 
-                        var ownedList = context.Model.FindEntityTypes(property.PropertyType).Where(x => x.IsInOwnershipPath(entityType)).ToList();
+                        var ownedList = dbContext.Model.FindEntityTypes(property.PropertyType).Where(x => x.IsInOwnershipPath(entityType)).ToList();
                         var ownedEntityType = ownedList.Count == 1
                              ? ownedList[0] // IsInOwnershipPath fix for with multiple parents (issue #1149)
-                             : context.Model.GetEntityTypes().SingleOrDefault(x => x.ClrType == property.PropertyType && x.Name.StartsWith(entityType.Name + "." + property.Name + "#"));
+                             : dbContext.Model.GetEntityTypes().SingleOrDefault(x => x.ClrType == property.PropertyType && x.Name.StartsWith(entityType.Name + "." + property.Name + "#"));
                                // fix when entity has more then one ownedType (e.g. Address HomeAddress, Address WorkAddress) or one ownedType is in multiple Entities like Audit is usually.
 
                         var ownedEntityProperties = ownedEntityType?.GetProperties().ToList() ?? [];
@@ -1236,21 +1236,21 @@ public class TableInfo
     /// <param name="cancellationToken"></param>
     /// <param name="isAsync"></param>
     /// <returns></returns>
-    public async Task LoadOutputDataAsync<T>(DbContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, bool isAsync, CancellationToken cancellationToken) where T : class
+    public async Task LoadOutputDataAsync<T>(BulkContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, bool isAsync, CancellationToken cancellationToken) where T : class
     {
         bool hasIdentity = OutputPropertyColumnNamesDict.Any(a => a.Value == IdentityColumnName) ||
                            (tableInfo.HasSinglePrimaryKey && tableInfo.DefaultValueProperties.Contains(tableInfo.PrimaryKeysPropertyColumnNameDict.FirstOrDefault().Key));
         int totalNumber = entities.Count();
         if (BulkConfig.SetOutputIdentity && (hasIdentity || tableInfo.TimeStampColumnName == null))
         {
-            var databaseType = SqlAdaptersMapping.GetDatabaseType(context);
-            string sqlQuery = SqlAdaptersMapping.DbServer(context).QueryBuilder.SelectFromOutputTable(this);
+            var databaseType = context.Server.Type;
+            string sqlQuery = context.QueryBuilder.SelectFromOutputTable(this);
             //var entitiesWithOutputIdentity = await QueryOutputTableAsync<T>(context, sqlQuery).ToListAsync(cancellationToken).ConfigureAwait(false); // TempFIX
-            var entitiesWithOutputIdentity = QueryOutputTable(context, type, sqlQuery).Cast<object>().ToList();
+            var entitiesWithOutputIdentity = QueryOutputTable(context.DbContext, type, sqlQuery).Cast<object>().ToList();
             //var entitiesWithOutputIdentity = (typeof(T) == type) ? QueryOutputTable<object>(context, sqlQuery).ToList() : QueryOutputTable(context, type, sqlQuery).Cast<object>().ToList();
 
             //var entitiesObjects = entities.Cast<object>().ToList();
-            UpdateEntitiesIdentity(context, tableInfo, entities, entitiesWithOutputIdentity);
+            UpdateEntitiesIdentity(context.DbContext, tableInfo, entities, entitiesWithOutputIdentity);
             totalNumber = entitiesWithOutputIdentity.Count;
         }
         if (BulkConfig.CalculateStats)
@@ -1258,11 +1258,11 @@ public class TableInfo
             int[] statsNumbers;
             if (isAsync)
             {
-                statsNumbers = await GetStatsNumbersAsync(context, isAsync: true, cancellationToken).ConfigureAwait(false);
+                statsNumbers = await GetStatsNumbersAsync(context.DbContext, isAsync: true, cancellationToken).ConfigureAwait(false);
             }
             else
             {
-                statsNumbers = GetStatsNumbersAsync(context, isAsync: false, cancellationToken).GetAwaiter().GetResult();
+                statsNumbers = GetStatsNumbersAsync(context.DbContext, isAsync: false, cancellationToken).GetAwaiter().GetResult();
             }
             BulkConfig.StatsInfo = new StatsInfo
             {
