@@ -6,7 +6,7 @@ EntityFrameworkCore extensions that offer enterprise-grade performance boost - i
 Library is Lightweight and very Efficient (warp speed), having all mostly used [CRUD](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete) operation.  
 Was selected in top 20 [EF Core Extensions](https://docs.microsoft.com/en-us/ef/core/extensions/) recommended by Microsoft.  
 Latest version is using EF Core 9.  
-Supports all 5 major sql databases: **SQLServer, PostgreSQL, MySQL, Oracle, SQLite.**  
+Supports all 5 major sql databases (en masse DB Protocol): **SQLServer, PostgreSQL, MySQL, Oracle, SQLite.**    
 Check out [Testimonials](https://docs.google.com/spreadsheets/d/e/2PACX-1vShdv2sTm3oQfowm9kVIx-PLBCk1lGQEa9E6n92-dX3pni7-XQUEp6taVcMSZVi9BaSAizv1YanWTy3/pubhtml?gid=801420190&single=true) from the Community and User Comments.  
 With thousands of pleased Users and many satisfied Clients from around the globe.  
 Customers range from small and medium-sized businesses to large corporations,  
