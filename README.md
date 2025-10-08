@@ -41,7 +41,7 @@ And even with Community license, if you want help Development, you can make a Do
 ## Contributing
 Please read [CONTRIBUTING](https://github.com/borisdj/EFCore.BulkExtensions/blob/master/CONTRIBUTING.md) for details on code of conduct, and the process for submitting Pull Requests.  
 When opening issues do write detailed explanation of the problem or feature with reproducible example.  
-Want to **Contact** for Development & Consulting: [www.codis.tech](http://www.codis.tech) (*Quality Delivery*).  
+Want to **Contact** for Development & Consulting: [codis](https://codis-site.github.io/efcorebulk) (*Quality Delivery*).  
 
 ## Description
 Supported databases:  
