@@ -1,6 +1,6 @@
 {
   "ConnectionStrings": {
-    "SqlServer": "Server=localhost;Database=test;User=sa;Password=SuperSecret42!;TrustServerCertificate=True;",
+    "SqlServer": "Server=localhost;Database={databaseName};Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true;",
     "Sqlite": "Data Source={databaseName}.db",
     "PostgreSql": "Server=localhost;Port=5432;Database={databaseName};User Id=postgres;Password=Postgres22;",
     "MySql": "Server=localhost;Database={databaseName};Uid=root;Pwd=MySQL22;AllowLoadLocalInfile=true;",

@@ -1,5 +1,4 @@
-using HotChocolate;
-using HotChocolate.Types;
+//using HotChocolate; // find in page GraphQLType
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Conventions;
@@ -1107,7 +1106,7 @@ public class Partner
 public class GraphQLModel
 {
     [Key]
-    [GraphQLType(typeof(IdType))]
+    //[GraphQLType(typeof(IdType))]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public virtual System.Guid Id { get; set; }
 
@@ -1132,7 +1131,7 @@ public class ArrayModel
 public class Article
 {
     [Key]
-    [GraphQLType(typeof(IdType))]
+    //[GraphQLType(typeof(IdType))]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public virtual System.Guid Id { get; set; }
 

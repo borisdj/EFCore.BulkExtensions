@@ -7,7 +7,7 @@
     <Company>CODIS LLC</Company>
     <PackageIcon>EFCoreBulk.png</PackageIcon>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
-	<PackageReleaseNotes>net 9 update</PackageReleaseNotes>
+	<PackageReleaseNotes>net 9 full</PackageReleaseNotes>
     <PackageTags>EntityFrameworkCore Entity Framework Core .Net EFCore EF Core Bulk Batch Copy SqlBulkCopy Extensions Insert Update Delete Read Truncate SaveChanges</PackageTags>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
     <RepositoryUrl>https://github.com/borisdj/EFCore.BulkExtensions</RepositoryUrl>
@@ -27,7 +27,7 @@
     <AssemblyVersion>$(Version).0</AssemblyVersion>
   </PropertyGroup>
   <PropertyGroup Condition="!$(MSBuildProjectName.EndsWith('Net8'))">
-    <Version>9.0.1</Version>
+    <Version>9.0.2</Version>
     <PackageOutputPath>$(SolutionDir)Nugets\net9</PackageOutputPath>
     <AssemblyVersion>$(Version).0</AssemblyVersion>
   </PropertyGroup>

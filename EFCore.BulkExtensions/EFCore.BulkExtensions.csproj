@@ -11,7 +11,7 @@
   <ItemGroup>
     <ProjectReference Include="..\EFCore.BulkExtensions.SqlServer\EFCore.BulkExtensions.SqlServer.csproj" />
     <ProjectReference Include="..\EFCore.BulkExtensions.PostgreSql\EFCore.BulkExtensions.PostgreSql.csproj" />
-	<!--ProjectReference Include="..\EFCore.BulkExtensions.MySql\EFCore.BulkExtensions.MySql.csproj" /-->
+	<ProjectReference Include="..\EFCore.BulkExtensions.MySql\EFCore.BulkExtensions.MySql.csproj" />
 	<ProjectReference Include="..\EFCore.BulkExtensions.Oracle\EFCore.BulkExtensions.Oracle.csproj" />
     <ProjectReference Include="..\EFCore.BulkExtensions.Sqlite\EFCore.BulkExtensions.Sqlite.csproj" />
   </ItemGroup>
