@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore.Infrastructure;
 using System;
-using System.Data.Common;
 
 namespace EFCore.BulkExtensions.SqlAdapters.Sqlite;
 
@@ -14,12 +13,6 @@ public class SqliteDbServer : IDbServer
 
     SqliteDialect _dialect = new();
     IQueryBuilderSpecialization IDbServer.Dialect => _dialect;
-
-    /// <inheritdoc/>
-    public DbConnection? DbConnection { get; set; }
-
-    /// <inheritdoc/>
-    public DbTransaction? DbTransaction { get; set; }
 
     SqlAdapters.SqlQueryBuilder _queryBuilder = new SqliteQueryBuilder();
     /// <inheritdoc/>
