@@ -14,7 +14,7 @@ updates:
       - "borisdj"
   # Maintain dependencies for .NET projects (EFCore.BulkExtensions.Core)
   - package-ecosystem: "github-actions"
-    directory: "/EFCore.BulkExtensions.Core/EFCore.BulkExtensions.Core.csproj"
+    directory: "/EFCore.BulkExtensions.Core"
     schedule:
       interval: "monthly"
     ignore:
@@ -24,7 +24,7 @@ updates:
       - "borisdj"
   # Maintain dependencies for .NET projects (EFCore.BulkExtensions)
   - package-ecosystem: "github-actions"
-    directory: "/EFCore.BulkExtensions.SqlServer/EFCore.BulkExtensions.SqlServer.csproj"
+    directory: "/EFCore.BulkExtensions.SqlServer"
     schedule:
       interval: "monthly"
     ignore:
@@ -34,7 +34,7 @@ updates:
       - "borisdj"
   # Maintain dependencies for .NET projects (EFCore.BulkExtensions .Net8)
   - package-ecosystem: "github-actions"
-    directory: "/EFCore.BulkExtensions.PostgreSql/EFCore.BulkExtensions.PostgreSql.Net8.csproj"
+    directory: "/EFCore.BulkExtensions.PostgreSql"
     schedule:
       interval: "monthly"
     ignore:
@@ -44,7 +44,7 @@ updates:
       - "borisdj"
   # Maintain dependencies for .NET projects (EFCore.BulkExtensions .Net8) 
   - package-ecosystem: "github-actions"
-    directory: "/EFCore.BulkExtensions.MySql/EFCore.BulkExtensions.MySql.Net8.csproj"
+    directory: "/EFCore.BulkExtensions.MySql"
     schedule:
       interval: "monthly"
     ignore:
@@ -55,7 +55,7 @@ updates:
             - "borisdj"
   # Maintain dependencies for .NET projects (EFCore.BulkExtensions .Net8)         
   - package-ecosystem: "github-actions"
-    directory: "/EFCore.BulkExtensions.Oracle/EFCore.BulkExtensions.Oracle.Net8.csproj"
+    directory: "/EFCore.BulkExtensions.Oracle"
     schedule:
       interval: "monthly"
     ignore:
@@ -65,7 +65,7 @@ updates:
       - "borisdj"
   # Maintain dependencies for .NET projects (EFCore.BulkExtensions .Net8)         
   - package-ecosystem: "github-actions"
-    directory: "/EFCore.BulkExtensions.Sqlite/EFCore.BulkExtensions.Sqlite.Net8.csproj"
+    directory: "/EFCore.BulkExtensions.Sqlite"
     schedule:
       interval: "monthly"
     ignore:
@@ -75,7 +75,7 @@ updates:
       - "borisdj"
         # Maintain dependencies for .NET projects (EFCore.BulkExtensions .Net8)         
   - package-ecosystem: "github-actions"
-    directory: "/EFCore.BulkExtensions/EFCore.BulkExtensions.Net8.csproj"
+    directory: "/EFCore.BulkExtensions"
     schedule:
       interval: "monthly"
     ignore:
