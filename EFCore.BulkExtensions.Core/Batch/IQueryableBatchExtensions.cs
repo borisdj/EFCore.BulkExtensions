@@ -43,13 +43,14 @@ public static class IQueryableBatchExtensions
 
     private static (DbContext, string, List<DbParameter>) GetBatchDeleteArguments(IQueryable query)
     {
-        var context = BatchUtil.GetDbContext(query);
-        if (context is null)
+        var dbContext = BatchUtil.GetDbContext(query);
+        if (dbContext is null)
         {
             throw new ArgumentException("Unable to determine context");
         }
+        var context = BulkContext.Create(dbContext);
         var (sql, sqlParameters) = BatchUtil.GetSqlDelete(query, context);
-        return (context, sql, sqlParameters);
+        return (dbContext, sql, sqlParameters);
     }
     #endregion
 
@@ -119,14 +120,15 @@ public static class IQueryableBatchExtensions
     private static (DbContext, string, List<DbParameter>) GetBatchUpdateArguments<T>(IQueryable<T> query, object? updateValues = null, List<string>? updateColumns = null, Expression<Func<T, T>>? updateExpression = null, Type? type = null) where T : class
     {
         type ??= typeof(T);
-        var context = BatchUtil.GetDbContext(query);
-        if (context is null)
+        var dbContext = BatchUtil.GetDbContext(query);
+        if (dbContext is null)
         {
             throw new ArgumentException("Unable to determine context");
         }
+        var context = BulkContext.Create(dbContext);
         var (sql, sqlParameters) = updateExpression == null ? BatchUtil.GetSqlUpdate(query, context, type, updateValues, updateColumns)
                                                             : BatchUtil.GetSqlUpdate(query, context, type, updateExpression);
-        return (context, sql, sqlParameters);
+        return (dbContext, sql, sqlParameters);
     }
     #endregion
 }

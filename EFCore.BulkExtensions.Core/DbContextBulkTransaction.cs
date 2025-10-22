@@ -1,6 +1,4 @@
-﻿using EFCore.BulkExtensions.SqlAdapters;
-using Microsoft.EntityFrameworkCore;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -10,19 +8,15 @@ namespace EFCore.BulkExtensions;
 
 internal static class DbContextBulkTransaction
 {
-    public static void Execute<T>(DbContext context, Type? type, IEnumerable<T> entities, OperationType operationType, BulkConfig? bulkConfig, Action<decimal>? progress) where T : class
+    public static void Execute<T>(BulkContext context, Type type, IEnumerable<T> entities, OperationType operationType, BulkConfig? bulkConfig, Action<decimal>? progress) where T : class
     {
-        UpdateSqlAdaptersProps(context);
-
-        type ??= typeof(T);
-
         using (ActivitySources.StartExecuteActivity(operationType, entities.Count()))
         {
             if (!IsValidTransaction(entities, operationType, bulkConfig)) return;
 
             if (operationType == OperationType.SaveChanges)
             {
-                DbContextBulkTransactionSaveChanges.SaveChanges(context, bulkConfig, progress);
+                DbContextBulkTransactionSaveChanges.SaveChanges(context.DbContext, bulkConfig, progress);
                 return;
             }
 
@@ -55,19 +49,15 @@ internal static class DbContextBulkTransaction
         }
     }
 
-    public static async Task ExecuteAsync<T>(DbContext context, Type? type, IEnumerable<T> entities, OperationType operationType, BulkConfig? bulkConfig, Action<decimal>? progress, CancellationToken cancellationToken = default) where T : class
+    public static async Task ExecuteAsync<T>(BulkContext context, Type type, IEnumerable<T> entities, OperationType operationType, BulkConfig? bulkConfig, Action<decimal>? progress, CancellationToken cancellationToken = default) where T : class
     {
-        UpdateSqlAdaptersProps(context);
-
-        type ??= typeof(T);
-
         using (ActivitySources.StartExecuteActivity(operationType, entities.Count()))
         {
             if (!IsValidTransaction(entities, operationType, bulkConfig)) return;
 
             if (operationType == OperationType.SaveChanges)
             {
-                await DbContextBulkTransactionSaveChanges.SaveChangesAsync(context, bulkConfig, progress, cancellationToken).ConfigureAwait(false);
+                await DbContextBulkTransactionSaveChanges.SaveChangesAsync(context.DbContext, bulkConfig, progress, cancellationToken).ConfigureAwait(false);
                 return;
             }
 
@@ -99,13 +89,6 @@ internal static class DbContextBulkTransaction
             }
         }
     }
-
-    #region SqlAdapters Settings
-    private static void UpdateSqlAdaptersProps(DbContext context)
-    {
-        SqlAdaptersMapping.UpdateProviderName(context.Database.ProviderName);
-    }
-    #endregion
 
     #region Transaction Validators
     private static bool IsValidTransaction<T>(IEnumerable<T> entities, OperationType operationType, BulkConfig? bulkConfig)

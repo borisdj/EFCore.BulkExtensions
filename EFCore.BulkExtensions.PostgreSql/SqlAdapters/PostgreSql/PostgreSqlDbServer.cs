@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore.Infrastructure;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata.Internal;
-using System.Data.Common;
 
 namespace EFCore.BulkExtensions.SqlAdapters.PostgreSql;
 
@@ -14,12 +13,6 @@ public class PostgreSqlDbServer : IDbServer
 
     PostgreSqlDialect _dialect = new();
     IQueryBuilderSpecialization IDbServer.Dialect => _dialect;
-
-    /// <inheritdoc/>
-    public DbConnection? DbConnection { get; set; }
-
-    /// <inheritdoc/>
-    public DbTransaction? DbTransaction { get; set; }
 
     SqlAdapters.SqlQueryBuilder _queryBuilder = new PostgreSqlQueryBuilder();
     /// <inheritdoc/>

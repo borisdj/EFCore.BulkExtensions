@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
-using System.Data.Common;
 
 namespace EFCore.BulkExtensions.SqlAdapters.MySql;
 
@@ -20,12 +19,6 @@ public class MySqlDbServer : IDbServer
     public SqlQueryBuilder QueryBuilder => _queryBuilder;
 
     string IDbServer.ValueGenerationStrategy => nameof(MySqlValueGenerationStrategy);
-
-    /// <inheritdoc/>
-    public DbConnection? DbConnection { get; set; }
-
-    /// <inheritdoc/>
-    public DbTransaction? DbTransaction { get; set; }
 
     bool IDbServer.PropertyHasIdentity(IAnnotation annotation) => (MySqlValueGenerationStrategy?)annotation.Value == MySqlValueGenerationStrategy.IdentityColumn;
 }

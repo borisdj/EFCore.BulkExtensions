@@ -359,18 +359,6 @@ public class TestContextBase : DbContext
 {
     public TestContextBase(DbContextOptions options) : base(options)
     {
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-
-        while (!cts.IsCancellationRequested)
-        {
-            if (Database.CanConnect())
-            {
-                break;
-            }
-
-            Thread.Sleep(100);
-        }
-
         try
         {
             Database.EnsureCreated();

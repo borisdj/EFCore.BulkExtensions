@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Runtime.Serialization;
 
 namespace EFCore.BulkExtensions;
 // TEST 02-10-2023 10:59

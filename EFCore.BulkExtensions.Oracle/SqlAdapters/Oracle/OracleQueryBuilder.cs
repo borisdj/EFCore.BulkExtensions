@@ -3,7 +3,6 @@ using System.Data;
 using System.Data.Common;
 using System.Security.Cryptography;
 using System.Text;
-using static System.Runtime.InteropServices.Marshalling.IIUnknownCacheStrategy;
 
 namespace EFCore.BulkExtensions.SqlAdapters.Oracle;
 
