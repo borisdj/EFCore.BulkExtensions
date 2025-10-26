@@ -405,7 +405,7 @@ R { BulkRead ----------------|             |--Read -----|--Read -------|--Read  
 ```
 - Projects Composition:
 
-| Num | Nuget                                  | Reference   | Transitive dep. | Note         | 
+| Num | Nuget                                  | References  | Transitive dep. | Note         | 
 | --- | -------------------------------------- | ----------- | --------------- | ------------ | 
 | [0] | EFCore.BulkExtensions.Core             |             |                 | shared       |
 | [1] | EFCore.BulkExtensions.***SqlServer***  | [0]         |                 | per provider |
