@@ -78,7 +78,6 @@ Its assembly is [Strong-Named](https://docs.microsoft.com/en-us/dotnet/standard/
 | 1.x   | NetStandard 1.4 | EF Core 1 | NetCore(1.0+)                   |
 
 Supports follows official [.Net lifecycle](https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core), currently v.9 as latest and v.8(LTS).  
-**At the moment *Pomelo.EntityFrameworkCore.MySql* still does not have full Release for EF9 so its nuget is published as 'rc' and Main package as 9.0.0-rc.1 (mysql adapter is ommited from main release version 9.0.1)
 
 ## Usage
 It's pretty simple and straightforward.  
