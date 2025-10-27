@@ -403,7 +403,7 @@ public class EFCoreBulkTest
             RunInsertOrUpdateOrDelete(isBulk, sqlType); // Not supported for Sqlite (has only UPSERT), instead use BulkRead, then split list into sublists and call separately Bulk methods for Insert, Update, Delete.
         }
         RunDelete(isBulk, sqlType);
-
+        
         //CheckQueryCache();
     }
 

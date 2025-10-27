@@ -1,6 +1,7 @@
 using EFCore.BulkExtensions.SqlAdapters;
 using FastMember;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using NetTopologySuite.Geometries;
 using System;
 using System.Collections.Generic;
@@ -1641,7 +1642,7 @@ public class EFCoreBulkTestAtypical
     }
 
     [Fact]
-    public async static void ConverterStringPKTest() //for issue1343
+    public async static void ConverterStringPKTest() //for issue 1343
     {
         using var context = new TestContext(SqlType.PostgreSql);
 
@@ -1655,5 +1656,31 @@ public class EFCoreBulkTestAtypical
 
         await context.Mods.AddAsync(mod);
         await context.BulkSaveChangesAsync();
+    }
+
+    [Fact]
+    public async static void GrphOwnedTest() //for issue 1337
+    {
+        using var context = new TestContext(SqlType.SqlServer);
+
+        // CalculateStats = true throws: Cannot create a DbSet for 'Location' because it is configured as an owned entity type
+        var bulkConfig = new BulkConfig { IncludeGraph = true, CalculateStats = false };
+
+        Client[] entities = [
+        new()
+        {
+            ClientId = "test1",
+            ContactMethods = new()
+            {
+                HomePhone = "homephone1",
+                LocationAdresses = [
+                    new Location() { Address = "email1", Type = "emailtype1" },
+                    new Location() { Address = "email2", Type = "emailtype2" },
+                ]
+            },
+        }
+            ];
+
+        context.BulkInsertOrUpdate(entities, bulkConfig);
     }
 }

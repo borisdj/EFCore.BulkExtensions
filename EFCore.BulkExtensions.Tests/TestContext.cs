@@ -101,6 +101,12 @@ public class TestContext : TestContextBase
     public virtual DbSet<ChildType> ChildTypes { get; set; } = null!;
     public virtual DbSet<ParentType> ParentTypes { get; set; } = null!;
 
+    public DbSet<Client> Clients { get; set; } = null!;
+    public DbSet<ContactMethods> ContactMethods { get; set; } = null!;
+    public DbSet<Location> Locations { get; set; } = null!;
+
+
+
     public TestContext(SqlType sqlType) : this (new ContextUtil(sqlType).GetOptions()) {}
     
     public TestContext(DbContextOptions options) : base(options)
@@ -122,7 +128,11 @@ public class TestContext : TestContextBase
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // modelBuilder.RemovePluralizingTableNameConvention(); // instead used ConfigureConventions
-        
+
+        modelBuilder.Entity<CustomerG>(c =>
+            c.OwnsOne(x => x.ContactMethods,
+                cm => cm.OwnsMany(y => y.EmailAdresses)));
+
         modelBuilder.Entity<Mod>()
             .ToTable("Mods");
 
@@ -1208,4 +1218,22 @@ public sealed class ModId
     public static ModId Create(string value)
         => new ModId(value);
 }
+
+// Graph Owned test
+public class Client
+{
+    public string ClientId { get; set; } = default!;
+    public ContactMethods ContactMethods { get; set; } = default!;
+}
+public class ContactMethods
+{
+    public string HomePhone { get; set; } = default!;
+    public ICollection<Location> LocationAdresses { get; set; } = default!;
+}
+public class Location
+{
+    public string Address { get; set; } = default!;
+    public string Type { get; set; } = default!;
+}
+// Graph Owned test
 //--------------------------------------------------------
