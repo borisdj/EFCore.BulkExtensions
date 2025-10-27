@@ -37,6 +37,10 @@ public class BulkConfig
     public bool SetOutputNonIdentityColumns { get; set; } = true;
 
     /// <summary>
+    /// Automatically exclude properties marked as Timestamp / RowVersion during Bulk operations.
+    /// </summary>
+    public bool AutoExcludeTimestamp { get; set; } = true;
+    /// <summary>
     ///    Used only when SetOutputIdentity is set to true, and when changed to True then columns that were no included in Upsert are not loaded.
     /// </summary>
     public bool LoadOnlyIncludedColumns { get; set; } = false;

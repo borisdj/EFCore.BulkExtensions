@@ -195,10 +195,16 @@ public class TableInfo
             }
         }
 
-        Schema = customTableName != null ? customSchema : entityType.GetSchema() ?? defaultSchema;
-
         var entityTableName = entityType.GetTableName();
-        TableName = customTableName ?? entityTableName;
+        var entityViewName = entityType.GetViewName();
+        bool isView = entityTableName == null && entityViewName != null;
+        
+        if(isView)
+            Schema = customTableName != null ? customSchema : entityType.GetViewSchema() ?? defaultSchema;
+        else
+            Schema = customTableName != null ? customSchema : entityType.GetSchema() ?? defaultSchema;
+
+        TableName = customTableName ?? (isView ? entityViewName : entityTableName);
 
         string? sourceSchema = null;
         string? sourceTableName = null;
@@ -224,12 +230,14 @@ public class TableInfo
         }
         TempTableName = sourceTableName ?? $"{TableName}{TempTableSufix}";
 
-        if (entityTableName is null)
+        if ((!isView && entityTableName is null) || (isView && entityViewName is null))
         {
-            throw new ArgumentException("Entity does not contain a table name");
+            throw new ArgumentException("Entity does not contain a table or view name");
         }
 
-        ObjectIdentifier = StoreObjectIdentifier.Table(entityTableName, entityType.GetSchema());
+        ObjectIdentifier = isView 
+            ? StoreObjectIdentifier.View(entityViewName!, entityType.GetViewSchema()) 
+            : StoreObjectIdentifier.Table(entityTableName!, entityType.GetSchema());
 
         var allProperties = new List<IProperty>();
         foreach (var entityProperty in entityType.GetProperties())
@@ -345,6 +353,23 @@ public class TableInfo
                                                      (isSqlServer && a.ClrType.Name.StartsWith("Decimal")))
                                               )?.GetColumnName(ObjectIdentifier);
         }
+
+        if (BulkConfig.AutoExcludeTimestamp)
+        {
+            var timestampProps = allProperties
+                .Where(p => p.IsConcurrencyToken && p.ValueGenerated == ValueGenerated.OnAddOrUpdate)
+                .Select(p => p.Name)
+                .ToList();
+
+            BulkConfig.PropertiesToExclude ??= new();
+            foreach (var prop in timestampProps)
+            {
+                if (!BulkConfig.PropertiesToExclude.Contains(prop))
+                    BulkConfig.PropertiesToExclude.Add(prop);
+            }
+        }
+
+
 
         // timestamp/row version properties are only set by the Db, the property has a [Timestamp] Attribute or is configured in FluentAPI with .IsRowVersion()
         // They can be identified by the columne type "timestamp" or .IsConcurrencyToken in combination with .ValueGenerated == ValueGenerated.OnAddOrUpdate
