@@ -16,6 +16,7 @@ using EFCore.BulkExtensions.SqlAdapters;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Infrastructure.Internal;
 using Oracle.ManagedDataAccess.Client;
 using System.Threading;
+using EFCore.BulkExtensions.Tests.Owned;
 
 // ReSharper disable EntityFramework.ModelValidation.UnlimitedStringLength
 // ReSharper disable PropertyCanBeMadeInitOnly.Global
@@ -129,9 +130,9 @@ public class TestContext : TestContextBase
     {
         // modelBuilder.RemovePluralizingTableNameConvention(); // instead used ConfigureConventions
 
-        modelBuilder.Entity<CustomerG>(c =>
+        modelBuilder.Entity<Client>(c =>
             c.OwnsOne(x => x.ContactMethods,
-                cm => cm.OwnsMany(y => y.EmailAdresses)));
+                cm => cm.OwnsMany(y => y.LocationAdresses)));
 
         modelBuilder.Entity<Mod>()
             .ToTable("Mods");
