@@ -12,3 +12,6 @@ EFCore.BulkExtensions.PerProvider/EFCore.BulkExtensions.MySql/*
 EFCore.BulkExtensions.PerProvider/EFCore.BulkExtensions.PostgreSql/*
 EFCore.BulkExtensions.PerProvider/EFCore.BulkExtensions.Sqlite/*
 EFCore.BulkExtensions.PerProvider/EFCore.BulkExtensions.SqlServer/*
+/EFCore.BulkExtensions/EFCore.BulkExtensions.csproj
+/EFCore.BulkExtensions.MySql/EFCore.BulkExtensions.MySql.csproj
+/EFCore.BulkExtensions.Core/EFCore.BulkExtensions.Core.csproj
