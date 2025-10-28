@@ -659,12 +659,23 @@ public class TableInfo
                                     doAddProperty = false;
                                 }
 
+                                bool doAddPropertyOnUpdate = true;
+
+                                if (doAddProperty && AreSpecifiedPropertiesToIncludeOnUpdate && !(BulkConfig.PropertiesToIncludeOnUpdate?.Contains(ownedPropertyFullName) ?? false))
+                                    doAddPropertyOnUpdate = false;
+                                if (doAddProperty && AreSpecifiedPropertiesToExcludeOnUpdate && (BulkConfig.PropertiesToExcludeOnUpdate?.Contains(ownedPropertyFullName) ?? false))
+                                    doAddPropertyOnUpdate = false;
+
                                 if (doAddProperty)
                                 {
                                     PropertyColumnNamesDict.Add(ownedPropertyFullName, columnName);
                                     PropertyColumnNamesCompareDict.Add(ownedPropertyFullName, columnName);
-                                    PropertyColumnNamesUpdateDict.Add(ownedPropertyFullName, columnName);
                                     OutputPropertyColumnNamesDict.Add(ownedPropertyFullName, columnName);
+                                }
+
+                                if (doAddProperty && doAddPropertyOnUpdate)
+                                {
+                                    PropertyColumnNamesUpdateDict.Add(ownedPropertyFullName, columnName);
                                 }
                             }
                         }
