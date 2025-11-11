@@ -17,6 +17,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Infrastructure.Internal;
 using Oracle.ManagedDataAccess.Client;
 using System.Threading;
 using EFCore.BulkExtensions.Tests.Owned;
+using GBase.EntityFrameworkCore.Extensions;
 
 // ReSharper disable EntityFramework.ModelValidation.UnlimitedStringLength
 // ReSharper disable PropertyCanBeMadeInitOnly.Global
@@ -207,7 +208,10 @@ public class TestContext : TestContextBase
         modelBuilder.Entity<Person>().HasIndex(a => a.Name)
             .IsUnique(); // In SQLite UpdateByColumn(nonPK) requires it has UniqueIndex
 
-        modelBuilder.Entity<Document>().Property(p => p.IsActive).HasDefaultValue(true);
+        if (!Database.IsGBase())
+        {
+            modelBuilder.Entity<Document>().Property(p => p.IsActive).HasDefaultValue(true);
+        }
         modelBuilder.Entity<Document>().Property(p => p.Tag).HasDefaultValue("DefaultData");
         if (Database.IsSqlServer())
         {
@@ -262,7 +266,7 @@ public class TestContext : TestContextBase
             modelBuilder.Entity<Tracker>().OwnsOne(t => t.Location).Ignore(p => p.Location); // Point only on SqlServer
         }
 
-        if (Database.IsSqlite() || Database.IsNpgsql() || Database.IsMySql())
+        if (Database.IsSqlite() || Database.IsNpgsql() || Database.IsMySql() || Database.IsGBase())
         {
             modelBuilder.Entity<Category>().Ignore(p => p.HierarchyDescription);
 
@@ -284,13 +288,20 @@ public class TestContext : TestContextBase
                 .HasSrid(4326);
         }
 
-        if (Database.IsMySql())
+        if (Database.IsMySql() || Database.IsGBase())
         {
             modelBuilder.Entity<Address>().Ignore(p => p.LocationGeography);
             modelBuilder.Entity<Address>().Ignore(p => p.LocationGeometry);
             modelBuilder.Entity<Address>().Ignore(p => p.GeoLine);
         }
+        if (Database.IsGBase())
+        {
+            modelBuilder.Entity<Address>().Ignore(p => p.GeoPoint);
 
+            modelBuilder.Entity<Archive>()
+                .Property(p => p.ArchiveId)
+                .HasColumnType("varchar(128)");
+        }
         if (Database.IsNpgsql())
         {
             modelBuilder.Entity<GraphQLModel>().Property(x => x.Id).HasDefaultValueSql("gen_random_uuid()");

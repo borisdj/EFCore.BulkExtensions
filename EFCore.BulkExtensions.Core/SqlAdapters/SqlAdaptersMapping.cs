@@ -33,6 +33,11 @@ public enum SqlType
     ///  Indicates database is Oracle
     /// </summary>
     Oracle,
+
+    /// <summary>
+    ///  Indicates database is GBase
+    /// </summary>
+    GBase,
 }
 
 #pragma warning disable CS1591 // No XML comment required here
@@ -78,7 +83,10 @@ public static class SqlAdaptersMapping
         {
             databaseType = SqlType.Oracle;
         }
-
+        else if (providerName?.EndsWith(SqlType.GBase.ToString(), ignoreCase) ?? false) // ProviderName: Microsoft.EntityFrameworkCore.GBase
+        {
+            databaseType = SqlType.GBase;
+        }
         if (_dbServer == null || _dbServer.Type != databaseType)
         {
             static Type GetType(SqlType type)

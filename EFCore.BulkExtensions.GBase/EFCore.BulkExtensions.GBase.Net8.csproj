@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Title>EFCore.BulkExtensions.GBase</Title>
+    <Description>EntityFramework .Net EFCore EF Core Bulk Batch Extensions for Insert Update Delete Read (CRUD) operations on GBase</Description>
+    <PackageTags>$(PackageTags) GBase</PackageTags>
+    <PackageId>EFCore.BulkExtensions.GBase</PackageId>
+  </PropertyGroup>
+  <ItemGroup>
+	<PackageReference Include="GeneralData.EntityFrameworkCore.GBase" Version="8.0.0.7" />
+	<PackageReference Include="GeneralData.GBase8s.DataProvider" Version="1.0.0.1" />
+	<PackageReference Include="NetTopologySuite.IO.SpatiaLite" Version="2.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\EFCore.BulkExtensions.Core\EFCore.BulkExtensions.Core.Net8.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+     <Content Include="..\..\..\..\05_EFCore8.0\GeneralData.EntityFrameworkCore.GBase.8.0.0.5\lib\net8.0\GeneralData.EntityFrameworkCore.GBase.DataProvider.dll" PackagePath="lib\net8.0">
+      <Pack>true</Pack>
+      <PackageCopyToOutput>true</PackageCopyToOutput>
+    </Content>
+  </ItemGroup>
+</Project>
