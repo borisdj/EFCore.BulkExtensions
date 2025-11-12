@@ -38,7 +38,7 @@ public static class IQueryableExtensions
 #pragma warning restore CS8602 // Dereference of a possibly null reference.
 
         var queryContext = enumerator.Private<RelationalQueryContext>(relationalQueryContextText) ?? throw new InvalidOperationException($"{cannotGetText} {relationalQueryContextText}");
-        var parameterValues = queryContext.ParameterValues;
+        var parameterValues = queryContext.Parameters;
 
 #pragma warning disable EF1001 // Internal EF Core API usage.
         var relationalCommandCache = (RelationalCommandCache?)enumerator.Private(relationalCommandCacheText);

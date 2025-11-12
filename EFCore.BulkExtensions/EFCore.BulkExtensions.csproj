@@ -1,11 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Title>EFCore.BulkExtensions</Title>
     <Description>EntityFramework .Net EFCore EF Core Bulk Batch Extensions for Insert Update Delete Read (CRUD) operations on SQL Server, PostgreSQL, MySQL, SQLite</Description>
     <PackageTags>$(PackageTags) SQLServer PostgreSQL MySQL SQLite</PackageTags>
     <IncludeBuildOutput>false</IncludeBuildOutput>
-    <NoWarn>$(NoWarn);NU5128</NoWarn>
+    <NoWarn>$(NoWarn);NU5128;NU1608;NU1107</NoWarn>
 	<NuGetAudit>false</NuGetAudit>
   </PropertyGroup>
   <ItemGroup>
