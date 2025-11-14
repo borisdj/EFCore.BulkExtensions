@@ -288,7 +288,7 @@ internal static class DbContextBulkTransactionSaveChanges
 
             var navigations = entry.Navigations.Where(a => a.IsLoaded);
 
-            foreach (var n in navigations.Where(a => a.Metadata.IsCollection))
+            foreach (var n in navigations.Where(a => a.Metadata is IReadOnlyPropertyBase p && p.IsCollection))
             {
                 Type navType = GetNonProxyType(n.Metadata.ClrType.GenericTypeArguments.Single());
                 if (!tree.TryGetValue(navType, out DbNode? childNode))

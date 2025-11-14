@@ -708,7 +708,7 @@ public class SqlServerAdapter : ISqlOperationsAdapter
             var discriminatorProperty = entityPropertiesDict[discriminatorColumn];
 
             dataTable.Columns.Add(discriminatorColumn, discriminatorProperty.ClrType);
-            columnsDict.Add(discriminatorColumn, entityType.GetDiscriminatorValue());
+            columnsDict.Add(discriminatorColumn, entityType.GetDefaultDiscriminatorValue());
         }
         bool hasConverterProperties = tableInfo.ConvertiblePropertyColumnDict.Count > 0;
 
