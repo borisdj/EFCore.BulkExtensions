@@ -143,6 +143,117 @@ public class IncludeGraphTests : IDisposable
         yield return WorkOrder2;
     }
 
+    [Theory]
+    [MemberData(nameof(GetTestData2))]
+    public async Task BulkInsertOrUpdate_EntityWithNestedNullableObjectGraph_SavesGraphToDatabase1(IEnumerable<WorkOrder> orders)
+    {
+        ContextUtil.DatabaseType = SqlType.SqlServer;
+
+        using (var db = new GraphDbContext(ContextUtil.GetOptions<GraphDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_Graph")))
+        {
+            db.Database.EnsureDeleted();
+            await db.Database.EnsureCreatedAsync();
+
+            var bulkConfig = new BulkConfig
+            {
+                IncludeGraph = true,
+                CalculateStats = true,
+            };
+            await db.BulkInsertOrUpdateAsync(orders, bulkConfig);
+
+            Assert.NotNull(bulkConfig.StatsInfo);
+            Assert.Equal(
+                orders.Count() + orders.Where(x => x.Asset != null).Count(),
+                bulkConfig.StatsInfo.StatsNumberInserted);
+        }
+
+        using (var db = new GraphDbContext(ContextUtil.GetOptions<GraphDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_Graph")))
+        {
+            var ordersFromDb = db.WorkOrders
+                .Include(y => y.Asset)
+                .OrderBy(x => x.Id)
+                .ToList();
+
+            foreach (var orderFromDb in ordersFromDb)
+            {
+                var order = orders.First(x => x.Description == orderFromDb.Description);
+
+                if (order.Asset == null)
+                    Assert.Null(orderFromDb.Asset);
+                else
+                    Assert.NotNull(orderFromDb.Asset);
+            }
+        }
+    }
+
+    public static IEnumerable<object[]> GetTestData2()
+        =>
+        [
+            [GetTestDataWithNullInEnd()],
+            [GetTestDataWithNullInMiddle()],
+            [GetTestDataWithNullInFirst()],
+        ];
+
+    private static IEnumerable<WorkOrder> GetTestDataWithNullInEnd()
+    {
+        var baseData = GetBaseTestData();
+
+        baseData.Last().Asset = null;
+
+        return baseData;
+    }
+
+    private static IEnumerable<WorkOrder> GetTestDataWithNullInMiddle()
+    {
+        var baseData = GetBaseTestData();
+
+        baseData[1].Asset = null;
+
+        return baseData;
+    }
+
+    private static IEnumerable<WorkOrder> GetTestDataWithNullInFirst()
+    {
+        var baseData = GetBaseTestData();
+
+        baseData.First().Asset = null;
+
+        return baseData;
+    }
+
+    private static List<WorkOrder> GetBaseTestData()
+    {
+        return
+        [
+            new WorkOrder()
+            {
+                Description = "Fix belt",
+                Asset = new Asset
+                {
+                    Description = "MANU-1",
+                    Location = "WAREHOUSE-1"
+                },
+            },
+            new WorkOrder()
+            {
+                Description = "Fix toilets",
+                Asset = new Asset
+                {
+                    Description = "FLUSHMASTER-1",
+                    Location = "GYM-BLOCK-3"
+                },
+            },
+            new WorkOrder()
+            {
+                Description = "Fix door",
+                Asset = new Asset
+                {
+                    Location = "OFFICE-12"
+                },
+            }
+        ];
+    }
+
     public void Dispose()
     {
         using var db = new GraphDbContext(ContextUtil.GetOptions<GraphDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_Graph"));
