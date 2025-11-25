@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
 using Microsoft.EntityFrameworkCore.Metadata;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,7 +10,7 @@ namespace EFCore.BulkExtensions;
 
 internal class GraphUtil
 {
-    public static IEnumerable<GraphNode>? GetTopologicallySortedGraph(DbContext dbContext, IEnumerable<object> entities)
+    public static IEnumerable<GraphNode>? GetSortedGraph(DbContext dbContext, IEnumerable<object> entities)
     {
         if (!entities.Any())
         {
@@ -26,6 +27,16 @@ internal class GraphUtil
 
         // Sort these entities so the first entity is the least dependendant
         var topologicalSorted = TopologicalSort(dependencies.Keys, y => dependencies[y].DependsOn.Select(y => y.entity));
+
+        var withAdditionalSorting = true;
+
+        if (withAdditionalSorting) return GetNodesWithSortingByDepth(dependencies, topologicalSorted);
+
+        return GetNodes(dependencies, topologicalSorted);
+    }
+
+    private static IEnumerable<GraphNode> GetNodes(Dictionary<object, GraphDependency> dependencies, IEnumerable<object> topologicalSorted)
+    {
         var result = new List<GraphNode>();
 
         foreach (var s in topologicalSorted)
@@ -38,6 +49,79 @@ internal class GraphUtil
         }
 
         return result;
+    }
+
+    private static IEnumerable<GraphNode> GetNodesWithSortingByDepth(Dictionary<object, GraphDependency> dependencies, IEnumerable<object> topologicalSorted)
+    {
+        var entitiesDepth = CalculateEntitiesDepth(dependencies, topologicalSorted.ToList());
+
+        var typesDepth = CalculateTypesDepth(entitiesDepth);
+
+        var result = new List<GraphNode>();
+
+        foreach (var type in typesDepth.OrderByDescending(x => x.Value))
+        {
+            foreach (var s in topologicalSorted)
+            {
+                if (s.GetType() != type.Key) continue;
+
+                result.Add(new GraphNode
+                {
+                    Entity = s,
+                    Dependencies = dependencies[s]
+                });
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Calculates the depth of each entity from the entity to the top of the dependency graph. Returns a dictionary mapping entities to their depth.
+    /// </summary>
+    private static Dictionary<object, int> CalculateEntitiesDepth(
+        Dictionary<object, GraphDependency> graph,
+        IReadOnlyList<object> topologicalSorted)
+    {
+        var depthDict = graph.Keys.ToDictionary(k => k, v => 0);
+
+        for (int i = graph.Count - 1; i >= 0; i--)
+        {
+            var node = topologicalSorted[i];
+
+            var nodeDeps = graph
+                .Where(x => x.Value.DependsOn.Any(d => d.entity == node))
+                .Select(x => x.Key)
+                .ToList();
+
+            int max = 0;
+            foreach (var childNode in nodeDeps)
+                max = Math.Max(max, depthDict[childNode] + 1);
+
+            depthDict[node] = max;
+        }
+
+        return depthDict;
+    }
+
+    /// <summary>
+    /// Calculates the maximum depth from entity of a given type to the top. Returns a dictionary mapping types to their maximum depth.
+    /// </summary>
+    private static Dictionary<Type, int> CalculateTypesDepth(Dictionary<object, int> entitiesDepth)
+    {
+        var typesDepth = new Dictionary<Type, int>();
+
+        foreach (var entityDepth in entitiesDepth)
+        {
+            var type = entityDepth.Key.GetType();
+
+            if (typesDepth.TryGetValue(type, out int value))
+                typesDepth[type] = Math.Max(value, entityDepth.Value);
+            else
+                typesDepth.Add(type, entityDepth.Value);
+        }
+
+        return typesDepth;
     }
 
     private static GraphDependency? GetFlatGraph(DbContext dbContext, object graphEntity, IDictionary<object, GraphDependency> result)

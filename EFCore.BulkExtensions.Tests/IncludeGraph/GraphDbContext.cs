@@ -25,7 +25,7 @@ public class GraphDbContext : DbContext
             cfg.HasKey(y => y.Id);
 
             cfg.HasOne(y => y.ParentAsset).WithMany(y => y.ChildAssets);
-            cfg.HasMany(y => y.WorkOrders).WithOne(y => y.Asset).IsRequired();
+            cfg.HasMany(y => y.WorkOrders).WithOne(y => y.Asset);
         });
 
         modelBuilder.Entity<WorkOrder>(cfg =>
@@ -33,7 +33,7 @@ public class GraphDbContext : DbContext
             cfg.HasKey(y => y.Id);
 
             cfg.HasMany(y => y.WorkOrderSpares).WithOne(y => y.WorkOrder);
-            cfg.HasOne(y => y.Asset).WithMany(y => y.WorkOrders).IsRequired();
+            cfg.HasOne(y => y.Asset).WithMany(y => y.WorkOrders);
         });
 
         modelBuilder.Entity<WorkOrderSpare>(cfg =>

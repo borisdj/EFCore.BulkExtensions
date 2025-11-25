@@ -40,7 +40,7 @@ internal static class DbContextBulkTransactionGraphUtil
         // If this is set to false, wont' be able to support some code first model types as EFCore uses shadow properties when a relationship's foreign keys arent explicitly defined
         bulkConfig.EnableShadowProperties = true;
 
-        var graphNodes = GraphUtil.GetTopologicallySortedGraph(context, entities);
+        var graphNodes = GraphUtil.GetSortedGraph(context, entities);
 
         if (graphNodes == null)
             return;
