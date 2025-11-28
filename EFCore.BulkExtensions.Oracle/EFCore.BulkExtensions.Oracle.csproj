@@ -1,15 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Title>EFCore.BulkExtensions.Oracle</Title>
     <Description>EntityFramework .Net EFCore EF Core Bulk Batch Extensions for Insert Update Delete Read (CRUD) operations on Oracle</Description>
     <PackageTags>$(PackageTags) Oracle</PackageTags>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <NuGetAudit>false</NuGetAudit>
+	<PackageReleaseNotes>net 10</PackageReleaseNotes>
+    <Version>10.0.0-rc.2</Version>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Oracle.EntityFrameworkCore" Version="9.23.26000" />
+    <PackageReference Include="Oracle.EntityFrameworkCore" Version="10.23.26000" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EFCore.BulkExtensions.Core\EFCore.BulkExtensions.Core.csproj" />
