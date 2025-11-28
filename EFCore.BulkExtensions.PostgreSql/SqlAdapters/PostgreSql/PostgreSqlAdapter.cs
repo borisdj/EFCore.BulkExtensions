@@ -221,11 +221,11 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
 
             if (fullPropertyName.Length > 0)
             {
-                fullPropertyName += $"_{entry.Token}";
+                fullPropertyName += $"_{entry.ToString()}";
             }
             else
             {
-                fullPropertyName = new string(entry.Token);
+                fullPropertyName = new string(entry.ToString());
             }
 
             propertyValue = tableInfo.FastPropertyDict[fullPropertyName].Get(propertyValue);
