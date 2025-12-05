@@ -164,7 +164,7 @@ public class BulkConfig
     /// <value>
     ///     Contains info in Properties: <c>StatsNumberInserted, StatsNumberUpdated, StatsNumberDeleted</c>
     /// </value>
-    public StatsInfo? StatsInfo { get; internal set; }
+    public StatsInfo? StatsInfo { get; set; }
 
     /// <summary>
     ///     Used as object for returning TimeStamp Info when <c>BulkConfig.DoNotUpdateIfTimeStampChanged = true</c>.

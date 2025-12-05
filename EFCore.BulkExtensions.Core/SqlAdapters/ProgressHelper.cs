@@ -2,9 +2,15 @@
 
 namespace EFCore.BulkExtensions.SqlAdapters;
 
-internal static class ProgressHelper
+/// <summary>
+/// Provides access for Progress info
+/// </summary>
+public static class ProgressHelper
 {
-    internal static void SetProgress(ref int rowsCopied, int entitiesCount, BulkConfig bulkConfig, Action<decimal>? progress)
+    /// <summary>
+    /// For setting Progress data
+    /// </summary>
+    public static void SetProgress(ref int rowsCopied, int entitiesCount, BulkConfig bulkConfig, Action<decimal>? progress)
     {
         if (progress != null && bulkConfig.NotifyAfter != null && bulkConfig.NotifyAfter != 0)
         {
@@ -17,7 +23,10 @@ internal static class ProgressHelper
         }
     }
 
-    internal static decimal GetProgress(int entitiesCount, long rowsCopied)
+    /// <summary>
+    /// For getting Progress data
+    /// </summary>
+    public static decimal GetProgress(int entitiesCount, long rowsCopied)
     {
         return (decimal)(Math.Floor(rowsCopied * 10000D / entitiesCount) / 10000);
     }

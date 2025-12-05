@@ -939,7 +939,11 @@ public class TableInfo
         return previousPropertyColumnNamesDict;
     }
 
-    internal void UpdateReadEntities<T>(IEnumerable<T> entities, IList<T> existingEntities, DbContext context)
+    /// <summary>
+    /// Update Entities for Read
+    /// </summary>
+    /// <returns></returns>
+    public void UpdateReadEntities<T>(IEnumerable<T> entities, IList<T> existingEntities, DbContext context)
     {
         var propColDict = BulkConfig.LoadOnlyIncludedColumns ? PropertyColumnNamesDict : OutputPropertyColumnNamesDict;
         List<string> propertyNames = propColDict.Keys.ToList();
