@@ -645,7 +645,8 @@ public class OracleAdapter : ISqlOperationsAdapter
         if (!tableInfo.BulkConfig.EnableShadowProperties && tableInfo.ShadowProperties.Count > 0)
         {
             var stringColumns = tableInfo.ColumnNamesTypesDict.Where(a => a.Value.Contains("char")).Select(a => a.Key).ToList();
-            discriminatorColumn = tableInfo.ShadowProperties.Where(a => stringColumns.Contains(a)).ElementAt(0);
+            if (tableInfo.ShadowProperties.Any(a => stringColumns.Contains(a)))
+                discriminatorColumn = tableInfo.ShadowProperties.Where(a => stringColumns.Contains(a)).ElementAt(0);
         }
         return discriminatorColumn;
     }
