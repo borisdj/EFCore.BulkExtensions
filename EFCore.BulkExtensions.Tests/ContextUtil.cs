@@ -81,6 +81,12 @@ public class ContextUtil
                 optionsBuilder.UseOracle(connectionString);
                 break;
             }
+            case SqlType.GBase:
+            {
+                string connectionString = GetGBaseConnectionString(databaseName);
+                optionsBuilder.UseGBase(connectionString);
+                break;
+            }
             case SqlType.Sqlite:
             {
                 string connectionString = GetSqliteConnectionString(databaseName);
@@ -139,6 +145,10 @@ public class ContextUtil
     public static string GetOracleConnectionString(string databaseName)
     {
         return GetConnectionString("Oracle").Replace("{databaseName}", databaseName);
+    }
+    public static string GetGBaseConnectionString(string databaseName)
+    {
+        return GetConnectionString("GBase").Replace("{databaseName}", databaseName);
     }
 
     private static string GetConnectionString(string name)

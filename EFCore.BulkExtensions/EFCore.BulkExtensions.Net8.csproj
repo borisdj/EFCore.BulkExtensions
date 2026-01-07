@@ -11,6 +11,7 @@
     <IsPackable>true</IsPackable>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\EFCore.BulkExtensions.GBase\EFCore.BulkExtensions.GBase.Net8.csproj" />
     <ProjectReference Include="..\EFCore.BulkExtensions.SqlServer\EFCore.BulkExtensions.SqlServer.Net8.csproj" />
     <ProjectReference Include="..\EFCore.BulkExtensions.PostgreSql\EFCore.BulkExtensions.PostgreSql.Net8.csproj" />
 	<ProjectReference Include="..\EFCore.BulkExtensions.MySql\EFCore.BulkExtensions.MySql.Net8.csproj" />

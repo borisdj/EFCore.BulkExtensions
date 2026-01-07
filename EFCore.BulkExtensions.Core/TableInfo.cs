@@ -171,6 +171,7 @@ public class TableInfo
         bool isSqlite = providerName?.EndsWith(SqlType.Sqlite.ToString().ToLower()) ?? false;
         bool isMySql = providerName?.EndsWith(SqlType.MySql.ToString().ToLower()) ?? false;
         bool isOracle = providerName?.EndsWith(SqlType.Oracle.ToString().ToLower()) ?? false;
+        bool isGBase = providerName?.EndsWith(SqlType.GBase.ToString().ToLower()) ?? false;
 
         string? defaultSchema = null;
         if (isSqlServer)
@@ -341,7 +342,7 @@ public class TableInfo
                 }
             }
         }
-        if (isSqlite) // SQLite no ValueGenerationStrategy
+        if (isSqlite || isGBase) // SQLite no ValueGenerationStrategy
         {
             // for HiLo on SqlServer was returning True when should be False
             IdentityColumnName = allProperties.SingleOrDefault(a => a.IsPrimaryKey() &&

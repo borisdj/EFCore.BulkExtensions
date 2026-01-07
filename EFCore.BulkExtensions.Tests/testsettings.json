@@ -4,6 +4,7 @@
     "Sqlite": "Data Source={databaseName}.db",
     "PostgreSql": "Server=localhost;Port=5432;Database={databaseName};User Id=postgres;Password=Postgres22;",
     "MySql": "Server=localhost;Database={databaseName};Uid=root;Pwd=MySQL22;AllowLoadLocalInfile=true;",
-    "Oracle": "Data Source=localhost:1521/XEPDB1;User Id=SYSTEM;Password=Oracle;Pooling=True;Min Pool Size=5;Max Pool Size=30;Connection Lifetime=900;Connection Timeout=15;"
+    "Oracle": "Data Source=localhost:1521/XEPDB1;User Id=SYSTEM;Password=Oracle;Pooling=True;Min Pool Size=5;Max Pool Size=30;Connection Lifetime=900;Connection Timeout=15;",
+    "GBase": "Database={databaseName};host=192.168.16.140;service=30127;server=ol_gbasedbt1210_3;User ID=root;Password=brent;"
   }
 }

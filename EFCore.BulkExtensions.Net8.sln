@@ -20,6 +20,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "EFCore.BulkExtensions.PerPr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EFCore.BulkExtensions.Oracle", "EFCore.BulkExtensions.Oracle\EFCore.BulkExtensions.Oracle.Net8.csproj", "{FC913B1E-3AF8-4E06-9452-9BFC8CF4E39A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EFCore.BulkExtensions.GBase.Net8", "EFCore.BulkExtensions.GBase\EFCore.BulkExtensions.GBase.Net8.csproj", "{38D4EE88-5750-2745-DAB9-E31ED93DDCBF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

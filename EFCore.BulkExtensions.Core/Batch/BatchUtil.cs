@@ -369,7 +369,13 @@ public static class BatchUtil
                 bool updateColumnExplicit = updateColumns != null && updateColumns.Contains(propertyName);
                 if (isDifferentFromDefault || updateColumnExplicit)
                 {
+                    var databaseType = context.Server.Type;
                     sql += $"[{columnName}] = @{columnName}, ";
+                    if (databaseType == SqlType.GBase)
+                    {
+                        sql = sql.Replace("[", "").Replace("]", "");
+                        sql = sql.Replace($"@{columnName}", "?");
+                    }
                     var parameterName = $"@{columnName}";
                     DbParameter? param = TryCreateRelationalMappingParameter(
                         context,
@@ -431,7 +437,14 @@ public static class BatchUtil
                     else
                         currentColumnName = assignment.Member.Name;
 
-                    sqlColumns.Append($" [{tableAlias}].[{currentColumnName}]");
+                    if (createBodyData.DatabaseType == SqlType.GBase)
+                    {
+                        sqlColumns.Append($" {currentColumnName}");
+                    }
+                    else
+                    {
+                        sqlColumns.Append($" [{tableAlias}].[{currentColumnName}]");
+                    }
                     sqlColumns.Append(" =");
 
                     if (!TryCreateUpdateBodyNestedQuery(context.DbContext, createBodyData, assignment.Expression, assignment))
@@ -453,7 +466,14 @@ public static class BatchUtil
         {
             if (columnNameValueDict?.TryGetValue(memberExpression.Member.Name, out string? value) ?? false)
             {
-                sqlColumns.Append($" [{tableAlias}].[{value}]");
+                if (createBodyData.DatabaseType == SqlType.GBase)
+                {
+                    sqlColumns.Append($" {value}");
+                }
+                else
+                {
+                    sqlColumns.Append($" [{tableAlias}].[{value}]");
+                }
             }
             else
             {
@@ -667,7 +687,14 @@ public static class BatchUtil
         }
 
         sqlParameters.Add(sqlParameter);
-        sqlColumns.Append($" {paramName}");
+        if (context.Server.Type == SqlType.GBase)
+        {
+            sqlColumns.Append($" ?");
+        }
+        else
+        {
+            sqlColumns.Append($" {paramName}");
+        }
     }
 
     private static readonly MethodInfo? DbContextSetMethodInfo =

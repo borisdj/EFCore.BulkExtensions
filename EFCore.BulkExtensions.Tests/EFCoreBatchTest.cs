@@ -16,6 +16,7 @@ public class EFCoreBatchTest
 
     [Theory]
     [InlineData(SqlType.SqlServer)]
+    [InlineData(SqlType.GBase)]
     public void BatchConverterTest(SqlType dbServer)
     {
         using var context = new TestContext(dbServer);
@@ -37,6 +38,7 @@ public class EFCoreBatchTest
     [Theory]
     [InlineData(SqlType.SqlServer)]
     [InlineData(SqlType.Sqlite)]
+    [InlineData(SqlType.GBase)]
     public void BatchTest(SqlType dbServer)
     {
         RunDeleteAll(dbServer);
@@ -107,9 +109,15 @@ public class EFCoreBatchTest
             SqlType.SqlServer => $"DBCC CHECKIDENT('[dbo].[{nameof(Item)}]', RESEED, 0);",
             SqlType.Sqlite => $"DELETE FROM sqlite_sequence WHERE name = '{nameof(Item)}';",
             SqlType.PostgreSql => $@"ALTER SEQUENCE ""{nameof(Item)}_{nameof(Item.ItemId)}_seq"" RESTART WITH 1;",
+            SqlType.GBase => $@"ALTER TABLE {nameof(Item)} MODIFY( {nameof(Item.ItemId)} INT);",
             _ => throw new ArgumentException($"Unknown database type: '{dbServer}'.", nameof(dbServer)),
         };
         context.Database.ExecuteSqlRaw(deleteTableSql);
+        if (dbServer == SqlType.GBase)
+        {
+            // Modify autoincrement column type back to serial(1)
+            context.Database.ExecuteSqlRaw($@"ALTER TABLE {nameof(Item)} MODIFY( {nameof(Item.ItemId)} SERIAL(1));");
+        }
     }
 
     private static void RunBatchUpdate(SqlType dbServer)
