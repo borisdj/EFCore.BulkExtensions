@@ -8,7 +8,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
-using static HotChocolate.ErrorCodes;
+//using static HotChocolate.ErrorCodes;
 
 namespace EFCore.BulkExtensions.Tests;
 

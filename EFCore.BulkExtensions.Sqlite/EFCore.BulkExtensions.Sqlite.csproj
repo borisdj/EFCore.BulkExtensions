@@ -4,10 +4,9 @@
     <Title>EFCore.BulkExtensions.Sqlite</Title>
     <Description>EntityFramework .Net EFCore EF Core Bulk Batch Extensions for Insert Update Delete Read (CRUD) operations on SQLite</Description>
     <PackageTags>$(PackageTags) SQLite</PackageTags>
-	<Version>10.0.0-rc.2</Version>
   </PropertyGroup>
   <ItemGroup>
-	<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="10.0.0" />
+	<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" Version="10.0.1" />
 	<PackageReference Include="NetTopologySuite.IO.SpatiaLite" Version="2.0.0" />
   </ItemGroup>
   <ItemGroup>

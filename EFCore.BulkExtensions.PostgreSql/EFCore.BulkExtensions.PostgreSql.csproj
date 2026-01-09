@@ -5,7 +5,6 @@
     <Description>EntityFramework .Net EFCore EF Core Bulk Batch Extensions for Insert Update Delete Read (CRUD) operations on PostgreSQL</Description>
     <PackageTags>$(PackageTags) PostgreSQL</PackageTags>
     <PackageReleaseNotes>net 10</PackageReleaseNotes>
-    <Version>10.0.0-rc.2</Version>
   </PropertyGroup>
   <ItemGroup>
 	<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />

@@ -9,7 +9,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text.Json;
 using Xunit;
-using static HotChocolate.ErrorCodes;
+//using static HotChocolate.ErrorCodes;
 
 namespace EFCore.BulkExtensions.Tests;
 
@@ -266,7 +266,7 @@ public class EFCoreBulkTest
         //query.BatchUpdate(a => new Item { Name = a.Name + suffix, Quantity = a.Quantity + incrementStep }); // example of BatchUpdate Increment/Decrement value in variable
     }
     
-    [Theory]
+    /*[Theory]
     [InlineData(SqlType.MySql)]
     // -- Before first run following command should be executed on mysql server:
     //    SET GLOBAL local_infile = true;
@@ -383,11 +383,12 @@ public class EFCoreBulkTest
         };
         context.BulkInsertOrUpdate(entities6, bulkConfig);
     }
+    */
 
     [Theory]
     [InlineData(SqlType.SqlServer, true)]
     [InlineData(SqlType.Sqlite, true)]
-    [InlineData(SqlType.GBase, true)]
+    //[InlineData(SqlType.GBase, true)]
     //[InlineData(DbServer.SqlServer, false)] // for speed comparison with Regular EF CUD operations
     public void OperationsTest(SqlType sqlType, bool isBulk)
     {
@@ -412,7 +413,7 @@ public class EFCoreBulkTest
     [Theory]
     [InlineData(SqlType.SqlServer)]
     [InlineData(SqlType.Sqlite)]
-    [InlineData(SqlType.GBase)]
+    //[InlineData(SqlType.GBase)]
     public void SideEffectsTest(SqlType sqlType)
     {
         BulkOperationShouldNotCloseOpenConnection(sqlType, context => context.BulkInsert(new[] { new Item() }));

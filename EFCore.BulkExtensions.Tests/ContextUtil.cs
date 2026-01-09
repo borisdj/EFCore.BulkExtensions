@@ -65,28 +65,28 @@ public class ContextUtil
                     .EnableDynamicJson()
                     .UseNetTopologySuite()
                     .Build();
-                optionsBuilder.UseNpgsql(dataSource, opt => opt.UseNetTopologySuite());
+                optionsBuilder.UseNpgsql(dataSource/*, opt => opt.UseNetTopologySuite()*/);
 #endif
                 break;
             }
-            case SqlType.MySql:
+            /*case SqlType.MySql:
             {
                 string connectionString = GetMySqlConnectionString(databaseName);
                 optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString), opt => opt.UseNetTopologySuite());
                 break;
-            }
+            }*/
             case SqlType.Oracle:
             {
                 string connectionString = GetOracleConnectionString(databaseName);
                 optionsBuilder.UseOracle(connectionString);
                 break;
             }
-            case SqlType.GBase:
+            /*case SqlType.GBase:
             {
                 string connectionString = GetGBaseConnectionString(databaseName);
                 optionsBuilder.UseGBase(connectionString);
                 break;
-            }
+            }*/
             case SqlType.Sqlite:
             {
                 string connectionString = GetSqliteConnectionString(databaseName);

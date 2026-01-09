@@ -8,7 +8,6 @@
     <Nullable>enable</Nullable>
     <NuGetAudit>false</NuGetAudit>
 	<PackageReleaseNotes>net 10</PackageReleaseNotes>
-    <Version>10.0.0-rc.2</Version>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Oracle.EntityFrameworkCore" Version="10.23.26000" />
