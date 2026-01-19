@@ -259,7 +259,7 @@ context.BulkInsertOrUpdate(entities, new BulkConfig { SetOutputIdentity = true }
 context.BulkInsertOrUpdate(entities, b => b.SetOutputIdentity = true); //BulkConfig with Action arg.
 ```
 
-**PreserveInsertOrder** is **true** by default and makes sure that entities are inserted to Db as ordered in entitiesList.  
+**(1) PreserveInsertOrder** is **true** by default and makes sure that entities are inserted to Db as ordered in entitiesList.  
 When a table has Identity column (int autoincrement) with 0 values in list, they will temporarily be automatically changed from 0s into range -N:-1.  
 Or it can be manually set with proper values for order (Negative values used to skip conflict with existing ones in Db).  
 Here single Id value itself doesn't matter, db will change it to next in sequence, what matters is their mutual relationship for sorting.  
@@ -269,12 +269,12 @@ When using **SetOutputIdentity** Id values will be updated to new ones from data
 With BulkInsertOrUpdate on SQLServer for those that will be updated it has to match with Id column, or other unique column(s) if using UpdateByProperties in which case  [orderBy done with those props](https://github.com/borisdj/EFCore.BulkExtensions/issues/806) instead of ID, due to how Sql MERGE works. To preserve insert order by Id in this case alternative would be first to use BulkRead and find which records already exist, then split the list into 2 lists entitiesForUpdate and entitiesForInsert without configuring UpdateByProps).  
 Also for SQLite combination of BulkInsertOrUpdate and IdentityId automatic set will not work properly since it does [not have full MERGE](https://github.com/borisdj/EFCore.BulkExtensions/issues/556) capabilities like SqlServer. Instead list can be split into 2 lists, and call separately BulkInsert and BulkUpdate.  
   
-**SetOutputIdentity** is useful when BulkInsert is done to multiple related tables that have Identity column.  
+**(2) SetOutputIdentity** is useful when BulkInsert is done to multiple related tables that have Identity column.  
 After Insert is done to the first table, we need Id-s (if using Option 1) that were generated in Db because they are FK(ForeignKey) in second table.  
 It is implemented with [OUTPUT](https://docs.microsoft.com/en-us/sql/t-sql/queries/output-clause-transact-sql) as part of MERGE Query, so in this case, even the Insert is not done directly to TargetTable but to TempTable and then Merged with TargetTable.  
 When used Id-s will be updated on entitiesList, and if *PreserveInsertOrder* is set to *false* then entitiesList will be cleared and reloaded.  
 If Entity has Json column with null value and we set OutputIdentity then also set OutputNonIdentity to false, because [JsonNull](https://github.com/borisdj/EFCore.BulkExtensions/issues/1572) mapping throws an exception.  
-**SetOutputNonIdentityColumns** used only when *SetOutputIdentity* is set to true, and if this remains True (which is default) all columns are reloaded from Db.  
+**(3) SetOutputNonIdentityColumns** used only when *SetOutputIdentity* is set to true, and if this remains True (which is default) all columns are reloaded from Db.  
 When changed to false, only the Identity column is loaded to reduce load back from DB for efficiency.  
   
 Example of *SetOutputIdentity* with parent-child FK related tables:
