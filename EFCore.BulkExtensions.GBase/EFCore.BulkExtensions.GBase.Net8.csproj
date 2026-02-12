@@ -8,7 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
 	<PackageReference Include="GeneralData.EntityFrameworkCore.GBase" Version="8.0.0.7" />
-	<PackageReference Include="GeneralData.GBase8s.DataProvider" Version="1.0.0.1" />
+	<PackageReference Include="GeneralData.GBase8s.DataProvider" Version="1.0.0.2" />
 	<PackageReference Include="NetTopologySuite.IO.SpatiaLite" Version="2.0.0" />
   </ItemGroup>
   <ItemGroup>
