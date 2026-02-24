@@ -68,21 +68,14 @@ public class GBaseAdapter : ISqlOperationsAdapter
             bool insertOneByOne = false;
             var command = GetGBaseCommand(context, type, entities, tableInfo, connection, transaction);
             // TODO: use OneByOne mode to make it strong.
-            //foreach (GbsParameter param in command.Parameters)
-            //{
-            //      if (param.GbsType == GbsType.NVarChar ||
-            //        param.GbsType == GbsType.Guid ||
-            //        param.GbsType == GbsType.Byte ||
-            //        param.GbsType == GbsType.Blob ||
-            //        param.GbsType == GbsType.Text ||
-            //        param.GbsType == GbsType.Date ||
-            //        param.GbsType == GbsType.Clob)
-            //    {
-            //        insertOneByOne = true;
-            //        break;
-            //    }
-            //}
-            insertOneByOne = true;
+            foreach (GbsParameter param in command.Parameters)
+            {
+                if (param.GbsType == GbsType.Guid)
+                {
+                    insertOneByOne = true;
+                    break;
+                }
+            }
             if (insertOneByOne)
             {
                 // insert one by one.
