@@ -110,7 +110,9 @@ internal class GraphUtil
             graphDependency.DependsOn.Add((navigationValue, navigation));
             nestedDependency.Dependents.Add((graphEntity, navigation.Inverse ?? navigation));
         }
-        if (!navigation.IsOnDependent)
+        //if (!navigation.IsOnDependent)
+        // TODO: Fix the code to make it work for all situations {also in class DbContextBulkTransactionGraphUtil} (pull/1934)
+        else
         {
             graphDependency.Dependents.Add((navigationValue, navigation));
             nestedDependency.DependsOn.Add((graphEntity, navigation.Inverse ?? navigation));

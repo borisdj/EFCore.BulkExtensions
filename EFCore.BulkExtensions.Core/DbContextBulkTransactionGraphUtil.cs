@@ -102,6 +102,8 @@ internal static class DbContextBulkTransactionGraphUtil
                 }
 
                 // We also have to set the foreign keys of potential dependents of owned types that are in the same table as this one
+                // TODO: Fix the code to make it work for all situations (pull/1934)
+                /*
                 foreach (var ng in graphNodesGroupedByType.Where(ng =>
                     context.DbContext.Model.FindEntityType(ng.Key) is { } entityType
                     && OwnedTypeUtil.IsOwnedInSameTableAsOwner(entityType)))
@@ -122,6 +124,7 @@ internal static class DbContextBulkTransactionGraphUtil
                         UpdateStats(stats, bulkConfig);
                     }
                 }
+                */
             }
 
             if (bulkConfig.CalculateStats)
