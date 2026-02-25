@@ -10,7 +10,7 @@
 	<PackageReleaseNotes>net 10</PackageReleaseNotes>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Oracle.EntityFrameworkCore" Version="10.23.26000" />
+    <PackageReference Include="Oracle.EntityFrameworkCore" Version="10.23.26100" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EFCore.BulkExtensions.Core\EFCore.BulkExtensions.Core.csproj" />

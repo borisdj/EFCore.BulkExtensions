@@ -156,9 +156,9 @@ public class GBaseAdapter : ISqlOperationsAdapter
     {
         await MergeAsync(context, type, entities, tableInfo, operationType, progress, isAsync: true, cancellationToken).ConfigureAwait(false);
     }
-    
+
     /// <inheritdoc/>
-    protected static async Task MergeAsync<T>(BulkContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken) where T : class
+    private static async Task MergeAsync<T>(BulkContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken) where T : class
     {
         var dbContext = context.DbContext;
         GbsConnection connection = isAsync ? await OpenAndGetGBaseConnectionAsync(dbContext, cancellationToken).ConfigureAwait(false)
