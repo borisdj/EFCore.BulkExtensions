@@ -15,8 +15,9 @@ Icon>> and Logo (__):
 <img src="/EFCore.BulkExtensions/EFCoreBulk.png" height=60> & <img src="EFCoreBulkLogo_small.png" height=60>  
 (f.forward | rocket time)
 
-**Also take a look into others highly performant packages:</br>
-Open source (MIT or cFOSS) authored [.Net libraries](https://infopedia.io/dot-net-libraries/) and other projects (@[**Infopedia.io**](https://infopedia.io/) personal blog post).
+**Also take a look into others highly performant packages:  
+Open source (MIT or cFOSS) authored [.Net libraries](https://infopedia.io/dot-net-libraries/) and other projects (@[**Infopedia.io**](https://infopedia.io/) personal blog post).  
+Opennes (community-driven and verifiable approach) enables security through transparency!  
 | №  | Project                  | Type | Description                                              |
 | -  | ------------------------ | ---- | -------------------------------------------------------- |
 | 1* | [EFCore.BulkExtensions](https://github.com/borisdj/EFCore.BulkExtensions) | .Net_Lib(ngt) cF | EF Core Bulk CRUD Ops (**Flagship** Library) |
