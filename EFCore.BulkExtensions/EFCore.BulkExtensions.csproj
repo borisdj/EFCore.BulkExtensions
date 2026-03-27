@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <Title>EFCore.BulkExtensions</Title>
-    <Version>2.6.6</Version>
+    <Version>2.6.7</Version>
     <Authors>AMCON Software GmbH</Authors>
     <Description>EntityFramework EF Core Bulk Batch Extensions for Insert Update Delete and Read (CRUD) operations on SQL Server and SQLite</Description>
     <PackageProjectUrl>https://github.com/AMCON-GmbH/EFCore.BulkExtensions</PackageProjectUrl>
@@ -12,9 +12,9 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageTags>EntityFrameworkCore Entity Framework Core EFCore EF Core Bulk Batch Extensions Insert Update Delete Read</PackageTags>
     <PackageReleaseNotes>fix Sqlite ValueConverter access</PackageReleaseNotes>
-    <AssemblyVersion>2.6.6.0</AssemblyVersion>
-    <FileVersion>2.6.6.0</FileVersion>
-    <PackageVersion>2.6.6</PackageVersion>
+    <AssemblyVersion>2.6.7.0</AssemblyVersion>
+    <FileVersion>2.6.7.0</FileVersion>
+    <PackageVersion>2.6.7</PackageVersion>
     <Copyright>Copyright (c) 2017-2023 borisdj (Boris Djurdjevic)</Copyright>
   </PropertyGroup>
 

@@ -28,12 +28,12 @@ namespace EFCore.BulkExtensions
         // WHERE [a].[Columns] = FilterValues
         public static (string, List<object>) GetSqlDelete<T>(IQueryable<T> query, DbContext context) where T : class
         {
-            (string sql, string tableAlias, string tableAliasSufixAs, string topStatement, IEnumerable<object> innerParameters) = GetBatchSql(query, context, isUpdate: false);
+            (string sql, string tableAlias, string tableAliasSufixAs, string topStatement, string leadingComments, IEnumerable<object> innerParameters) = GetBatchSql(query, context, isUpdate: false);
 
             innerParameters = ReloadSqlParameters(context, innerParameters.ToList()); // Sqlite requires SqliteParameters
             tableAlias = (GetDatabaseType(context) == DbServer.SqlServer) ? $"[{tableAlias}]" : tableAlias;
 
-            var resultQuery = $"DELETE {topStatement}{tableAlias}{sql}";
+            var resultQuery = $"{leadingComments}DELETE {topStatement}{tableAlias}{sql}";
             return (resultQuery, new List<object>(innerParameters));
         }
 
@@ -46,14 +46,14 @@ namespace EFCore.BulkExtensions
         // WHERE [a].[Columns] = FilterValues
         public static (string, List<object>) GetSqlUpdate<T>(IQueryable<T> query, DbContext context, T updateValues, List<string> updateColumns) where T : class, new()
         {
-            (string sql, string tableAlias, string tableAliasSufixAs, string topStatement, IEnumerable<object> innerParameters) = GetBatchSql(query, context, isUpdate: true);
+            (string sql, string tableAlias, string tableAliasSufixAs, string topStatement, string leadingComments, IEnumerable<object> innerParameters) = GetBatchSql(query, context, isUpdate: true);
             var sqlParameters = new List<object>(innerParameters);
 
             string sqlSET = GetSqlSetSegment(context, updateValues, updateColumns, sqlParameters);
 
             sqlParameters = ReloadSqlParameters(context, sqlParameters); // Sqlite requires SqliteParameters
 
-            var resultQuery = $"UPDATE {topStatement}{tableAlias}{tableAliasSufixAs} {sqlSET}{sql}";
+            var resultQuery = $"{leadingComments}UPDATE {topStatement}{tableAlias}{tableAliasSufixAs} {sqlSET}{sql}";
             return (resultQuery, sqlParameters);
         }
 
@@ -67,7 +67,7 @@ namespace EFCore.BulkExtensions
         public static (string, List<object>) GetSqlUpdate<T>(IQueryable<T> query, Expression<Func<T, T>> expression) where T : class
         {
             DbContext context = BatchUtil.GetDbContext(query);
-            (string sql, string tableAlias, string tableAliasSufixAs, string topStatement, IEnumerable<object> innerParameters) = GetBatchSql(query, context, isUpdate: true);
+            (string sql, string tableAlias, string tableAliasSufixAs, string topStatement, string leadingComments, IEnumerable<object> innerParameters) = GetBatchSql(query, context, isUpdate: true);
             var sqlColumns = new StringBuilder();
             var sqlParameters = new List<object>(innerParameters);
             var columnNameValueDict = TableInfo.CreateInstance(GetDbContext(query), new List<T>(), OperationType.Read, new BulkConfig()).PropertyColumnNamesDict;
@@ -77,7 +77,7 @@ namespace EFCore.BulkExtensions
             sqlParameters = ReloadSqlParameters(context, sqlParameters); // Sqlite requires SqliteParameters
             sqlColumns = (GetDatabaseType(context) == DbServer.SqlServer) ? sqlColumns : sqlColumns.Replace($"[{tableAlias}].", "");
 
-            var resultQuery = $"UPDATE {topStatement}{tableAlias}{tableAliasSufixAs} SET {sqlColumns} {sql}";
+            var resultQuery = $"{leadingComments}UPDATE {topStatement}{tableAlias}{tableAliasSufixAs} SET {sqlColumns} {sql}";
             return (resultQuery, sqlParameters);
         }
 
@@ -100,7 +100,7 @@ namespace EFCore.BulkExtensions
             }
         }
 
-        public static (string, string, string, string, IEnumerable<object>) GetBatchSql<T>(IQueryable<T> query, DbContext context, bool isUpdate) where T : class
+        public static (string, string, string, string, string, IEnumerable<object>) GetBatchSql<T>(IQueryable<T> query, DbContext context, bool isUpdate) where T : class
         {
             string sqlQuery = query.ToSql();
             IEnumerable<object> innerParameters = new List<object>();
@@ -108,6 +108,11 @@ namespace EFCore.BulkExtensions
             {
                 (sqlQuery, innerParameters) = query.ToParametrizedSql();
             }
+
+            // Extract leading -- tag comments (added by .TagWith()) before parsing the SQL structure.
+            // Without this, the Substring(SelectStatementLength, ...) logic below breaks when tags are present.
+            var (leadingComments, sql) = SplitLeadingCommentsAndMainSqlQuery(sqlQuery);
+            sqlQuery = sql;
 
             DbServer databaseType = GetDatabaseType(context);
             string tableAlias = string.Empty;
@@ -124,19 +129,40 @@ namespace EFCore.BulkExtensions
             }
 
             int indexFROM = sqlQuery.IndexOf(Environment.NewLine);
-            string sql = sqlQuery.Substring(indexFROM, sqlQuery.Length - indexFROM);
-            sql = sql.Contains("{") ? sql.Replace("{", "{{") : sql; // Curly brackets have to be escaped:
-            sql = sql.Contains("}") ? sql.Replace("}", "}}") : sql; // https://github.com/aspnet/EntityFrameworkCore/issues/8820
+            string sqlBody = sqlQuery.Substring(indexFROM, sqlQuery.Length - indexFROM);
+            sqlBody = sqlBody.Contains("{") ? sqlBody.Replace("{", "{{") : sqlBody; // Curly brackets have to be escaped:
+            sqlBody = sqlBody.Contains("}") ? sqlBody.Replace("}", "}}") : sqlBody; // https://github.com/aspnet/EntityFrameworkCore/issues/8820
 
             if (isUpdate && databaseType == DbServer.Sqlite)
             {
-                int indexPrefixFROM = sql.IndexOf(Environment.NewLine, 1); // skip NewLine from start of string 
-                tableAlias = sql.Substring(7, indexPrefixFROM - 14); // get name of table: "TableName"
-                sql = sql.Substring(indexPrefixFROM, sql.Length - indexPrefixFROM); // remove segment: FROM "TableName" AS "a"
-                tableAliasSufixAs = " AS " + sql.Substring(8, 3) + " ";
+                int indexPrefixFROM = sqlBody.IndexOf(Environment.NewLine, 1); // skip NewLine from start of string
+                tableAlias = sqlBody.Substring(7, indexPrefixFROM - 14); // get name of table: "TableName"
+                sqlBody = sqlBody.Substring(indexPrefixFROM, sqlBody.Length - indexPrefixFROM); // remove segment: FROM "TableName" AS "a"
+                tableAliasSufixAs = " AS " + sqlBody.Substring(8, 3) + " ";
             }
 
-            return (sql, tableAlias, tableAliasSufixAs, topStatement, innerParameters);
+            return (sqlBody, tableAlias, tableAliasSufixAs, topStatement, leadingComments, innerParameters);
+        }
+
+        /// <summary>
+        /// Splits leading SQL line comments (added by EF Core's .TagWith()) from the main query.
+        /// TagWith() prepends "-- tag\n\n" before the SELECT statement.
+        /// Without splitting, the Substring(SelectStatementLength) parsing in GetBatchSql breaks.
+        /// </summary>
+        public static (string leadingComments, string mainSql) SplitLeadingCommentsAndMainSqlQuery(string sqlQuery)
+        {
+            var lines = sqlQuery.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
+            int firstNonCommentLine = 0;
+            while (firstNonCommentLine < lines.Length && (lines[firstNonCommentLine].StartsWith("--") || lines[firstNonCommentLine].Trim() == string.Empty))
+            {
+                firstNonCommentLine++;
+            }
+            if (firstNonCommentLine == 0)
+                return (string.Empty, sqlQuery);
+
+            string leadingComments = string.Join(Environment.NewLine, lines, 0, firstNonCommentLine) + Environment.NewLine;
+            string mainSql = string.Join(Environment.NewLine, lines, firstNonCommentLine, lines.Length - firstNonCommentLine);
+            return (leadingComments, mainSql);
         }
 
         public static string GetSqlSetSegment<T>(DbContext context, T updateValues, List<string> updateColumns, List<object> parameters) where T : class, new()
