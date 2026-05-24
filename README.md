@@ -80,7 +80,7 @@ Its assembly is [Strong-Named](https://docs.microsoft.com/en-us/dotnet/standard/
 | 1.x   | NetStandard 1.4 | EF Core 1 | NetCore(1.0+)                   |
 
 Supports follows official [.Net lifecycle](https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core), currently v.10 as latest(LTS) and v.9.  
-MySql nuget is still and v.9 as their provider is not yet updated to EF 10.  
+MySql net10 package uses Microting's EF Core 10 MySQL provider fork.
 
 ## Usage
 It's pretty simple and straightforward.  
