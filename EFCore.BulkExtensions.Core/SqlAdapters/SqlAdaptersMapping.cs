@@ -38,6 +38,11 @@ public enum SqlType
     ///  Indicates database is GBase
     /// </summary>
     GBase,
+
+    /// <summary>
+    /// Indicates database is GaussDB
+    /// </summary>
+    GaussDB,
 }
 
 #pragma warning disable CS1591 // No XML comment required here
@@ -86,6 +91,10 @@ public static class SqlAdaptersMapping
         else if (providerName?.EndsWith(SqlType.GBase.ToString(), ignoreCase) ?? false) // ProviderName: Microsoft.EntityFrameworkCore.GBase
         {
             databaseType = SqlType.GBase;
+        }
+        else if (providerName?.EndsWith(SqlType.GaussDB.ToString(), ignoreCase) ?? false) // ProviderName: DotNetCore.EntityFrameworkCore.GaussDB
+        {
+            databaseType = SqlType.GaussDB;
         }
         if (_dbServer == null || _dbServer.Type != databaseType)
         {

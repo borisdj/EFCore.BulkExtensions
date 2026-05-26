@@ -167,7 +167,8 @@ public class TableInfo
         //var relationalData = entityType.Relational(); relationalData.Schema relationalData.TableName // DEPRECATED in Core3.0
         string? providerName = dbContext.Database.ProviderName?.ToLower();
         bool isSqlServer = providerName?.EndsWith(SqlType.SqlServer.ToString().ToLower()) ?? false;
-        bool isNpgsql = providerName?.EndsWith(SqlType.PostgreSql.ToString().ToLower()) ?? false;
+        bool isPostgreSqlCompatible = (providerName?.EndsWith(SqlType.PostgreSql.ToString().ToLower()) ?? false)
+            || (providerName?.EndsWith(SqlType.GaussDB.ToString().ToLower()) ?? false);
         bool isSqlite = providerName?.EndsWith(SqlType.Sqlite.ToString().ToLower()) ?? false;
         bool isMySql = providerName?.EndsWith(SqlType.MySql.ToString().ToLower()) ?? false;
         bool isOracle = providerName?.EndsWith(SqlType.Oracle.ToString().ToLower()) ?? false;
@@ -178,7 +179,7 @@ public class TableInfo
         {
             defaultSchema = "dbo";
         }
-        else if (isNpgsql)
+        else if (isPostgreSqlCompatible)
         {
             defaultSchema = context.Adapter.ReconfigureTableInfo(context, this);
         }
@@ -221,7 +222,7 @@ public class TableInfo
             BulkConfig.UseTempDB = false;
         }
 
-        TempSchema = sourceSchema ?? (isNpgsql && BulkConfig.UseTempDB ? null : Schema);
+        TempSchema = sourceSchema ?? (isPostgreSqlCompatible && BulkConfig.UseTempDB ? null : Schema);
         TempTableSufix = sourceTableName != null ? "" : "Temp";
         if (BulkConfig.UniqueTableNameTempDb)
         {
@@ -319,7 +320,7 @@ public class TableInfo
 
         HasJsonTypes = OwnedJsonTypesDict.Count > 0;
 
-        if (isSqlServer || isNpgsql || isMySql)
+        if (isSqlServer || isPostgreSqlCompatible || isMySql)
         {
             var strategyName = SqlAdaptersMapping.DbServer(dbContext).ValueGenerationStrategy;
             if (!strategyName.Contains(":Value"))
@@ -976,8 +977,9 @@ public class TableInfo
             string uniqueProperyValues = GetUniquePropertyValues(entity!, selectByPropertyNames, FastPropertyDict);
 
             existingEntitiesDict.TryGetValue(uniqueProperyValues, out T? existingEntity);
-            bool isPostgreSql = context.Database.ProviderName?.EndsWith(SqlType.PostgreSql.ToString(), StringComparison.InvariantCultureIgnoreCase) ?? false;
-            if (existingEntity == null && isPostgreSql && i < existingEntities.Count && entities.Count() == existingEntities.Count) // && entities.Count == existingEntities.Count conf fix for READ. TODO change (issue 1027)
+            bool isPostgreSqlCompatible = (context.Database.ProviderName?.EndsWith(SqlType.PostgreSql.ToString(), StringComparison.InvariantCultureIgnoreCase) ?? false)
+                || (context.Database.ProviderName?.EndsWith(SqlType.GaussDB.ToString(), StringComparison.InvariantCultureIgnoreCase) ?? false);
+            if (existingEntity == null && isPostgreSqlCompatible && i < existingEntities.Count && entities.Count() == existingEntities.Count) // && entities.Count == existingEntities.Count conf fix for READ. TODO change (issue 1027)
             {
                 existingEntity = existingEntities.ElementAt(i); // TODO check if BinaryImport with COPY on Postgres preserves order
             }
