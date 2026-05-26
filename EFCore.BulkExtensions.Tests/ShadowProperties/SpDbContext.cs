@@ -19,7 +19,7 @@ public class SpDbContext : TestContextBase
         modelBuilder.Entity<SpModel>(cfg =>
         {
             cfg.HasKey(y => y.Id);
-            cfg.Property(y => y.Id).UseIdentityColumn();
+            Microsoft.EntityFrameworkCore.NpgsqlPropertyBuilderExtensions.UseIdentityColumn(cfg.Property(y => y.Id));
 
             // Define the shadow properties
             cfg.Property<long>(SpModel.SpLong);

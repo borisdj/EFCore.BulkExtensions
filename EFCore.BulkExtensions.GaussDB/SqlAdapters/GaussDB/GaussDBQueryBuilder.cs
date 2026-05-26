@@ -46,7 +46,7 @@ public class GaussDBQueryBuilder : SqlQueryBuilder
     /// <inheritdoc/>
     public override string TruncateTable(string tableName)
     {
-        var sql = $"TRUNCATE {tableName} RESTART IDENTITY;";
+        var sql = $"TRUNCATE {tableName};";
         return sql.Replace("[", @"""").Replace("]", @"""");
     }
 
@@ -196,26 +196,32 @@ public class GaussDBQueryBuilder : SqlQueryBuilder
             }
             var commaSeparatedColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsListInsert).Replace("[", @"""").Replace("]", @"""");
 
-            var updateByColumns = SqlQueryBuilder.GetCommaSeparatedColumns(tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList()).Replace("[", @"""").Replace("]", @"""");
-
             var columnsListEquals = GetColumnList(tableInfo, OperationType.Insert);
-            var columnsToUpdate = columnsListEquals.Where(c => tableInfo.PropertyColumnNamesUpdateDict.ContainsValue(c)).ToList();
+            var keyColumns = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToHashSet();
+            var columnsToUpdate = columnsListEquals
+                .Where(c => tableInfo.PropertyColumnNamesUpdateDict.ContainsValue(c) && !keyColumns.Contains(c))
+                .ToList();
             var equalsColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsToUpdate, equalsTable: "EXCLUDED").Replace("[", @"""").Replace("]", @"""");
 
             int subqueryLimit = tableInfo.BulkConfig.ApplySubqueryLimit;
             var subqueryText = subqueryLimit > 0 ? $"LIMIT {subqueryLimit} " : "";
             bool onUpdateDoNothing = columnsToUpdate.Count == 0 || string.IsNullOrWhiteSpace(equalsColumns);
 
+            if (onUpdateDoNothing)
+            {
+                var noOpColumn = columnsListInsert.FirstOrDefault(c => !keyColumns.Contains(c))
+                    ?? throw new NotSupportedException("GaussDB ON DUPLICATE KEY UPDATE requires at least one non-key column for no-op updates.");
+                equalsColumns = SqlQueryBuilder.GetCommaSeparatedColumns([noOpColumn], equalsTable: tableInfo.FullTableName)
+                    .Replace("[", @"""").Replace("]", @"""");
+            }
+
             q = $"INSERT INTO {tableInfo.FullTableName} ({commaSeparatedColumns}) " +
                 $"(SELECT {commaSeparatedColumns} FROM {tableInfo.FullTempTableName}) " + subqueryText +
-                $"ON CONFLICT ({updateByColumns}) " +
-                (onUpdateDoNothing
-                 ? $"DO NOTHING"
-                 : $"DO UPDATE SET {equalsColumns}");
+                $"ON DUPLICATE KEY UPDATE {equalsColumns}";
 
             if (tableInfo.BulkConfig.OnConflictUpdateWhereSql != null)
             {
-                q += $" WHERE {tableInfo.BulkConfig.OnConflictUpdateWhereSql(tableInfo.FullTableName.Replace("[", @"""").Replace("]", @""""), "EXCLUDED")}";
+                throw new NotSupportedException($"{nameof(BulkConfig.OnConflictUpdateWhereSql)} is not supported by GaussDB ON DUPLICATE KEY UPDATE.");
             }
             appendReturning = true;
         }
@@ -480,7 +486,7 @@ public class GaussDBQueryBuilder : SqlQueryBuilder
             //WOULD ALSO WORK
             // DELETE FROM "Item" WHERE "ItemId" <= 1
 
-            sql = sql.Replace($"DELETE {firstLetterOfTable}", "DELETE ");
+            sql = sql.Replace($"DELETE {firstLetterOfTable}", "DELETE");
         }
         else
         {
