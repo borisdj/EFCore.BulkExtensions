@@ -15,6 +15,52 @@ public class EFCoreBulkTestAsync
 {
     protected static int EntitiesNumber => 10000;
 
+    [Theory]
+    [InlineData(SqlType.PostgreSql)]
+    public async Task InsertWithConflictOptionIgnorePostgreSqlAsync(SqlType sqlType)
+    {
+        await using var context = new TestContext(sqlType);
+        await context.Database.ExecuteSqlRawAsync($@"DELETE FROM ""{nameof(Customer)}""");
+
+        await context.BulkInsertAsync([new Customer { Name = "ExistingAsync" }]);
+        await context.BulkInsertAsync(
+            [
+                new Customer { Name = "ExistingAsync" },
+                new Customer { Name = "NewAsync" }
+            ],
+            new BulkConfig { ConflictOption = ConflictOption.Ignore });
+
+        Assert.Equal(2, await context.Customers.CountAsync());
+        Assert.Single(await context.Customers.Where(customer => customer.Name == "ExistingAsync").ToListAsync());
+        Assert.Single(await context.Customers.Where(customer => customer.Name == "NewAsync").ToListAsync());
+    }
+
+    [Theory]
+    [InlineData(SqlType.PostgreSql)]
+    public async Task InsertWithConflictOptionIgnoreAndSetOutputIdentityThrowsPostgreSqlAsync(SqlType sqlType)
+    {
+        await using var context = new TestContext(sqlType);
+
+        var exception = await Assert.ThrowsAsync<NotSupportedException>(() => context.BulkInsertAsync(
+            [new Customer { Name = "IgnoreWithIdentityAsync" }],
+            new BulkConfig { ConflictOption = ConflictOption.Ignore, SetOutputIdentity = true }));
+
+        Assert.Contains($"{nameof(ConflictOption.Ignore)} with {nameof(BulkConfig.SetOutputIdentity)} is not supported for PostgreSQL", exception.Message);
+    }
+
+    [Theory]
+    [InlineData(SqlType.PostgreSql)]
+    public async Task InsertWithConflictOptionReplaceThrowsPostgreSqlAsync(SqlType sqlType)
+    {
+        await using var context = new TestContext(sqlType);
+
+        var exception = await Assert.ThrowsAsync<NotSupportedException>(() => context.BulkInsertAsync(
+            [new Customer { Name = "ReplaceAsync" }],
+            new BulkConfig { ConflictOption = ConflictOption.Replace }));
+
+        Assert.Contains($"{nameof(ConflictOption.Replace)} is not supported for PostgreSQL", exception.Message);
+    }
+
     // NOT USED - when running multiple async tests throws: The compiled query ctx => ctx.Items was executed with a different model than it was compiled against
     //private static readonly Func<TestContext, int> ItemsCountQuery = EF.CompileQuery<TestContext, int>(ctx => ctx.Items.Count());
     //private static readonly Func<TestContext, Item?> LastItemQuery = EF.CompileQuery<TestContext, Item?>(ctx => ctx.Items.LastOrDefault());

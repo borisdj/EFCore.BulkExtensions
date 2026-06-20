@@ -53,6 +53,20 @@ public class SqlQueryBuilderPostgreSqlTests
     }
 
     [Fact]
+    public void MergeTableInsertWithConflictOptionIgnoreTest()
+    {
+        TableInfo tableInfo = GetTestTableInfo(conflictOption: ConflictOption.Ignore);
+        tableInfo.IdentityColumnName = "ItemId";
+
+        string actual = PostgreSqlQueryBuilder.MergeTable<Item>(tableInfo, OperationType.Insert);
+
+        string expected = @"INSERT INTO ""dbo"".""Item"" (""Name"") " +
+                          @"(SELECT ""Name"" FROM ""dbo"".""ItemTemp1234"") " +
+                          @"ON CONFLICT DO NOTHING;";
+        Assert.Equal(expected, actual);
+    }
+
+    [Fact]
     public void MergeTableUpdateOnlyTest()
     {
         TableInfo tableInfo = GetTestTableInfo();
@@ -66,7 +80,7 @@ public class SqlQueryBuilderPostgreSqlTests
         Assert.Equal(expected, actual);
     }
     
-    private TableInfo GetTestTableInfo(Func<string, string, string>? onConflictUpdateWhereSql = null)
+    private TableInfo GetTestTableInfo(Func<string, string, string>? onConflictUpdateWhereSql = null, ConflictOption conflictOption = ConflictOption.None)
     {
         var tableInfo = new TableInfo()
         {
@@ -78,7 +92,8 @@ public class SqlQueryBuilderPostgreSqlTests
             PrimaryKeysPropertyColumnNameDict = new Dictionary<string, string> { { nameof(Item.ItemId), nameof(Item.ItemId) } },
             BulkConfig = new BulkConfig()
             {
-                OnConflictUpdateWhereSql = onConflictUpdateWhereSql
+                OnConflictUpdateWhereSql = onConflictUpdateWhereSql,
+                ConflictOption = conflictOption
             }
         };
         const string nameText = nameof(Item.Name);

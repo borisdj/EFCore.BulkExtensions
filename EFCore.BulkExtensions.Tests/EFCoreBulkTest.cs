@@ -63,6 +63,52 @@ public class EFCoreBulkTest
 
     [Theory]
     [InlineData(SqlType.PostgreSql)]
+    public void InsertWithConflictOptionIgnorePostgreSql(SqlType sqlType)
+    {
+        using var context = new TestContext(sqlType);
+        context.Database.ExecuteSqlRaw($@"DELETE FROM ""{nameof(Customer)}""");
+
+        context.BulkInsert([new Customer { Name = "Existing" }]);
+        context.BulkInsert(
+            [
+                new Customer { Name = "Existing" },
+                new Customer { Name = "New" }
+            ],
+            new BulkConfig { ConflictOption = ConflictOption.Ignore });
+
+        Assert.Equal(2, context.Customers.Count());
+        Assert.Single(context.Customers.Where(customer => customer.Name == "Existing"));
+        Assert.Single(context.Customers.Where(customer => customer.Name == "New"));
+    }
+
+    [Theory]
+    [InlineData(SqlType.PostgreSql)]
+    public void InsertWithConflictOptionIgnoreAndSetOutputIdentityThrowsPostgreSql(SqlType sqlType)
+    {
+        using var context = new TestContext(sqlType);
+
+        var exception = Assert.Throws<NotSupportedException>(() => context.BulkInsert(
+            [new Customer { Name = "IgnoreWithIdentity" }],
+            new BulkConfig { ConflictOption = ConflictOption.Ignore, SetOutputIdentity = true }));
+
+        Assert.Contains($"{nameof(ConflictOption.Ignore)} with {nameof(BulkConfig.SetOutputIdentity)} is not supported for PostgreSQL", exception.Message);
+    }
+
+    [Theory]
+    [InlineData(SqlType.PostgreSql)]
+    public void InsertWithConflictOptionReplaceThrowsPostgreSql(SqlType sqlType)
+    {
+        using var context = new TestContext(sqlType);
+
+        var exception = Assert.Throws<NotSupportedException>(() => context.BulkInsert(
+            [new Customer { Name = "Replace" }],
+            new BulkConfig { ConflictOption = ConflictOption.Replace }));
+
+        Assert.Contains($"{nameof(ConflictOption.Replace)} is not supported for PostgreSQL", exception.Message);
+    }
+
+    [Theory]
+    [InlineData(SqlType.PostgreSql)]
     public void InsertTestPostgreSql(SqlType sqlType)
     {
         using var context = new TestContext(sqlType);
