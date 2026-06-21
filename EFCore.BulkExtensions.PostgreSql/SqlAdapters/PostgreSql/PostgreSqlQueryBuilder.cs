@@ -145,26 +145,34 @@ public class PostgreSqlQueryBuilder : SqlQueryBuilder
             }
             var commaSeparatedColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsListInsert).Replace("[", @"""").Replace("]", @"""");
 
-            var updateByColumns = SqlQueryBuilder.GetCommaSeparatedColumns(tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList()).Replace("[", @"""").Replace("]", @"""");
-
-            var columnsListEquals = GetColumnList(tableInfo, OperationType.Insert);
-            var columnsToUpdate = columnsListEquals.Where(c => tableInfo.PropertyColumnNamesUpdateDict.ContainsValue(c)).ToList();
-            var equalsColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsToUpdate, equalsTable: "EXCLUDED").Replace("[", @"""").Replace("]", @"""");
-
             int subqueryLimit = tableInfo.BulkConfig.ApplySubqueryLimit;
             var subqueryText = subqueryLimit > 0 ? $"LIMIT {subqueryLimit} " : "";
-            bool onUpdateDoNothing = columnsToUpdate.Count == 0 || string.IsNullOrWhiteSpace(equalsColumns);
 
             q = $"INSERT INTO {tableInfo.FullTableName} ({commaSeparatedColumns}) " +
-                $"(SELECT {commaSeparatedColumns} FROM {tableInfo.FullTempTableName}) " + subqueryText +
-                $"ON CONFLICT ({updateByColumns}) " +
-                (onUpdateDoNothing
-                 ? $"DO NOTHING"
-                 : $"DO UPDATE SET {equalsColumns}");
+                $"(SELECT {commaSeparatedColumns} FROM {tableInfo.FullTempTableName}) " + subqueryText;
 
-            if (tableInfo.BulkConfig.OnConflictUpdateWhereSql != null)
+            bool ignoreAllConflicts = operationType == OperationType.Insert && tableInfo.BulkConfig.ConflictOption == ConflictOption.Ignore;
+            if (ignoreAllConflicts)
             {
-                q += $" WHERE {tableInfo.BulkConfig.OnConflictUpdateWhereSql(tableInfo.FullTableName.Replace("[", @"""").Replace("]", @""""), "EXCLUDED")}";
+                q += "ON CONFLICT DO NOTHING";
+            }
+            else
+            {
+                var updateByColumns = SqlQueryBuilder.GetCommaSeparatedColumns(tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList()).Replace("[", @"""").Replace("]", @"""");
+                var columnsListEquals = GetColumnList(tableInfo, OperationType.Insert);
+                var columnsToUpdate = columnsListEquals.Where(c => tableInfo.PropertyColumnNamesUpdateDict.ContainsValue(c)).ToList();
+                var equalsColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsToUpdate, equalsTable: "EXCLUDED").Replace("[", @"""").Replace("]", @"""");
+                bool onUpdateDoNothing = columnsToUpdate.Count == 0 || string.IsNullOrWhiteSpace(equalsColumns);
+
+                q += $"ON CONFLICT ({updateByColumns}) " +
+                     (onUpdateDoNothing
+                      ? "DO NOTHING"
+                      : $"DO UPDATE SET {equalsColumns}");
+
+                if (!onUpdateDoNothing && tableInfo.BulkConfig.OnConflictUpdateWhereSql != null)
+                {
+                    q += $" WHERE {tableInfo.BulkConfig.OnConflictUpdateWhereSql(tableInfo.FullTableName.Replace("[", @"""").Replace("]", @""""), "EXCLUDED")}";
+                }
             }
             appendReturning = true;
         }
