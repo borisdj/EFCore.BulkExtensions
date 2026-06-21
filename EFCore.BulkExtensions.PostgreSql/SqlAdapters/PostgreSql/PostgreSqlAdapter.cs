@@ -637,7 +637,7 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
         var (dbConnection, closeConnectionInternally) = await OpenAndGetNpgsqlConnectionAsync(context.DbContext, isAsync, cancellationToken).ConfigureAwait(false);
         return ((NpgsqlConnection)dbConnection, closeConnectionInternally);
     }
-    
+
     private static void ValidateConflictOptionForInsert(TableInfo tableInfo)
     {
         switch (tableInfo.BulkConfig.ConflictOption)
