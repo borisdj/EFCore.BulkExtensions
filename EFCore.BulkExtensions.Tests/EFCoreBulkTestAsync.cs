@@ -20,19 +20,21 @@ public class EFCoreBulkTestAsync
     public async Task InsertWithConflictOptionIgnorePostgreSqlAsync(SqlType sqlType)
     {
         await using var context = new TestContext(sqlType);
-        await context.Database.ExecuteSqlRawAsync($@"DELETE FROM ""{nameof(Customer)}""");
+        var existingName = $"ExistingAsync-{Guid.NewGuid()}";
+        var newName = $"NewAsync-{Guid.NewGuid()}";
+        var entities = new List<Customer>
+        {
+            new Customer { Name = existingName },
+            new Customer { Name = newName }
+        };
+        var bulkConfig = new BulkConfig { ConflictOption = ConflictOption.Ignore };
 
-        await context.BulkInsertAsync([new Customer { Name = "ExistingAsync" }]);
-        await context.BulkInsertAsync(
-            [
-                new Customer { Name = "ExistingAsync" },
-                new Customer { Name = "NewAsync" }
-            ],
-            new BulkConfig { ConflictOption = ConflictOption.Ignore });
+        await context.BulkInsertAsync(new List<Customer> { new Customer { Name = existingName } });
+        await context.BulkInsertAsync(entities, bulkConfig);
 
-        Assert.Equal(2, await context.Customers.CountAsync());
-        Assert.Single(await context.Customers.Where(customer => customer.Name == "ExistingAsync").ToListAsync());
-        Assert.Single(await context.Customers.Where(customer => customer.Name == "NewAsync").ToListAsync());
+        Assert.Equal(2, await context.Customers.CountAsync(customer => customer.Name == existingName || customer.Name == newName));
+        Assert.Single(await context.Customers.Where(customer => customer.Name == existingName).ToListAsync());
+        Assert.Single(await context.Customers.Where(customer => customer.Name == newName).ToListAsync());
     }
 
     [Theory]
@@ -40,10 +42,10 @@ public class EFCoreBulkTestAsync
     public async Task InsertWithConflictOptionIgnoreAndSetOutputIdentityThrowsPostgreSqlAsync(SqlType sqlType)
     {
         await using var context = new TestContext(sqlType);
+        var entities = new List<Customer> { new Customer { Name = "IgnoreWithIdentityAsync" } };
+        var bulkConfig = new BulkConfig { ConflictOption = ConflictOption.Ignore, SetOutputIdentity = true };
 
-        var exception = await Assert.ThrowsAsync<NotSupportedException>(() => context.BulkInsertAsync(
-            [new Customer { Name = "IgnoreWithIdentityAsync" }],
-            new BulkConfig { ConflictOption = ConflictOption.Ignore, SetOutputIdentity = true }));
+        var exception = await Assert.ThrowsAsync<NotSupportedException>(() => context.BulkInsertAsync(entities, bulkConfig));
 
         Assert.Contains($"{nameof(ConflictOption.Ignore)} with {nameof(BulkConfig.SetOutputIdentity)} is not supported for PostgreSQL", exception.Message);
     }
@@ -53,10 +55,10 @@ public class EFCoreBulkTestAsync
     public async Task InsertWithConflictOptionReplaceThrowsPostgreSqlAsync(SqlType sqlType)
     {
         await using var context = new TestContext(sqlType);
+        var entities = new List<Customer> { new Customer { Name = "ReplaceAsync" } };
+        var bulkConfig = new BulkConfig { ConflictOption = ConflictOption.Replace };
 
-        var exception = await Assert.ThrowsAsync<NotSupportedException>(() => context.BulkInsertAsync(
-            [new Customer { Name = "ReplaceAsync" }],
-            new BulkConfig { ConflictOption = ConflictOption.Replace }));
+        var exception = await Assert.ThrowsAsync<NotSupportedException>(() => context.BulkInsertAsync(entities, bulkConfig));
 
         Assert.Contains($"{nameof(ConflictOption.Replace)} is not supported for PostgreSQL", exception.Message);
     }
