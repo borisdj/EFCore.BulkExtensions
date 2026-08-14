@@ -5,6 +5,7 @@ EntityFrameworkCore extensions that offer enterprise-grade performance boost - i
 -AddOp (additional improvement): **Truncate.**  
 Library is Lightweight and very Efficient (warp speed), having all mostly used [CRUD](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete) methods.  
 Was selected in top 10 [EF Core Extensions](https://docs.microsoft.com/en-us/ef/core/extensions/) recommended by *Microsoft*.  
+Repository included into [*Arctic Code Vault*](https://archiveprogram.github.com/arctic-vault/) for long-term preservation (code designated for survival).  
 Latest version is using EF Core 10.  
 Supports all 5 major sql databases: **SQLServer, PostgreSQL, MySQL, Oracle, SQLite.**    
 Check out [Testimonials](https://docs.google.com/spreadsheets/d/e/2PACX-1vShdv2sTm3oQfowm9kVIx-PLBCk1lGQEa9E6n92-dX3pni7-XQUEp6taVcMSZVi9BaSAizv1YanWTy3/pubhtml?gid=801420190&single=true) from the Community and User Comments.  
