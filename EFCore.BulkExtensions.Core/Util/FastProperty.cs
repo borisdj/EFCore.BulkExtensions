@@ -1,4 +1,6 @@
-﻿using System;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
+using System;
 using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -11,7 +13,7 @@ namespace EFCore.BulkExtensions;
 public class FastProperty
 {
     private static readonly ConcurrentDictionary<PropertyInfo, FastProperty> FastPropertyCache = new();
-    
+
     /// <summary>
     /// Get or create a <see cref="FastProperty"/> instance for getting/setting the given property.
     /// </summary>
@@ -21,11 +23,29 @@ public class FastProperty
     /// </returns>
     public static FastProperty GetOrCreate(PropertyInfo property)
     {
-        return FastPropertyCache.GetOrAdd(property, p => new FastProperty(p));
+        return FastPropertyCache.GetOrAdd(property, static p => new FastProperty(p));
     }
-    
-    private Func<object, object>? _getDelegate;
-    private Action<object, object>? _setDelegate;
+
+    /// <summary>
+    /// Get or create a <see cref="FastProperty"/> instance for the given EF Core property metadata.
+    /// </summary>
+    public static FastProperty GetOrCreate(IProperty property, DbContext? dbContext = null)
+    {
+        if (property.PropertyInfo is not null)
+        {
+            return GetOrCreate(property.PropertyInfo);
+        }
+
+        if (dbContext is null)
+        {
+            throw new ArgumentNullException(nameof(dbContext), "A DbContext is required when creating a fast accessor for a shadow property.");
+        }
+
+        return new FastProperty(property, dbContext);
+    }
+
+    private Func<object, object?>? _getDelegate;
+    private Action<object, object?>? _setDelegate;
 
     /// <summary>
     /// Constructor for FastPropery
@@ -38,12 +58,20 @@ public class FastProperty
         InitializeSet();
     }
 
+    private FastProperty(IProperty property, DbContext dbContext)
+    {
+        MetadataProperty = property;
+        Property = property.PropertyInfo;
+        InitializeShadowGet(dbContext);
+        InitializeShadowSet(dbContext);
+    }
+
     private void InitializeSet()
     {
         var instance = Expression.Parameter(typeof(object), "instance");
         var value = Expression.Parameter(typeof(object), "value");
 
-        if (Property.DeclaringType is null)
+        if (Property is null || Property.DeclaringType is null)
         {
             throw new ArgumentException("Unable to determine DeclaringType from Property");
         }
@@ -59,14 +87,14 @@ public class FastProperty
         var setter = Property.GetSetMethod(true) ?? Property.DeclaringType?.GetProperty(Property.Name)?.GetSetMethod(true); // when Prop from parent it requires DeclaringType
 
         if (setter != null)
-            _setDelegate = Expression.Lambda<Action<object, object>>(Expression.Call(instanceCast, setter, valueCast), new ParameterExpression[] { instance, value }).Compile();
+            _setDelegate = Expression.Lambda<Action<object, object?>>(Expression.Call(instanceCast, setter, valueCast), new ParameterExpression[] { instance, value }).Compile();
     }
 
     private void InitializeGet()
     {
         var instance = Expression.Parameter(typeof(object), "instance");
 
-        if (Property.DeclaringType is null)
+        if (Property is null || Property.DeclaringType is null)
         {
             throw new ArgumentException("Unable to determine DeclaringType from Property");
         }
@@ -78,12 +106,23 @@ public class FastProperty
         var getter = Property.GetGetMethod(true) ?? Property.DeclaringType.GetProperty(Property.Name)?.GetGetMethod(true);
 
         if (getter != null)
-            _getDelegate = Expression.Lambda<Func<object, object>>(Expression.TypeAs(Expression.Call(instanceCast, getter), typeof(object)), instance).Compile();
+            _getDelegate = Expression.Lambda<Func<object, object?>>(Expression.TypeAs(Expression.Call(instanceCast, getter), typeof(object)), instance).Compile();
+    }
+
+    private void InitializeShadowGet(DbContext dbContext)
+    {
+        _getDelegate = instance => dbContext.Entry(instance).Property(MetadataProperty!.Name).CurrentValue;
+    }
+
+    private void InitializeShadowSet(DbContext dbContext)
+    {
+        _setDelegate = (instance, value) => dbContext.Entry(instance).Property(MetadataProperty!.Name).CurrentValue = value;
     }
 
 #pragma warning disable CS1591 // No XML comment required here
-    public PropertyInfo Property { get; set; }
-
+    public PropertyInfo? Property { get; set; }
+    public IProperty? MetadataProperty { get; set; }
+    public Type? UnderlyingType => Property?.PropertyType ?? MetadataProperty?.ClrType;
 
     /// <summary>
     /// Returns the object
@@ -99,9 +138,11 @@ public class FastProperty
     /// <param name="value"></param>
     public void Set(object instance, object? value)
     {
-        if (value != default && _setDelegate is not null)
+        if (instance == default || _setDelegate is null)
         {
-            _setDelegate(instance, value);
+            return;
         }
+
+        _setDelegate(instance, value);
     }
 }

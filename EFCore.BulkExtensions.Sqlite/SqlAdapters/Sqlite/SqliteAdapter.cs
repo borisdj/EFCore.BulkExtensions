@@ -433,24 +433,24 @@ public class SqliteAdapter : ISqlOperationsAdapter
                     var ownedPropertyNameList = propertyColumn.Key.Split('.');
                     var ownedPropertyName = ownedPropertyNameList[0];
                     var subPropertyName = ownedPropertyNameList[1];
-                    var ownedFastProperty = tableInfo.FastPropertyDict[ownedPropertyName];
-                    var ownedProperty = ownedFastProperty.Property;
-
-                    var propertyType = Nullable.GetUnderlyingType(ownedProperty.GetType()) ?? ownedProperty.GetType();
+                    var subPropertyFullName = $"{ownedPropertyName}_{subPropertyName}";
+                    var subPropertyType = tableInfo.FastPropertyDict[subPropertyFullName].UnderlyingType ?? throw new InvalidOperationException($"Unable to determine the underlying type for '{propertyColumn.Key}'.");
                     if (!command.Parameters.Contains("@" + parameterName))
                     {
-                        var parameter = new SqliteParameter($"@{parameterName}", propertyType);
+                        var parameter = new SqliteParameter($"@{parameterName}", subPropertyType);
                         command.Parameters.Add(parameter);
                     }
 
-                    if (ownedProperty == null)
+                    var ownedFastProperty = tableInfo.FastPropertyDict[ownedPropertyName];
+                    var ownedProperty = ownedFastProperty.Property;
+
+                    if (ownedProperty is null)
                     {
                         value = null;
                     }
                     else
                     {
                         var ownedPropertyValue = entity == null ? null : tableInfo.FastPropertyDict[ownedPropertyName].Get(entity);
-                        var subPropertyFullName = $"{ownedPropertyName}_{subPropertyName}";
                         value = ownedPropertyValue == null ? null : tableInfo.FastPropertyDict[subPropertyFullName]?.Get(ownedPropertyValue);
                     }
                 }
@@ -524,7 +524,7 @@ public class SqliteAdapter : ISqlOperationsAdapter
         string identityPropertyName = tableInfo.PropertyColumnNamesDict.SingleOrDefault(a => a.Value == tableInfo.IdentityColumnName).Key;
         FastProperty identityFastProperty = tableInfo.FastPropertyDict[identityPropertyName];
 
-        string idTypeName = identityFastProperty.Property.PropertyType.Name;
+        string idTypeName = (identityFastProperty.UnderlyingType ?? throw new InvalidOperationException($"Unable to determine the underlying type for '{tableInfo.IdentityColumnName}'.")).Name;
         object? idValue = null;
         for (int i = entities.Count() - 1; i >= 0; i--)
         {
