@@ -117,10 +117,7 @@ internal static class DbContextBulkTransactionSaveChanges
 
                         foreach (var property in properties)
                         {
-                            if (property.PropertyInfo != null) // skip Shadow Property
-                            {
-                                entityPropertyDict.Add(property.Name, FastProperty.GetOrCreate(property.PropertyInfo));
-                            }
+                            entityPropertyDict.Add(property.Name, FastProperty.GetOrCreate(property, dbContext));
                         }
                         foreach (var navigationPropertyInfo in navigationPropertiesInfo)
                         {

@@ -458,10 +458,7 @@ public class TableInfo
 
         foreach (var property in allProperties)
         {
-            if (property.PropertyInfo != null) // skip Shadow Property
-            {
-                FastPropertyDict.Add(property.Name, FastProperty.GetOrCreate(property.PropertyInfo));
-            }
+            FastPropertyDict.Add(property.Name, FastProperty.GetOrCreate(property, dbContext));
 
             if (property.IsShadowProperty() && property.IsForeignKey())
             {
@@ -1066,7 +1063,7 @@ public class TableInfo
                 {
                     long value = reset ? 0 : i;
                     object idValue;
-                    var idType = identityFastProperty.Property.PropertyType;
+                    var idType = identityFastProperty.UnderlyingType ?? throw new InvalidOperationException($"Unable to determine the underlying type for '{identityPropertyName}'.");
                     if (idType == typeof(ushort))
                         idValue = (ushort)value;
                     if (idType == typeof(short))
@@ -1153,11 +1150,11 @@ public class TableInfo
         {
             var fastProperty = FastPropertyDict[identifierPropertyName];
 
-            if (fastProperty.Property.PropertyType == typeof(string) ||
-                fastProperty.Property.PropertyType == typeof(Guid))
+            var propertyType = fastProperty.UnderlyingType;
+            if (propertyType == typeof(string) || propertyType == typeof(Guid))
             {
-                entities = entities.OrderBy(p => fastProperty.Property!.GetValue(p, null)).ToList();
-                entitiesWithOutputIdentity = entitiesWithOutputIdentity.OrderBy(p => fastProperty.Property!.GetValue(p, null)).ToList();
+                entities = entities.OrderBy(p => fastProperty.Get(p!)).ToList();
+                entitiesWithOutputIdentity = entitiesWithOutputIdentity.OrderBy(p => fastProperty.Get(p)).ToList();
             }
         }
 
