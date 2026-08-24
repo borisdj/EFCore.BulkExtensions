@@ -1,0 +1,26 @@
+Summary
+  Generated on: 2026/5/26 - 13:40:05
+  Coverage date: 2026/5/26 - 13:39:43
+  Parser: Cobertura
+  Assemblies: 1
+  Classes: 4
+  Files: 4
+  Line coverage: 72.8%
+  Covered lines: 560
+  Uncovered lines: 209
+  Coverable lines: 769
+  Total lines: 1173
+  Branch coverage: 65.8% (179 of 272)
+  Covered branches: 179
+  Total branches: 272
+  Method coverage: 86.9% (40 of 46)
+  Full method coverage: 67.3% (31 of 46)
+  Covered methods: 40
+  Fully covered methods: 31
+  Total methods: 46
+
+EFCore.BulkExtensions.GaussDB                                     72.8%
+  EFCore.BulkExtensions.GaussDB.Extensions.BulkConfigExtensions      0%
+  EFCore.BulkExtensions.SqlAdapters.GaussDB.GaussDBAdapter          65%
+  EFCore.BulkExtensions.SqlAdapters.GaussDB.GaussDBDbServer        100%
+  EFCore.BulkExtensions.SqlAdapters.GaussDB.GaussDBQueryBuilder   82.6%
