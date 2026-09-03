@@ -47,6 +47,15 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
             using var writer = isAsync ? await connection.BeginBinaryImportAsync(sqlCopy, cancellationToken).ConfigureAwait(false)
                                              : connection.BeginBinaryImport(sqlCopy);
 
+            // BeginBinaryImport runs StartUserAction which resets the connector's read/write buffer
+            // timeouts to Settings.CommandTimeout (it passes command: null, so there is no other
+            // source). Apply BulkCopyTimeout here so it actually reaches the COPY — matches the
+            // SqlServer adapter, which assigns SqlBulkCopy.BulkCopyTimeout in the same spot.
+            if (tableInfo.BulkConfig.BulkCopyTimeout is int bulkCopyTimeout)
+            {
+                writer.Timeout = TimeSpan.FromSeconds(bulkCopyTimeout);
+            }
+
             var uniqueColumnName = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList().FirstOrDefault();
 
             var doKeepIdentity = tableInfo.BulkConfig.SqlBulkCopyOptions == SqlBulkCopyOptions.KeepIdentity;
@@ -502,6 +511,10 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
         using (var command = connection.CreateCommand())
         {
             command.CommandText = countUniqueConstrain;
+            if (tableInfo.BulkConfig.BulkCopyTimeout is int bulkCopyTimeout)
+            {
+                command.CommandTimeout = bulkCopyTimeout;
+            }
 
             if (isAsync)
             {
@@ -562,6 +575,10 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
             var transaction = (NpgsqlTransaction?)dbTransaction;
 
             command.CommandText = sqlQuery;
+            if (tableInfo.BulkConfig.BulkCopyTimeout is int bulkCopyTimeout)
+            {
+                command.CommandTimeout = bulkCopyTimeout;
+            }
 
             object? scalar = isAsync ? await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false)
                                            : command.ExecuteScalar();
