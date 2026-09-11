@@ -62,6 +62,44 @@ public class GaussDBBulkTests : IClassFixture<GaussDBBulkTests.GaussDBFixture>
     }
 
     [Fact]
+    public void BulkInsert_WithCombinedKeepIdentity_PreservesExplicitIds()
+    {
+        _fixture.ResetSchema();
+        using var context = _fixture.CreateContext();
+        var rows = CreateItems(2, "keep-identity");
+        rows[0].Id = 101;
+        rows[1].Id = 102;
+
+        context.BulkInsert(rows, new BulkConfig
+        {
+            SqlBulkCopyOptions = SqlBulkCopyOptions.KeepIdentity | SqlBulkCopyOptions.CheckConstraints
+        });
+
+        Assert.Equal(2, _fixture.ExecuteScalar<long>(@"SELECT COUNT(*) FROM ""GaussDbItems"" WHERE ""Id"" IN (101, 102)"));
+    }
+
+    [Fact]
+    public void BulkInsertOrUpdate_WithStats_ReturnsInsertedAndUpdatedCounts()
+    {
+        _fixture.ResetSchema();
+        using var context = _fixture.CreateContext();
+        context.BulkInsert(CreateItems(2, "stats-seed"));
+
+        var rows = CreateItems(2, "stats-seed");
+        rows[0].Id = 1;
+        rows[0].Quantity = 900;
+        rows[1].Id = 3;
+        rows[1].Quantity = 901;
+        var config = new BulkConfig { CalculateStats = true };
+
+        context.BulkInsertOrUpdate(rows, config);
+
+        Assert.NotNull(config.StatsInfo);
+        Assert.Equal(1, config.StatsInfo!.StatsNumberInserted);
+        Assert.Equal(1, config.StatsInfo.StatsNumberUpdated);
+    }
+
+    [Fact]
     public void BulkInsertOrUpdate_UpdatesExistingAndInsertsNewRows()
     {
         _fixture.ResetSchema();

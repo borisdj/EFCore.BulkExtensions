@@ -32,7 +32,16 @@ public class GaussDBAdapter : ISqlOperationsAdapter
     protected static async Task InsertAsync<T>(BulkContext context, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress,
         bool isAsync, CancellationToken cancellationToken)
     {
-        if (entities == null || !entities.Any())
+        if (entities is null)
+        {
+            return;
+        }
+
+        // Bulk operations enumerate the input while writing rows and may also need its count for
+        // progress reporting. Materialize one-shot enumerables once so a generator is not consumed
+        // by Any/Count before the binary importer sees it.
+        var entityList = entities as IReadOnlyCollection<T> ?? entities.ToList();
+        if (entityList.Count == 0)
         {
             return;
         }
@@ -50,14 +59,14 @@ public class GaussDBAdapter : ISqlOperationsAdapter
                 : connection.BeginBinaryImport(sqlCopy);
 
             var uniqueColumnName = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.FirstOrDefault();
-            var doKeepIdentity = tableInfo.BulkConfig.SqlBulkCopyOptions == SqlBulkCopyOptions.KeepIdentity;
+            var doKeepIdentity = tableInfo.BulkConfig.SqlBulkCopyOptions.HasFlag(SqlBulkCopyOptions.KeepIdentity);
             var propertiesColumnDict = ((tableInfo.InsertToTempTable || doKeepIdentity) && tableInfo.IdentityColumnName == uniqueColumnName)
                 ? tableInfo.PropertyColumnNamesDict
                 : tableInfo.PropertyColumnNamesDict.Where(a => a.Value != tableInfo.IdentityColumnName);
             var propertiesNames = propertiesColumnDict.Select(a => a.Key).ToList();
             var entitiesCopiedCount = 0;
 
-            foreach (var entity in entities)
+            foreach (var entity in entityList)
             {
                 if (isAsync)
                 {
@@ -167,7 +176,7 @@ public class GaussDBAdapter : ISqlOperationsAdapter
                     && tableInfo.BulkConfig.NotifyAfter != 0
                     && entitiesCopiedCount % tableInfo.BulkConfig.NotifyAfter == 0)
                 {
-                    progress.Invoke(ProgressHelper.GetProgress(entities.Count(), entitiesCopiedCount));
+                    progress.Invoke(ProgressHelper.GetProgress(entityList.Count, entitiesCopiedCount));
                 }
             }
 
@@ -256,6 +265,7 @@ public class GaussDBAdapter : ISqlOperationsAdapter
     protected async Task MergeAsync<T>(BulkContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, OperationType operationType,
         Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken) where T : class
     {
+        var entityList = entities as IReadOnlyCollection<T> ?? entities.ToList();
         var tempTableCreated = false;
         var outputTableCreated = false;
         var uniqueIndexCreated = false;
@@ -328,11 +338,11 @@ public class GaussDBAdapter : ISqlOperationsAdapter
             {
                 if (isAsync)
                 {
-                    await InsertAsync(context, type, entities, tableInfo, progress, cancellationToken).ConfigureAwait(false);
+                    await InsertAsync(context, type, entityList, tableInfo, progress, cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
-                    Insert(context, type, entities, tableInfo, progress);
+                    Insert(context, type, entityList, tableInfo, progress);
                 }
             }
 
@@ -352,7 +362,7 @@ public class GaussDBAdapter : ISqlOperationsAdapter
             {
                 var sqlMergeTableOutput = sqlMergeTable.TrimEnd(';');
                 var outputEntities = tableInfo.LoadOutputEntities<T>(dbContext, type, sqlMergeTableOutput);
-                tableInfo.UpdateReadEntities(entities, outputEntities, dbContext);
+                tableInfo.UpdateReadEntities(entityList, outputEntities, dbContext);
             }
 
             if (tableInfo.BulkConfig.CustomSqlPostProcess != null)
@@ -373,7 +383,7 @@ public class GaussDBAdapter : ISqlOperationsAdapter
                 tableInfo.BulkConfig.StatsInfo = new StatsInfo
                 {
                     StatsNumberInserted = numberInserted,
-                    StatsNumberUpdated = entities.Count() - numberInserted,
+                    StatsNumberUpdated = entityList.Count - numberInserted,
                 };
             }
         }
@@ -534,25 +544,63 @@ public class GaussDBAdapter : ISqlOperationsAdapter
 
         var connection = (GaussDBConnection)context.Database.GetDbConnection();
         var isExternalTransaction = context.Database.CurrentTransaction != null;
-        using var command = connection.CreateCommand();
-
-        var dbTransaction = isExternalTransaction
-            ? context.Database.CurrentTransaction?.GetUnderlyingTransaction(tableInfo.BulkConfig)
-            : connection.BeginTransaction();
-        var transaction = (GaussDBTransaction?)dbTransaction;
-        command.CommandText = sqlQuery;
-
-        var scalar = isAsync
-            ? await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false)
-            : command.ExecuteScalar();
-        var counter = (long?)scalar ?? 0;
-
-        if (!isExternalTransaction)
+        var openedInternally = false;
+        GaussDBTransaction? transaction = null;
+        try
         {
-            transaction?.Commit();
-        }
+            if (connection.State != ConnectionState.Open)
+            {
+                if (isAsync)
+                {
+                    await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    connection.Open();
+                }
+                openedInternally = true;
+            }
 
-        return (int)counter;
+            using var command = connection.CreateCommand();
+            var dbTransaction = isExternalTransaction
+                ? context.Database.CurrentTransaction?.GetUnderlyingTransaction(tableInfo.BulkConfig)
+                : connection.BeginTransaction();
+            transaction = (GaussDBTransaction?)dbTransaction;
+            command.Transaction = transaction;
+            command.CommandText = sqlQuery;
+
+            var scalar = isAsync
+                ? await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false)
+                : command.ExecuteScalar();
+            var counter = scalar is null or DBNull
+                ? 0L
+                : Convert.ToInt64(scalar, System.Globalization.CultureInfo.InvariantCulture);
+
+            if (!isExternalTransaction)
+            {
+                transaction?.Commit();
+            }
+
+            return checked((int)counter);
+        }
+        finally
+        {
+            if (!isExternalTransaction)
+            {
+                transaction?.Dispose();
+            }
+            if (openedInternally)
+            {
+                if (isAsync)
+                {
+                    await connection.CloseAsync().ConfigureAwait(false);
+                }
+                else
+                {
+                    connection.Close();
+                }
+            }
+        }
     }
 
     /// <inheritdoc/>
