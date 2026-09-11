@@ -11,7 +11,7 @@ using Xunit;
 
 namespace EFCore.BulkExtensions.Tests.GaussDB;
 
-public class GaussDBBulkTests : IClassFixture<GaussDBBulkTests.GaussDBFixture>
+public partial class GaussDBBulkTests : IClassFixture<GaussDBBulkTests.GaussDBFixture>
 {
     private readonly GaussDBFixture _fixture;
 
@@ -59,6 +59,34 @@ public class GaussDBBulkTests : IClassFixture<GaussDBBulkTests.GaussDBFixture>
 
         Assert.Equal(4, _fixture.ExecuteScalar<long>(@"SELECT COUNT(*) FROM ""GaussDbItems"""));
         Assert.Equal("insert-async-1", _fixture.ExecuteScalar<string>(@"SELECT ""Name"" FROM ""GaussDbItems"" ORDER BY ""Id"" LIMIT 1"));
+    }
+
+    [Fact]
+    public void BulkInsert_WithOutputIdentity_PopulatesGeneratedIds()
+    {
+        _fixture.ResetSchema();
+        using var context = _fixture.CreateContext();
+        var rows = CreateItems(3, "output-identity");
+
+        context.BulkInsert(rows, new BulkConfig { SetOutputIdentity = true });
+
+        Assert.All(rows, row => Assert.True(row.Id > 0));
+        Assert.Equal(new[] { 1, 2, 3 }, rows.Select(row => row.Id).ToArray());
+    }
+
+    [Fact]
+    public void BulkRead_LoadsMatchingRowsIntoEntities()
+    {
+        _fixture.ResetSchema();
+        using var context = _fixture.CreateContext();
+        context.BulkInsert(CreateItems(2, "bulk-read"));
+        var rows = new List<GaussDbItem> { new() { Id = 2 } };
+
+        context.BulkRead(rows);
+
+        Assert.Single(rows);
+        Assert.Equal("bulk-read-2", rows[0].Name);
+        Assert.Equal(2, rows[0].Quantity);
     }
 
     [Fact]
@@ -407,7 +435,7 @@ CREATE TABLE "GaussDbItems" (
     "Id" serial PRIMARY KEY,
     "Name" character varying(100) NOT NULL,
     "Description" text NULL,
-    "Quantity" integer NOT NULL,
+    "Quantity" integer NOT NULL DEFAULT 42,
     "PriceCents" integer NOT NULL,
     "UpdatedAt" timestamp with time zone NOT NULL,
     "Status" character varying(20) NOT NULL
@@ -451,6 +479,7 @@ CREATE TABLE "GaussDbCompositeRoles" (
                 Microsoft.EntityFrameworkCore.GaussDBPropertyBuilderExtensions.UseIdentityColumn(entity.Property(x => x.Id));
                 entity.Property(x => x.Name).HasMaxLength(100).IsRequired();
                 entity.Property(x => x.Description).HasColumnType("text");
+                entity.Property(x => x.Quantity).HasDefaultValue(42);
                 entity.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
                 entity.Property(x => x.UpdatedAt).HasColumnType("timestamp with time zone");
             });

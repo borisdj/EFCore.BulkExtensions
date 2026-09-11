@@ -51,6 +51,7 @@ public static class SqlAdaptersMapping
     public static Func<DbContext, IDbServer>? Provider { get; set; }
 
     private static IDbServer? _dbServer { get; set; }
+    private static readonly object _dbServerLock = new();
 
     /// <summary>
     /// Contains a list of methods to generate Adapters and helpers instances
@@ -96,22 +97,23 @@ public static class SqlAdaptersMapping
         {
             databaseType = SqlType.GaussDB;
         }
-        if (_dbServer == null || _dbServer.Type != databaseType)
+        lock (_dbServerLock)
         {
-            static Type GetType(SqlType type)
+            if (_dbServer == null || _dbServer.Type != databaseType)
             {
-                var typeName = type.ToString();
-                var assemblyName = typeof(SqlAdaptersMapping).Assembly.GetName().Name!.Replace(".Core", $".{typeName}");
+                static Type GetType(SqlType type)
+                {
+                    var typeName = type.ToString();
+                    var assemblyName = typeof(SqlAdaptersMapping).Assembly.GetName().Name!.Replace(".Core", $".{typeName}");
 
-                return Type.GetType($"EFCore.BulkExtensions.SqlAdapters.{typeName}.{typeName}DbServer,{assemblyName}") ??
-                    throw new InvalidOperationException("Failed to resolve type.");
+                    return Type.GetType($"EFCore.BulkExtensions.SqlAdapters.{typeName}.{typeName}DbServer,{assemblyName}") ??
+                        throw new InvalidOperationException("Failed to resolve type.");
+                }
+
+                _dbServer = Activator.CreateInstance(GetType(databaseType)) as IDbServer;
             }
-
-            _dbServer = Activator.CreateInstance(GetType(databaseType)) as IDbServer;
+            return _dbServer ?? throw new InvalidOperationException("Failed to create DbServer");
         }
-
-
-        return _dbServer ?? throw new InvalidOperationException("Failed to create DbServer");
     }
 
     private static IDbServer? TryGetServer(DbContext context)

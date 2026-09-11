@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace EFCore.BulkExtensions.SqlAdapters.GaussDB;
 
@@ -29,6 +30,23 @@ public class GaussDBQueryBuilder : SqlQueryBuilder
     public override DbType Dbtype()
     {
         return (DbType)GaussDBDbType.Jsonb;
+    }
+
+    /// <inheritdoc/>
+    public override string SelectFromOutputTable(TableInfo tableInfo)
+    {
+        var columns = GetCommaSeparatedColumns(tableInfo.OutputPropertyColumnNamesDict.Values.ToList())
+            .Replace("[", @"""").Replace("]", @"""");
+        var primaryKey = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.FirstOrDefault()
+            ?? throw new InvalidOperationException("GaussDB output selection requires a primary key.");
+        primaryKey = primaryKey.Replace("[", @"""").Replace("]", @"""");
+        if (!primaryKey.StartsWith('"'))
+        {
+            primaryKey = $@"""{primaryKey}""";
+        }
+        var outputTable = tableInfo.FullTempOutputTableName.Replace("[", @"""").Replace("]", @"""");
+        return $"SELECT {columns} FROM {outputTable} " +
+            $"WHERE {primaryKey} IS NOT NULL";
     }
 
     //public override string RestructureForBatch(string sql, bool isDelete = false)
@@ -153,17 +171,29 @@ public class GaussDBQueryBuilder : SqlQueryBuilder
         bool appendReturning = false;
         if (operationType == OperationType.Read)
         {
-            var readByColumns = SqlQueryBuilder.GetCommaSeparatedColumns(tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList()); //, tableInfo.FullTableName, tableInfo.FullTempTableName
-
-            q = $"SELECT {tableInfo.FullTableName}.* FROM {tableInfo.FullTableName} " +
-                $"JOIN {tableInfo.FullTempTableName} " +
-                $"USING ({readByColumns})"; //$"ON ({tableInfo.FullTableName}.readByColumns = {tableInfo.FullTempTableName}.readByColumns);";
+            if (!tableInfo.UpdateByPropertiesAreNullable)
+            {
+                var readByColumns = SqlQueryBuilder.GetCommaSeparatedColumns(tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList());
+                q = $"SELECT {tableInfo.FullTableName}.* FROM {tableInfo.FullTableName} " +
+                    $"JOIN {tableInfo.FullTempTableName} USING ({readByColumns})";
+            }
+            else
+            {
+                var readJoin = SqlQueryBuilder.GetANDSeparatedColumns(tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList(),
+                    prefixTable: tableInfo.FullTableName, equalsTable: tableInfo.FullTempTableName,
+                    updateByPropertiesAreNullable: true);
+                q = $"SELECT {tableInfo.FullTableName}.* FROM {tableInfo.FullTableName} " +
+                    $"JOIN {tableInfo.FullTempTableName} ON {readJoin}";
+            }
         }
         else if (operationType == OperationType.Delete)
         {
-            var deleteByColumns = SqlQueryBuilder.GetCommaSeparatedColumns(tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList(), tableInfo.FullTableName, tableInfo.FullTempTableName);
-            deleteByColumns = deleteByColumns.Replace(",", " AND")
-                                             .Replace("[", @"""").Replace("]", @"""");
+            var deleteByColumns = SqlQueryBuilder.GetANDSeparatedColumns(
+                tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList(),
+                prefixTable: tableInfo.FullTableName,
+                equalsTable: tableInfo.FullTempTableName,
+                updateByPropertiesAreNullable: tableInfo.UpdateByPropertiesAreNullable)
+                .Replace("[", @"""").Replace("]", @"""");
 
             q = $"DELETE FROM {tableInfo.FullTableName} " +
                 $"USING {tableInfo.FullTempTableName} " +
@@ -171,11 +201,17 @@ public class GaussDBQueryBuilder : SqlQueryBuilder
         }
         else if (operationType == OperationType.Update)
         {
-            var columnsListEquals = GetColumnList(tableInfo, OperationType.Insert);
-            var columnsToUpdate = columnsListEquals.Where(tableInfo.PropertyColumnNamesUpdateDict.ContainsValue).ToList();
+            // Defaults are omitted only for INSERT. Updates must copy explicit CLR values,
+            // while key columns remain match columns and are never assigned.
+            var columnsListEquals = GetColumnList(tableInfo, OperationType.Update);
+            var keyColumns = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToHashSet();
+            var columnsToUpdate = columnsListEquals
+                .Where(c => tableInfo.PropertyColumnNamesUpdateDict.ContainsValue(c) && !keyColumns.Contains(c))
+                .ToList();
 
             var updateByColumns = SqlQueryBuilder.GetANDSeparatedColumns(tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList(),
-                prefixTable: tableInfo.FullTableName, equalsTable: tableInfo.FullTempTableName).Replace("[", @"""").Replace("]", @"""");
+                prefixTable: tableInfo.FullTableName, equalsTable: tableInfo.FullTempTableName,
+                updateByPropertiesAreNullable: tableInfo.UpdateByPropertiesAreNullable).Replace("[", @"""").Replace("]", @"""");
             var equalsColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsToUpdate,
                 equalsTable: tableInfo.FullTempTableName).Replace("[", @"""").Replace("]", @"""");
 
@@ -183,6 +219,17 @@ public class GaussDBQueryBuilder : SqlQueryBuilder
                 $"FROM {tableInfo.FullTempTableName} " +
                 $"WHERE {updateByColumns}";
 
+            appendReturning = true;
+        }
+        else if (operationType == OperationType.Insert)
+        {
+            // BulkInsert with SetOutputIdentity uses the merge path so RETURNING can hydrate entities.
+            var commaSeparatedColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsList)
+                .Replace("[", @"""").Replace("]", @"""");
+            int subqueryLimit = tableInfo.BulkConfig.ApplySubqueryLimit;
+            var subqueryText = subqueryLimit > 0 ? $"LIMIT {subqueryLimit} " : "";
+            q = $"INSERT INTO {tableInfo.FullTableName} ({commaSeparatedColumns}) " +
+                $"(SELECT {commaSeparatedColumns} FROM {tableInfo.FullTempTableName}) " + subqueryText;
             appendReturning = true;
         }
         else
@@ -232,9 +279,9 @@ public class GaussDBQueryBuilder : SqlQueryBuilder
             string commaSeparatedColumnsNames = SqlQueryBuilder.GetCommaSeparatedColumns(allColumnsList, tableInfo.FullTableName).Replace("[", @"""").Replace("]", @"""");
             q += $" RETURNING {commaSeparatedColumnsNames}";
 
-            if (tableInfo.BulkConfig.CalculateStats)
+            if (tableInfo.BulkConfig.CalculateStats && operationType is OperationType.Insert or OperationType.InsertOrUpdate)
             {
-                q += ", xmax";
+                q += $", {tableInfo.FullTableName}.xmax";
             }
         }
 
@@ -264,7 +311,7 @@ public class GaussDBQueryBuilder : SqlQueryBuilder
             }
         }
 
-        if (tableInfo.BulkConfig.CalculateStats)
+        if (tableInfo.BulkConfig.CalculateStats && operationType is OperationType.Insert or OperationType.InsertOrUpdate)
         {
             q = $"WITH upserted AS ({q}), " +
                 $"NEW AS ( INSERT INTO {tableInfo.FullTempOutputTableName} SELECT xmax FROM upserted ) " +
@@ -389,7 +436,8 @@ public class GaussDBQueryBuilder : SqlQueryBuilder
     /// Generate SQL query to create a unique index
     /// </summary>
     /// <param name="tableInfo"></param>
-    public static string CreateUniqueIndex(TableInfo tableInfo)
+    /// <param name="concurrently">Whether to build the temporary index concurrently.</param>
+    public static string CreateUniqueIndex(TableInfo tableInfo, bool concurrently = true)
     {
         var tableName = tableInfo.TableName;
         var schemaFormated = tableInfo.Schema == null ? "" : $@"""{tableInfo.Schema}"".";
@@ -400,7 +448,8 @@ public class GaussDBQueryBuilder : SqlQueryBuilder
         var uniqueColumnNames = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToList();
         var uniqueColumnNamesFormated = @"""" + string.Join(@""", """, uniqueColumnNames) + @"""";
 
-        var q = $@"CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS ""{uniqueIndexName}"" " +
+        var concurrentlyKeyword = concurrently ? " CONCURRENTLY" : string.Empty;
+        var q = $@"CREATE UNIQUE INDEX{concurrentlyKeyword} IF NOT EXISTS ""{uniqueIndexName}"" " +
                 $@"ON {fullTableNameFormated} ({uniqueColumnNamesFormated})";
         return q;
     }
@@ -475,56 +524,62 @@ public class GaussDBQueryBuilder : SqlQueryBuilder
     public override string RestructureForBatch(string sql, bool isDelete = false)
     {
         sql = sql.Replace("[", @"""").Replace("]", @"""");
-        string firstLetterOfTable = sql.Substring(7, 1);
+        // EF may prepend TagWith comments and aliases can contain several characters.
+        // Capture only the command header, preserving comments and all later alias references.
+        const RegexOptions options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
+        var header = Regex.Match(sql,
+            @"\A(?<comments>(?:\s+|--[^\r\n]*(?:\r\n|\r|\n|$)|/\*[\s\S]*?\*/)*)" +
+            @"(?:UPDATE|DELETE)\s+(?<alias>""(?:[^""]|"""")*""|[A-Za-z_][A-Za-z0-9_]*)(?=\s|$)",
+            options, TimeSpan.FromSeconds(1));
+        if (!header.Success)
+        {
+            throw new NotSupportedException("The GaussDB batch command must start with UPDATE or DELETE and a table alias.");
+        }
 
+        var comments = header.Groups["comments"].Value;
+        var alias = header.Groups["alias"].Value;
+        var body = sql[header.Length..].TrimStart();
         if (isDelete)
         {
-            //FROM
-            // DELETE i FROM "Item" AS i WHERE i."ItemId" <= 1"
-            //TO
-            // DELETE FROM "Item" AS i WHERE i."ItemId" <= 1"
-            //WOULD ALSO WORK
-            // DELETE FROM "Item" WHERE "ItemId" <= 1
-
-            sql = sql.Replace($"DELETE {firstLetterOfTable}", "DELETE");
+            return comments + "DELETE " + body;
         }
-        else
+
+        // Match the target declaration, including its complete alias. The table name may
+        // be schema qualified; quoted identifiers may contain spaces or escaped quotes.
+        const string identifier = @"(?:""(?:[^""]|"""")*""|[A-Za-z_][A-Za-z0-9_]*)";
+        var target = Regex.Match(body,
+            @"\bFROM\s+(?<table>" + identifier + @"(?:\s*\.\s*" + identifier + @")*\s+AS\s+" +
+            Regex.Escape(alias) + @")(?=\s|$)", options, TimeSpan.FromSeconds(1));
+        if (!target.Success)
         {
-            //FROM
-            // UPDATE i SET "Description" = @Description, "Price\" = @Price FROM "Item" AS i WHERE i."ItemId" <= 1
-            //TO
-            // UPDATE "Item" AS i SET "Description" = 'Update N', "Price" = 1.5 WHERE i."ItemId" <= 1
-            //WOULD ALSO WORK
-            // UPDATE "Item" SET "Description" = 'Update N', "Price" = 1.5 WHERE "ItemId" <= 1
-
-            string tableAS = sql.Substring(sql.IndexOf("FROM") + 4, sql.IndexOf($"AS {firstLetterOfTable}") - sql.IndexOf("FROM"));
-
-            if (!sql.Contains("JOIN"))
-            {
-                sql = sql.Replace($"AS {firstLetterOfTable}", "");
-                //According to postgreDoc sql-update: "Do not repeat the target table as a from_item unless you intend a self-join"
-                string fromClause = sql.Substring(sql.IndexOf("FROM"), sql.IndexOf("WHERE") - sql.IndexOf("FROM"));
-                sql = sql.Replace(fromClause, "");
-            }
-            else
-            {
-                int positionFROM = sql.IndexOf("FROM");
-                int positionEndJOIN = sql.IndexOf("JOIN ") + "JOIN ".Length;
-                int positionON = sql.IndexOf(" ON");
-                int positionEndON = positionON + " ON".Length;
-                int positionWHERE = sql.IndexOf("WHERE");
-                string oldSqlSegment = sql[positionFROM..positionWHERE];
-                string newSqlSegment = "FROM " + sql[positionEndJOIN..positionON];
-                string equalsPkFk = sql[positionEndON..positionWHERE];
-                sql = sql.Replace(oldSqlSegment, newSqlSegment);
-                sql = sql.Replace("WHERE", " WHERE");
-                sql = sql + " AND" + equalsPkFk;
-            }
-
-            sql = sql.Replace($"UPDATE {firstLetterOfTable}", "UPDATE" + tableAS);
+            throw new NotSupportedException("The GaussDB batch command does not contain the target table declaration.");
         }
 
-        return sql;
+        var assignments = body[..target.Index].TrimEnd();
+        var remainder = body[(target.Index + target.Length)..].TrimStart();
+        var result = comments + "UPDATE " + target.Groups["table"].Value + " " + assignments;
+        if (!Regex.IsMatch(remainder, @"\bJOIN\b", options, TimeSpan.FromSeconds(1)))
+        {
+            return remainder.Length == 0 ? result : result + " " + remainder;
+        }
+
+        // Move the joined table to FROM and the join predicate to WHERE. An unfiltered
+        // batch has no existing WHERE clause, so its join predicate becomes that clause.
+        var join = Regex.Match(remainder, @"\bJOIN\s+(?<table>.*?)\s+ON\s+(?<predicate>.*)",
+            options | RegexOptions.Singleline, TimeSpan.FromSeconds(1));
+        if (!join.Success)
+        {
+            throw new NotSupportedException("The GaussDB batch join must contain an ON predicate.");
+        }
+        var predicate = join.Groups["predicate"].Value;
+        var where = Regex.Match(predicate, @"\bWHERE\b", options, TimeSpan.FromSeconds(1));
+        if (!where.Success)
+        {
+            return result + " FROM " + join.Groups["table"].Value + " WHERE " + predicate;
+        }
+
+        return (result + " FROM " + join.Groups["table"].Value + " " + predicate[where.Index..].TrimStart() +
+            " AND " + predicate[..where.Index].TrimEnd()).TrimEnd() + " ";
     }
     #endregion
 }

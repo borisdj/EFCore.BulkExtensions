@@ -1,7 +1,9 @@
 using EFCore.BulkExtensions.SqlAdapters;
 using EFCore.BulkExtensions.SqlAdapters.GaussDB;
 using GaussDB;
+using GaussDB.EntityFrameworkCore.PostgreSQL.Metadata;
 using GaussDBTypes;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -23,6 +25,19 @@ public class GaussDBSqlQueryBuilderTests
         Assert.IsType<GaussDBQueryBuilder>(server.QueryBuilder);
     }
 
+    [Theory]
+    [InlineData(GaussDBValueGenerationStrategy.IdentityByDefaultColumn, true)]
+    [InlineData(GaussDBValueGenerationStrategy.IdentityAlwaysColumn, true)]
+    [InlineData(GaussDBValueGenerationStrategy.SerialColumn, true)]
+    [InlineData(GaussDBValueGenerationStrategy.SequenceHiLo, false)]
+    [InlineData(GaussDBValueGenerationStrategy.None, false)]
+    public void DbServer_IdentifiesDatabaseGeneratedIdentityStrategies(GaussDBValueGenerationStrategy strategy, bool expected)
+    {
+        var server = new GaussDBDbServer();
+
+        Assert.Equal(expected, server.PropertyHasIdentity(new Annotation(server.ValueGenerationStrategy, strategy)));
+    }
+
     [Fact]
     public void QueryBuilder_CreatesGaussDBCommandAndParameter()
     {
@@ -36,6 +51,15 @@ public class GaussDBSqlQueryBuilderTests
 
         builder.SetDbTypeParam(parameter, builder.Dbtype());
         Assert.Equal(GaussDBDbType.Jsonb, parameter.GaussDBDbType);
+    }
+
+    [Fact]
+    public void SelectFromOutputTable_UsesGaussDBIdentifiers()
+    {
+        var tableInfo = GetTestTableInfo();
+        var actual = new GaussDBQueryBuilder().SelectFromOutputTable(tableInfo);
+
+        Assert.Equal(@"SELECT ""ItemId"", ""Name"" FROM ""dbo"".""GaussDBSqlItemTemp1234Output"" WHERE ""ItemId"" IS NOT NULL", actual);
     }
 
     [Fact]
@@ -92,6 +116,31 @@ public class GaussDBSqlQueryBuilderTests
                           @"FROM ""dbo"".""GaussDBSqlItemTemp1234"" " +
                           @"WHERE ""dbo"".""GaussDBSqlItem"".""ItemId"" = ""dbo"".""GaussDBSqlItemTemp1234"".""ItemId"";";
         Assert.Equal(expected, actual);
+    }
+
+    [Fact]
+    public void MergeTable_Read_WithNullableKey_UsesNullSafeJoin()
+    {
+        TableInfo tableInfo = GetTestTableInfo();
+        tableInfo.UpdateByPropertiesAreNullable = true;
+
+        string actual = GaussDBQueryBuilder.MergeTable<GaussDBSqlItem>(tableInfo, OperationType.Read);
+
+        Assert.Contains(" ON ", actual, StringComparison.Ordinal);
+        Assert.Contains("IS NULL", actual, StringComparison.Ordinal);
+        Assert.DoesNotContain("USING (", actual, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MergeTable_Update_IncludesDefaultValuePropertyWithoutUpdatingKey()
+    {
+        TableInfo tableInfo = GetTestTableInfo();
+        tableInfo.DefaultValueProperties = new HashSet<string> { nameof(GaussDBSqlItem.Name) };
+
+        string actual = GaussDBQueryBuilder.MergeTable<GaussDBSqlItem>(tableInfo, OperationType.Update);
+
+        Assert.Contains(" SET \"Name\" = ", actual, StringComparison.Ordinal);
+        Assert.DoesNotContain("SET \"ItemId\"", actual, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -171,6 +220,8 @@ public class GaussDBSqlQueryBuilderTests
             GaussDBQueryBuilder.CreateOutputStatsTable(tableInfo.FullTempOutputTableName, useTempDb: false, unlogged: true));
         Assert.Equal(@"CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS ""tempUniqueIndex_dbo_GaussDBSqlItem_ItemId"" ON ""dbo"".""GaussDBSqlItem"" (""ItemId"")",
             GaussDBQueryBuilder.CreateUniqueIndex(tableInfo));
+        Assert.Equal(@"CREATE UNIQUE INDEX IF NOT EXISTS ""tempUniqueIndex_dbo_GaussDBSqlItem_ItemId"" ON ""dbo"".""GaussDBSqlItem"" (""ItemId"")",
+            GaussDBQueryBuilder.CreateUniqueIndex(tableInfo, concurrently: false));
         Assert.Equal(@"ALTER TABLE ""dbo"".""GaussDBSqlItem"" ADD CONSTRAINT ""tempUniqueIndex_dbo_GaussDBSqlItem_ItemId"" UNIQUE USING INDEX ""tempUniqueIndex_dbo_GaussDBSqlItem_ItemId""",
             GaussDBQueryBuilder.CreateUniqueConstrain(tableInfo));
         Assert.Equal(@"DROP INDEX ""dbo"".""tempUniqueIndex_dbo_GaussDBSqlItem_ItemId"";",
@@ -234,6 +285,68 @@ public class GaussDBSqlQueryBuilderTests
         string actual = new GaussDBQueryBuilder().RestructureForBatch(sql, isDelete: true);
 
         Assert.Equal(@"DELETE FROM ""Item"" AS i WHERE i.""ItemId"" <= 1", actual);
+    }
+
+    [Fact]
+    public void RestructureForBatchUpdateWithoutWhere_DoesNotThrow()
+    {
+        const string sql = @"UPDATE item_alias SET ""Name"" = @Name FROM ""Item"" AS item_alias";
+
+        var actual = new GaussDBQueryBuilder().RestructureForBatch(sql);
+
+        Assert.Equal(@"UPDATE ""Item"" AS item_alias SET ""Name"" = @Name", actual);
+    }
+
+    [Fact]
+    public void RestructureForBatchWithLongAlias_PreservesAlias()
+    {
+        const string sql = @"UPDATE item_alias SET ""Name"" = @Name FROM ""Item"" AS item_alias WHERE item_alias.""ItemId"" = 1";
+
+        var actual = new GaussDBQueryBuilder().RestructureForBatch(sql);
+
+        Assert.Equal(@"UPDATE ""Item"" AS item_alias SET ""Name"" = @Name WHERE item_alias.""ItemId"" = 1", actual);
+    }
+
+    [Theory]
+    [InlineData("i")]
+    [InlineData("item12")]
+    [InlineData("\"item12\"")]
+    public void RestructureForBatchUpdate_WithoutWherePreservesCompleteAlias(string alias)
+    {
+        string sql = $"UPDATE {alias} SET \"Quantity\" = {alias}.\"Quantity\" + @delta FROM \"Item\" AS {alias}";
+
+        string actual = new GaussDBQueryBuilder().RestructureForBatch(sql);
+
+        Assert.Equal($"UPDATE \"Item\" AS {alias} SET \"Quantity\" = {alias}.\"Quantity\" + @delta", actual);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void RestructureForBatch_WithTagWithPreservesCommentAndCompleteAlias(bool isDelete)
+    {
+        const string comments = "-- UPDATE FROM is a query tag\n\n/* batch operation */\n";
+        string sql = comments + (isDelete
+            ? "DELETE item12 FROM \"Item\" AS item12 WHERE item12.\"ItemId\" = @id"
+            : "UPDATE item12 SET \"Name\" = @name FROM \"Item\" AS item12 WHERE item12.\"ItemId\" = @id");
+
+        string actual = new GaussDBQueryBuilder().RestructureForBatch(sql, isDelete);
+
+        Assert.Equal(comments + (isDelete
+            ? "DELETE FROM \"Item\" AS item12 WHERE item12.\"ItemId\" = @id"
+            : "UPDATE \"Item\" AS item12 SET \"Name\" = @name WHERE item12.\"ItemId\" = @id"), actual);
+    }
+
+    [Fact]
+    public void RestructureForBatchUpdate_WithJoinWithoutWhereKeepsJoinPredicate()
+    {
+        const string sql = "UPDATE item12 SET \"Name\" = @name FROM \"Item\" AS item12 " +
+            "INNER JOIN \"User\" AS user12 ON item12.\"UserId\" = user12.\"Id\"";
+
+        string actual = new GaussDBQueryBuilder().RestructureForBatch(sql);
+
+        Assert.Equal("UPDATE \"Item\" AS item12 SET \"Name\" = @name FROM \"User\" AS user12 " +
+            "WHERE item12.\"UserId\" = user12.\"Id\"", actual);
     }
 
     [Fact]

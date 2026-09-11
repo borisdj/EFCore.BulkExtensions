@@ -10,6 +10,9 @@ internal static class DbContextBulkTransaction
 {
     public static void Execute<T>(BulkContext context, Type type, IEnumerable<T> entities, OperationType operationType, BulkConfig? bulkConfig, Action<decimal>? progress) where T : class
     {
+        // Metadata, progress and output mapping all revisit the input. Buffer once
+        // at the public operation boundary, before even Count/Any can consume it.
+        entities = entities as IList<T> ?? entities.ToList();
         using (ActivitySources.StartExecuteActivity(operationType, entities.Count()))
         {
             if (!IsValidTransaction(entities, operationType, bulkConfig)) return;
@@ -51,6 +54,8 @@ internal static class DbContextBulkTransaction
 
     public static async Task ExecuteAsync<T>(BulkContext context, Type type, IEnumerable<T> entities, OperationType operationType, BulkConfig? bulkConfig, Action<decimal>? progress, CancellationToken cancellationToken = default) where T : class
     {
+        cancellationToken.ThrowIfCancellationRequested();
+        entities = entities as IList<T> ?? entities.ToList();
         using (ActivitySources.StartExecuteActivity(operationType, entities.Count()))
         {
             if (!IsValidTransaction(entities, operationType, bulkConfig)) return;
@@ -71,7 +76,7 @@ internal static class DbContextBulkTransaction
 
             switch (operationType)
             {
-                case OperationType.Insert when !tableInfo.BulkConfig.SetOutputIdentity:
+                case OperationType.Insert when tableInfo.BulkConfig is { SetOutputIdentity: false, CustomSourceTableName: null }:
                     await SqlBulkOperation.InsertAsync(context, type, entities, tableInfo, progress, cancellationToken).ConfigureAwait(false);
                     break;
 

@@ -33,7 +33,9 @@ public class GaussDBDbServer : IDbServer
     /// <inheritdoc/>
     public bool PropertyHasIdentity(IAnnotation annotation)
     {
-        return (GaussDBValueGenerationStrategy?)annotation.Value == GaussDBValueGenerationStrategy.IdentityByDefaultColumn;
+        return annotation.Value is GaussDBValueGenerationStrategy.IdentityByDefaultColumn
+            or GaussDBValueGenerationStrategy.IdentityAlwaysColumn
+            or GaussDBValueGenerationStrategy.SerialColumn;
     }
 #pragma warning restore EF1001
 }

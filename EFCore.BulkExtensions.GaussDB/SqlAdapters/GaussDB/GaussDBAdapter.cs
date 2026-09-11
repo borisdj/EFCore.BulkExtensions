@@ -274,6 +274,9 @@ public class GaussDBAdapter : ISqlOperationsAdapter
 
         try
         {
+            // Keep one session across staging, COPY, DML and output loading.
+            // This also prevents repeated pool checkout/authentication for every command.
+            (_, connectionOpenedInternally) = await OpenAndGetGaussDBConnectionAsync(dbContext, isAsync, cancellationToken).ConfigureAwait(false);
             if (tableInfo.BulkConfig.CustomSourceTableName == null)
             {
                 tableInfo.InsertToTempTable = true;
@@ -292,7 +295,9 @@ public class GaussDBAdapter : ISqlOperationsAdapter
                 tempTableCreated = true;
             }
 
-            if (tableInfo.BulkConfig.CalculateStats)
+            var collectInsertStats = tableInfo.BulkConfig.CalculateStats &&
+                operationType is OperationType.Insert or OperationType.InsertOrUpdate;
+            if (collectInsertStats)
             {
                 var sqlCreateOutputTableCopy = GaussDBQueryBuilder.CreateOutputStatsTable(tableInfo.FullTempOutputTableName,
                     tableInfo.BulkConfig.UseTempDB, tableInfo.BulkConfig.UseUnlogged);
@@ -313,15 +318,15 @@ public class GaussDBAdapter : ISqlOperationsAdapter
             var joinedPrimaryKeys = string.Join("_", tableInfo.PrimaryKeysPropertyColumnNameDict.Keys);
             var hasUniqueIndex = joinedEntityPk == joinedPrimaryKeys;
 
-            if (!hasUniqueIndex)
+            if (operationType == OperationType.InsertOrUpdate && !hasUniqueIndex)
             {
-                (hasUniqueIndex, connectionOpenedInternally) = await CheckHasExplicitUniqueConstraintAsync(dbContext, tableInfo, isAsync, cancellationToken)
-                    .ConfigureAwait(false);
+                (hasUniqueIndex, _) = await CheckHasExplicitUniqueConstraintAsync(dbContext, tableInfo, isAsync, cancellationToken).ConfigureAwait(false);
             }
 
-            if (!hasUniqueIndex)
+            if (operationType == OperationType.InsertOrUpdate && !hasUniqueIndex)
             {
-                var createUniqueIndex = GaussDBQueryBuilder.CreateUniqueIndex(tableInfo);
+                var createUniqueIndex = GaussDBQueryBuilder.CreateUniqueIndex(tableInfo,
+                    concurrently: dbContext.Database.CurrentTransaction == null);
                 if (isAsync)
                 {
                     await dbContext.Database.ExecuteSqlRawAsync(createUniqueIndex, cancellationToken).ConfigureAwait(false);
@@ -347,21 +352,23 @@ public class GaussDBAdapter : ISqlOperationsAdapter
             }
 
             var sqlMergeTable = GaussDBQueryBuilder.MergeTable<T>(tableInfo, operationType);
+            int affectedCount;
             if (operationType != OperationType.Read && (!tableInfo.BulkConfig.SetOutputIdentity || operationType == OperationType.Delete))
             {
                 if (isAsync)
                 {
-                    await dbContext.Database.ExecuteSqlRawAsync(sqlMergeTable, cancellationToken).ConfigureAwait(false);
+                    affectedCount = await dbContext.Database.ExecuteSqlRawAsync(sqlMergeTable, cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
-                    dbContext.Database.ExecuteSqlRaw(sqlMergeTable);
+                    affectedCount = dbContext.Database.ExecuteSqlRaw(sqlMergeTable);
                 }
             }
             else
             {
                 var sqlMergeTableOutput = sqlMergeTable.TrimEnd(';');
                 var outputEntities = tableInfo.LoadOutputEntities<T>(dbContext, type, sqlMergeTableOutput);
+                affectedCount = outputEntities.Count;
                 tableInfo.UpdateReadEntities(entityList, outputEntities, dbContext);
             }
 
@@ -379,11 +386,24 @@ public class GaussDBAdapter : ISqlOperationsAdapter
 
             if (tableInfo.BulkConfig.CalculateStats)
             {
-                var numberInserted = await GetStatsNumbersGaussDBAsync(dbContext, tableInfo, isAsync, cancellationToken).ConfigureAwait(false);
+                var numberInserted = collectInsertStats
+                    ? await GetStatsNumbersGaussDBAsync(dbContext, tableInfo, isAsync, cancellationToken).ConfigureAwait(false)
+                    : 0;
+                if (collectInsertStats)
+                {
+                    using var countCommand = dbContext.Database.GetDbConnection().CreateCommand();
+                    countCommand.Transaction = dbContext.Database.CurrentTransaction?.GetUnderlyingTransaction(tableInfo.BulkConfig);
+                    countCommand.CommandText = "SELECT COUNT(*) FROM " +
+                        tableInfo.FullTempOutputTableName.Replace('[', '"').Replace(']', '"');
+                    affectedCount = Convert.ToInt32(isAsync
+                        ? await countCommand.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false)
+                        : countCommand.ExecuteScalar());
+                }
                 tableInfo.BulkConfig.StatsInfo = new StatsInfo
                 {
                     StatsNumberInserted = numberInserted,
-                    StatsNumberUpdated = entityList.Count - numberInserted,
+                    StatsNumberUpdated = operationType == OperationType.Delete ? 0 : affectedCount - numberInserted,
+                    StatsNumberDeleted = operationType == OperationType.Delete ? affectedCount : 0,
                 };
             }
         }
@@ -396,7 +416,7 @@ public class GaussDBAdapter : ISqlOperationsAdapter
                     var dropUniqueIndex = GaussDBQueryBuilder.DropUniqueIndex(tableInfo);
                     if (isAsync)
                     {
-                        await dbContext.Database.ExecuteSqlRawAsync(dropUniqueIndex, cancellationToken).ConfigureAwait(false);
+                        await dbContext.Database.ExecuteSqlRawAsync(dropUniqueIndex, CancellationToken.None).ConfigureAwait(false);
                     }
                     else
                     {
@@ -404,14 +424,14 @@ public class GaussDBAdapter : ISqlOperationsAdapter
                     }
                 }
 
-                if (!tableInfo.BulkConfig.UseTempDB)
+                // Drop session-local tables too: a caller can reuse the same connection/transaction.
                 {
                     if (outputTableCreated)
                     {
                         var sqlDropOutputTable = GaussDBQueryBuilder.DropTable(tableInfo.FullTempOutputTableName);
                         if (isAsync)
                         {
-                            await dbContext.Database.ExecuteSqlRawAsync(sqlDropOutputTable, cancellationToken).ConfigureAwait(false);
+                            await dbContext.Database.ExecuteSqlRawAsync(sqlDropOutputTable, CancellationToken.None).ConfigureAwait(false);
                         }
                         else
                         {
@@ -424,7 +444,7 @@ public class GaussDBAdapter : ISqlOperationsAdapter
                         var sqlDropTable = GaussDBQueryBuilder.DropTable(tableInfo.FullTempTableName);
                         if (isAsync)
                         {
-                            await dbContext.Database.ExecuteSqlRawAsync(sqlDropTable, cancellationToken).ConfigureAwait(false);
+                            await dbContext.Database.ExecuteSqlRawAsync(sqlDropTable, CancellationToken.None).ConfigureAwait(false);
                         }
                         else
                         {
@@ -513,6 +533,7 @@ public class GaussDBAdapter : ISqlOperationsAdapter
 
         using var command = connection.CreateCommand();
         command.CommandText = countUniqueConstraint;
+        command.Transaction = context.Database.CurrentTransaction?.GetUnderlyingTransaction(tableInfo.BulkConfig);
         if (isAsync)
         {
             using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
