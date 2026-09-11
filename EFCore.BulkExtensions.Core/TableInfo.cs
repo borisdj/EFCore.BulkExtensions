@@ -1131,6 +1131,18 @@ public class TableInfo
     }
 
     /// <summary>
+    /// Loads output entities without blocking database I/O, honoring cancellation.
+    /// </summary>
+    public async Task<List<T>> LoadOutputEntitiesAsync<T>(DbContext context, Type type, string sqlSelect,
+        CancellationToken cancellationToken) where T : class
+    {
+        var query = typeof(T) == type
+            ? GetQueryExpression<T>(sqlSelect, false).Compile()(context)
+            : (IQueryable<T>)GetQueryExpression(type, sqlSelect, false).Compile()(context);
+        return await query.ToListAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
     /// Updates the entities' identity field
     /// </summary>
     /// <typeparam name="T"></typeparam>

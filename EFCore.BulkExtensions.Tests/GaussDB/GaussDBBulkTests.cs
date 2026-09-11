@@ -14,10 +14,12 @@ namespace EFCore.BulkExtensions.Tests.GaussDB;
 public partial class GaussDBBulkTests : IClassFixture<GaussDBBulkTests.GaussDBFixture>
 {
     private readonly GaussDBFixture _fixture;
+    private readonly Xunit.Abstractions.ITestOutputHelper _output;
 
-    public GaussDBBulkTests(GaussDBFixture fixture)
+    public GaussDBBulkTests(GaussDBFixture fixture, Xunit.Abstractions.ITestOutputHelper output)
     {
         _fixture = fixture;
+        _output = output;
     }
 
     [Fact]
@@ -428,6 +430,7 @@ public partial class GaussDBBulkTests : IClassFixture<GaussDBBulkTests.GaussDBFi
 
         private const string ResetSchemaSql = """
 DROP TABLE IF EXISTS "GaussDbCompositeRoles";
+DROP TABLE IF EXISTS "GaussDbConvertedItems";
 DROP TABLE IF EXISTS "GaussDbNaturalKeyItems";
 DROP TABLE IF EXISTS "GaussDbItems";
 
@@ -439,6 +442,14 @@ CREATE TABLE "GaussDbItems" (
     "PriceCents" integer NOT NULL,
     "UpdatedAt" timestamp with time zone NOT NULL,
     "Status" character varying(20) NOT NULL
+);
+
+CREATE TABLE "GaussDbConvertedItems" (
+    "Id" serial PRIMARY KEY,
+    "State" text NOT NULL,
+    "ShadowState" text NOT NULL,
+    "CreatedAt" timestamp(3) without time zone NOT NULL,
+    "Amounts" numeric(10,2)[] NOT NULL
 );
 
 CREATE TABLE "GaussDbNaturalKeyItems" (
@@ -472,6 +483,7 @@ CREATE TABLE "GaussDbCompositeRoles" (
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            ConfigureRegressionModel(modelBuilder);
             modelBuilder.Entity<GaussDbItem>(entity =>
             {
                 entity.ToTable("GaussDbItems");

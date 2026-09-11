@@ -82,6 +82,10 @@ public class GaussDBQueryBuilder : SqlQueryBuilder
     /// <inheritdoc/>
     public override string DropTable(string tableName, bool isTempTable) => DropTable(tableName);
 
+    internal static string GetStatsTableName(TableInfo tableInfo) => tableInfo.BulkConfig.UseTempDB
+        ? $"[#{tableInfo.TempTableName}Output]"
+        : tableInfo.FullTempOutputTableName;
+
     /// <summary>
     /// Generates SQL query to create Output table for Stats
     /// </summary>
@@ -236,14 +240,15 @@ public class GaussDBQueryBuilder : SqlQueryBuilder
         {
             var columnsListInsert = columnsList;
             var textValueFirstPK = tableInfo.TextValueFirstPK;
-            if (textValueFirstPK != null && (textValueFirstPK == "0" || textValueFirstPK.ToString() == Guid.Empty.ToString() || textValueFirstPK.ToString() == ""))
+            if (!tableInfo.HasIdentity && textValueFirstPK != null &&
+                (textValueFirstPK == Guid.Empty.ToString() || textValueFirstPK == ""))
             {
                 //  PKs can be all set or all empty in which case DB generates it, can not have it combined in one list when using InsetOrUpdate  
                 columnsListInsert = columnsList.Where(tableInfo.PropertyColumnNamesUpdateDict.ContainsValue).ToList();
             }
             var commaSeparatedColumns = SqlQueryBuilder.GetCommaSeparatedColumns(columnsListInsert).Replace("[", @"""").Replace("]", @"""");
 
-            var columnsListEquals = GetColumnList(tableInfo, OperationType.Insert);
+            var columnsListEquals = GetColumnList(tableInfo, OperationType.Update);
             var keyColumns = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToHashSet();
             var columnsToUpdate = columnsListEquals
                 .Where(c => tableInfo.PropertyColumnNamesUpdateDict.ContainsValue(c) && !keyColumns.Contains(c))
@@ -262,8 +267,23 @@ public class GaussDBQueryBuilder : SqlQueryBuilder
                     .Replace("[", @"""").Replace("]", @"""");
             }
 
+            var selectColumns = commaSeparatedColumns;
+            if (tableInfo.HasIdentity && textValueFirstPK != null &&
+                columnsListInsert.Contains(tableInfo.IdentityColumnName!) &&
+                !tableInfo.BulkConfig.SqlBulkCopyOptions.HasFlag(SqlBulkCopyOptions.KeepIdentity))
+            {
+                // Resolve generated values per row, so mixing existing and new entities
+                // works in either input order without inserting an explicit zero identity.
+                var identity = tableInfo.IdentityColumnName!;
+                var identitySql = GetCommaSeparatedColumns([identity]).Replace('[', '"').Replace(']', '"');
+                var tableLiteral = tableInfo.FullTableName.Replace('[', '"').Replace(']', '"').Replace("'", "''");
+                var identityLiteral = identity.Replace("'", "''");
+                selectColumns = string.Join(", ", columnsListInsert.Select(column => column == identity
+                    ? $"CASE WHEN {identitySql} = 0 THEN nextval(pg_get_serial_sequence('{tableLiteral}', '{identityLiteral}')) ELSE {identitySql} END"
+                    : GetCommaSeparatedColumns([column]).Replace('[', '"').Replace(']', '"')));
+            }
             q = $"INSERT INTO {tableInfo.FullTableName} ({commaSeparatedColumns}) " +
-                $"(SELECT {commaSeparatedColumns} FROM {tableInfo.FullTempTableName}) " + subqueryText +
+                $"(SELECT {selectColumns} FROM {tableInfo.FullTempTableName}) " + subqueryText +
                 $"ON DUPLICATE KEY UPDATE {equalsColumns}";
 
             if (tableInfo.BulkConfig.OnConflictUpdateWhereSql != null)
@@ -290,31 +310,34 @@ public class GaussDBQueryBuilder : SqlQueryBuilder
         Dictionary<string, string>? sourceDestinationMappings = tableInfo.BulkConfig.CustomSourceDestinationMappingColumns;
         if (tableInfo.BulkConfig.CustomSourceTableName != null && sourceDestinationMappings != null && sourceDestinationMappings.Count > 0)
         {
-            var textSelect = "SELECT ";
-            var textFrom = " FROM";
-            int startIndex = q.IndexOf(textSelect);
-            var qSegment = q[startIndex..q.IndexOf(textFrom)];
-            var qSegmentUpdated = qSegment;
-            foreach (var mapping in sourceDestinationMappings)
+            // Normalize source column names in one projection so INSERT, UPDATE,
+            // DELETE and READ use the same mappings in both values and key predicates.
+            var sourceByDestination = sourceDestinationMappings.ToDictionary(mapping => mapping.Value, mapping => mapping.Key);
+            var keyColumns = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.ToHashSet();
+            IEnumerable<string> sourceColumns = operationType switch
             {
-                var propertyFormated = $@"""{mapping.Value}""";
-                var sourceProperty = mapping.Key;
+                OperationType.Read or OperationType.Delete => keyColumns,
+                OperationType.Update => columnsList.Where(column => tableInfo.PropertyColumnNamesUpdateDict.ContainsValue(column))
+                    .Concat(keyColumns),
+                _ => columnsList,
+            };
+            static string QuoteColumn(string column) => "\"" + column.Replace("\"", "\"\"") + "\"";
+            var projection = string.Join(", ", sourceColumns.Distinct().Select(destination =>
+                QuoteColumn(sourceByDestination.GetValueOrDefault(destination, destination)) + " AS " + QuoteColumn(destination)));
+            var sourceTable = tableInfo.FullTempTableName.Replace("[", @"""").Replace("]", @"""");
+            const string sourceAlias = "\"__bulk_source\"";
+            var projectedSource = $"(SELECT {projection} FROM {sourceTable}) AS {sourceAlias}";
 
-                if (qSegment.Contains(propertyFormated))
-                {
-                    qSegmentUpdated = qSegmentUpdated.Replace(propertyFormated, $@"""{sourceProperty}""");
-                }
-            }
-            if (qSegment != qSegmentUpdated)
-            {
-                q = q.Replace(qSegment, qSegmentUpdated);
-            }
+            q = q.Replace(sourceTable + ".", sourceAlias + ".", StringComparison.Ordinal)
+                .Replace("FROM " + sourceTable, "FROM " + projectedSource, StringComparison.Ordinal)
+                .Replace("USING " + sourceTable, "USING " + projectedSource, StringComparison.Ordinal)
+                .Replace("JOIN " + sourceTable, "JOIN " + projectedSource, StringComparison.Ordinal);
         }
 
         if (tableInfo.BulkConfig.CalculateStats && operationType is OperationType.Insert or OperationType.InsertOrUpdate)
         {
             q = $"WITH upserted AS ({q}), " +
-                $"NEW AS ( INSERT INTO {tableInfo.FullTempOutputTableName} SELECT xmax FROM upserted ) " +
+                $"NEW AS ( INSERT INTO {GetStatsTableName(tableInfo)} SELECT xmax FROM upserted ) " +
                 $"SELECT * FROM upserted";
         }
 
@@ -422,11 +445,12 @@ public class GaussDBQueryBuilder : SqlQueryBuilder
                 JOIN pg_catalog.pg_class tbl ON tbl.oid = pgi.indrelid
                 JOIN pg_catalog.pg_namespace tnsp ON tnsp.oid = tbl.relnamespace
                 JOIN pg_catalog.pg_attribute at ON at.attrelid = idx.oid
-              WHERE pgi.indisunique
-                AND not pgi.indisprimary" +
-             $" AND tnsp.nspname = '{tableInfo.Schema}'" +
-             $" AND tbl.relname = '{tableInfo.TableName}'" +
-             $" AND at.attname IN('{string.Join("','", primaryKeysColumns)}')" +
+              WHERE pgi.indisunique AND pgi.indisvalid
+                AND pgi.indpred IS NULL AND pgi.indexprs IS NULL" +
+             $" AND pgi.indnatts = {primaryKeysColumns.Count}" +
+             $" AND tnsp.nspname = '{tableInfo.Schema?.Replace("'", "''")}'" +
+             $" AND tbl.relname = '{tableInfo.TableName?.Replace("'", "''")}'" +
+             $" AND at.attname IN('{string.Join("','", primaryKeysColumns.Select(c => c.Replace("'", "''")))}')" +
             " GROUP BY idx.relname" +
             " HAVING COUNT(idx.relname) = " + primaryKeysColumns.Count + ";";
         return q;

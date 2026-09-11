@@ -58,12 +58,22 @@ public class GaussDBAdapter : ISqlOperationsAdapter
                 ? await connection.BeginBinaryImportAsync(sqlCopy, cancellationToken).ConfigureAwait(false)
                 : connection.BeginBinaryImport(sqlCopy);
 
-            var uniqueColumnName = tableInfo.PrimaryKeysPropertyColumnNameDict.Values.FirstOrDefault();
-            var doKeepIdentity = tableInfo.BulkConfig.SqlBulkCopyOptions.HasFlag(SqlBulkCopyOptions.KeepIdentity);
-            var propertiesColumnDict = ((tableInfo.InsertToTempTable || doKeepIdentity) && tableInfo.IdentityColumnName == uniqueColumnName)
-                ? tableInfo.PropertyColumnNamesDict
-                : tableInfo.PropertyColumnNamesDict.Where(a => a.Value != tableInfo.IdentityColumnName);
-            var propertiesNames = propertiesColumnDict.Select(a => a.Key).ToList();
+            // Use exactly the COPY column order. Resolve SQL types, converters and
+            // property paths once per batch, rather than once per row and column.
+            var propertiesByColumn = tableInfo.PropertyColumnNamesDict.ToDictionary(p => p.Value, p => p.Key);
+            var columns = GaussDBQueryBuilder.GetColumnList(tableInfo, operationType).Select(column =>
+            {
+                var getValue = CreateValueGetter<T>(dbContext, tableInfo, propertiesByColumn[column], column);
+                tableInfo.ConvertibleColumnConverterDict.TryGetValue(column, out var converter);
+                var columnType = tableInfo.OwnedJsonTypesDict.ContainsKey(column)
+                    ? "jsonb" : tableInfo.ColumnNamesTypesDict[column];
+                // Remove length/precision modifiers while retaining array suffixes and time zones.
+                int modifier = columnType.IndexOf('(');
+                int endModifier = columnType.IndexOf(')');
+                if (modifier >= 0 && endModifier > modifier)
+                    columnType = columnType.Remove(modifier, endModifier - modifier + 1);
+                return (GetValue: getValue, ColumnType: columnType, Convert: converter?.ConvertToProvider);
+            }).ToArray();
             var entitiesCopiedCount = 0;
 
             foreach (var entity in entityList)
@@ -77,89 +87,12 @@ public class GaussDBAdapter : ISqlOperationsAdapter
                     writer.StartRow();
                 }
 
-                foreach (var propertyName in propertiesNames)
+                foreach (var column in columns)
                 {
-                    if (operationType == OperationType.Insert
-                        && tableInfo.DefaultValueProperties.Contains(propertyName)
-                        && !tableInfo.PrimaryKeysPropertyColumnNameDict.ContainsKey(propertyName))
-                    {
-                        continue;
-                    }
-
-                    var propertyValue = GetPropertyValue(dbContext, tableInfo, propertyName, entity);
-                    var propertyColumnName = tableInfo.PropertyColumnNamesDict.GetValueOrDefault(propertyName, "");
-                    var columnType = tableInfo.OwnedJsonTypesDict.ContainsKey(propertyColumnName)
-                        ? "jsonb"
-                        : tableInfo.ColumnNamesTypesDict[propertyColumnName];
-
-                    if (columnType.StartsWith("character"))
-                    {
-                        columnType = "character";
-                    }
-                    else if (columnType.StartsWith("varchar"))
-                    {
-                        columnType = "varchar";
-                    }
-                    else if (columnType.StartsWith("numeric") && columnType != "numeric[]")
-                    {
-                        columnType = "numeric";
-                    }
-
-                    if (columnType.StartsWith("timestamp("))
-                    {
-                        columnType = "timestamp" + columnType.Substring(12, columnType.Length - 12);
-                    }
-
-                    if (columnType.StartsWith("geometry"))
-                    {
-                        columnType = "geometry";
-                    }
-                    if (columnType.StartsWith("geography"))
-                    {
-                        columnType = "geography";
-                    }
-
-                    if (tableInfo.ConvertibleColumnConverterDict.TryGetValue(propertyColumnName, out var converter) && propertyValue != null)
-                    {
-                        if (converter.ModelClrType.IsEnum)
-                        {
-                            var clrType = converter.ProviderClrType;
-                            if (clrType == typeof(byte))
-                            {
-                                propertyValue = (byte)propertyValue;
-                            }
-                            if (clrType == typeof(short))
-                            {
-                                propertyValue = (short)propertyValue;
-                            }
-                            if (clrType == typeof(int))
-                            {
-                                propertyValue = (int)propertyValue;
-                            }
-                            if (clrType == typeof(long))
-                            {
-                                propertyValue = (long)propertyValue;
-                            }
-                            if (clrType == typeof(string))
-                            {
-                                propertyValue = propertyValue.ToString();
-                            }
-                        }
-                        else
-                        {
-                            try
-                            {
-                                propertyValue = converter.ConvertToProvider.Invoke(propertyValue);
-                            }
-                            catch (InvalidCastException ex)
-                            {
-                                if (!ex.Message.StartsWith("Invalid cast from 'System.String'"))
-                                {
-                                    throw;
-                                }
-                            }
-                        }
-                    }
+                    var propertyValue = column.GetValue(entity);
+                    if (propertyValue != null && column.Convert != null)
+                        propertyValue = column.Convert(propertyValue);
+                    var columnType = column.ColumnType;
 
                     if (isAsync)
                     {
@@ -188,6 +121,8 @@ public class GaussDBAdapter : ISqlOperationsAdapter
             {
                 writer.Complete();
             }
+            if (!tableInfo.InsertToTempTable && tableInfo.BulkConfig.CalculateStats)
+                tableInfo.BulkConfig.StatsInfo = new StatsInfo { StatsNumberInserted = entityList.Count };
         }
         finally
         {
@@ -205,46 +140,35 @@ public class GaussDBAdapter : ISqlOperationsAdapter
         }
     }
 
-    private static object? GetPropertyValue<T>(DbContext context, TableInfo tableInfo, string propertyName, T entity)
+    private static Func<T, object?> CreateValueGetter<T>(DbContext context, TableInfo tableInfo, string propertyName, string columnName)
     {
-        if (!tableInfo.FastPropertyDict.ContainsKey(propertyName.Replace('.', '_')) || entity is null)
+        if (tableInfo.ColumnToPropertyDictionary.TryGetValue(columnName, out var property) && property.IsShadowProperty())
         {
-            object? propertyValue = null;
-            var shadowPropertyColumnNamesDict = tableInfo.ColumnToPropertyDictionary
-                .Where(a => a.Value.IsShadowProperty())
-                .ToDictionary(a => a.Value.Name, a => a.Value.GetColumnName(tableInfo.ObjectIdentifier));
-
-            if (shadowPropertyColumnNamesDict.ContainsKey(propertyName))
-            {
-                propertyValue = tableInfo.BulkConfig.ShadowPropertyValue == null
-                    ? context.Entry(entity!).Property(propertyName).CurrentValue
-                    : tableInfo.BulkConfig.ShadowPropertyValue(entity!, propertyName);
-
-                if (tableInfo.ConvertibleColumnConverterDict.TryGetValue(propertyName, out var converter))
-                {
-                    propertyValue = converter.ConvertToProvider.Invoke(propertyValue);
-                }
-
-                return propertyValue;
-            }
-
-            return null;
+            return entity => tableInfo.BulkConfig.ShadowPropertyValue == null
+                ? context.Entry(entity!).Property(propertyName).CurrentValue
+                : tableInfo.BulkConfig.ShadowPropertyValue(entity!, propertyName);
         }
 
-        object? propertyValueInner = entity;
-        var fullPropertyName = string.Empty;
-        foreach (var entry in propertyName.Split('.'))
+        var path = new List<FastProperty>();
+        var fullName = string.Empty;
+        foreach (var segment in propertyName.Split('.'))
         {
-            if (propertyValueInner == null)
-            {
-                return null;
-            }
-
-            fullPropertyName = fullPropertyName.Length > 0 ? $"{fullPropertyName}_{entry}" : entry;
-            propertyValueInner = tableInfo.FastPropertyDict[fullPropertyName].Get(propertyValueInner);
+            fullName = fullName.Length == 0 ? segment : fullName + "_" + segment;
+            if (!tableInfo.FastPropertyDict.TryGetValue(fullName, out var accessor))
+                return _ => null;
+            path.Add(accessor);
         }
-
-        return propertyValueInner;
+        var accessors = path.ToArray();
+        return entity =>
+        {
+            object? value = entity;
+            foreach (var accessor in accessors)
+            {
+                if (value == null) return null;
+                value = accessor.Get(value);
+            }
+            return value;
+        };
     }
 
     /// <inheritdoc/>
@@ -299,7 +223,7 @@ public class GaussDBAdapter : ISqlOperationsAdapter
                 operationType is OperationType.Insert or OperationType.InsertOrUpdate;
             if (collectInsertStats)
             {
-                var sqlCreateOutputTableCopy = GaussDBQueryBuilder.CreateOutputStatsTable(tableInfo.FullTempOutputTableName,
+                var sqlCreateOutputTableCopy = GaussDBQueryBuilder.CreateOutputStatsTable(GaussDBQueryBuilder.GetStatsTableName(tableInfo),
                     tableInfo.BulkConfig.UseTempDB, tableInfo.BulkConfig.UseUnlogged);
 
                 if (isAsync)
@@ -367,9 +291,21 @@ public class GaussDBAdapter : ISqlOperationsAdapter
             else
             {
                 var sqlMergeTableOutput = sqlMergeTable.TrimEnd(';');
-                var outputEntities = tableInfo.LoadOutputEntities<T>(dbContext, type, sqlMergeTableOutput);
+                var outputEntities = isAsync
+                    ? await tableInfo.LoadOutputEntitiesAsync<T>(dbContext, type, sqlMergeTableOutput, cancellationToken).ConfigureAwait(false)
+                    : tableInfo.LoadOutputEntities<T>(dbContext, type, sqlMergeTableOutput);
                 affectedCount = outputEntities.Count;
-                tableInfo.UpdateReadEntities(entityList, outputEntities, dbContext);
+                if (operationType == OperationType.Read && tableInfo.BulkConfig.ReplaceReadEntities)
+                {
+                    if (entities is not List<T> list)
+                        throw new NotSupportedException("ReplaceReadEntities requires a List<T>.");
+                    list.Clear();
+                    list.AddRange(outputEntities);
+                }
+                else
+                {
+                    tableInfo.UpdateReadEntities(entityList, outputEntities, dbContext);
+                }
             }
 
             if (tableInfo.BulkConfig.CustomSqlPostProcess != null)
@@ -386,19 +322,9 @@ public class GaussDBAdapter : ISqlOperationsAdapter
 
             if (tableInfo.BulkConfig.CalculateStats)
             {
-                var numberInserted = collectInsertStats
-                    ? await GetStatsNumbersGaussDBAsync(dbContext, tableInfo, isAsync, cancellationToken).ConfigureAwait(false)
-                    : 0;
+                var numberInserted = 0;
                 if (collectInsertStats)
-                {
-                    using var countCommand = dbContext.Database.GetDbConnection().CreateCommand();
-                    countCommand.Transaction = dbContext.Database.CurrentTransaction?.GetUnderlyingTransaction(tableInfo.BulkConfig);
-                    countCommand.CommandText = "SELECT COUNT(*) FROM " +
-                        tableInfo.FullTempOutputTableName.Replace('[', '"').Replace(']', '"');
-                    affectedCount = Convert.ToInt32(isAsync
-                        ? await countCommand.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false)
-                        : countCommand.ExecuteScalar());
-                }
+                    (numberInserted, affectedCount) = await ReadStatisticsAsync(dbContext, tableInfo, isAsync, cancellationToken).ConfigureAwait(false);
                 tableInfo.BulkConfig.StatsInfo = new StatsInfo
                 {
                     StatsNumberInserted = numberInserted,
@@ -428,7 +354,7 @@ public class GaussDBAdapter : ISqlOperationsAdapter
                 {
                     if (outputTableCreated)
                     {
-                        var sqlDropOutputTable = GaussDBQueryBuilder.DropTable(tableInfo.FullTempOutputTableName);
+                        var sqlDropOutputTable = GaussDBQueryBuilder.DropTable(GaussDBQueryBuilder.GetStatsTableName(tableInfo));
                         if (isAsync)
                         {
                             await dbContext.Database.ExecuteSqlRawAsync(sqlDropOutputTable, CancellationToken.None).ConfigureAwait(false);
@@ -458,16 +384,19 @@ public class GaussDBAdapter : ISqlOperationsAdapter
                 // The transaction error generated during cleanup would conceal the original database error.
             }
 
-            if (connectionOpenedInternally)
+            finally
             {
-                var connection = (GaussDBConnection)dbContext.Database.GetDbConnection();
-                if (isAsync)
+                if (connectionOpenedInternally)
                 {
-                    await connection.CloseAsync().ConfigureAwait(false);
-                }
-                else
-                {
-                    connection.Close();
+                    var connection = (GaussDBConnection)dbContext.Database.GetDbConnection();
+                    if (isAsync)
+                    {
+                        await connection.CloseAsync().ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        connection.Close();
+                    }
                 }
             }
         }
@@ -526,7 +455,7 @@ public class GaussDBAdapter : ISqlOperationsAdapter
     internal static async Task<(bool, bool)> CheckHasExplicitUniqueConstraintAsync(DbContext context, TableInfo tableInfo, bool isAsync,
         CancellationToken cancellationToken)
     {
-        var countUniqueConstraint = GaussDBQueryBuilder.CountUniqueConstrain(tableInfo);
+        var countUniqueConstraint = GaussDBQueryBuilder.CountUniqueIndex(tableInfo);
         var (connection, connectionOpenedInternally) = await OpenAndGetGaussDBConnectionAsync(context, isAsync, cancellationToken)
             .ConfigureAwait(false);
         var hasUniqueConstraint = false;
@@ -539,7 +468,7 @@ public class GaussDBAdapter : ISqlOperationsAdapter
             using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
             while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
             {
-                hasUniqueConstraint = (long)reader[0] == 1;
+                hasUniqueConstraint |= Convert.ToInt64(reader[0]) > 0;
             }
         }
         else
@@ -547,7 +476,7 @@ public class GaussDBAdapter : ISqlOperationsAdapter
             using var reader = command.ExecuteReader();
             while (reader.Read())
             {
-                hasUniqueConstraint = (long)reader[0] == 1;
+                hasUniqueConstraint |= Convert.ToInt64(reader[0]) > 0;
             }
         }
 
@@ -559,67 +488,31 @@ public class GaussDBAdapter : ISqlOperationsAdapter
     /// </summary>
     public static async Task<int> GetStatsNumbersGaussDBAsync(DbContext context, TableInfo tableInfo, bool isAsync,
         CancellationToken cancellationToken)
-    {
-        var sqlQuery = @$"SELECT COUNT(*) FROM {tableInfo.FullTempOutputTableName} WHERE ""xmaxNumber"" = 0;";
-        sqlQuery = sqlQuery.Replace("[", @"""").Replace("]", @"""");
+        => (await ReadStatisticsAsync(context, tableInfo, isAsync, cancellationToken).ConfigureAwait(false)).Inserted;
 
-        var connection = (GaussDBConnection)context.Database.GetDbConnection();
-        var isExternalTransaction = context.Database.CurrentTransaction != null;
-        var openedInternally = false;
-        GaussDBTransaction? transaction = null;
+    private static async Task<(int Inserted, int Total)> ReadStatisticsAsync(DbContext context, TableInfo tableInfo,
+        bool isAsync, CancellationToken cancellationToken)
+    {
+        var (connection, openedInternally) = await OpenAndGetGaussDBConnectionAsync(context, isAsync, cancellationToken).ConfigureAwait(false);
         try
         {
-            if (connection.State != ConnectionState.Open)
-            {
-                if (isAsync)
-                {
-                    await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
-                }
-                else
-                {
-                    connection.Open();
-                }
-                openedInternally = true;
-            }
-
             using var command = connection.CreateCommand();
-            var dbTransaction = isExternalTransaction
-                ? context.Database.CurrentTransaction?.GetUnderlyingTransaction(tableInfo.BulkConfig)
-                : connection.BeginTransaction();
-            transaction = (GaussDBTransaction?)dbTransaction;
-            command.Transaction = transaction;
-            command.CommandText = sqlQuery;
-
-            var scalar = isAsync
-                ? await command.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false)
-                : command.ExecuteScalar();
-            var counter = scalar is null or DBNull
-                ? 0L
-                : Convert.ToInt64(scalar, System.Globalization.CultureInfo.InvariantCulture);
-
-            if (!isExternalTransaction)
-            {
-                transaction?.Commit();
-            }
-
-            return checked((int)counter);
+            command.Transaction = context.Database.CurrentTransaction?.GetUnderlyingTransaction(tableInfo.BulkConfig);
+            command.CommandText = $"SELECT COUNT(CASE WHEN \"xmaxNumber\" = 0 THEN 1 END), COUNT(*) FROM " +
+                GaussDBQueryBuilder.GetStatsTableName(tableInfo).Replace('[', '"').Replace(']', '"');
+            using var reader = isAsync
+                ? await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false)
+                : command.ExecuteReader();
+            if (isAsync) await reader.ReadAsync(cancellationToken).ConfigureAwait(false);
+            else reader.Read();
+            return (Convert.ToInt32(reader[0]), Convert.ToInt32(reader[1]));
         }
         finally
         {
-            if (!isExternalTransaction)
-            {
-                transaction?.Dispose();
-            }
             if (openedInternally)
             {
-                if (isAsync)
-                {
-                    await connection.CloseAsync().ConfigureAwait(false);
-                }
-                else
-                {
-                    connection.Close();
-                }
+                if (isAsync) await connection.CloseAsync().ConfigureAwait(false);
+                else connection.Close();
             }
         }
     }

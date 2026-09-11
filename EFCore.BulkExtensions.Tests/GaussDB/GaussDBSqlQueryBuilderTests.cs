@@ -169,6 +169,77 @@ public class GaussDBSqlQueryBuilderTests
         Assert.Equal(expected, actual);
     }
 
+    [Theory]
+    [InlineData(OperationType.Insert)]
+    [InlineData(OperationType.InsertOrUpdate)]
+    [InlineData(OperationType.Update)]
+    [InlineData(OperationType.Delete)]
+    [InlineData(OperationType.Read)]
+    public void MergeTable_CustomSourceMappings_ProjectSourceColumnsForEveryOperation(OperationType operation)
+    {
+        var tableInfo = GetTestTableInfo();
+        tableInfo.TempSchema = "stage";
+        tableInfo.TempTableName = "ImportItems";
+        tableInfo.BulkConfig.CustomSourceTableName = "stage.ImportItems";
+        tableInfo.BulkConfig.CustomSourceDestinationMappingColumns = new()
+        {
+            ["SourceId"] = "ItemId",
+            ["SourceName"] = "Name",
+        };
+
+        string actual = GaussDBQueryBuilder.MergeTable<GaussDBSqlItem>(tableInfo, operation);
+
+        var projectedColumns = operation is OperationType.Read or OperationType.Delete
+            ? "\"SourceId\" AS \"ItemId\""
+            : "\"SourceId\" AS \"ItemId\", \"SourceName\" AS \"Name\"";
+        Assert.Contains($"(SELECT {projectedColumns} FROM \"stage\".\"ImportItems\") AS \"__bulk_source\"", actual, StringComparison.Ordinal);
+        if (operation is OperationType.Update or OperationType.Delete)
+        {
+            Assert.Contains("\"dbo\".\"GaussDBSqlItem\".\"ItemId\" = \"__bulk_source\".\"ItemId\"", actual, StringComparison.Ordinal);
+        }
+        if (operation == OperationType.Update)
+        {
+            Assert.Contains("SET \"Name\" = \"__bulk_source\".\"Name\"", actual, StringComparison.Ordinal);
+        }
+        if (operation == OperationType.Read)
+        {
+            Assert.Contains("SELECT \"dbo\".\"GaussDBSqlItem\".*", actual, StringComparison.Ordinal);
+            Assert.DoesNotContain("SourceName", actual, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
+    public void MergeTable_CustomSourceMappings_WithNullableReadKeyUseProjectedJoinColumn()
+    {
+        var tableInfo = GetTestTableInfo();
+        tableInfo.BulkConfig.CustomSourceTableName = tableInfo.TempTableName;
+        tableInfo.BulkConfig.CustomSourceDestinationMappingColumns = new() { ["SourceId"] = "ItemId" };
+        tableInfo.UpdateByPropertiesAreNullable = true;
+
+        string actual = GaussDBQueryBuilder.MergeTable<GaussDBSqlItem>(tableInfo, OperationType.Read);
+
+        Assert.Contains("SELECT \"SourceId\" AS \"ItemId\" FROM", actual, StringComparison.Ordinal);
+        Assert.Contains("\"__bulk_source\".\"ItemId\" IS NULL", actual, StringComparison.Ordinal);
+        Assert.DoesNotContain("SELECT \"SourceId\".*", actual, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MergeTable_CustomSourceMappings_DoNotCascadeColumnNameReplacements()
+    {
+        var tableInfo = GetTestTableInfo();
+        tableInfo.BulkConfig.CustomSourceTableName = tableInfo.TempTableName;
+        tableInfo.BulkConfig.CustomSourceDestinationMappingColumns = new()
+        {
+            ["Name"] = "ItemId",
+            ["ItemId"] = "Name",
+        };
+
+        string actual = GaussDBQueryBuilder.MergeTable<GaussDBSqlItem>(tableInfo, OperationType.Update);
+
+        Assert.Contains("SELECT \"Name\" AS \"ItemId\", \"ItemId\" AS \"Name\" FROM", actual, StringComparison.Ordinal);
+        Assert.Contains("SET \"Name\" = \"__bulk_source\".\"Name\"", actual, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void MergeTable_InsertOrUpdateOrDelete_ThrowsNotSupported()
     {
