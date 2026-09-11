@@ -1,6 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <TargetFramework>net10.0</TargetFramework>
+        <!-- The GaussDB provider identifies itself by its unsigned assembly
+             identity. StrongNamer rewrites that dependency and it then fails
+             during EF query compilation, so preserve the NuGet binary. -->
+        <DisableStrongNamer>true</DisableStrongNamer>
         <Title>EFCore.BulkExtensions.GaussDB</Title>
         <Description>EntityFramework .Net EFCore EF Core Bulk Batch Extensions for Insert Update Delete Read (CRUD) operations on GaussDB.</Description>
         <PackageTags>$(PackageTags) GaussDB</PackageTags>
