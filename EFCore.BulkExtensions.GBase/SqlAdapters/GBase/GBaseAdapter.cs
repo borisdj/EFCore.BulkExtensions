@@ -1277,7 +1277,7 @@ public class GBaseAdapter : ISqlOperationsAdapter
         string identityPropertyName = tableInfo.PropertyColumnNamesDict.SingleOrDefault(a => a.Value == tableInfo.IdentityColumnName).Key;
         FastProperty identityFastProperty = tableInfo.FastPropertyDict[identityPropertyName];
 
-        string idTypeName = identityFastProperty.Property.PropertyType.Name;
+        string idTypeName = (identityFastProperty.UnderlyingType ?? throw new InvalidOperationException($"Unable to determine the underlying type for '{tableInfo.IdentityColumnName}'.")).Name;
         object? idValue = null;
         for (int i = entities.Count() - 1; i >= 0; i--)
         {
