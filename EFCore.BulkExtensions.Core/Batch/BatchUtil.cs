@@ -93,7 +93,7 @@ public static class BatchUtil
             resultQuery = $"{leadingComments}DELETE {topStatement}{tableAlias}{sql}";
         }
 
-        if (databaseType == SqlType.PostgreSql)
+        if (databaseType == SqlType.PostgreSql || databaseType == SqlType.GaussDB)
         {
             resultQuery = context.QueryBuilder.RestructureForBatch(resultQuery, isDelete: true);
 
@@ -198,7 +198,7 @@ public static class BatchUtil
         }
 
         var databaseType = context.Server.Type;
-        if (databaseType == SqlType.PostgreSql)
+        if (databaseType == SqlType.PostgreSql || databaseType == SqlType.GaussDB)
         {
             resultQuery = context.QueryBuilder.RestructureForBatch(resultQuery);
 
