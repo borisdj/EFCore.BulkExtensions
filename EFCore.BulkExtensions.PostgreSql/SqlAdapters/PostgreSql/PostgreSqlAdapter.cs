@@ -91,19 +91,19 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
                         : tableInfo.ColumnNamesTypesDict[propertyColumnName];
                     
                     // string is 'text' which works fine
-                    if (columnType.StartsWith("character"))   // when MaxLength is defined: 'character(1)' or 'character varying'
-                        columnType = "character";             // 'character' is like 'string'
-                    else if (columnType.StartsWith("varchar"))
+                    if (columnType.StartsWith("character", StringComparison.Ordinal))   // when MaxLength is defined: 'character(1)' or 'character varying'
+                        columnType = "character";                                       // 'character' is like 'string'
+                    else if (columnType.StartsWith("varchar", StringComparison.Ordinal))
                         columnType = "varchar";
-                    else if (columnType.StartsWith("numeric") && columnType != "numeric[]")
+                    else if (columnType.StartsWith("numeric", StringComparison.Ordinal) && columnType != "numeric[]")
                         columnType = "numeric";
 
-                    if (columnType.StartsWith("timestamp(")) // timestamp(n) | len:12 // TEST: TimeStamp2PGTest
+                    if (columnType.StartsWith("timestamp(", StringComparison.Ordinal)) // timestamp(n) | len:12 // TEST: TimeStamp2PGTest
                         columnType = "timestamp" + columnType.Substring(12, columnType.Length - 12);
 
-                    if (columnType.StartsWith("geometry"))
+                    if (columnType.StartsWith("geometry", StringComparison.Ordinal))
                         columnType = "geometry";
-                    if (columnType.StartsWith("geography"))
+                    if (columnType.StartsWith("geography", StringComparison.Ordinal))
                         columnType = "geography";
 
                     var convertibleDict = tableInfo.ConvertibleColumnConverterDict;
