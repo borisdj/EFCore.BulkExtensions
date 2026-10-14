@@ -98,6 +98,7 @@ public class OracleAdapter : ISqlOperationsAdapter
         bool outputTableCreated = false;
         bool uniqueConstrainCreated = false;
         bool hasExistingTransaction = false;
+        bool operationFailed = false;
         var dbContext = context.DbContext;
         var transaction = dbContext.Database.CurrentTransaction;
         try
@@ -112,8 +113,8 @@ public class OracleAdapter : ISqlOperationsAdapter
                 tableInfo.InsertToTempTable = true;
 
                 var sqlCreateTableCopy = OracleQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo, tableInfo.BulkConfig.UseTempDB, operationType);
-                await ExecuteSqlRawAsync(dbContext, isAsync, sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
                 tempTableCreated = true;
+                await ExecuteSqlRawAsync(dbContext, isAsync, sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
             }
 
             bool hasUniqueConstrain = false;
@@ -141,8 +142,8 @@ public class OracleAdapter : ISqlOperationsAdapter
                 tableInfo.InsertToTempTable = true;
                 var sqlCreateOutputTableCopy = OracleQueryBuilder.CreateTableCopy(tableInfo.FullTableName,
                     tableInfo.FullTempOutputTableName, tableInfo, tableInfo.InsertToTempTable, operationType);
-                await ExecuteSqlRawAsync(dbContext, isAsync, sqlCreateOutputTableCopy, cancellationToken).ConfigureAwait(false);
                 outputTableCreated = true;
+                await ExecuteSqlRawAsync(dbContext, isAsync, sqlCreateOutputTableCopy, cancellationToken).ConfigureAwait(false);
             }
 
             if (tableInfo.BulkConfig.CustomSourceTableName == null)
@@ -188,26 +189,22 @@ public class OracleAdapter : ISqlOperationsAdapter
                 }
             }
         }
+        catch
+        {
+            operationFailed = true;
+            throw;
+        }
         finally
         {
-            if (uniqueConstrainCreated)
-            {
-                string dropUniqueConstrain = OracleQueryBuilder.DropUniqueConstrain(tableInfo);
-                await ExecuteSqlRawAsync(dbContext, isAsync, dropUniqueConstrain, cancellationToken).ConfigureAwait(false);
-            }
+            bool dropTables = !tableInfo.BulkConfig.UseTempDB; // Temp tables are automatically dropped by the database
+            var dropUniqueConstrain = uniqueConstrainCreated ? OracleQueryBuilder.DropUniqueConstrain(tableInfo) : null;
+            var sqlDropOutputTable = dropTables && outputTableCreated ? ProviderSqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName, tableInfo.BulkConfig.UseTempDB) : null;
+            var sqlDropTable = dropTables && tempTableCreated ? ProviderSqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB) : null;
+            await CleanupHelper.ExecuteAsync(operationFailed, sql => ExecuteSqlRawAsync(dbContext, isAsync, sql, CancellationToken.None),
+                dropUniqueConstrain, sqlDropOutputTable, sqlDropTable).ConfigureAwait(false);
 
-            if (!tableInfo.BulkConfig.UseTempDB) // Temp tables are automatically dropped by the database
+            if (!tableInfo.BulkConfig.UseTempDB)
             {
-                if (outputTableCreated)
-                {
-                    var sqlDropOutputTable = ProviderSqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName, tableInfo.BulkConfig.UseTempDB);
-                    await ExecuteSqlRawAsync(dbContext, isAsync, sqlDropOutputTable, cancellationToken).ConfigureAwait(false);
-                }
-                if (tempTableCreated)
-                {
-                    var sqlDropTable = ProviderSqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
-                    await ExecuteSqlRawAsync(dbContext, isAsync, sqlDropTable, cancellationToken).ConfigureAwait(false);
-                }
                 if (hasExistingTransaction == false && !tableInfo.BulkConfig.IncludeGraph && transaction != null)
                 {
                     if (isAsync)
