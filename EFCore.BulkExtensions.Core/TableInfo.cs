@@ -715,10 +715,13 @@ public class TableInfo
         if (PrimaryKeysPropertyColumnNameDict.Count == 1)
         {
             string pkName = PrimaryKeysPropertyColumnNameDict.Keys.First();
-            if (entities != null && entities.Count() > 0)
+            if (entities != null && entities.Any())
             {
                 object? instance = entities.First();
-                TextValueFirstPK = FastPropertyDict[pkName].Get(instance ?? "")?.ToString();
+                if (!FastPropertyDict.TryGetValue(pkName, out var pkProperty))
+                    TextValueFirstPK = ""; // Shadow PK is always empty
+                else
+                    TextValueFirstPK = pkProperty.Get(instance ?? "")?.ToString();
             }
         }
     }
