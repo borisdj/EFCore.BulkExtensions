@@ -6,7 +6,7 @@ EntityFrameworkCore extensions that offer enterprise-grade performance boost - i
 Library is Lightweight and very Efficient (warp speed), having all mostly used [CRUD](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete) methods.  
 Was selected in top 10 [EF Core Extensions](https://docs.microsoft.com/en-us/ef/core/extensions/) recommended by *Microsoft*.  
 Repository included into [*Arctic Code Vault*](https://archiveprogram.github.com/arctic-vault/) for long-term preservation (code designated for survival).  
-Latest version is using EF Core 10.  
+Latest version is using EF Core 11.  
 Supports all 5 major sql databases: **SQLServer, PostgreSQL, MySQL, Oracle, SQLite.**    
 Check out [Testimonials](https://docs.google.com/spreadsheets/d/e/2PACX-1vShdv2sTm3oQfowm9kVIx-PLBCk1lGQEa9E6n92-dX3pni7-XQUEp6taVcMSZVi9BaSAizv1YanWTy3/pubhtml?gid=801420190&single=true) from the Community and User Comments.  
 With thousands of pleased Users and many satisfied Clients from around the globe.  
@@ -71,6 +71,7 @@ Specific ones have adapter suffix: MainNuget + *.SqlServer/PostgreSql/MySql/Orac
 Its assembly is [Strong-Named](https://docs.microsoft.com/en-us/dotnet/standard/library-guidance/strong-naming) and [Signed](https://github.com/borisdj/EFCore.BulkExtensions/issues/161) with a key.
 | Nuget | Target          | Used EF v.| For projects targeting          |
 | ----- | --------------- | --------- | ------------------------------- |
+| 11.x  | Net 11.0        | EF Core 11| Net 11.0+                       |
 | 10.x  | Net 10.0        | EF Core 10| Net 10.0+                       |
 | 9.x   | Net 9.0         | EF Core 9 | Net 9.0+                        |
 | 8.x   | Net 8.0         | EF Core 8 | Net 8.0+                        |
