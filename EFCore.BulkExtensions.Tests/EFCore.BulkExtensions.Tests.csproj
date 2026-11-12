@@ -1,12 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>    
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <!-- Keep the GaussDB provider unsigned; its runtime loader requires the
          original assembly identity. -->
     <DisableStrongNamer>true</DisableStrongNamer>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1608</WarningsNotAsErrors>
     <NoWarn>$(NoWarn);CA2007</NoWarn>
     <NuGetAudit>false</NuGetAudit>
     <SignAssembly>true</SignAssembly>
@@ -18,9 +19,9 @@
     <PackageReference Include="DotNetCore.EntityFrameworkCore.GaussDB" Version="10.0.0" />
     <PackageReference Include="FastMember" Version="1.5.0" />
     <PackageReference Include="coverlet.collector" Version="6.0.4" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.NetTopologySuite" Version="10.0.3" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" Version="10.0.3" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.NetTopologySuite" Version="11.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" Version="11.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="11.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.3.0" />
     <PackageReference Include="Npgsql.NetTopologySuite" Version="10.0.1" />
     <PackageReference Include="RT.Comb" Version="4.0.3" />

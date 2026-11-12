@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
+        <TargetFramework>net11.0</TargetFramework>
         <!-- The GaussDB provider identifies itself by its unsigned assembly
              identity. StrongNamer rewrites that dependency and it then fails
              during EF query compilation, so preserve the NuGet binary. -->
@@ -12,6 +12,7 @@
     </PropertyGroup>
     <ItemGroup>
         <PackageReference Include="DotNetCore.EntityFrameworkCore.GaussDB" Version="10.0.0" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="11.0.0" />
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\EFCore.BulkExtensions.Core\EFCore.BulkExtensions.Core.csproj" />
