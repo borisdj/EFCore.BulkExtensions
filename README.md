@@ -82,7 +82,7 @@ Its assembly is [Strong-Named](https://docs.microsoft.com/en-us/dotnet/standard/
 | 1.x   | NetStandard 1.4 | EF Core 1 | NetCore(1.0+)                   |
 
 Supports follows official [.Net lifecycle](https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core), currently v.10 as latest(LTS) and v.9.  
-MySql net10 package uses Microting's EF Core 10 MySQL provider fork.
+MySql Net10 package now uses Microting's EF Core 10 MySQL provider fork of original Pomelo repo.
 
 ## Usage
 It's pretty simple and straightforward.  
