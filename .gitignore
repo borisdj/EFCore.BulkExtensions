@@ -5,6 +5,9 @@ obj
 .idea
 Nugets
 
+# Test and coverage outputs are generated artifacts.
+/EFCore.BulkExtensions.Tests/TestResults/
+
 /EFCore.BulkExtensions.Tests/testsettings.local.json
 !*.csproj
 !*.png

@@ -24,6 +24,8 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="3.0.2" PrivateAssets="All" />
   </ItemGroup>
   <ItemGroup>
+    <!-- The GaussDB 10 provider targets net10 only. -->
+    <Compile Remove="GaussDB\**\*.cs" />
     <ProjectReference Include="..\EFCore.BulkExtensions\EFCore.BulkExtensions.Net8.csproj" />
   </ItemGroup>
   <ItemGroup>

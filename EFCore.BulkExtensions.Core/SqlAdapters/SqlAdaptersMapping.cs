@@ -38,6 +38,11 @@ public enum SqlType
     ///  Indicates database is GBase
     /// </summary>
     GBase,
+
+    /// <summary>
+    /// Indicates database is GaussDB
+    /// </summary>
+    GaussDB,
 }
 
 #pragma warning disable CS1591 // No XML comment required here
@@ -46,6 +51,7 @@ public static class SqlAdaptersMapping
     public static Func<DbContext, IDbServer>? Provider { get; set; }
 
     private static IDbServer? _dbServer { get; set; }
+    private static readonly object _dbServerLock = new();
 
     /// <summary>
     /// Contains a list of methods to generate Adapters and helpers instances
@@ -87,22 +93,27 @@ public static class SqlAdaptersMapping
         {
             databaseType = SqlType.GBase;
         }
-        if (_dbServer == null || _dbServer.Type != databaseType)
+        else if (providerName?.EndsWith(SqlType.GaussDB.ToString(), ignoreCase) ?? false) // ProviderName: DotNetCore.EntityFrameworkCore.GaussDB
         {
-            static Type GetType(SqlType type)
-            {
-                var typeName = type.ToString();
-                var assemblyName = typeof(SqlAdaptersMapping).Assembly.GetName().Name!.Replace(".Core", $".{typeName}");
-
-                return Type.GetType($"EFCore.BulkExtensions.SqlAdapters.{typeName}.{typeName}DbServer,{assemblyName}") ??
-                    throw new InvalidOperationException("Failed to resolve type.");
-            }
-
-            _dbServer = Activator.CreateInstance(GetType(databaseType)) as IDbServer;
+            databaseType = SqlType.GaussDB;
         }
+        lock (_dbServerLock)
+        {
+            if (_dbServer == null || _dbServer.Type != databaseType)
+            {
+                static Type GetType(SqlType type)
+                {
+                    var typeName = type.ToString();
+                    var assemblyName = typeof(SqlAdaptersMapping).Assembly.GetName().Name!.Replace(".Core", $".{typeName}");
 
+                    return Type.GetType($"EFCore.BulkExtensions.SqlAdapters.{typeName}.{typeName}DbServer,{assemblyName}") ??
+                        throw new InvalidOperationException("Failed to resolve type.");
+                }
 
-        return _dbServer ?? throw new InvalidOperationException("Failed to create DbServer");
+                _dbServer = Activator.CreateInstance(GetType(databaseType)) as IDbServer;
+            }
+            return _dbServer ?? throw new InvalidOperationException("Failed to create DbServer");
+        }
     }
 
     private static IDbServer? TryGetServer(DbContext context)

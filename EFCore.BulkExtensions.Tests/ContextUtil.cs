@@ -69,6 +69,14 @@ public class ContextUtil
 #endif
                 break;
             }
+#if NET10_0_OR_GREATER
+            case SqlType.GaussDB:
+            {
+                string connectionString = GetGaussDBConnectionString(databaseName);
+                optionsBuilder.UseGaussDB(connectionString);
+                break;
+            }
+#endif
             /*case SqlType.MySql:
             {
                 string connectionString = GetMySqlConnectionString(databaseName);
@@ -149,6 +157,11 @@ public class ContextUtil
     public static string GetGBaseConnectionString(string databaseName)
     {
         return GetConnectionString("GBase").Replace("{databaseName}", databaseName);
+    }
+
+    public static string GetGaussDBConnectionString(string databaseName)
+    {
+        return GetConnectionString("GaussDB").Replace("{databaseName}", databaseName);
     }
 
     private static string GetConnectionString(string name)

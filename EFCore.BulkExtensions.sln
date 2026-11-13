@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
-VisualStudioVersion = 18.1.11312.151 d18.0
+VisualStudioVersion = 18.1.11312.151
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EFCore.BulkExtensions.Tests", "EFCore.BulkExtensions.Tests\EFCore.BulkExtensions.Tests.csproj", "{2328B243-982C-47B7-885B-999231149C72}"
 EndProject
@@ -21,6 +21,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EFCore.BulkExtensions.Oracle", "EFCore.BulkExtensions.Oracle\EFCore.BulkExtensions.Oracle.csproj", "{FC913B1E-3AF8-4E06-9452-9BFC8CF4E39A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EFCore.BulkExtensions.GBase", "EFCore.BulkExtensions.GBase\EFCore.BulkExtensions.GBase.csproj", "{FDD93489-6965-0000-F220-67ACF6092392}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EFCore.BulkExtensions.GaussDB", "EFCore.BulkExtensions.GaussDB\EFCore.BulkExtensions.GaussDB.csproj", "{21625C51-CF08-01A0-FB75-EB0B9F84B417}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -64,6 +66,10 @@ Global
 		{FDD93489-6965-0000-F220-67ACF6092392}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FDD93489-6965-0000-F220-67ACF6092392}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FDD93489-6965-0000-F220-67ACF6092392}.Release|Any CPU.Build.0 = Release|Any CPU
+		{21625C51-CF08-01A0-FB75-EB0B9F84B417}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{21625C51-CF08-01A0-FB75-EB0B9F84B417}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{21625C51-CF08-01A0-FB75-EB0B9F84B417}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{21625C51-CF08-01A0-FB75-EB0B9F84B417}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -75,6 +81,7 @@ Global
 		{8879D6FE-62DB-49DF-A8DF-70AD386C9FC6} = {2DFD1CF8-67D7-4B56-B131-CE01B1F2DC7C}
 		{FC913B1E-3AF8-4E06-9452-9BFC8CF4E39A} = {2DFD1CF8-67D7-4B56-B131-CE01B1F2DC7C}
 		{FDD93489-6965-0000-F220-67ACF6092392} = {2DFD1CF8-67D7-4B56-B131-CE01B1F2DC7C}
+		{21625C51-CF08-01A0-FB75-EB0B9F84B417} = {2DFD1CF8-67D7-4B56-B131-CE01B1F2DC7C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {F6CFFD1D-D456-4A8F-86FC-7CF2C893AB08}

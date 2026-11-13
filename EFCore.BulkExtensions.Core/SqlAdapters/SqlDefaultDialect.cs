@@ -55,7 +55,7 @@ public class SqlDefaultDialect : IQueryBuilderSpecialization
     /// <inheritdoc/>
     public (string, string) GetBatchSqlReformatTableAliasAndTopStatement(string sqlQuery, SqlType databaseType)
     {
-        var isPostgreSql = databaseType == SqlType.PostgreSql;
+        var isPostgreSql = databaseType == SqlType.PostgreSql || databaseType == SqlType.GaussDB;
         var isGBaseSql = databaseType == SqlType.GBase;
         var escapeSymbolEnd = (isPostgreSql || isGBaseSql) ? "." : "]";
         var escapeSymbolStart = (isPostgreSql || isGBaseSql) ? " " : "["; // SqlServer : PostrgeSql;
