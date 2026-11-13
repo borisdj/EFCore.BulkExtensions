@@ -1,12 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <Title>EFCore.BulkExtensions.MySQL</Title>
     <Description>EntityFramework .Net EFCore EF Core Bulk Batch Extensions for Insert Update Delete Read (CRUD) operations on MySQL</Description>
     <PackageTags>$(PackageTags) MySQL</PackageTags>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microting.EntityFrameworkCore.MySql" Version="10.0.8" />
+    <PackageReference Include="Microting.EntityFrameworkCore.MySql" Version="11.0.0-preview.1" />
+    <PackageReference Include="MySqlConnector" Version="2.6.2" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EFCore.BulkExtensions.Core\EFCore.BulkExtensions.Core.csproj" />
