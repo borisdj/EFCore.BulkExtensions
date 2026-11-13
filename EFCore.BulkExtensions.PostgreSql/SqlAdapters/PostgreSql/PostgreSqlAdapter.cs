@@ -2,6 +2,7 @@
 using Npgsql;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Data;
 using System.Data.Common;
 using System.Linq;
@@ -20,6 +21,16 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
     // Insert
     public void Insert<T>(BulkContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress)
     {
+        if (!tableInfo.InsertToTempTable)
+        {
+            ValidateConflictOptionForInsert(tableInfo);
+            if (tableInfo.BulkConfig.ConflictOption == ConflictOption.Ignore)
+            {
+                Merge(context, type, entities.Cast<object>(), tableInfo, OperationType.Insert, progress);
+                return;
+            }
+        }
+
         InsertAsync(context, entities, tableInfo, progress, isAsync: false, CancellationToken.None).GetAwaiter().GetResult();
     }
 
@@ -27,6 +38,16 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
     public async Task InsertAsync<T>(BulkContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, Action<decimal>? progress,
         CancellationToken cancellationToken)
     {
+        if (!tableInfo.InsertToTempTable)
+        {
+            ValidateConflictOptionForInsert(tableInfo);
+            if (tableInfo.BulkConfig.ConflictOption == ConflictOption.Ignore)
+            {
+                await MergeAsync(context, type, entities.Cast<object>(), tableInfo, OperationType.Insert, progress, cancellationToken).ConfigureAwait(false);
+                return;
+            }
+        }
+
         await InsertAsync(context, entities, tableInfo, progress, isAsync: true, cancellationToken).ConfigureAwait(false);
     }
 
@@ -251,6 +272,11 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
     protected async Task MergeAsync<T>(BulkContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress,
         bool isAsync, CancellationToken cancellationToken) where T : class
     {
+        if (operationType == OperationType.Insert)
+        {
+            ValidateConflictOptionForInsert(tableInfo);
+        }
+
         bool tempTableCreated = false;
         bool outputTableCreated = false;
         bool uniqueIndexCreated = false;
@@ -288,33 +314,34 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
                 outputTableCreated = true;
             }
 
-            bool hasUniqueIndex = false;
-            string joinedEntityPK = string.Join("_", tableInfo.EntityPKPropertyColumnNameDict.Keys.ToList());
-            string joinedPrimaryKeys = string.Join("_", tableInfo.PrimaryKeysPropertyColumnNameDict.Keys.ToList());
-            if (joinedEntityPK == joinedPrimaryKeys)
+            bool ignoreAllConflicts = operationType == OperationType.Insert && tableInfo.BulkConfig.ConflictOption == ConflictOption.Ignore;
+            if (!ignoreAllConflicts)
             {
-                hasUniqueIndex = true; // Explicit Constrain not required for PK
-            }
-            else
-            {
-                (hasUniqueIndex, connectionOpenedInternally) = await CheckHasExplicitUniqueConstrainAsync(dbContext, tableInfo, isAsync, cancellationToken).ConfigureAwait(false);
-            }
-
-            if (!hasUniqueIndex)
-            {
-                string createUniqueIndex = PostgreSqlQueryBuilder.CreateUniqueIndex(tableInfo);
-                string createUniqueConstrain = PostgreSqlQueryBuilder.CreateUniqueConstrain(tableInfo);
-                if (isAsync)
+                bool hasUniqueIndex = false;
+                string joinedEntityPK = string.Join("_", tableInfo.EntityPKPropertyColumnNameDict.Keys.ToList());
+                string joinedPrimaryKeys = string.Join("_", tableInfo.PrimaryKeysPropertyColumnNameDict.Keys.ToList());
+                if (joinedEntityPK == joinedPrimaryKeys)
                 {
-                    await dbContext.Database.ExecuteSqlRawAsync(createUniqueIndex, cancellationToken).ConfigureAwait(false);
-                    //await context.Database.ExecuteSqlRawAsync(createUniqueConstrain, cancellationToken).ConfigureAwait(false); // UniqueConstrain Not needed
+                    hasUniqueIndex = true; // Explicit Constrain not required for PK
                 }
                 else
                 {
-                    dbContext.Database.ExecuteSqlRaw(createUniqueIndex);
-                    //context.Database.ExecuteSqlRaw(createUniqueConstrain); // UniqueConstrain Not needed
+                    (hasUniqueIndex, connectionOpenedInternally) = await CheckHasExplicitUniqueConstrainAsync(dbContext, tableInfo, isAsync, cancellationToken).ConfigureAwait(false);
                 }
-                uniqueIndexCreated = true;
+
+                if (!hasUniqueIndex)
+                {
+                    string createUniqueIndex = PostgreSqlQueryBuilder.CreateUniqueIndex(tableInfo);
+                    if (isAsync)
+                    {
+                        await dbContext.Database.ExecuteSqlRawAsync(createUniqueIndex, cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        dbContext.Database.ExecuteSqlRaw(createUniqueIndex);
+                    }
+                    uniqueIndexCreated = true;
+                }
             }
 
             if (tableInfo.BulkConfig.CustomSourceTableName == null)
@@ -374,7 +401,7 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
                 tableInfo.BulkConfig.StatsInfo = new StatsInfo
                 {
                     StatsNumberInserted = numberInserted,
-                    StatsNumberUpdated = entities.Count() - numberInserted,
+                    StatsNumberUpdated = ignoreAllConflicts ? 0 : entities.Count() - numberInserted,
                 };
             }
         }
@@ -609,5 +636,29 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
     {
         var (dbConnection, closeConnectionInternally) = await OpenAndGetNpgsqlConnectionAsync(context.DbContext, isAsync, cancellationToken).ConfigureAwait(false);
         return ((NpgsqlConnection)dbConnection, closeConnectionInternally);
+    }
+
+    private static void ValidateConflictOptionForInsert(TableInfo tableInfo)
+    {
+        switch (tableInfo.BulkConfig.ConflictOption)
+        {
+            case ConflictOption.None:
+                return;
+            case ConflictOption.Ignore when tableInfo.BulkConfig.SetOutputIdentity:
+                // Targetless ON CONFLICT DO NOTHING can skip rows for any unique/exclusion constraint.
+                // PostgreSQL only returns inserted rows, so there is no reliable conflict key for mapping skipped rows back to entities.
+                throw new NotSupportedException(
+                    $"{nameof(ConflictOption.Ignore)} with {nameof(BulkConfig.SetOutputIdentity)} is not supported for PostgreSQL. Use BulkInsertOrUpdate with PropertiesToIncludeOnUpdate when output identity is required.");
+            case ConflictOption.Ignore:
+                return;
+            case ConflictOption.Replace:
+                throw new NotSupportedException(
+                    $"{nameof(ConflictOption.Replace)} is not supported for PostgreSQL. Use BulkInsertOrUpdate instead.");
+            default:
+                throw new InvalidEnumArgumentException(
+                    nameof(tableInfo.BulkConfig.ConflictOption),
+                    (int)tableInfo.BulkConfig.ConflictOption,
+                    typeof(ConflictOption));
+        }
     }
 }

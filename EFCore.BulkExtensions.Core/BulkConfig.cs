@@ -335,7 +335,7 @@ public class BulkConfig
     public List<SqlBulkCopyColumnOrderHint>? SqlBulkCopyColumnOrderHints { get; set; }
 
     /// <summary>
-    /// Set MySqlBulkLoaderConflictOption
+    ///     Configures how conflicts are handled during bulk insert when supported by the database provider.
     /// </summary>
     public ConflictOption ConflictOption { get; set; } = ConflictOption.None;
 
@@ -522,4 +522,3 @@ public enum ConflictOption
     /// </summary>
     Ignore
 }
-

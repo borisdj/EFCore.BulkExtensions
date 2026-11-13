@@ -63,6 +63,54 @@ public class EFCoreBulkTest
 
     [Theory]
     [InlineData(SqlType.PostgreSql)]
+    public void InsertWithConflictOptionIgnorePostgreSql(SqlType sqlType)
+    {
+        using var context = new TestContext(sqlType);
+        var existingName = $"Existing-{Guid.NewGuid()}";
+        var newName = $"New-{Guid.NewGuid()}";
+        var entities = new List<Customer>
+        {
+            new Customer { Name = existingName },
+            new Customer { Name = newName }
+        };
+        var bulkConfig = new BulkConfig { ConflictOption = ConflictOption.Ignore };
+
+        context.BulkInsert(new List<Customer> { new Customer { Name = existingName } });
+        context.BulkInsert(entities, bulkConfig);
+
+        Assert.Equal(2, context.Customers.Count(customer => customer.Name == existingName || customer.Name == newName));
+        Assert.Single(context.Customers.Where(customer => customer.Name == existingName));
+        Assert.Single(context.Customers.Where(customer => customer.Name == newName));
+    }
+
+    [Theory]
+    [InlineData(SqlType.PostgreSql)]
+    public void InsertWithConflictOptionIgnoreAndSetOutputIdentityThrowsPostgreSql(SqlType sqlType)
+    {
+        using var context = new TestContext(sqlType);
+        var entities = new List<Customer> { new Customer { Name = "IgnoreWithIdentity" } };
+        var bulkConfig = new BulkConfig { ConflictOption = ConflictOption.Ignore, SetOutputIdentity = true };
+
+        var exception = Assert.Throws<NotSupportedException>(() => context.BulkInsert(entities, bulkConfig));
+
+        Assert.Contains($"{nameof(ConflictOption.Ignore)} with {nameof(BulkConfig.SetOutputIdentity)} is not supported for PostgreSQL", exception.Message);
+    }
+
+    [Theory]
+    [InlineData(SqlType.PostgreSql)]
+    public void InsertWithConflictOptionReplaceThrowsPostgreSql(SqlType sqlType)
+    {
+        using var context = new TestContext(sqlType);
+        var entities = new List<Customer> { new Customer { Name = "Replace" } };
+        var bulkConfig = new BulkConfig { ConflictOption = ConflictOption.Replace };
+
+        var exception = Assert.Throws<NotSupportedException>(() => context.BulkInsert(entities, bulkConfig));
+
+        Assert.Contains($"{nameof(ConflictOption.Replace)} is not supported for PostgreSQL", exception.Message);
+    }
+
+    [Theory]
+    [InlineData(SqlType.PostgreSql)]
     public void InsertTestPostgreSql(SqlType sqlType)
     {
         using var context = new TestContext(sqlType);
