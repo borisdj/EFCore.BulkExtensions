@@ -48,13 +48,13 @@ Want to **Contact** for Development & Consulting: [**codis**](https://codis.tech
 ## Description
 Supported databases:  
 -**SQLServer** (or AzureSQL) under the hood uses [SqlBulkCopy](https://msdn.microsoft.com/en-us/library/system.data.sqlclient.sqlbulkcopy.aspx) for Insert, Update/Delete = BulkInsert + raw Sql [MERGE](https://docs.microsoft.com/en-us/sql/t-sql/statements/merge-transact-sql).
-  - **PLEASE NOTE:** Native JSON SQL data types do not map correctly with versions of Sql Server 2025 older than CU5. If you intend to use JSON data types, please ensure you are using Sql Server 2025 (>= CU5).
 -**PostgreSQL** (9.5+) is using [COPY BINARY](https://www.postgresql.org/docs/9.2/sql-copy.html) combined with [ON CONFLICT](https://www.postgresql.org/docs/10/sql-insert.html#SQL-ON-CONFLICT) for Update.  
 -**MySQL** (8+) is using [MySqlBulkCopy](https://mysqlconnector.net/api/mysqlconnector/mysqlbulkcopytype/) combined with [ON DUPLICATE](https://dev.mysql.com/doc/refman/8.0/en/insert-on-duplicate.html) for Update.  
 -**Oracle** (8+) is using [OracleBulkCopy](https://docs.oracle.com/cd/E11882_01/win.112/e23174/OracleBulkCopyClass.htm#ODPNT7446) combined with [MERGE](https://docs.oracle.com/en/database/oracle/oracle-database/21/sqlrf/MERGE.html) for Update.  
 -**SQLite** has no Copy tool, instead library uses [plain SQL](https://learn.microsoft.com/en-us/dotnet/standard/data/sqlite/bulk-insert) combined with [UPSERT](https://www.sqlite.org/lang_UPSERT.html).  
 Bulk Tests can not have UseInMemoryDb because InMemoryProvider does not support Relational-specific methods.  
-Instead Test options are  SqlServer(Developer or Express), LocalDb(if alongside [Developer v.](https://stackoverflow.com/questions/42885377/sql-server-2016-developer-version-can-not-connect-to-localdb-mssqllocaldb?noredirect=1&lq=1)), or with  other adapters.
+Instead Test options are  SqlServer(Developer or Express), LocalDb(if alongside [Developer v.](https://stackoverflow.com/questions/42885377/sql-server-2016-developer-version-can-not-connect-to-localdb-mssqllocaldb?noredirect=1&lq=1)), or with  other adapters.  
+***NOTE:*** Native JSON SQL data types do not map correctly with Sql Server v. 2025 older than CU5. For JSON types use Sql Server 2025 (>= CU5).
 
 ## Installation
 Available on [![NuGet](https://img.shields.io/nuget/v/EFCore.BulkExtensions.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/)  [![Downloads](https://img.shields.io/nuget/dt/EFCore.BulkExtensions.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/)  
