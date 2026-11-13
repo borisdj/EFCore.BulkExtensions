@@ -90,15 +90,20 @@ public class SqlServerAdapter : ISqlOperationsAdapter
                         var sqlCreateTableCopy = new SqlServerQueryBuilder().CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo);
                         var sqlDropTable = new SqlServerQueryBuilder().DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
 
-                        if (isAsync)
+                        try
                         {
-                            await dbContext.Database.ExecuteSqlRawAsync(sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
-                            await dbContext.Database.ExecuteSqlRawAsync(sqlDropTable, cancellationToken).ConfigureAwait(false);
+                            if (isAsync)
+                            {
+                                await dbContext.Database.ExecuteSqlRawAsync(sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
+                            }
+                            else
+                            {
+                                dbContext.Database.ExecuteSqlRaw(sqlCreateTableCopy);
+                            }
                         }
-                        else
+                        finally
                         {
-                            dbContext.Database.ExecuteSqlRaw(sqlCreateTableCopy);
-                            dbContext.Database.ExecuteSqlRaw(sqlDropTable);
+                            await CleanupHelper.ExecuteAsync(dbContext, isAsync, operationFailed: true, sqlDropTable).ConfigureAwait(false);
                         }
                     }
                 }
@@ -140,6 +145,7 @@ public class SqlServerAdapter : ISqlOperationsAdapter
         bool tempTableCreated = false;
         bool outputTableCreated = false;
         bool identityInsertIsSet = false;
+        bool operationFailed = false;
         bool keepIdentity = tableInfo.BulkConfig.SqlBulkCopyOptions.HasFlag(SqlBulkCopyOptions.KeepIdentity);
         var dbContext = context.DbContext;
         try
@@ -151,6 +157,7 @@ public class SqlServerAdapter : ISqlOperationsAdapter
                 tableInfo.InsertToTempTable = true;
 
                 var sqlCreateTableCopy = new SqlServerQueryBuilder().CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo);
+                tempTableCreated = true;
                 if (isAsync)
                 {
                     await dbContext.Database.ExecuteSqlRawAsync(sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
@@ -159,7 +166,6 @@ public class SqlServerAdapter : ISqlOperationsAdapter
                 {
                     dbContext.Database.ExecuteSqlRaw(sqlCreateTableCopy);
                 }
-                tempTableCreated = true;
 
                 if (isAsync)
                 {
@@ -174,6 +180,7 @@ public class SqlServerAdapter : ISqlOperationsAdapter
             if (tableInfo.CreateOutputTable)
             {
                 var sqlCreateOutputTableCopy = new SqlServerQueryBuilder().CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempOutputTableName, tableInfo, true);
+                outputTableCreated = true;
                 if (isAsync)
                 {
                     await dbContext.Database.ExecuteSqlRawAsync(sqlCreateOutputTableCopy, cancellationToken).ConfigureAwait(false);
@@ -182,7 +189,6 @@ public class SqlServerAdapter : ISqlOperationsAdapter
                 {
                     dbContext.Database.ExecuteSqlRaw(sqlCreateOutputTableCopy);
                 }
-                outputTableCreated = true;
 
                 if (operationType == OperationType.InsertOrUpdateOrDelete)
                 {
@@ -205,14 +211,20 @@ public class SqlServerAdapter : ISqlOperationsAdapter
                 if (isAsync)
                 {
                     await dbContext.Database.OpenConnectionAsync(cancellationToken).ConfigureAwait(false);
-                    await dbContext.Database.ExecuteSqlRawAsync(sqlSetIdentityInsertTrue, cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
                     dbContext.Database.OpenConnection();
+                }
+                identityInsertIsSet = true; // set after Open (CloseConnection must match it) but before SET ON, as SET OFF is harmless when not ON
+                if (isAsync)
+                {
+                    await dbContext.Database.ExecuteSqlRawAsync(sqlSetIdentityInsertTrue, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
                     dbContext.Database.ExecuteSqlRaw(sqlSetIdentityInsertTrue);
                 }
-                identityInsertIsSet = true;
             }
 
             var (sql, parameters) = SqlQueryBuilder.MergeTable<T>(context, tableInfo, operationType, entityPropertyWithDefaultValue);
@@ -249,48 +261,27 @@ public class SqlServerAdapter : ISqlOperationsAdapter
                 }
             }
         }
+        catch
+        {
+            operationFailed = true;
+            throw;
+        }
         finally
         {
-            if (!tableInfo.BulkConfig.UseTempDB) // When UseTempDB is set temp tables are automaticaly dropped by Db
+            try
             {
-                if (outputTableCreated)
-                {
-                    var sqlDropOutputTable = new SqlServerQueryBuilder().DropTable(tableInfo.FullTempOutputTableName, tableInfo.BulkConfig.UseTempDB);
-                    if (isAsync)
-                    {
-                        await dbContext.Database.ExecuteSqlRawAsync(sqlDropOutputTable, cancellationToken).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        dbContext.Database.ExecuteSqlRaw(sqlDropOutputTable);
-                    }
-                }
-                if (tempTableCreated) // otherwise following lines execute the drop
-                {
-                    var sqlDropTable = new SqlServerQueryBuilder().DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
-                    if (isAsync)
-                    {
-                        await dbContext.Database.ExecuteSqlRawAsync(sqlDropTable, cancellationToken).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        dbContext.Database.ExecuteSqlRaw(sqlDropTable);
-                    }
-                }
+                bool dropTables = !tableInfo.BulkConfig.UseTempDB; // When UseTempDB is set temp tables are automaticaly dropped by Db
+                var sqlDropOutputTable = dropTables && outputTableCreated ? new SqlServerQueryBuilder().DropTable(tableInfo.FullTempOutputTableName, tableInfo.BulkConfig.UseTempDB) : null;
+                var sqlDropTable = dropTables && tempTableCreated ? new SqlServerQueryBuilder().DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB) : null;
+                var sqlSetIdentityInsertFalse = identityInsertIsSet ? SqlQueryBuilder.SetIdentityInsert(tableInfo.FullTableName, false) : null;
+                await CleanupHelper.ExecuteAsync(dbContext, isAsync, operationFailed, sqlDropOutputTable, sqlDropTable, sqlSetIdentityInsertFalse).ConfigureAwait(false);
             }
-
-            if (identityInsertIsSet)
+            finally
             {
-                var sqlSetIdentityInsertFalse = SqlQueryBuilder.SetIdentityInsert(tableInfo.FullTableName, false);
-                if (isAsync)
+                if (identityInsertIsSet)
                 {
-                    await dbContext.Database.ExecuteSqlRawAsync(sqlSetIdentityInsertFalse, cancellationToken).ConfigureAwait(false);
+                    dbContext.Database.CloseConnection();
                 }
-                else
-                {
-                    dbContext.Database.ExecuteSqlRaw(sqlSetIdentityInsertFalse);
-                }
-                dbContext.Database.CloseConnection();
             }
         }
     }
@@ -312,11 +303,13 @@ public class SqlServerAdapter : ISqlOperationsAdapter
     {
         var dbContext = context.DbContext;
         bool tempTableCreated = false;
+        bool operationFailed = false;
         try
         {
             Dictionary<string, string> previousPropertyColumnNamesDict = tableInfo.ConfigureBulkReadTableInfo();
 
             var sqlCreateTableCopy = new SqlServerQueryBuilder().CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo);
+            tempTableCreated = true;
             if (isAsync)
             {
                 await dbContext.Database.ExecuteSqlRawAsync(sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
@@ -325,7 +318,6 @@ public class SqlServerAdapter : ISqlOperationsAdapter
             {
                 dbContext.Database.ExecuteSqlRaw(sqlCreateTableCopy);
             }
-            tempTableCreated = true;
 
             if (isAsync)
             {
@@ -363,6 +355,11 @@ public class SqlServerAdapter : ISqlOperationsAdapter
                 tableInfo.PropertyColumnNamesDict.Remove(tableInfo.TimeStampPropertyName);
             }
         }
+        catch
+        {
+            operationFailed = true;
+            throw;
+        }
         finally
         {
             if (!tableInfo.BulkConfig.UseTempDB)
@@ -370,14 +367,7 @@ public class SqlServerAdapter : ISqlOperationsAdapter
                 if (tempTableCreated)
                 {
                     var sqlDropTable = new SqlServerQueryBuilder().DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
-                    if (isAsync)
-                    {
-                        await dbContext.Database.ExecuteSqlRawAsync(sqlDropTable, cancellationToken).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        dbContext.Database.ExecuteSqlRaw(sqlDropTable);
-                    }
+                    await CleanupHelper.ExecuteAsync(dbContext, isAsync, operationFailed, sqlDropTable).ConfigureAwait(false);
                 }
             }
         }

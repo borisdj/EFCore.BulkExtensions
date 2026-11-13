@@ -112,6 +112,7 @@ public class MySqlAdapter : ISqlOperationsAdapter
         bool outputTableCreated = false;
         bool uniqueConstrainCreated = false;
         bool hasExistingTransaction = false;
+        bool operationFailed = false;
         var dbContext = context.DbContext;
         var transaction = dbContext.Database.CurrentTransaction;
         try
@@ -126,6 +127,7 @@ public class MySqlAdapter : ISqlOperationsAdapter
                 tableInfo.InsertToTempTable = true;
 
                 var sqlCreateTableCopy = MySqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
+                tempTableCreated = true;
                 if (isAsync)
                 {
                     await dbContext.Database.ExecuteSqlRawAsync(sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
@@ -134,7 +136,6 @@ public class MySqlAdapter : ISqlOperationsAdapter
                 {
                     dbContext.Database.ExecuteSqlRaw(sqlCreateTableCopy);
                 }
-                tempTableCreated = true;
             }
 
             bool hasUniqueConstrain = false;
@@ -169,6 +170,7 @@ public class MySqlAdapter : ISqlOperationsAdapter
                 tableInfo.InsertToTempTable = true;
                 var sqlCreateOutputTableCopy = MySqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName,
                     tableInfo.FullTempOutputTableName, tableInfo.InsertToTempTable);
+                outputTableCreated = true;
                 if (isAsync)
                 {
                     await dbContext.Database.ExecuteSqlRawAsync(sqlCreateOutputTableCopy, cancellationToken).ConfigureAwait(false);
@@ -177,7 +179,6 @@ public class MySqlAdapter : ISqlOperationsAdapter
                 {
                     dbContext.Database.ExecuteSqlRaw(sqlCreateOutputTableCopy);
                 }
-                outputTableCreated = true;
             }
 
             if (tableInfo.BulkConfig.CustomSourceTableName == null)
@@ -237,49 +238,21 @@ public class MySqlAdapter : ISqlOperationsAdapter
                 }
             }
         }
+        catch
+        {
+            operationFailed = true;
+            throw;
+        }
         finally
         {
-            if (uniqueConstrainCreated)
-            {
-                string dropUniqueConstrain = MySqlQueryBuilder.DropUniqueConstrain(tableInfo);
-                if (isAsync)
-                {
-                    await dbContext.Database.ExecuteSqlRawAsync(dropUniqueConstrain, cancellationToken)
-                        .ConfigureAwait(false);
-                }
-                else
-                {
-                    dbContext.Database.ExecuteSqlRaw(dropUniqueConstrain);
-                }
-            }
+            bool dropTables = !tableInfo.BulkConfig.UseTempDB; // Temp tables are automatically dropped by the database
+            var dropUniqueConstrain = uniqueConstrainCreated ? MySqlQueryBuilder.DropUniqueConstrain(tableInfo) : null;
+            var sqlDropOutputTable = dropTables && outputTableCreated ? ProviderSqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName, tableInfo.BulkConfig.UseTempDB) : null;
+            var sqlDropTable = dropTables && tempTableCreated ? ProviderSqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB) : null;
+            await CleanupHelper.ExecuteAsync(dbContext, isAsync, operationFailed, dropUniqueConstrain, sqlDropOutputTable, sqlDropTable).ConfigureAwait(false);
 
-            if (!tableInfo.BulkConfig.UseTempDB) // Temp tables are automatically dropped by the database
+            if (!tableInfo.BulkConfig.UseTempDB)
             {
-                if (outputTableCreated)
-                {
-                    var sqlDropOutputTable = ProviderSqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName, tableInfo.BulkConfig.UseTempDB);
-                    if (isAsync)
-                    {
-                        await dbContext.Database.ExecuteSqlRawAsync(sqlDropOutputTable, cancellationToken).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        dbContext.Database.ExecuteSqlRaw(sqlDropOutputTable);
-                    }
-
-                }
-                if (tempTableCreated)
-                {
-                    var sqlDropTable = ProviderSqlQueryBuilder.DropTable(tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB);
-                    if (isAsync)
-                    {
-                        await dbContext.Database.ExecuteSqlRawAsync(sqlDropTable, cancellationToken).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        dbContext.Database.ExecuteSqlRaw(sqlDropTable);
-                    }
-                }
                 if (hasExistingTransaction == false && !tableInfo.BulkConfig.IncludeGraph && transaction != null)
                 {
                     if (isAsync)

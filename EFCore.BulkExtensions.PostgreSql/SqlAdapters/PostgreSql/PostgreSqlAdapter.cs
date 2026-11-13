@@ -264,6 +264,7 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
         bool outputTableCreated = false;
         bool uniqueIndexCreated = false;
         bool connectionOpenedInternally = false;
+        bool operationFailed = false;
         var dbContext = context.DbContext;
         try
         {
@@ -272,6 +273,7 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
                 tableInfo.InsertToTempTable = true;
 
                 var sqlCreateTableCopy = PostgreSqlQueryBuilder.CreateTableCopy(tableInfo.FullTableName, tableInfo.FullTempTableName, tableInfo.BulkConfig.UseTempDB, tableInfo.BulkConfig.UseUnlogged);
+                tempTableCreated = true;
                 if (isAsync)
                 {
                     await dbContext.Database.ExecuteSqlRawAsync(sqlCreateTableCopy, cancellationToken).ConfigureAwait(false);
@@ -280,12 +282,12 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
                 {
                     dbContext.Database.ExecuteSqlRaw(sqlCreateTableCopy);
                 }
-                tempTableCreated = true;
             }
 
             if (tableInfo.BulkConfig.CalculateStats)
             {
                 var sqlCreateOutputTableCopy = PostgreSqlQueryBuilder.CreateOutputStatsTable(tableInfo.FullTempOutputTableName, tableInfo.BulkConfig.UseTempDB, tableInfo.BulkConfig.UseUnlogged);
+                outputTableCreated = true;
                 if (isAsync)
                 {
                     await dbContext.Database.ExecuteSqlRawAsync(sqlCreateOutputTableCopy, cancellationToken).ConfigureAwait(false);
@@ -294,7 +296,6 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
                 {
                     dbContext.Database.ExecuteSqlRaw(sqlCreateOutputTableCopy);
                 }
-                outputTableCreated = true;
             }
 
             bool hasUniqueIndex = false;
@@ -387,56 +388,18 @@ public class PostgreSqlAdapter : ISqlOperationsAdapter
                 };
             }
         }
+        catch
+        {
+            operationFailed = true;
+            throw;
+        }
         finally
         {
-            try
-            {
-                if (uniqueIndexCreated)
-                {
-                    string dropUniqueIndex = PostgreSqlQueryBuilder.DropUniqueIndex(tableInfo);
-                    if (isAsync)
-                    {
-                        await dbContext.Database.ExecuteSqlRawAsync(dropUniqueIndex, cancellationToken).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        dbContext.Database.ExecuteSqlRaw(dropUniqueIndex);
-                    }
-                }
-
-                if (!tableInfo.BulkConfig.UseTempDB)
-                {
-                    if (outputTableCreated)
-                    {
-                        var sqlDropOutputTable = PostgreSqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName);
-                        if (isAsync)
-                        {
-                            await dbContext.Database.ExecuteSqlRawAsync(sqlDropOutputTable, cancellationToken).ConfigureAwait(false);
-                        }
-                        else
-                        {
-                            dbContext.Database.ExecuteSqlRaw(sqlDropOutputTable);
-                        }
-                    }
-
-                    if (tempTableCreated)
-                    {
-                        var sqlDropTable = PostgreSqlQueryBuilder.DropTable(tableInfo.FullTempTableName);
-                        if (isAsync)
-                        {
-                            await dbContext.Database.ExecuteSqlRawAsync(sqlDropTable, cancellationToken).ConfigureAwait(false);
-                        }
-                        else
-                        {
-                            dbContext.Database.ExecuteSqlRaw(sqlDropTable);
-                        }
-                    }
-                }
-            }
-            catch (PostgresException ex) when (ex.SqlState == "25P02")
-            {
-                // ignore "current transaction is aborted" exception as it hides the real exception that caused it
-            }
+            bool dropTables = !tableInfo.BulkConfig.UseTempDB;
+            var dropUniqueIndex = uniqueIndexCreated ? PostgreSqlQueryBuilder.DropUniqueIndex(tableInfo) : null;
+            var sqlDropOutputTable = dropTables && outputTableCreated ? PostgreSqlQueryBuilder.DropTable(tableInfo.FullTempOutputTableName) : null;
+            var sqlDropTable = dropTables && tempTableCreated ? PostgreSqlQueryBuilder.DropTable(tableInfo.FullTempTableName) : null;
+            await CleanupHelper.ExecuteAsync(dbContext, isAsync, operationFailed, dropUniqueIndex, sqlDropOutputTable, sqlDropTable).ConfigureAwait(false);
 
             if (connectionOpenedInternally)
             {

@@ -165,6 +165,7 @@ public class GBaseAdapter : ISqlOperationsAdapter
                                                     : OpenAndGetGBaseConnection(dbContext);
         bool doExplicitCommit = false;
         bool tempTableCreated = false;
+        bool operationFailed = false;
         GbsTransaction? transaction = null;
 
         // cmd is created when operation type is InsertOrUpdate, Update and Delete.
@@ -182,6 +183,7 @@ public class GBaseAdapter : ISqlOperationsAdapter
                 operationType == OperationType.Update ||
                 operationType == OperationType.Delete)
             {
+                tempTableCreated = true;
                 // create temp table based on tableInfo.TableName.
                 using (GbsCommand cmd = connection.CreateCommand())
                 {
@@ -196,7 +198,6 @@ public class GBaseAdapter : ISqlOperationsAdapter
                         cmd.ExecuteNonQuery();
                     }
                 }
-                tempTableCreated = true;
 
                 // insert data into temp table.
                 tableInfo.InsertToTempTable = true;
@@ -312,6 +313,7 @@ public class GBaseAdapter : ISqlOperationsAdapter
         }
         catch (Exception)
         {
+            operationFailed = true;
             if (doExplicitCommit)
             {
                 transaction?.Rollback();
@@ -326,15 +328,11 @@ public class GBaseAdapter : ISqlOperationsAdapter
                 using (var cmd = connection.CreateCommand())
                 {
                     cmd.Transaction = transaction;
-                    cmd.CommandText = GBaseQueryBuilder.DropTable(tableInfo.TempTableName);
-                    if (isAsync)
+                    await CleanupHelper.ExecuteAsync(operationFailed, sql =>
                     {
-                        await cmd.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        cmd.ExecuteNonQuery();
-                    }
+                        cmd.CommandText = sql;
+                        return isAsync ? cmd.ExecuteNonQueryAsync(CancellationToken.None) : Task.FromResult(cmd.ExecuteNonQuery());
+                    }, GBaseQueryBuilder.DropTable(tableInfo.TempTableName)).ConfigureAwait(false);
                 }
             }
 
@@ -383,6 +381,7 @@ public class GBaseAdapter : ISqlOperationsAdapter
                                                     : OpenAndGetGBaseConnection(dbContext);
         bool doExplicitCommit = false;
         bool tempTableCreated = false;
+        bool operationFailed = false;
         GbsTransaction? transaction = null;
         try
         {
@@ -393,6 +392,7 @@ public class GBaseAdapter : ISqlOperationsAdapter
 
             transaction = doExplicitCommit ? connection.BeginTransaction()
                                            : (GbsTransaction?)dbContext.Database.CurrentTransaction?.GetUnderlyingTransaction(tableInfo.BulkConfig);
+            tempTableCreated = true;
             using (GbsCommand command = connection.CreateCommand())
             {
                 command.Transaction = transaction;
@@ -408,7 +408,6 @@ public class GBaseAdapter : ISqlOperationsAdapter
                     command.ExecuteNonQuery();
                 }
             }
-            tempTableCreated = true;
 
             tableInfo.BulkConfig.OperationType = OperationType.Insert;
             tableInfo.InsertToTempTable = true;
@@ -450,6 +449,7 @@ public class GBaseAdapter : ISqlOperationsAdapter
         }
         catch (Exception)
         {
+            operationFailed = true;
             if (doExplicitCommit)
             {
                 transaction?.Rollback();
@@ -464,15 +464,11 @@ public class GBaseAdapter : ISqlOperationsAdapter
                 {
                     // drop temp table.
                     command.Transaction = transaction;
-                    command.CommandText = GBaseQueryBuilder.DropTable(tableInfo.FullTempTableName);
-                    if (isAsync)
+                    await CleanupHelper.ExecuteAsync(operationFailed, sql =>
                     {
-                        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        command.ExecuteNonQuery();
-                    }
+                        command.CommandText = sql;
+                        return isAsync ? command.ExecuteNonQueryAsync(CancellationToken.None) : Task.FromResult(command.ExecuteNonQuery());
+                    }, GBaseQueryBuilder.DropTable(tableInfo.FullTempTableName)).ConfigureAwait(false);
                 }
             }
 
