@@ -18,7 +18,7 @@ internal class ShadowKeyDbContext : TestContextBase
         modelBuilder.Entity<ShadowKeyModel>(cfg =>
         {
             // Define the shadow PK
-            cfg.Property<long>(ShadowKeyModel.IdProperty).UseIdentityColumn();
+            NpgsqlPropertyBuilderExtensions.UseIdentityColumn(cfg.Property<long>(ShadowKeyModel.IdProperty));
             cfg.HasKey(ShadowKeyModel.IdProperty);
         });
     }
