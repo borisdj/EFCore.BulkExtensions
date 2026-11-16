@@ -13,7 +13,7 @@ public class ShadowKeyTests
     [InlineData(SqlType.Sqlite)]
     public void BulkInsert_EntityWithShadowPK_SavesToDatabase(SqlType dbServer)
     {
-        var options = new ContextUtil(dbServer).GetOptions<ShadowKeyDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_ShadowProperties");
+        var options = new ContextUtil(dbServer).GetOptions<ShadowKeyDbContext>(databaseName: $"{nameof(EFCoreBulkTest)}_ShadowKey");
         using var db = new ShadowKeyDbContext(options);
         var data = new List<ShadowKeyModel>()
         {
