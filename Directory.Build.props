@@ -7,7 +7,7 @@
     <Company>CODIS LLC</Company>
     <PackageIcon>EFCoreBulk.png</PackageIcon>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
-	<PackageReleaseNotes>graph fix</PackageReleaseNotes>
+	<PackageReleaseNotes>dependencies updates</PackageReleaseNotes>
     <PackageTags>EntityFrameworkCore Entity Framework Core .Net EFCore EF Core Bulk Batch Copy SqlBulkCopy Extensions Insert Update Delete Read Truncate SaveChanges</PackageTags>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
     <RepositoryUrl>https://github.com/borisdj/EFCore.BulkExtensions</RepositoryUrl>
@@ -21,13 +21,13 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
-  <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('Net8'))">
-    <Version>8.1.3</Version>
-    <PackageOutputPath>$(SolutionDir)Nugets\net8</PackageOutputPath>
+  <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('Net9'))">
+    <Version>9.0.2</Version>
+    <PackageOutputPath>$(SolutionDir)Nugets\net9</PackageOutputPath>
     <AssemblyVersion>$(Version).0</AssemblyVersion>
   </PropertyGroup>
-  <PropertyGroup Condition="!$(MSBuildProjectName.EndsWith('Net8'))">
-    <Version>10.0.1</Version>
+  <PropertyGroup Condition="!$(MSBuildProjectName.EndsWith('Net10'))">
+    <Version>10.0.2</Version>
     <PackageOutputPath>$(SolutionDir)Nugets\net10</PackageOutputPath>
     <AssemblyVersion>$(Version).0</AssemblyVersion>
   </PropertyGroup>
