@@ -7,7 +7,7 @@ Library is Lightweight and very Efficient (warp speed), having all mostly used [
 Was selected in top 10 [EF Core Extensions](https://docs.microsoft.com/en-us/ef/core/extensions/) recommended by *Microsoft*.  
 Repository included into [*Arctic Code Vault*](https://archiveprogram.github.com/arctic-vault/) for long-term preservation (code designated for survival).  
 Latest version is using EF Core 10.  
-Supports all 5 major sql databases: **SQLServer, PostgreSQL, MySQL, Oracle, SQLite.**    
+Supports all major sql databases: **SQLServer, SQLite, PostgreSQL, MySQL, Oracle, GBase.**    
 Check out [Testimonials](https://docs.google.com/spreadsheets/d/e/2PACX-1vShdv2sTm3oQfowm9kVIx-PLBCk1lGQEa9E6n92-dX3pni7-XQUEp6taVcMSZVi9BaSAizv1YanWTy3/pubhtml?gid=801420190&single=true) from the Community and User Comments.  
 With thousands of pleased Users and many satisfied Clients from around the globe.  
 Customers range from small and medium-sized businesses to large corporations,  
@@ -48,10 +48,10 @@ Want to **Contact** for Development & Consulting: [***codis.tech***](https://cod
 ## Description
 Supported databases:  
 -**SQLServer** (or AzureSQL) under the hood uses [SqlBulkCopy](https://msdn.microsoft.com/en-us/library/system.data.sqlclient.sqlbulkcopy.aspx) for Insert, Update/Delete = BulkInsert + raw Sql [MERGE](https://docs.microsoft.com/en-us/sql/t-sql/statements/merge-transact-sql).  
+-**SQLite** has no Copy tool, instead library uses [plain SQL](https://learn.microsoft.com/en-us/dotnet/standard/data/sqlite/bulk-insert) combined with [UPSERT](https://www.sqlite.org/lang_UPSERT.html).  
 -**PostgreSQL** (9.5+) is using [COPY BINARY](https://www.postgresql.org/docs/9.2/sql-copy.html) combined with [ON CONFLICT](https://www.postgresql.org/docs/10/sql-insert.html#SQL-ON-CONFLICT) for Update.  
 -**MySQL** (8+) is using [MySqlBulkCopy](https://mysqlconnector.net/api/mysqlconnector/mysqlbulkcopytype/) combined with [ON DUPLICATE](https://dev.mysql.com/doc/refman/8.0/en/insert-on-duplicate.html) for Update.  
 -**Oracle** (8+) is using [OracleBulkCopy](https://docs.oracle.com/cd/E11882_01/win.112/e23174/OracleBulkCopyClass.htm#ODPNT7446) combined with [MERGE](https://docs.oracle.com/en/database/oracle/oracle-database/21/sqlrf/MERGE.html) for Update.  
--**SQLite** has no Copy tool, instead library uses [plain SQL](https://learn.microsoft.com/en-us/dotnet/standard/data/sqlite/bulk-insert) combined with [UPSERT](https://www.sqlite.org/lang_UPSERT.html).  
 Bulk Tests can not have UseInMemoryDb because InMemoryProvider does not support Relational-specific methods.  
 Instead Test options are  SqlServer(Developer or Express), LocalDb(if alongside [Developer v.](https://stackoverflow.com/questions/42885377/sql-server-2016-developer-version-can-not-connect-to-localdb-mssqllocaldb?noredirect=1&lq=1)), or with  other adapters.  
 ***NOTE:*** Native **JSON** Sql types do not map correctly with SqlServer 2025 prior CU5 (for Json use MSSQL 2025_CU5+).
