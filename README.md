@@ -54,7 +54,6 @@ Supported databases:
 -**Oracle** uses [OracleBulkCopy](https://docs.oracle.com/cd/E11882_01/win.112/e23174/OracleBulkCopyClass.htm#ODPNT7446) combined with [MERGE](https://docs.oracle.com/en/database/oracle/oracle-database/21/sqlrf/MERGE.html) for Update (Oracle.EFCore dep. FreeDistr. but not OpenSource).  
 Bulk Tests can not have UseInMemoryDb because InMemoryProvider does not support Relational-specific methods.  
 Instead Test options are  SqlServer(Developer or Express), LocalDb(if alongside [Developer v.](https://stackoverflow.com/questions/42885377/sql-server-2016-developer-version-can-not-connect-to-localdb-mssqllocaldb?noredirect=1&lq=1)), or with  other adapters.  
-***NOTE:*** Native **JSON** Sql types do not map correctly with SqlServer 2025 prior CU5 (for Json use MSSQL 2025_CU5+).
 
 ## Installation
 Available on [![NuGet](https://img.shields.io/nuget/v/EFCore.BulkExtensions.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/)  [![Downloads](https://img.shields.io/nuget/dt/EFCore.BulkExtensions.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/)  
@@ -96,7 +95,7 @@ context.BulkDelete(entities);                 context.BulkDeleteAsync(entities);
 context.BulkRead(entities);                   context.BulkReadAsync(entities);
 context.BulkSaveChanges();                    context.BulkSaveChangesAsync();
 ```
-
+**-MSSQL** native **JSON** types do not map correctly with SqlServer 2025 prior CU5 (for Json use MSSQL 2025_CU5+).  
 **-MySQL** when running its Test for the first time execute sql command ([local-data](https://stackoverflow.com/questions/59993844/error-loading-local-data-is-disabled-this-must-be-enabled-on-both-the-client)): `SET GLOBAL local_infile = true;`  
 **-SQLite** requires package: [*SQLitePCLRaw.bundle_e_sqlite3*](https://docs.microsoft.com/en-us/dotnet/standard/data/sqlite/custom-versions?tabs=netcore-cli) with call to `SQLitePCL.Batteries.Init()`  
 
