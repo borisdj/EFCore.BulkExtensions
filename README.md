@@ -50,8 +50,8 @@ Supported databases:
 -**SQLServer** (or AzureSQL) under the hood uses [SqlBulkCopy](https://msdn.microsoft.com/en-us/library/system.data.sqlclient.sqlbulkcopy.aspx) for Insert, Update/Delete = BulkInsert + raw Sql [MERGE](https://docs.microsoft.com/en-us/sql/t-sql/statements/merge-transact-sql).  
 -**SQLite** has no Copy tool, instead library uses [plain SQL](https://learn.microsoft.com/en-us/dotnet/standard/data/sqlite/bulk-insert) combined with [UPSERT](https://www.sqlite.org/lang_UPSERT.html).  
 -**PostgreSQL** (9.5+) is using [COPY BINARY](https://www.postgresql.org/docs/9.2/sql-copy.html) combined with [ON CONFLICT](https://www.postgresql.org/docs/10/sql-insert.html#SQL-ON-CONFLICT) for Update.  
--**MySQL** (8+) is using [MySqlBulkCopy](https://mysqlconnector.net/api/mysqlconnector/mysqlbulkcopytype/) combined with [ON DUPLICATE](https://dev.mysql.com/doc/refman/8.0/en/insert-on-duplicate.html) for Update.  
--**Oracle** (8+) is using [OracleBulkCopy](https://docs.oracle.com/cd/E11882_01/win.112/e23174/OracleBulkCopyClass.htm#ODPNT7446) combined with [MERGE](https://docs.oracle.com/en/database/oracle/oracle-database/21/sqlrf/MERGE.html) for Update.  
+-**MySQL** (8+) uses [MySqlBulkCopy](https://mysqlconnector.net/api/mysqlconnector/mysqlbulkcopytype/) combined with [ON DUPLICATE](https://dev.mysql.com/doc/refman/8.0/en/insert-on-duplicate.html) for Update.  
+-**Oracle** uses [OracleBulkCopy](https://docs.oracle.com/cd/E11882_01/win.112/e23174/OracleBulkCopyClass.htm#ODPNT7446) combined with [MERGE](https://docs.oracle.com/en/database/oracle/oracle-database/21/sqlrf/MERGE.html) for Update (Oracle.EFCore dep. FreeDistr. but not OpenSource).  
 Bulk Tests can not have UseInMemoryDb because InMemoryProvider does not support Relational-specific methods.  
 Instead Test options are  SqlServer(Developer or Express), LocalDb(if alongside [Developer v.](https://stackoverflow.com/questions/42885377/sql-server-2016-developer-version-can-not-connect-to-localdb-mssqllocaldb?noredirect=1&lq=1)), or with  other adapters.  
 ***NOTE:*** Native **JSON** Sql types do not map correctly with SqlServer 2025 prior CU5 (for Json use MSSQL 2025_CU5+).
@@ -60,13 +60,13 @@ Instead Test options are  SqlServer(Developer or Express), LocalDb(if alongside 
 Available on [![NuGet](https://img.shields.io/nuget/v/EFCore.BulkExtensions.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/)  [![Downloads](https://img.shields.io/nuget/dt/EFCore.BulkExtensions.svg)](https://www.nuget.org/packages/EFCore.BulkExtensions/)  
 Package manager console command to install: *Install-Package EFCore.BulkExtensions*  
 Main nuget is for all Databases, and specific ones with single provider for those who need small size packages.  
-Specific ones have adapter suffix: MainNuget + *.SqlServer/PostgreSql/MySql/Oracle/Sqlite* 
+Specific has adapter suffix: MainNuget + *.SqlServer/Sqlite/PostgreSql/MySql/Oracle/GBase* 
 (
 [![](https://img.shields.io/static/v1?label=&message=MS&color=darkred)](https://www.nuget.org/packages/EFCore.BulkExtensions.SqlServer)
+[![](https://img.shields.io/static/v1?label=&message=LT&color=lightgreen)](https://www.nuget.org/packages/EFCore.BulkExtensions.Sqlite)
 [![](https://img.shields.io/static/v1?label=&message=PG&color=blue)](https://www.nuget.org/packages/EFCore.BulkExtensions.PostgreSql)
 [![](https://img.shields.io/static/v1?label=&message=MY&color=chocolate)](https://www.nuget.org/packages/EFCore.BulkExtensions.MySql)
 [![](https://img.shields.io/static/v1?label=&message=OR&color=red)](https://www.nuget.org/packages/EFCore.BulkExtensions.Oracle)
-[![](https://img.shields.io/static/v1?label=&message=LT&color=lightgreen)](https://www.nuget.org/packages/EFCore.BulkExtensions.Sqlite)
 )  
 Its assembly is [Strong-Named](https://docs.microsoft.com/en-us/dotnet/standard/library-guidance/strong-naming) and [Signed](https://github.com/borisdj/EFCore.BulkExtensions/issues/161) with a key.
 | Nuget | Target          | Used EF v.| For projects targeting          |
@@ -414,13 +414,14 @@ R { BulkRead ----------------|             |--Read -----|--Read -------|--Read  
 | --- | -------------------------------------- | ----------- | --------------- | ------------ | 
 | [0] | EFCore.BulkExtensions.Core             |             |                 | shared       |
 | [1] | EFCore.BulkExtensions.***SqlServer***  | [0]         |                 | per provider |
-| [2] | EFCore.BulkExtensions.***PostgreSql*** | [0]         |                 | per provider |
-| [3] | EFCore.BulkExtensions.***MySql***      | [0]         |                 | per provider |
-| [4] | EFCore.BulkExtensions.***Oracle***     | [0]         |                 | per provider |
-| [5] | EFCore.BulkExtensions.***Sqlite***     | [0]         |                 | per provider |
-| [6] | **EFCore.BulkExtensions** - main one   | [1,2,3,4,5] | [0]             | has all      |
+| [2] | EFCore.BulkExtensions.***Sqlite***     | [0]         |                 | per provider |
+| [3] | EFCore.BulkExtensions.***PostgreSql*** | [0]         |                 | per provider |
+| [4] | EFCore.BulkExtensions.***MySql***      | [0]         |                 | per provider |
+| [5] | EFCore.BulkExtensions.***Oracle***     | [0]         |                 | per provider |
+| [6] | EFCore.BulkExtensions.***GBase***      | [0]         |                 | per provider |
+| [7] | **EFCore.BulkExtensions** - main one   | [1,2,3]     | [0]             | has top 3    |
 
-EFCore.BulkExtensions is main Project and Nuget that references all other nugets.  
+EFCore.BulkExtensions is main Project and Nuget that references some of other nugets.  
 Other per provider projects have only Core dependency and specific adapter implementation with needed packages.
 
 List of all referenced [Links](https://docs.google.com/spreadsheets/d/e/2PACX-1vRE_rO6799VGMhLAldgDZoHJAdbKI0YZ8gweN7oaBG0KCIMtqZwlaeTyB9IMoThb69Tk0bkjIdNNWl_/pubhtml?gid=2013428247&single=true)
