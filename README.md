@@ -414,13 +414,14 @@ R { BulkRead ----------------|             |--Read -----|--Read -------|--Read  
 | --- | -------------------------------------- | ----------- | --------------- | ------------ | 
 | [0] | EFCore.BulkExtensions.Core             |             |                 | shared       |
 | [1] | EFCore.BulkExtensions.***SqlServer***  | [0]         |                 | per provider |
-| [2] | EFCore.BulkExtensions.***PostgreSql*** | [0]         |                 | per provider |
-| [3] | EFCore.BulkExtensions.***MySql***      | [0]         |                 | per provider |
-| [4] | EFCore.BulkExtensions.***Oracle***     | [0]         |                 | per provider |
-| [5] | EFCore.BulkExtensions.***Sqlite***     | [0]         |                 | per provider |
-| [6] | **EFCore.BulkExtensions** - main one   | [1,2,3,4,5] | [0]             | has all      |
+| [2] | EFCore.BulkExtensions.***Sqlite***     | [0]         |                 | per provider |
+| [3] | EFCore.BulkExtensions.***PostgreSql*** | [0]         |                 | per provider |
+| [4] | EFCore.BulkExtensions.***MySql***      | [0]         |                 | per provider |
+| [5] | EFCore.BulkExtensions.***Oracle***     | [0]         |                 | per provider |
+| [6] | EFCore.BulkExtensions.***GBase***      | [0]         |                 | per provider |
+| [7] | **EFCore.BulkExtensions** - main one   | [1,2,3]     | [0]             | has top 3    |
 
-EFCore.BulkExtensions is main Project and Nuget that references all other nugets.  
+EFCore.BulkExtensions is main Project and Nuget that references some of other nugets.  
 Other per provider projects have only Core dependency and specific adapter implementation with needed packages.
 
 List of all referenced [Links](https://docs.google.com/spreadsheets/d/e/2PACX-1vRE_rO6799VGMhLAldgDZoHJAdbKI0YZ8gweN7oaBG0KCIMtqZwlaeTyB9IMoThb69Tk0bkjIdNNWl_/pubhtml?gid=2013428247&single=true)
