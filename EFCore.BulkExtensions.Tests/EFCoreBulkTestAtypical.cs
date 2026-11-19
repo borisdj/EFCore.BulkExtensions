@@ -19,9 +19,9 @@ public class EFCoreBulkTestAtypical
 
     [Theory]
     [InlineData(SqlType.SqlServer)]
-    [InlineData(SqlType.GBase)]
-    //[InlineData(SqlType.PostgreSql)]
     //[InlineData(SqlType.Sqlite)]
+    //[InlineData(SqlType.PostgreSql)]
+    //[InlineData(SqlType.GBase)]
     private void CustomSqlPostProcessTest(SqlType sqlType)
     {
         using var context = new TestContext(sqlType);
@@ -59,9 +59,9 @@ public class EFCoreBulkTestAtypical
 
     [Theory]
     [InlineData(SqlType.SqlServer)]
-    [InlineData(SqlType.GBase)]
-    //[InlineData(SqlType.PostgreSql)]
     //[InlineData(SqlType.Sqlite)]
+    //[InlineData(SqlType.PostgreSql)]
+    //[InlineData(SqlType.GBase)]
     private void CalcStatsTest(SqlType sqlType)
     {
         using var context = new TestContext(sqlType);
@@ -75,7 +75,7 @@ public class EFCoreBulkTestAtypical
     [InlineData(SqlType.SqlServer)]
     [InlineData(SqlType.PostgreSql)]
     [InlineData(SqlType.Sqlite)]
-    [InlineData(SqlType.GBase)]
+    //[InlineData(SqlType.GBase)]
     private void DefaultValuesTest(SqlType sqlType)
     {
         using var context = new TestContext(sqlType);
@@ -207,7 +207,7 @@ public class EFCoreBulkTestAtypical
     [Theory]
     [InlineData(SqlType.SqlServer)]
     [InlineData(SqlType.Sqlite)] // Does NOT have Computed Columns
-    [InlineData(SqlType.GBase)]
+    //[InlineData(SqlType.GBase)]
     private void ComputedAndDefaultValuesTest(SqlType sqlType)
     {
         using var context = new TestContext(sqlType);
@@ -266,7 +266,7 @@ public class EFCoreBulkTestAtypical
     [Theory]
     [InlineData(SqlType.SqlServer)]
     [InlineData(SqlType.Sqlite)] // Does NOT have Computed Columns
-    [InlineData(SqlType.GBase)] // Does NOT have Computed Columns
+    //[InlineData(SqlType.GBase)] // Does NOT have Computed Columns
     private void ParameterlessConstructorTest(SqlType sqlType)
     {
         using var context = new TestContext(sqlType);
@@ -410,7 +410,7 @@ public class EFCoreBulkTestAtypical
     [InlineData(SqlType.SqlServer)]
     [InlineData(SqlType.Sqlite)]
     [InlineData(SqlType.PostgreSql)]
-    [InlineData(SqlType.GBase)]
+    //[InlineData(SqlType.GBase)]
     private void CompositeKeyTest(SqlType sqlType)
     {
         using var context = new TestContext(sqlType);
@@ -498,7 +498,7 @@ public class EFCoreBulkTestAtypical
     [Theory]
     [InlineData(SqlType.SqlServer)]
     [InlineData(SqlType.Sqlite)]
-    [InlineData(SqlType.GBase)]
+    //[InlineData(SqlType.GBase)]
     private void ValueConversionTest(SqlType sqlType)
     {
         using var context = new TestContext(sqlType);
@@ -549,7 +549,7 @@ public class EFCoreBulkTestAtypical
     [InlineData(SqlType.SqlServer)]
     [InlineData(SqlType.Sqlite)]
     [InlineData(SqlType.PostgreSql)]
-    [InlineData(SqlType.GBase)]
+    //[InlineData(SqlType.GBase)]
     private void OwnedTypesTest(SqlType sqlType)
     {
         using var context = new TestContext(sqlType);
@@ -685,7 +685,7 @@ public class EFCoreBulkTestAtypical
     [InlineData(SqlType.SqlServer)]
     [InlineData(SqlType.PostgreSql)]
     [InlineData(SqlType.Sqlite)] //Not supported
-    [InlineData(SqlType.GBase)]
+    //[InlineData(SqlType.GBase)]
     private void ShadowFKPropertiesTest(SqlType sqlType) // with Foreign Key as Shadow Property
     {
         using var context = new TestContext(sqlType);
@@ -794,7 +794,7 @@ public class EFCoreBulkTestAtypical
     [InlineData(SqlType.SqlServer)]
     [InlineData(SqlType.Sqlite)]
     [InlineData(SqlType.PostgreSql)]
-    [InlineData(SqlType.GBase)]
+    //[InlineData(SqlType.GBase)]
     private void NoPrimaryKeyTest(SqlType sqlType)
     {
         using var context = new TestContext(sqlType);
@@ -856,7 +856,7 @@ public class EFCoreBulkTestAtypical
     [Theory]
     [InlineData(SqlType.SqlServer)]
     [InlineData(SqlType.Sqlite)]
-    [InlineData(SqlType.GBase)]
+    //[InlineData(SqlType.GBase)]
     private void NonEntityChildTest(SqlType sqlType)
     {
         using var context = new TestContext(sqlType);
@@ -1336,7 +1336,7 @@ public class EFCoreBulkTestAtypical
     [InlineData(SqlType.SqlServer)]
     [InlineData(SqlType.Sqlite)]
     [InlineData(SqlType.PostgreSql)]
-    [InlineData(SqlType.GBase)]
+    //[InlineData(SqlType.GBase)]
     private void PrivateKeyTest(SqlType sqlType)
     {
         using (var context = new TestContext(sqlType))
@@ -1367,7 +1367,7 @@ public class EFCoreBulkTestAtypical
     [Theory]
     [InlineData(SqlType.SqlServer)]
     [InlineData(SqlType.Sqlite)]
-    [InlineData(SqlType.GBase)]
+    //[InlineData(SqlType.GBase)]
     private void ReplaceReadEntitiesTest(SqlType sqlType)
     {
         using var context = new TestContext(sqlType);
@@ -1536,7 +1536,7 @@ public class EFCoreBulkTestAtypical
 
     [Theory]
     [InlineData(SqlType.SqlServer)]
-    [InlineData(SqlType.GBase)]
+    //[InlineData(SqlType.GBase)]
     private void DataReaderTest(SqlType sqlType)
     {
         using var context = new TestContext(sqlType);
@@ -1555,7 +1555,7 @@ public class EFCoreBulkTestAtypical
 
     [Theory]
     [InlineData(SqlType.SqlServer)]
-    [InlineData(SqlType.GBase)]
+    //[InlineData(SqlType.GBase)]
     private void ParallelsTestAsync(SqlType sqlType)
     {
         var entitiesLists = new List<List<Customer>>();

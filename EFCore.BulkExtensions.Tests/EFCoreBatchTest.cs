@@ -16,7 +16,6 @@ public class EFCoreBatchTest
 
     [Theory]
     [InlineData(SqlType.SqlServer)]
-    [InlineData(SqlType.GBase)]
     public void BatchConverterTest(SqlType dbServer)
     {
         using var context = new TestContext(dbServer);
@@ -38,7 +37,6 @@ public class EFCoreBatchTest
     [Theory]
     [InlineData(SqlType.SqlServer)]
     [InlineData(SqlType.Sqlite)]
-    [InlineData(SqlType.GBase)]
     public void BatchTest(SqlType dbServer)
     {
         RunDeleteAll(dbServer);

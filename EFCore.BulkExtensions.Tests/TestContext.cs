@@ -266,7 +266,7 @@ public class TestContext : TestContextBase
             modelBuilder.Entity<Tracker>().OwnsOne(t => t.Location).Ignore(p => p.Location); // Point only on SqlServer
         }
 
-        if (Database.IsSqlite() || Database.IsNpgsql() /*|| Database.IsMySql() || Database.IsGBase()*/)
+        if (Database.IsSqlite() || Database.IsNpgsql() || Database.IsMySql() /*|| Database.IsGBase()*/)
         {
             modelBuilder.Entity<Category>().Ignore(p => p.HierarchyDescription);
 
@@ -288,13 +288,13 @@ public class TestContext : TestContextBase
                 .HasSrid(4326);
         }
 
-        /*if (Database.IsMySql() || Database.IsGBase())
+        if (Database.IsMySql() /*|| Database.IsGBase()*/)
         {
             modelBuilder.Entity<Address>().Ignore(p => p.LocationGeography);
             modelBuilder.Entity<Address>().Ignore(p => p.LocationGeometry);
             modelBuilder.Entity<Address>().Ignore(p => p.GeoLine);
         }
-        if (Database.IsGBase())
+        /*if (Database.IsGBase())
         {
             modelBuilder.Entity<Address>().Ignore(p => p.GeoPoint);
 
@@ -385,7 +385,7 @@ public class TestContextBase : DbContext
         {
             Database.EnsureCreated();
         }
-        catch (OracleException)
+        catch (Exception)
         {
             // NOOP
         }

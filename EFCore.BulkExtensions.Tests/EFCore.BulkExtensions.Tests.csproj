@@ -22,6 +22,8 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" Version="10.0.15" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.15" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.12.0" />
+    <PackageReference Include="Microting.EntityFrameworkCore.MySql.NetTopologySuite" Version="10.0.14" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite" Version="10.0.3" />
     <PackageReference Include="Npgsql.NetTopologySuite" Version="10.0.3" />
     <PackageReference Include="RT.Comb" Version="4.1.0" />
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.5" />
@@ -30,6 +32,9 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="4.0.1" PrivateAssets="All" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\EFCore.BulkExtensions.GBase\EFCore.BulkExtensions.GBase.csproj" />
+    <ProjectReference Include="..\EFCore.BulkExtensions.MySql\EFCore.BulkExtensions.MySql.csproj" />
+    <ProjectReference Include="..\EFCore.BulkExtensions.Oracle\EFCore.BulkExtensions.Oracle.csproj" />
     <ProjectReference Include="..\EFCore.BulkExtensions\EFCore.BulkExtensions.csproj" />
     <ProjectReference Include="..\EFCore.BulkExtensions.GaussDB\EFCore.BulkExtensions.GaussDB.csproj" />
   </ItemGroup>
