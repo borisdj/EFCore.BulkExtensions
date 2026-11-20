@@ -6,6 +6,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
+using Microting.EntityFrameworkCore.MySql;
+using MySqlConnector;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Infrastructure.Internal;
 
 namespace EFCore.BulkExtensions.Tests;
@@ -65,7 +67,7 @@ public class ContextUtil
                     .EnableDynamicJson()
                     .UseNetTopologySuite()
                     .Build();
-                optionsBuilder.UseNpgsql(dataSource/*, opt => opt.UseNetTopologySuite()*/);
+                optionsBuilder.UseNpgsql(dataSource, opt => opt.UseNetTopologySuite());
 #endif
                 break;
             }
@@ -77,12 +79,13 @@ public class ContextUtil
                 break;
             }
 #endif
-            /*case SqlType.MySql:
+            case SqlType.MySql:
             {
                 string connectionString = GetMySqlConnectionString(databaseName);
-                optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString), opt => opt.UseNetTopologySuite());
+                var version = ServerVersion.AutoDetect(connectionString);
+                optionsBuilder.UseMySql(connectionString, version, opt => opt.UseNetTopologySuite());
                 break;
-            }*/
+            }
             case SqlType.Oracle:
             {
                 string connectionString = GetOracleConnectionString(databaseName);

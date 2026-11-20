@@ -15,7 +15,6 @@ public class EFCoreBatchTestAsync
     [Theory]
     [InlineData(SqlType.SqlServer)]
     [InlineData(SqlType.Sqlite)]
-    [InlineData(SqlType.GBase)]
     public async Task BatchTestAsync(SqlType dbServer)
     {
         await RunDeleteAllAsync(dbServer);

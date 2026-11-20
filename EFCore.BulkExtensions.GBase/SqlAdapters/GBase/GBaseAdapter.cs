@@ -158,7 +158,7 @@ public class GBaseAdapter : ISqlOperationsAdapter
     }
 
     /// <inheritdoc/>
-    private static async Task MergeAsync<T>(BulkContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken) where T : class
+    public static async Task MergeAsync<T>(BulkContext context, Type type, IEnumerable<T> entities, TableInfo tableInfo, OperationType operationType, Action<decimal>? progress, bool isAsync, CancellationToken cancellationToken) where T : class
     {
         var dbContext = context.DbContext;
         GbsConnection connection = isAsync ? await OpenAndGetGBaseConnectionAsync(dbContext, cancellationToken).ConfigureAwait(false)
@@ -841,7 +841,7 @@ public class GBaseAdapter : ISqlOperationsAdapter
                     var ownedFastProperty = tableInfo.FastPropertyDict[ownedPropertyName];
                     var ownedProperty = ownedFastProperty.Property;
 
-                    var propertyType = Nullable.GetUnderlyingType(ownedProperty.GetType()) ?? ownedProperty.GetType();
+                    //var propertyType = Nullable.GetUnderlyingType(ownedProperty.GetType()) ?? ownedProperty.GetType();
 
                     if (!command.Parameters.Contains(parameterName))
                     {

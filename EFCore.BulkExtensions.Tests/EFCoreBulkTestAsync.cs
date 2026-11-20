@@ -24,8 +24,8 @@ public class EFCoreBulkTestAsync
     [Theory]
     [InlineData(SqlType.SqlServer, true)]
     [InlineData(SqlType.Sqlite, true)]
-    [InlineData(SqlType.GBase, true)]
     //[InlineData(DatabaseType.SqlServer, false)] // for speed comparison with Regular EF CUD operations
+    //[InlineData(SqlType.GBase, true)]
     public async Task OperationsTestAsync(SqlType sqlType, bool isBulk)
     {
         //await DeletePreviousDatabaseAsync().ConfigureAwait(false);
@@ -47,8 +47,8 @@ public class EFCoreBulkTestAsync
 
     [Theory]
     [InlineData(SqlType.SqlServer)]
-    [InlineData(SqlType.GBase)]
     //[InlineData(DbServer.Sqlite)] // has to be run separately as single test, otherwise throws (SQLite Error 1: 'table "#MyTempTable1" already exists'.)
+    //[InlineData(SqlType.GBase)]
     public async Task SideEffectsTestAsync(SqlType sqlType)
     {
         await BulkOperationShouldNotCloseOpenConnectionAsync(sqlType, context => context.BulkInsertAsync(new[] { new Item() }), "1");

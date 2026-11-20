@@ -14,10 +14,10 @@
   <ItemGroup>
     <ProjectReference Include="..\EFCore.BulkExtensions.Core\EFCore.BulkExtensions.Core.csproj" />
   </ItemGroup>
-  <ItemGroup>
+  <!--ItemGroup>
      <Content Include="..\..\..\..\05_EFCore9.0\GeneralData.EntityFrameworkCore.GBase.9.0.0.2\lib\net9.0\GeneralData.EntityFrameworkCore.GBase.DataProvider.dll" PackagePath="lib\net9.0">
       <Pack>true</Pack>
       <PackageCopyToOutput>true</PackageCopyToOutput>
     </Content>
-  </ItemGroup>
+  </ItemGroup-->
 </Project>
