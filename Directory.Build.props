@@ -1,8 +1,8 @@
 <Project>
   <PropertyGroup>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <!-- Npgsql and Oracle have no EF Core 11 release yet, so their providers stay outside their declared EF Core range -->
-    <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1608;NU5104</WarningsNotAsErrors>
+    <!-- Oracle has no EF Core 11 release yet, so its provider stays outside its declared EF Core range -->
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1608</WarningsNotAsErrors>
     <Nullable>enable</Nullable>
     <Authors>borisdj</Authors>
     <PackageProjectUrl>https://github.com/borisdj/EFCore.BulkExtensions</PackageProjectUrl>

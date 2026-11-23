@@ -24,8 +24,8 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="11.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.12.0" />
     <PackageReference Include="Microting.EntityFrameworkCore.MySql.NetTopologySuite" Version="11.0.0" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite" Version="11.0.0-rc.3" />
-    <PackageReference Include="Npgsql.NetTopologySuite" Version="10.0.3" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.NetTopologySuite" Version="11.0.0" />
+    <PackageReference Include="Npgsql.NetTopologySuite" Version="11.0.0" />
     <PackageReference Include="RT.Comb" Version="4.1.0" />
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.5" />
     <PackageReference Include="StrongNamer" Version="0.2.5" PrivateAssets="All" />

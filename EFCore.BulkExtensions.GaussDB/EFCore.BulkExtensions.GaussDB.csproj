@@ -13,8 +13,8 @@
     <ItemGroup>
         <PackageReference Include="DotNetCore.EntityFrameworkCore.GaussDB" Version="10.0.0" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="11.0.0" />
-		<PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.15" />
-        <PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.15" />
+		<PackageReference Include="System.Security.Cryptography.Pkcs" Version="11.0.0" />
+        <PackageReference Include="System.Security.Cryptography.Xml" Version="11.0.0" />
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\EFCore.BulkExtensions.Core\EFCore.BulkExtensions.Core.csproj" />
