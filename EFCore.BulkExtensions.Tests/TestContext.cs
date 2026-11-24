@@ -293,6 +293,8 @@ public class TestContext : TestContextBase
             modelBuilder.Entity<Address>().Ignore(p => p.LocationGeography);
             modelBuilder.Entity<Address>().Ignore(p => p.LocationGeometry);
             modelBuilder.Entity<Address>().Ignore(p => p.GeoLine);
+
+            modelBuilder.Entity<ItemHistory>().Ignore(p => p.RowVersion);
         }
         /*if (Database.IsGBase())
         {
@@ -390,6 +392,23 @@ public class TestContextBase : DbContext
             // NOOP
         }
     }
+}
+
+public class MySqlTestContext : TestContextBase
+{
+
+    public DbSet<Item> Items { get; set; } = null!;
+    public DbSet<ItemHistory> ItemHistories { get; set; } = null!;
+    public DbSet<ItemCategory> Categories { get; set; } = null!;
+
+    public MySqlTestContext(SqlType sqlType)
+        : base(new ContextUtil(sqlType).GetOptions<MySqlTestContext>()) { }
+
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        configurationBuilder.Conventions.Remove(typeof(TableNameFromDbSetConvention));
+    }
+
 }
 
 public class OracleTestContext : TestContextBase

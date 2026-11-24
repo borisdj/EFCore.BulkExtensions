@@ -274,7 +274,7 @@ public class EFCoreBulkTest
     // -- For client side connection string is already set with: "AllowLoadLocalInfile=true"
     public void InsertTestMySql(SqlType sqlType)
     {
-        using var context = new TestContext(sqlType);
+        using var context = new MySqlTestContext(sqlType);
 
         var currentTime = DateTime.UtcNow; // default DateTime type: "timestamp with time zone"; DateTime.Now goes with: "timestamp without time zone"
 

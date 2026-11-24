@@ -1,7 +1,6 @@
 <Project>
   <PropertyGroup>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <!-- Oracle has no EF Core 11 release yet, so its provider stays outside its declared EF Core range -->
     <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1608</WarningsNotAsErrors>
     <Nullable>enable</Nullable>
     <Authors>borisdj</Authors>
@@ -23,12 +22,12 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
-  <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('Net9'))">
-    <Version>9.0.2</Version>
-    <PackageOutputPath>$(SolutionDir)Nugets\net9</PackageOutputPath>
+  <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('Net10'))">
+    <Version>10.0.2</Version>
+    <PackageOutputPath>$(SolutionDir)Nugets\net10</PackageOutputPath>
     <AssemblyVersion>$(Version).0</AssemblyVersion>
   </PropertyGroup>
-  <PropertyGroup Condition="!$(MSBuildProjectName.EndsWith('Net10'))">
+  <PropertyGroup Condition="!$(MSBuildProjectName.EndsWith('Net11'))">
     <Version>11.0.0</Version>
     <PackageOutputPath>$(SolutionDir)Nugets\net11</PackageOutputPath>
     <AssemblyVersion>$(Version).0</AssemblyVersion>
