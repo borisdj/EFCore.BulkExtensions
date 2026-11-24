@@ -426,14 +426,14 @@ public class OracleTestContext : TestContextBase
     {
         foreach (var entity in modelBuilder.Model.GetEntityTypes())
         {
-            // Přizpůsobení názvu tabulky
+            // Customizing the table name
             var tableName = entity.GetTableName();
             if (tableName != null)
             {
                 var newTableName = ToScreamingSnakeCase(tableName);
                 entity.SetTableName(newTableName);
 
-                // Přizpůsobení názvů sloupců
+                // Customizing column names
                 foreach (var property in entity.GetProperties())
                 {
                     var columnName = property.GetColumnName(StoreObjectIdentifier.Table(newTableName, null));
