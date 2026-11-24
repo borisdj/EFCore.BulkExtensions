@@ -1,13 +1,15 @@
 <Project>
   <PropertyGroup>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Oracle has no EF Core 11 release yet, so its provider stays outside its declared EF Core range -->
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1608</WarningsNotAsErrors>
     <Nullable>enable</Nullable>
     <Authors>borisdj</Authors>
     <PackageProjectUrl>https://github.com/borisdj/EFCore.BulkExtensions</PackageProjectUrl>
     <Company>CODIS LLC</Company>
     <PackageIcon>EFCoreBulk.png</PackageIcon>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
-	<PackageReleaseNotes>dependencies updates</PackageReleaseNotes>
+	<PackageReleaseNotes>net 11</PackageReleaseNotes>
     <PackageTags>EntityFrameworkCore Entity Framework Core .Net EFCore EF Core Bulk Batch Copy SqlBulkCopy Extensions Insert Update Delete Read Truncate SaveChanges</PackageTags>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
     <RepositoryUrl>https://github.com/borisdj/EFCore.BulkExtensions</RepositoryUrl>
@@ -27,8 +29,8 @@
     <AssemblyVersion>$(Version).0</AssemblyVersion>
   </PropertyGroup>
   <PropertyGroup Condition="!$(MSBuildProjectName.EndsWith('Net10'))">
-    <Version>10.0.2</Version>
-    <PackageOutputPath>$(SolutionDir)Nugets\net10</PackageOutputPath>
+    <Version>11.0.0</Version>
+    <PackageOutputPath>$(SolutionDir)Nugets\net11</PackageOutputPath>
     <AssemblyVersion>$(Version).0</AssemblyVersion>
   </PropertyGroup>
   <ItemGroup>

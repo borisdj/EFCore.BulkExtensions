@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
+        <TargetFramework>net11.0</TargetFramework>
         <!-- The GaussDB provider identifies itself by its unsigned assembly
              identity. StrongNamer rewrites that dependency and it then fails
              during EF query compilation, so preserve the NuGet binary. -->
@@ -8,12 +8,12 @@
         <Title>EFCore.BulkExtensions.GaussDB</Title>
         <Description>EntityFramework .Net EFCore EF Core Bulk Batch Extensions for Insert Update Delete Read (CRUD) operations on GaussDB.</Description>
         <PackageTags>$(PackageTags) GaussDB</PackageTags>
-        <PackageReleaseNotes>net 10</PackageReleaseNotes>
     </PropertyGroup>
     <ItemGroup>
         <PackageReference Include="DotNetCore.EntityFrameworkCore.GaussDB" Version="10.0.0" />
-		<PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.15" />
-        <PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.15" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="11.0.0" />
+		<PackageReference Include="System.Security.Cryptography.Pkcs" Version="11.0.0" />
+        <PackageReference Include="System.Security.Cryptography.Xml" Version="11.0.0" />
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\EFCore.BulkExtensions.Core\EFCore.BulkExtensions.Core.csproj" />
