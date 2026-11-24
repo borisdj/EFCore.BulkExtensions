@@ -52,6 +52,7 @@ Supported databases:
 -**PostgreSQL** (9.5+) is using [COPY BINARY](https://www.postgresql.org/docs/9.2/sql-copy.html) combined with [ON CONFLICT](https://www.postgresql.org/docs/10/sql-insert.html#SQL-ON-CONFLICT) for Update.  
 -**MySQL** (8+) uses [MySqlBulkCopy](https://mysqlconnector.net/api/mysqlconnector/mysqlbulkcopytype/) combined with [ON DUPLICATE](https://dev.mysql.com/doc/refman/8.0/en/insert-on-duplicate.html) for Update.  
 -**Oracle** uses [OracleBulkCopy](https://docs.oracle.com/cd/E11882_01/win.112/e23174/OracleBulkCopyClass.htm#ODPNT7446) combined with [MERGE](https://docs.oracle.com/en/database/oracle/oracle-database/21/sqlrf/MERGE.html) for Update (Oracle.EFCore dep. FreeDistr. but not OpenSource).  
+-**GBase**, licensed under Apache-2.0, is also Not OpenSource (for [GBase](https://db-engines.com/en/system/GBase) DB by [General Data Tech Co.](https://www.gbasedatabase.com/)).  
 Bulk Tests can not have UseInMemoryDb because InMemoryProvider does not support Relational-specific methods.  
 Instead Test options are  SqlServer(Developer or Express), LocalDb(if alongside [Developer v.](https://stackoverflow.com/questions/42885377/sql-server-2016-developer-version-can-not-connect-to-localdb-mssqllocaldb?noredirect=1&lq=1)), or with  other adapters.  
 
