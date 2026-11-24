@@ -82,7 +82,6 @@ Its assembly is [Strong-Named](https://docs.microsoft.com/en-us/dotnet/standard/
 | 1.x   | NetStandard 1.4 | EF Core 1 | NetCore(1.0+)                   |
 
 Supports follows official [.Net lifecycle](https://dotnet.microsoft.com/en-us/platform/support/policy/dotnet-core), currently v.10 as latest(LTS) and v.9.  
-MySql Net10 package now uses Microting's EF Core 10 MySQL provider fork of original Pomelo repo.
 
 ## Usage
 It's pretty simple and straightforward.  
@@ -98,6 +97,7 @@ context.BulkSaveChanges();                    context.BulkSaveChangesAsync();
 ```
 **-MSSQL** native **JSON** types do not map correctly with SqlServer 2025 prior CU5 (for Json use MSSQL 2025_CU5+).  
 **-MySQL** when running its Test for the first time execute sql command ([local-data](https://stackoverflow.com/questions/59993844/error-loading-local-data-is-disabled-this-must-be-enabled-on-both-the-client)): `SET GLOBAL local_infile = true;`  
+MySql Net10+ package uses Microting's EF Core 10 MySQL provider fork of original Pomelo repo.
 **-SQLite** requires package: [*SQLitePCLRaw.bundle_e_sqlite3*](https://docs.microsoft.com/en-us/dotnet/standard/data/sqlite/custom-versions?tabs=netcore-cli) with call to `SQLitePCL.Batteries.Init()`  
 
 **Batch** Extensions are made on *IQueryable* DbSet and can be used as in the following code segment.  
